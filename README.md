@@ -8,7 +8,8 @@
 
 ```
 .
-├── demo.html                  # 🎮 Démo statique single-file — testez l'UI sans serveur
+├── demo.html                  # Démo statique single-file — testez l'UI sans serveur
+├── index.html                 # Point d'entrée GitHub Pages (redirige vers demo.html)
 ├── schema.sql                 # Schéma de la base de données Cloudflare D1
 ├── wrangler.toml              # Configuration Cloudflare Workers
 ├── worker/
@@ -46,6 +47,14 @@ La démo inclut :
 - ✅ Éditeur Markdown avec prévisualisation
 - ✅ Upload de photos simulé (FileReader)
 - ✅ Responsive mobile-first
+
+### Démo GitHub Pages
+
+La publication GitHub Pages repose sur le workflow `.github/workflows/pages.yml`.
+
+- `index.html` sert de point d'entrée à la racine du dépôt
+- `demo.html` reste la démo single-file source
+- le workflow publie `demo.html` comme page d'accueil Pages
 
 ---
 
