@@ -534,7 +534,7 @@
         </div>
       </div>
       <div class="border-t border-white/10 pt-6 text-center text-slate-500 text-sm">
-        Carnet des aventures de la famille Potet · <span id="footer-year"></span> <span class="inline-block ml-1" data-brand-logo></span>
+        Carnet des aventures de la famille Potet · <span id="footer-year"></span><span class="inline-block ml-1" data-brand-logo></span>
       </div>
     </div>
   </div>
@@ -1242,7 +1242,8 @@ function pgVoyage(app, slug) {
 function renderVoyageContent(content, photos) {
   const wrapper = document.createElement('div');
   const raw = (content || '').trim();
-  wrapper.innerHTML = /<[a-z][\s\S]*>/i.test(raw) ? raw : marked.parse(raw);
+  const parsed = marked.parse(raw || '');
+  wrapper.innerHTML = sanitizeEditorHtml(parsed, { allowDataImage: true });
   const photoIndexByUrl = new Map((photos || []).map((p, i) => [p.url, i]));
 
   wrapper.querySelectorAll('img').forEach((img) => {
@@ -1459,6 +1460,75 @@ function rmFolder(id) {
   pgDashboard(document.getElementById('app'));
 }
 
+const EDITOR_ALLOWED_TAGS = new Set(['p','br','strong','b','em','i','u','h1','h2','h3','blockquote','ul','ol','li','a','figure','figcaption','img']);
+function sanitizeUrl(url, { allowDataImage = false } = {}) {
+  const value = (url || '').trim();
+  if (!value) return '';
+  if (allowDataImage && /^data:image\/(?:png|jpe?g|gif|webp|avif);base64,[a-zA-Z0-9+/=]+$/i.test(value)) {
+    if (value.length > 7_000_000) return '';
+    return value;
+  }
+  try {
+    const parsed = new URL(value, window.location.origin);
+    return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '';
+  } catch {
+    return '';
+  }
+}
+function normalizeCaption(name) {
+  return ((name || 'photo')
+    .replace(/\.[^.]+$/, '')
+    .replace(/[-_]/g, ' ')
+    .replace(/[<>]/g, '')
+    .trim()
+    .slice(0, 120)) || 'photo';
+}
+function sanitizeEditorHtml(html, { allowDataImage = true } = {}) {
+  const template = document.createElement('template');
+  template.innerHTML = html || '';
+  const clean = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) return;
+    if (node.nodeType !== Node.ELEMENT_NODE) { node.remove(); return; }
+    const tag = node.tagName.toLowerCase();
+    if (!EDITOR_ALLOWED_TAGS.has(tag)) {
+      const parent = node.parentNode;
+      while (node.firstChild) parent.insertBefore(node.firstChild, node);
+      node.remove();
+      return;
+    }
+    [...node.attributes].forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      if (tag === 'a' && ['href', 'target', 'rel'].includes(name)) return;
+      if (tag === 'img' && ['src', 'alt'].includes(name)) return;
+      node.removeAttribute(attr.name);
+    });
+    if (tag === 'a') {
+      const href = sanitizeUrl(node.getAttribute('href'));
+      if (!href) {
+        node.replaceWith(...node.childNodes);
+        return;
+      }
+      node.setAttribute('href', href);
+      node.setAttribute('target', '_blank');
+      node.setAttribute('rel', 'noopener noreferrer');
+    }
+    if (tag === 'img') {
+      const src = sanitizeUrl(node.getAttribute('src'), { allowDataImage });
+      if (!src) { node.remove(); return; }
+      node.setAttribute('src', src);
+      node.setAttribute('loading', 'lazy');
+      node.setAttribute('alt', (node.getAttribute('alt') || '').slice(0, 180));
+    }
+    Array.from(node.childNodes).forEach(clean);
+  };
+  Array.from(template.content.childNodes).forEach(clean);
+  return template.innerHTML.trim();
+}
+function createLocalId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 // ──────────────────────────────────────────────
 // PAGE: ADMIN EDITOR
 // ──────────────────────────────────────────────
@@ -1470,7 +1540,8 @@ function pgEditor(app, articleId) {
   const normalizeEditorContent = (content) => {
     const raw = (content || '').trim();
     if (!raw) return '<p><em>Commence à écrire ton récit ici…</em></p>';
-    return /<[a-z][\s\S]*>/i.test(raw) ? raw : marked.parse(raw);
+    const parsed = marked.parse(raw);
+    return sanitizeEditorHtml(parsed, { allowDataImage: true }) || '<p><em>Commence à écrire ton récit ici…</em></p>';
   };
   S.editing = src
     ? { ...src, content: normalizeEditorContent(src.content), start_date:resolveDate(src, 'start_date'), end_date:resolveDate(src, 'end_date'), photos:[...(src.photos||[])] }
@@ -1669,8 +1740,8 @@ function photoThumb(p, i) {
 function editorNode() {
   return document.getElementById('e-content');
 }
-function escapeHtml(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function escapeHtmlText(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 function placeCaretAtEnd(el) {
   const range = document.createRange();
@@ -1687,7 +1758,9 @@ function formatEditor(command, value = null) {
   if (command === 'createLink') {
     const url = prompt('URL du lien :', 'https://');
     if (!url) return;
-    document.execCommand('createLink', false, url.trim());
+    const safeUrl = sanitizeUrl(url);
+    if (!safeUrl) { toast('URL invalide (http/https uniquement).','err'); return; }
+    document.execCommand('createLink', false, safeUrl);
     return;
   }
   if (command === 'formatBlock') {
@@ -1699,16 +1772,20 @@ function formatEditor(command, value = null) {
 function insertHtmlInEditor(html) {
   const editor = editorNode();
   if (!editor) return;
+  const safeHtml = sanitizeEditorHtml(html, { allowDataImage: true });
+  if (!safeHtml) return;
   const sel = window.getSelection();
   if (!sel || !sel.rangeCount || !editor.contains(sel.anchorNode)) {
     editor.focus();
     placeCaretAtEnd(editor);
   }
-  document.execCommand('insertHTML', false, html);
+  document.execCommand('insertHTML', false, safeHtml);
 }
 function insertPhotoInText(url, caption) {
-  const safeCaption = escapeHtml(caption || 'photo');
-  insertHtmlInEditor(`<figure><img src="${url}" alt="${safeCaption}"><figcaption>${safeCaption}</figcaption></figure><p><br></p>`);
+  const safeUrl = sanitizeUrl(url, { allowDataImage: true });
+  if (!safeUrl) { toast('Image invalide.','err'); return; }
+  const safeCaption = escapeHtmlText(caption || 'photo');
+  insertHtmlInEditor(`<figure><img src="${safeUrl}" alt=""><figcaption>${safeCaption}</figcaption></figure><p><br></p>`);
   toast('Photo importée dans l’éditeur.','ok');
 }
 function triggerInlineImageImport() {
@@ -1720,9 +1797,9 @@ function handleInlineImageImport(files) {
     const reader = new FileReader();
     reader.onload = e => {
       const photo = {
-        id: Date.now() + Math.random(),
+        id: createLocalId(),
         url: e.target.result,
-        caption: file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '),
+        caption: normalizeCaption(file.name),
       };
       S.editing.photos.push(photo);
       refreshPhotoGrid();
@@ -1745,7 +1822,7 @@ function handleFiles(files) {
   Array.from(files).forEach(file => {
     const r = new FileReader();
     r.onload = e => {
-      S.editing.photos.push({ id:Date.now()+Math.random(), url:e.target.result, caption:file.name.replace(/\.[^.]+$/,'').replace(/[-_]/g,' ') });
+      S.editing.photos.push({ id: createLocalId(), url: e.target.result, caption: normalizeCaption(file.name) });
       refreshPhotoGrid();
     };
     r.readAsDataURL(file);
@@ -1769,6 +1846,8 @@ function saveArticle(publish) {
   if (!startDate || !endDate) { toast('Le voyage doit avoir une date de début et une date de fin.','err'); return; }
   if (endDate < startDate) { toast('La date de fin doit être postérieure ou égale à la date de début.','err'); return; }
   const status = publish ? 'published' : (document.querySelector('input[name="pub-status"]:checked')?.value||'draft');
+  const rawContent = (document.getElementById('e-content')?.innerHTML || '').trim();
+  const cleanContent = sanitizeEditorHtml(rawContent, { allowDataImage: true });
   const data = {
     title,
     destination: document.getElementById('e-dest')?.value.trim()||'',
@@ -1776,7 +1855,7 @@ function saveArticle(publish) {
     start_date: startDate,
     end_date: endDate,
     short_description: document.getElementById('e-desc')?.value.trim()||'',
-    content: (document.getElementById('e-content')?.innerHTML || '').trim(),
+    content: cleanContent || '<p></p>',
     status,
     folder_id: parseInt(document.getElementById('e-folder')?.value)||null,
     cover: document.getElementById('e-cover')?.value.trim() || `https://picsum.photos/seed/${slugify(title)}/1200/800`,
