@@ -38,7 +38,7 @@
 
   <style>
     :root {
-      color-scheme: dark;
+      color-scheme: light dark;
     }
 
     html { scroll-behavior: smooth; background: #050816; }
@@ -346,6 +346,88 @@
     ::-webkit-scrollbar-track { background: rgba(8, 15, 30, 0.9); }
     ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.8); border-radius: 999px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(103, 232, 249, 0.5); }
+
+    @media (prefers-color-scheme: light) {
+      html { background: #f8fafc; }
+      body {
+        background:
+          radial-gradient(circle at 12% 12%, rgba(14, 165, 233, 0.14), transparent 28%),
+          radial-gradient(circle at 88% 14%, rgba(168, 85, 247, 0.12), transparent 32%),
+          linear-gradient(180deg, #f8fafc 0%, #f1f5f9 42%, #eef2ff 100%);
+        color: #0f172a;
+      }
+      body::before {
+        background-image:
+          linear-gradient(rgba(148, 163, 184, 0.14) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(148, 163, 184, 0.14) 1px, transparent 1px);
+      }
+      #navbar {
+        background: rgba(255, 255, 255, 0.86) !important;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.35) !important;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      }
+      #site-footer {
+        background: rgba(248, 250, 252, 0.86) !important;
+        border-top: 1px solid rgba(148, 163, 184, 0.2);
+      }
+      .glass-panel,
+      .section-panel,
+      .metric-card,
+      .voyage-card,
+      #folder-modal > div,
+      #toast,
+      .bg-white,
+      .bg-stone-50,
+      .bg-sky-50,
+      .bg-emerald-50,
+      .bg-amber-50,
+      .bg-red-50 {
+        background: rgba(255, 255, 255, 0.84) !important;
+        border-color: rgba(148, 163, 184, 0.28) !important;
+        color: #0f172a !important;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+      }
+      .hero-overlay {
+        background:
+          linear-gradient(180deg, rgba(248,250,252,0.12) 0%, rgba(248,250,252,0.56) 52%, rgba(248,250,252,0.86) 100%),
+          linear-gradient(135deg, rgba(14,165,233,0.15) 0%, rgba(168,85,247,0.14) 55%, rgba(59,130,246,0.12) 100%);
+      }
+      .subtle-btn {
+        border-color: rgba(148, 163, 184, 0.32);
+        background: rgba(255, 255, 255, 0.75);
+        color: #334155;
+      }
+      .subtle-btn:hover {
+        border-color: rgba(14, 165, 233, 0.4);
+        background: rgba(255, 255, 255, 0.95);
+      }
+      .nav-link { color: #475569; }
+      .nav-link:hover { color: #0f172a; background: rgba(148, 163, 184, 0.14); }
+      .prose-vacation h1, .prose-vacation h2, .prose-vacation h3, .prose-vacation strong { color: #0f172a; }
+      .prose-vacation p, .prose-vacation ul, .prose-vacation ol, .prose-vacation li, .prose-vacation blockquote { color: #334155; }
+      .prose-vacation blockquote {
+        border-left-color: rgba(14, 165, 233, 0.46);
+        background: rgba(241, 245, 249, 0.85);
+      }
+      .prose-vacation code {
+        background: rgba(241, 245, 249, 0.95);
+        color: #334155;
+      }
+      .text-white, .text-slate-100, .text-slate-200, .text-stone-900, .text-stone-800, .text-stone-700 { color: #0f172a !important; }
+      .text-slate-300, .text-stone-600 { color: #334155 !important; }
+      .text-slate-400, .text-stone-500 { color: #475569 !important; }
+      .text-slate-500, .text-stone-400 { color: #64748b !important; }
+      .bg-white\/5 { background-color: rgba(15, 23, 42, 0.04) !important; }
+      .bg-white\/10 { background-color: rgba(15, 23, 42, 0.08) !important; }
+      .border-white\/10 { border-color: rgba(148, 163, 184, 0.35) !important; }
+      .bg-black\/40, .bg-black\/50, .bg-black\/88 { background-color: rgba(15, 23, 42, 0.5) !important; }
+      input, textarea, select {
+        background: rgba(255, 255, 255, 0.92) !important;
+        color: #0f172a !important;
+        border-color: rgba(148, 163, 184, 0.46) !important;
+      }
+      input::placeholder, textarea::placeholder { color: #94a3b8; }
+    }
   </style>
 
 </head>
@@ -1056,6 +1138,7 @@ function pgVoyage(app, slug) {
   }
   const f = byId(a.folder_id);
   window._lbPhotos = a.photos || [];
+  const renderedContent = renderVoyageContent(a.content || '', window._lbPhotos);
 
   app.innerHTML = `
   <div class="relative h-[56vh] sm:h-[72vh] overflow-hidden">
@@ -1087,23 +1170,8 @@ function pgVoyage(app, slug) {
     </div>
 
     <div class="prose-vacation text-base sm:text-lg leading-relaxed mb-12">
-      ${marked.parse(a.content || '')}
+      ${renderedContent}
     </div>
-
-    ${a.photos && a.photos.length ? `
-    <div class="mb-12">
-      <h2 class="font-display text-2xl font-bold text-white mb-5">Galerie</h2>
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        ${a.photos.map((p,i) => `
-          <div class="relative aspect-square overflow-hidden rounded-2xl photo-thumb group"
-               onclick="openLb(window._lbPhotos, ${i})">
-            <img src="${p.url}" alt="${esc(p.caption||'')}" class="w-full h-full object-cover" loading="lazy">
-            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-end p-3">
-              ${p.caption ? `<span class="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity line-clamp-2">${esc(p.caption)}</span>` : ''}
-            </div>
-          </div>`).join('')}
-      </div>
-    </div>` : ''}
 
     <div class="border-t border-white/10 pt-8 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
       <a href="#/voyages" onclick="go('/voyages')"
@@ -1114,6 +1182,24 @@ function pgVoyage(app, slug) {
       <button onclick="shareVoyage()" class="subtle-btn w-fit">Partager ce voyage</button>
     </div>
   </div>`;
+}
+
+function renderVoyageContent(content, photos) {
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = marked.parse(content || '');
+  const photoIndexByUrl = new Map((photos || []).map((p, i) => [p.url, i]));
+
+  wrapper.querySelectorAll('img').forEach((img) => {
+    img.className = `${img.className || ''} rounded-2xl my-6 shadow-lg`.trim();
+    img.loading = 'lazy';
+    const idx = photoIndexByUrl.get(img.getAttribute('src') || '');
+    if (typeof idx === 'number') {
+      img.classList.add('cursor-zoom-in');
+      img.setAttribute('onclick', `openLb(window._lbPhotos, ${idx})`);
+    }
+  });
+
+  return wrapper.innerHTML;
 }
 
 function shareVoyage() {
