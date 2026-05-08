@@ -27,12 +27,13 @@ tailwind.config = {
 }
 </script>
 <style>
+:root{--majorette:#2738B8;--majorette-rgb:39,56,184;--palm:#2E8B57}
 html{scroll-behavior:smooth}
-.hero-overlay{background:linear-gradient(to top,rgba(2,6,23,.82) 0%,rgba(2,6,23,.22) 55%,transparent 100%),linear-gradient(135deg,rgba(14,165,233,.55) 0%,rgba(249,115,22,.4) 100%)}
+.hero-overlay{background:linear-gradient(to top,rgba(2,6,23,.82) 0%,rgba(2,6,23,.22) 55%,transparent 100%),linear-gradient(135deg,rgba(var(--majorette-rgb),.55) 0%,rgba(46,139,87,.35) 100%)}
 .voyage-card{transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s ease}
 .voyage-card:hover{transform:translateY(-6px);box-shadow:0 24px 48px rgba(0,0,0,.13)}
-.gradient-text{background:linear-gradient(135deg,#0EA5E9,#F97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.prose-vacation h1,.prose-vacation h2,.prose-vacation h3{font-family:'Playfair Display',Georgia,serif;color:#0C4A6E}
+.gradient-text{background:linear-gradient(135deg,var(--majorette),var(--palm));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.prose-vacation h1,.prose-vacation h2,.prose-vacation h3{font-family:'Playfair Display',Georgia,serif;color:var(--majorette)}
 .prose-vacation h1{font-size:2rem;margin:2rem 0 1rem;font-weight:800}
 .prose-vacation h2{font-size:1.6rem;margin:1.8rem 0 .9rem;font-weight:700}
 .prose-vacation h3{font-size:1.25rem;margin:1.4rem 0 .7rem;font-weight:700}
@@ -42,10 +43,10 @@ html{scroll-behavior:smooth}
 .prose-vacation figcaption{margin-top:.6rem;font-size:.85rem;color:#78716C;text-align:center;font-style:italic}
 .prose-vacation ul,.prose-vacation ol{margin:1rem 0;padding-left:1.5rem}
 .prose-vacation li{margin:.4rem 0}
-.prose-vacation strong{color:#0C4A6E;font-weight:700}
-.prose-vacation em{color:#0369A1}
+.prose-vacation strong{color:var(--majorette);font-weight:700}
+.prose-vacation em{color:var(--majorette)}
 .prose-vacation blockquote{border-left:4px solid #F97316;padding:.5rem 0 .5rem 1rem;margin:1.5rem 0;color:#78716C;font-style:italic;background:#FFF7ED;border-radius:0 12px 12px 0}
-.prose-vacation a{color:#0EA5E9;text-decoration:underline}
+.prose-vacation a{color:var(--majorette);text-decoration:underline}
 .prose-vacation hr{margin:2rem 0;border-color:#E7E5E4}
 .badge-published{background:linear-gradient(135deg,#D1FAE5,#A7F3D0);color:#065F46}
 .badge-draft{background:linear-gradient(135deg,#FEF3C7,#FDE68A);color:#92400E}
@@ -59,6 +60,11 @@ html{scroll-behavior:smooth}
 .line-clamp-3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#F5F5F4}
 ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
+.text-sky-700,.text-sky-600,.text-sky-400{color:var(--majorette)!important}
+.hover\:text-sky-700:hover,.hover\:text-sky-600:hover,.hover\:text-sky-400:hover{color:var(--majorette)!important}
+.bg-sky-500,.bg-sky-50,.hover\:bg-sky-600:hover,.hover\:bg-sky-100:hover,.hover\:bg-sky-50:hover{background-color:rgba(var(--majorette-rgb),.12)!important}
+.focus\:border-sky-400:focus,.hover\:border-sky-400:hover{border-color:rgba(var(--majorette-rgb),.65)!important}
+.from-sky-500,.to-blue-600{--tw-gradient-from:var(--majorette) var(--tw-gradient-from-position)!important;--tw-gradient-to:rgb(var(--majorette-rgb)/0) var(--tw-gradient-to-position)!important;--tw-gradient-stops:var(--tw-gradient-from),var(--majorette) var(--tw-gradient-to-position)!important}
 </style>
 `;
 
