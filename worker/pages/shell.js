@@ -37,6 +37,9 @@ html{scroll-behavior:smooth}
 .prose-vacation h2{font-size:1.6rem;margin:1.8rem 0 .9rem;font-weight:700}
 .prose-vacation h3{font-size:1.25rem;margin:1.4rem 0 .7rem;font-weight:700}
 .prose-vacation p{margin:1rem 0;line-height:1.85}
+.prose-vacation figure{margin:2rem auto;max-width:100%}
+.prose-vacation figure img{border-radius:1rem;box-shadow:0 10px 30px rgba(15,23,42,.14);margin:0 auto}
+.prose-vacation figcaption{margin-top:.6rem;font-size:.85rem;color:#78716C;text-align:center;font-style:italic}
 .prose-vacation ul,.prose-vacation ol{margin:1rem 0;padding-left:1.5rem}
 .prose-vacation li{margin:.4rem 0}
 .prose-vacation strong{color:#0C4A6E;font-weight:700}

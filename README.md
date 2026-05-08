@@ -137,6 +137,7 @@ Accédez à `/admin` et connectez-vous avec le mot de passe défini à l'étape 
 - 🔄 Basculement rapide de statut (publier / dépublier)
 - ✏️ Éditeur complet :
   - Titre, destination, date, description courte
+  - Dates de voyage (début/fin) + journal quotidien (un résumé par jour)
   - Éditeur Markdown avec prévisualisation en temps réel
   - Upload multiple de photos avec glisser-déposer
   - Sélection du dossier

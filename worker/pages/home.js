@@ -104,6 +104,12 @@ ${LIGHTBOX}
 // ── Helpers ───────────────────────────────────────────────────
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
+function fmtDateRange(a){
+  const s = a.start_date || a.date;
+  const e = a.end_date || a.date;
+  if (!s) return 'Dates non définies';
+  return s === e ? fmtDate(s) : fmtDate(s)+' → '+fmtDate(e);
+}
 
 function articleCard(a){
   return \`<article class="voyage-card bg-white rounded-3xl overflow-hidden shadow-md cursor-pointer" onclick="location.href='/voyage/\${a.slug}'">
@@ -113,7 +119,7 @@ function articleCard(a){
       \${a.folder_name?'<div class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-bold text-stone-700">'+esc(a.folder_icon||'')+'  '+esc(a.folder_name)+'</div>':''}
     </div>
     <div class="p-5">
-      <div class="text-stone-400 text-xs mb-2">📅 \${fmtDate(a.date)} · 📍 \${esc(a.destination)}</div>
+      <div class="text-stone-400 text-xs mb-2">📅 \${fmtDateRange(a)} · 📍 \${esc(a.destination)}</div>
       <h3 class="font-display font-bold text-lg text-stone-900 mb-2 line-clamp-2 leading-snug">\${esc(a.title)}</h3>
       <p class="text-stone-500 text-sm leading-relaxed line-clamp-2 mb-4">\${esc(a.short_description)}</p>
       <span class="text-sky-600 text-sm font-bold">Lire la suite →</span>

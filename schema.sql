@@ -20,7 +20,10 @@ CREATE TABLE IF NOT EXISTS articles (
   title             TEXT     NOT NULL,
   slug              TEXT     NOT NULL UNIQUE,
   destination       TEXT     NOT NULL DEFAULT '',
-  date              DATE     NOT NULL DEFAULT (date('now')),
+  date              DATE     NOT NULL DEFAULT (date('now')), -- legacy alias for start_date
+  start_date        DATE     NOT NULL DEFAULT (date('now')),
+  end_date          DATE     NOT NULL DEFAULT (date('now')),
+  writing_days      TEXT     NOT NULL DEFAULT '[]',          -- JSON [{date, summary}]
   short_description TEXT     NOT NULL DEFAULT '',
   content           TEXT     NOT NULL DEFAULT '',
   -- Only 'published' articles are visible to the public
