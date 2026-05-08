@@ -76,7 +76,8 @@ async function init(){
     fetch('/api/articles'+(folder?'?folder='+encodeURIComponent(folder):'')).then(r=>r.json()).catch(()=>({articles:[],total:0})),
   ]);
   const activeF = folder ? folders.find(f=>f.slug===folder) : null;
-  document.getElementById('subtitle').innerHTML = '<strong class="text-white">'+(artData.total??artData.articles.length)+'</strong> aventure'+(artData.articles.length>1?'s':'')+' à découvrir'+(activeF?' dans <strong class="text-orange-500">'+esc(activeF.icon||'')+' '+esc(activeF.name)+'</strong>':'');
+  const totalCount = (artData.total ?? artData.articles.length);
+  document.getElementById('subtitle').innerHTML = '<strong class="text-white">'+totalCount+'</strong> aventure'+(totalCount>1?'s':'')+' à découvrir'+(activeF?' dans <strong class="text-orange-500">'+esc(activeF.icon||'')+' '+esc(activeF.name)+'</strong>':'');
   const roots = folders.filter(f=>!f.parent_id);
   const children = pid => folders.filter(f=>f.parent_id===pid);
   let btns='<a href="/voyages" class="px-4 py-2 rounded-full font-bold text-sm border-2 transition-all '+((!folder)?'bg-sky-500 text-white border-sky-500 shadow-md':'bg-white text-stone-600 border-stone-200 hover:border-sky-300 hover:text-sky-600')+'">🌍 Tous</a>';
