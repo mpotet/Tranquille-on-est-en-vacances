@@ -151,9 +151,9 @@ Accédez à `/admin` et connectez-vous avec le mot de passe défini à l'étape 
 |---------|--------|
 | Police principale | Nunito (amicale, arrondie) |
 | Police titres | Playfair Display (élégante) |
-| Couleur principale | Sky-500 `#0EA5E9` |
-| Couleur accent | Orange-500 `#F97316` |
-| Fond | Stone-50 `#FAFAF9` |
+| Couleur principale | Bleu `#6050DC` |
+| Couleur accent | Orange brûlé (touches) `#C65A1E` |
+| Fond | Blanc `#FFFFFF` |
 | Framework CSS | Tailwind CSS (CDN) |
 
 ---
