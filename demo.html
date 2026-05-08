@@ -283,7 +283,7 @@
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      font-weight: 800;
+      font-weight: 700;
     }
     .inline-image-btn:hover {
       background: linear-gradient(135deg, rgba(14, 165, 233, 0.55), rgba(59, 130, 246, 0.5));
@@ -1628,7 +1628,7 @@ function pgEditor(app, articleId) {
           </div>
           <div id="e-content"
                contenteditable="true"
-               class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 pb-24 md:pb-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 bg-white min-h-[420px]">${S.editing.content}</div>
+               class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 pb-20 md:pb-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 bg-white min-h-[420px]">${S.editing.content}</div>
           <input type="file" id="inline-image-in" accept="image/*" multiple class="hidden" onchange="handleInlineImageImport(this.files)">
         </div>
 
@@ -1817,7 +1817,7 @@ function handleInlineImageImport(files) {
       const photo = {
         id: createLocalId(),
         url: e.target.result,
-        caption: '',
+        caption: normalizeCaption(file.name),
       };
       S.editing.photos.push(photo);
       refreshPhotoGrid();
