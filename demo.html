@@ -518,7 +518,7 @@
               <div class="text-slate-400 text-[0.75rem] font-semibold uppercase tracking-[0.24em] mt-1" data-brand-subtitle>on est en vacances</div>
             </div>
           </div>
-          <p class="text-slate-400 text-sm leading-relaxed max-w-sm">Carnet de voyage immersif de la famille Potet. Une vitrine éditoriale pensée comme un journal visuel contemporain.</p>
+          <p class="text-slate-400 text-sm leading-relaxed max-w-sm">Le carnet de voyage de la famille Potet — des souvenirs partagés avec ceux qu'on aime.</p>
         </div>
         <div>
           <h3 class="text-slate-200 font-bold mb-4 text-sm uppercase tracking-[0.2em]">Explorer</h3>
@@ -1008,33 +1008,22 @@ function pgHome(app) {
     <div class="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-28 pb-16 lg:pb-24">
       <div class="grid lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center">
         <div class="max-w-3xl">
-          <div class="eyebrow mb-6"><span class="w-2 h-2 rounded-full bg-cyan-300 float-anim"></span><span>Carnet de voyage · édition digitale</span></div>
           <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-[0.98] mb-6 text-white">
-            Un carnet de voyage <span class="gradient-text">plus premium</span>, plus net, plus vivant.
+            Les aventures de la <span class="gradient-text">famille Potet</span>
           </h1>
           <p class="text-lg sm:text-xl text-slate-300 leading-relaxed mb-8 max-w-2xl">
-            Le carnet vivant des aventures de la famille Potet : itinéraires, moments forts et souvenirs partagés en images.
+            Notre carnet de voyage — itinéraires, moments forts et souvenirs en photos partagés avec nos proches.
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
-            <a href="#/voyages" onclick="go('/voyages')" class="action-btn">Explorer les voyages</a>
-            <a href="#/admin" onclick="go('/admin')" class="subtle-btn">Ouvrir le studio</a>
+            <a href="#/voyages" onclick="go('/voyages')" class="action-btn">Voir nos voyages</a>
           </div>
         </div>
 
         <div class="glass-panel rounded-[2rem] p-6 sm:p-8">
-          <div class="flex items-center justify-between gap-4 mb-8">
-            <div>
-              <p class="text-xs font-bold uppercase tracking-[0.22em] text-slate-400 mb-2">Signal</p>
-              <h2 class="font-display text-3xl text-white">Direction artistique</h2>
-            </div>
-            <div class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-cyan-300">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 19h16M5 15l4-4 4 4 6-8"/></svg>
-            </div>
-          </div>
           <div class="grid gap-4 sm:grid-cols-3 mb-6">
             <div class="metric-card rounded-2xl p-4">
               <div class="text-3xl font-black gradient-text">${pub.length}</div>
-              <div class="text-xs uppercase tracking-[0.18em] text-slate-400 mt-2">récits publiés</div>
+              <div class="text-xs uppercase tracking-[0.18em] text-slate-400 mt-2">récits</div>
             </div>
             <div class="metric-card rounded-2xl p-4">
               <div class="text-3xl font-black gradient-text">${folders.length}</div>
@@ -1042,11 +1031,11 @@ function pgHome(app) {
             </div>
             <div class="metric-card rounded-2xl p-4">
               <div class="text-3xl font-black gradient-text">${totalPhotos}</div>
-              <div class="text-xs uppercase tracking-[0.18em] text-slate-400 mt-2">photographies</div>
+              <div class="text-xs uppercase tracking-[0.18em] text-slate-400 mt-2">photos</div>
             </div>
           </div>
           <div class="section-panel rounded-2xl p-5">
-            <p class="text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">Focus</p>
+            <p class="text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">Derniers récits</p>
             <div class="space-y-3">
               ${featured.slice(0, 3).map((a, idx) => `
                 <button onclick="go('/voyage/${a.slug}')" class="w-full text-left rounded-2xl px-4 py-3 bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
@@ -1065,31 +1054,13 @@ function pgHome(app) {
     </div>
   </section>
 
-  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-10">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="section-panel rounded-[1.75rem] p-5">
-        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Éditorial</p>
-        <p class="text-white text-lg font-semibold">Une composition plus épurée, focalisée sur l'image et la lisibilité.</p>
-      </div>
-      <div class="section-panel rounded-[1.75rem] p-5">
-        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Palette</p>
-        <p class="text-white text-lg font-semibold">Cyan, bleu électrique et violet doux pour une ambiance futuriste harmonieuse.</p>
-      </div>
-      <div class="section-panel rounded-[1.75rem] p-5">
-        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Expérience</p>
-        <p class="text-white text-lg font-semibold">Même logique d'app, avec une identité plus premium pour la démo publique.</p>
-      </div>
-    </div>
-  </section>
-
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-10">
       <div>
-        <div class="eyebrow mb-4">Dernières publications</div>
-        <h2 class="font-display text-3xl sm:text-5xl font-bold text-white">Voyages en avant-plan</h2>
-        <p class="text-slate-400 mt-3 text-sm sm:text-base">Les récits les plus récents, présentés comme des cartes éditoriales immersives.</p>
+        <h2 class="font-display text-3xl sm:text-5xl font-bold text-white">Nos derniers voyages</h2>
+        <p class="text-slate-400 mt-3 text-sm sm:text-base">Les récits les plus récents avec photos et itinéraires.</p>
       </div>
-      <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn w-fit">Voir toute la collection</a>
+      <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn w-fit">Tous les voyages</a>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
       ${featured.map(card).join('')}
@@ -1098,13 +1069,9 @@ function pgHome(app) {
 
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
     <div class="section-panel rounded-[2rem] p-8 sm:p-10">
-      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-8">
-        <div>
-          <div class="eyebrow mb-4">Collections</div>
-          <h2 class="font-display text-3xl sm:text-4xl font-bold text-white mb-2">Destinations structurées</h2>
-          <p class="text-slate-400 max-w-2xl">Chaque zone géographique devient une collection navigable, avec un repérage rapide des récits disponibles.</p>
-        </div>
-        <div class="text-slate-500 text-sm">Navigation hiérarchique · familles de voyages · lecture rapide</div>
+      <div class="mb-8">
+        <h2 class="font-display text-3xl sm:text-4xl font-bold text-white mb-2">Nos destinations</h2>
+        <p class="text-slate-400 max-w-2xl">Parcourez nos voyages par région du monde.</p>
       </div>
       <div class="flex flex-wrap gap-3">
         ${roots().map(f => `
@@ -1140,7 +1107,7 @@ function pgVoyages(app, folderSlug) {
       <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4">Tous nos voyages</h1>
       <p class="text-slate-300 text-lg max-w-3xl">
         <strong class="text-white">${arts.length}</strong> récit${arts.length>1?'s':''} à parcourir
-        ${activeF ? `dans <strong class="text-cyan-300">${activeF.icon} ${activeF.name}</strong>` : 'dans une interface plus nette et plus contemporaine'}.
+        ${activeF ? `dans <strong class="text-cyan-300">${activeF.icon} ${activeF.name}</strong>.` : ''}
       </p>
     </div>
   </section>
