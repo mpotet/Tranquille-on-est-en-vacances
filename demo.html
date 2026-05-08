@@ -419,6 +419,9 @@
       }
       .nav-link { color: #475569; }
       .nav-link:hover { color: #0f172a; background: rgba(148, 163, 184, 0.14); }
+      .bg-stone-100, .hover\:bg-stone-200:hover, .hover\:bg-stone-100:hover, .hover\:bg-stone-50:hover {
+        background-color: rgba(241, 245, 249, 0.95) !important;
+      }
       .prose-vacation h1, .prose-vacation h2, .prose-vacation h3, .prose-vacation strong { color: #0f172a; }
       .prose-vacation p, .prose-vacation ul, .prose-vacation ol, .prose-vacation li, .prose-vacation blockquote { color: #334155; }
       .prose-vacation blockquote {
@@ -467,7 +470,6 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-20">
       <a href="#/" onclick="go('/')" class="flex items-center gap-4 group cursor-pointer">
-        <span class="brand-mark" data-brand-logo></span>
         <div class="leading-none">
           <span class="font-display font-bold text-lg text-white group-hover:text-cyan-200 transition-colors block" data-brand-title>Tranquille</span>
           <span class="text-[0.75rem] font-semibold tracking-[0.24em] uppercase text-slate-400 block mt-1" data-brand-subtitle>on est en vacances</span>
@@ -511,7 +513,6 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
         <div>
           <div class="flex items-center gap-4 mb-4">
-            <span class="brand-mark" data-brand-logo></span>
             <div class="leading-none">
               <div class="font-display font-bold text-white text-lg" data-brand-title>Tranquille</div>
               <div class="text-slate-400 text-[0.75rem] font-semibold uppercase tracking-[0.24em] mt-1" data-brand-subtitle>on est en vacances</div>
@@ -533,7 +534,7 @@
         </div>
       </div>
       <div class="border-t border-white/10 pt-6 text-center text-slate-500 text-sm">
-        Carnet des aventures de la famille Potet · <span id="footer-year"></span>
+        Carnet des aventures de la famille Potet · <span id="footer-year"></span> <span class="inline-block ml-1" data-brand-logo></span>
       </div>
     </div>
   </div>
@@ -1240,7 +1241,8 @@ function pgVoyage(app, slug) {
 
 function renderVoyageContent(content, photos) {
   const wrapper = document.createElement('div');
-  wrapper.innerHTML = marked.parse(content || '');
+  const raw = (content || '').trim();
+  wrapper.innerHTML = /<[a-z][\s\S]*>/i.test(raw) ? raw : marked.parse(raw);
   const photoIndexByUrl = new Map((photos || []).map((p, i) => [p.url, i]));
 
   wrapper.querySelectorAll('img').forEach((img) => {
@@ -1465,23 +1467,28 @@ function pgEditor(app, articleId) {
   const src = isEdit ? articles.find(a=>a.id===articleId) : null;
   const todayISO = new Date().toISOString().slice(0,10);
   const resolveDate = (article, key) => article?.[key] || article?.date || todayISO;
+  const normalizeEditorContent = (content) => {
+    const raw = (content || '').trim();
+    if (!raw) return '<p><em>Commence à écrire ton récit ici…</em></p>';
+    return /<[a-z][\s\S]*>/i.test(raw) ? raw : marked.parse(raw);
+  };
   S.editing = src
-    ? { ...src, start_date:resolveDate(src, 'start_date'), end_date:resolveDate(src, 'end_date'), photos:[...(src.photos||[])] }
+    ? { ...src, content: normalizeEditorContent(src.content), start_date:resolveDate(src, 'start_date'), end_date:resolveDate(src, 'end_date'), photos:[...(src.photos||[])] }
     : { id:null, title:'', destination:'', start_date:todayISO, end_date:todayISO,
-        short_description:'', content:'# Mon nouveau voyage\n\n*Commence à écrire ici...*\n\n## Jour 1\n\nRaconte ton aventure !',
+        short_description:'', content:'<h2>Mon nouveau voyage</h2><p><em>Commence à écrire ici…</em></p><h3>Jour 1</h3><p>Raconte ton aventure !</p>',
         status:'draft', folder_id:null, cover:'', photos:[] };
 
   app.innerHTML = `
   <!-- Editor top bar -->
-  <div class="bg-white/90 border-b border-stone-200 text-stone-900 py-4 px-4 sm:px-6 backdrop-blur-sm">
+  <div class="section-panel border-b border-white/10 py-4 px-4 sm:px-6 backdrop-blur-sm">
     <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
       <div class="flex items-center gap-3 min-w-0">
         <a href="#/admin/dashboard" onclick="go('/admin/dashboard')" class="text-stone-500 hover:text-sky-700 transition-colors text-sm flex-shrink-0 font-semibold">← Tableau de bord</a>
         <span class="text-stone-400">·</span>
-        <h1 class="font-bold text-stone-800 text-sm truncate">${isEdit ? `Modifier : ${esc(src.title)}` : 'Nouvel article'}</h1>
+        <h1 class="font-bold text-stone-800 text-sm truncate">${isEdit ? `Modifier l'article : ${esc(src.title)}` : 'Nouvel article'}</h1>
       </div>
       <div class="flex items-center gap-2 flex-shrink-0">
-        <button onclick="saveArticle(false)" class="px-4 py-2 rounded-full border border-stone-300 bg-stone-100 text-stone-700 hover:bg-stone-200 font-semibold text-sm transition-colors">Enregistrer</button>
+        <button onclick="saveArticle(false)" class="px-4 py-2 rounded-full border border-white/15 bg-white/10 text-slate-100 hover:bg-white/20 font-semibold text-sm transition-colors">Enregistrer</button>
         <button onclick="saveArticle(true)" class="action-btn-sm">Publier</button>
       </div>
     </div>
@@ -1507,32 +1514,29 @@ function pgEditor(app, articleId) {
                     class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 resize-none text-sm">${esc(S.editing.short_description)}</textarea>
         </div>
 
-        <!-- Markdown editor with preview -->
+        <!-- Visual editor -->
         <div>
           <div class="flex items-center justify-between mb-2">
-            <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Contenu (Markdown)</label>
-            <div class="flex items-center gap-1 bg-stone-100 rounded-xl p-1">
-              <button id="tab-write" onclick="edTab('write')"
-                      class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800">Rédaction</button>
-              <button id="tab-prev" onclick="edTab('preview')"
-                      class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700">Aperçu</button>
-            </div>
+            <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Contenu de l'article</label>
+            <span class="text-xs text-stone-500 font-semibold">Mise en forme en direct</span>
           </div>
-
-          <div id="pane-write">
-            <textarea id="e-content" rows="22" placeholder="# Titre\n\nÉcris ici en Markdown..."
-                      class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 md-editor">${esc(S.editing.content)}</textarea>
-            <!-- Markdown toolbar -->
-            <div class="flex flex-wrap gap-1 mt-2">
-              ${[['**Gras**','G'],['*Italique*','I'],['# Titre','H1'],['## Titre','H2'],['> Citation','❝'],['- Item','—'],['[texte](url)','🔗']].map(([s,l])=>`
-                <button type="button" onclick="insertMd('${s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"
-                        class="md-toolbar-btn">${l}</button>`).join('')}
-            </div>
+          <div id="e-content"
+               contenteditable="true"
+               class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 bg-white min-h-[420px]">${S.editing.content}</div>
+          <div class="flex flex-wrap gap-1 mt-3">
+            ${[
+              ['Gras','formatEditor(\'bold\')'],
+              ['Italique','formatEditor(\'italic\')'],
+              ['H1','formatEditor(\'formatBlock\',\'h1\')'],
+              ['H2','formatEditor(\'formatBlock\',\'h2\')'],
+              ['Citation','formatEditor(\'formatBlock\',\'blockquote\')'],
+              ['Liste','formatEditor(\'insertUnorderedList\')'],
+              ['Lien','formatEditor(\'createLink\')'],
+            ].map(([label,action])=>`
+              <button type="button" onclick="${action}" class="md-toolbar-btn">${label}</button>`).join('')}
+            <button type="button" onclick="triggerInlineImageImport()" class="md-toolbar-btn bg-sky-500/20 border-sky-400/40 text-sky-700 font-semibold">Importer une image</button>
           </div>
-
-          <div id="pane-preview" class="hidden">
-            <div id="preview-out" class="prose-vacation border-2 border-stone-200 rounded-2xl px-6 py-4 bg-white min-h-[400px] text-stone-800"></div>
-          </div>
+          <input type="file" id="inline-image-in" accept="image/*" multiple class="hidden" onchange="handleInlineImageImport(this.files)">
         </div>
 
       </div>
@@ -1605,7 +1609,7 @@ function pgEditor(app, articleId) {
         <div>
           <div class="flex items-center justify-between mb-2">
             <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Images dans le récit</label>
-            <p class="text-xs text-slate-400 font-semibold">Insérez-les dans le texte, où vous voulez.</p>
+            <p class="text-xs text-slate-400 font-semibold">Importez-les ici pour les garder dans la galerie.</p>
           </div>
           <div id="dropzone" role="button" tabindex="0" aria-label="Glissez vos photos ici ou cliquez pour sélectionner"
                 class="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
@@ -1662,38 +1666,72 @@ function photoThumb(p, i) {
   </div>`;
 }
 
-function edTab(tab) {
-  const wp = document.getElementById('pane-write');
-  const pp = document.getElementById('pane-preview');
-  const tw = document.getElementById('tab-write');
-  const tp = document.getElementById('tab-prev');
-  if (tab==='write') {
-    wp.classList.remove('hidden'); pp.classList.add('hidden');
-    tw.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800';
-    tp.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700';
-  } else {
-    const content = document.getElementById('e-content')?.value || '';
-    document.getElementById('preview-out').innerHTML = marked.parse(content);
-    wp.classList.add('hidden'); pp.classList.remove('hidden');
-    tp.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800';
-    tw.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700';
-  }
+function editorNode() {
+  return document.getElementById('e-content');
 }
-
-function insertMd(syntax) {
-  const ta = document.getElementById('e-content'); if (!ta) return;
-  const s=ta.selectionStart, e=ta.selectionEnd;
-  ta.value = ta.value.slice(0,s) + syntax + ta.value.slice(e);
-  ta.focus(); ta.setSelectionRange(s+syntax.length, s+syntax.length);
+function escapeHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function placeCaretAtEnd(el) {
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+function formatEditor(command, value = null) {
+  const editor = editorNode();
+  if (!editor) return;
+  editor.focus();
+  if (command === 'createLink') {
+    const url = prompt('URL du lien :', 'https://');
+    if (!url) return;
+    document.execCommand('createLink', false, url.trim());
+    return;
+  }
+  if (command === 'formatBlock') {
+    document.execCommand('formatBlock', false, value || 'p');
+    return;
+  }
+  document.execCommand(command, false, null);
+}
+function insertHtmlInEditor(html) {
+  const editor = editorNode();
+  if (!editor) return;
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || !editor.contains(sel.anchorNode)) {
+    editor.focus();
+    placeCaretAtEnd(editor);
+  }
+  document.execCommand('insertHTML', false, html);
 }
 function insertPhotoInText(url, caption) {
-  edTab('write');
-  const ta = document.getElementById('e-content'); if (!ta) return;
-  const md = `\n![${caption}](${url})\n`;
-  const s = ta.selectionStart;
-  ta.value = ta.value.slice(0,s) + md + ta.value.slice(ta.selectionEnd);
-  ta.focus(); ta.setSelectionRange(s+md.length, s+md.length);
-  toast('Photo insérée dans le texte.','ok');
+  const safeCaption = escapeHtml(caption || 'photo');
+  insertHtmlInEditor(`<figure><img src="${url}" alt="${safeCaption}"><figcaption>${safeCaption}</figcaption></figure><p><br></p>`);
+  toast('Photo importée dans l’éditeur.','ok');
+}
+function triggerInlineImageImport() {
+  document.getElementById('inline-image-in')?.click();
+}
+function handleInlineImageImport(files) {
+  if (!files || !files.length) return;
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const photo = {
+        id: Date.now() + Math.random(),
+        url: e.target.result,
+        caption: file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '),
+      };
+      S.editing.photos.push(photo);
+      refreshPhotoGrid();
+      insertPhotoInText(photo.url, photo.caption || 'photo');
+    };
+    reader.readAsDataURL(file);
+  });
+  const input = document.getElementById('inline-image-in');
+  if (input) input.value = '';
 }
 
 function previewCover(url) {
@@ -1738,7 +1776,7 @@ function saveArticle(publish) {
     start_date: startDate,
     end_date: endDate,
     short_description: document.getElementById('e-desc')?.value.trim()||'',
-    content: document.getElementById('e-content')?.value||'',
+    content: (document.getElementById('e-content')?.innerHTML || '').trim(),
     status,
     folder_id: parseInt(document.getElementById('e-folder')?.value)||null,
     cover: document.getElementById('e-cover')?.value.trim() || `https://picsum.photos/seed/${slugify(title)}/1200/800`,

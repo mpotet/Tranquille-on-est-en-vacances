@@ -44,7 +44,7 @@ La démo inclut :
 - ✅ Page détail avec galerie photos et lightbox
 - ✅ Interface admin complète (login demo : n'importe quel mot de passe)
 - ✅ Gestion des dossiers (CRUD)
-- ✅ Éditeur Markdown avec prévisualisation
+- ✅ Éditeur visuel (WYSIWYG) avec mise en forme en direct
 - ✅ Upload de photos simulé (FileReader)
 - ✅ Responsive mobile-first
 
@@ -138,7 +138,7 @@ Accédez à `/admin` et connectez-vous avec le mot de passe défini à l'étape 
 - ✏️ Éditeur complet :
   - Titre, destination, date, description courte
   - Dates de voyage (début/fin) + journal quotidien (un résumé par jour)
-  - Éditeur Markdown avec prévisualisation en temps réel
+  - Éditeur visuel de blog (sans Markdown obligatoire)
   - Upload multiple de photos avec glisser-déposer
   - Sélection du dossier
   - URL de couverture avec prévisualisation
