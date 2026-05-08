@@ -331,26 +331,6 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
         <button type="button" onclick="addWritingDay()" class="mt-3 text-xs bg-stone-100 text-stone-700 hover:bg-stone-200 px-3 py-1.5 rounded-lg font-semibold transition-colors">+ Ajouter un jour</button>
       </div>
 
-      <!-- Photo upload -->
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Photos</label>
-          ${articleId !== null ? '<p class="text-xs text-sky-600 font-semibold">💡 Survolez une photo et cliquez <strong>📎 Insérer</strong> pour l\'ajouter dans le texte</p>' : '<p class="text-xs text-stone-400">Sauvegardez d\'abord, puis insérez les photos dans le texte</p>'}
-        </div>
-        <div id="dropzone"
-             class="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
-             onclick="document.getElementById('file-in').click()"
-             ondragover="event.preventDefault();this.classList.add('border-sky-400','bg-sky-50')"
-             ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
-             ondrop="handleDrop(event)">
-          <span class="text-4xl block mb-2">📸</span>
-          <p class="text-stone-600 font-semibold text-sm">Glissez vos photos ici ou cliquez</p>
-          <p class="text-stone-400 text-xs mt-1">JPG, PNG, WebP · Max 10 MB</p>
-          <input type="file" id="file-in" accept="image/*" multiple class="hidden" onchange="handleFiles(this.files)">
-        </div>
-        <div id="photo-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4"></div>
-      </div>
-
       <!-- Save buttons (mobile) -->
       <div class="flex gap-3 lg:hidden">
         <button onclick="saveArticle(false)" class="flex-1 bg-stone-200 text-stone-800 font-bold py-3 rounded-2xl hover:bg-stone-300 transition-colors">💾 Brouillon</button>
@@ -413,6 +393,26 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
         <input type="text" id="e-cover" placeholder="URL de la photo de couverture..."
                class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-xs mb-3" oninput="previewCover(this.value)">
         <div id="cover-wrap" class="hidden"><img id="cover-img" src="" alt="" class="w-full h-32 object-cover rounded-xl"></div>
+      </div>
+
+      <!-- Photo upload -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Images dans le récit</label>
+          ${articleId !== null ? '<p class="text-xs text-sky-600 font-semibold">💡 Survolez une photo et cliquez <strong>📎 Insérer</strong></p>' : '<p class="text-xs text-stone-400">Sauvegardez d\'abord, puis insérez les photos</p>'}
+        </div>
+        <div id="dropzone"
+             class="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
+             onclick="document.getElementById('file-in').click()"
+             ondragover="event.preventDefault();this.classList.add('border-sky-400','bg-sky-50')"
+             ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
+             ondrop="handleDrop(event)">
+          <span class="text-4xl block mb-2">📸</span>
+          <p class="text-stone-600 font-semibold text-sm">Glissez vos photos ici ou cliquez</p>
+          <p class="text-stone-400 text-xs mt-1">JPG, PNG, WebP · Max 10 MB</p>
+          <input type="file" id="file-in" accept="image/*" multiple class="hidden" onchange="handleFiles(this.files)">
+        </div>
+        <div id="photo-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4"></div>
       </div>
 
       ${isEdit ? `
