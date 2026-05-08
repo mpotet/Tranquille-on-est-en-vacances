@@ -51,12 +51,18 @@ ${TOAST}
 <script>
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
+function fmtDateRange(a){
+  const s = a.start_date || a.date;
+  const e = a.end_date || a.date;
+  if (!s) return 'Dates non définies';
+  return s === e ? fmtDate(s) : fmtDate(s)+' → '+fmtDate(e);
+}
 function card(a){return \`<article class="voyage-card bg-white rounded-3xl overflow-hidden shadow-md cursor-pointer" onclick="location.href='/voyage/\${a.slug}'">
   <div class="relative h-52 overflow-hidden"><img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy" onerror="this.src='https://picsum.photos/seed/\${a.id}x/800/600'">
   <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
   \${a.folder_name?'<div class="absolute top-3 left-3 bg-white/90 rounded-full px-3 py-1 text-xs font-bold text-stone-700">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</div>':''}
   </div>
-  <div class="p-5"><div class="text-stone-400 text-xs mb-2">📅 \${fmtDate(a.date)} · 📍 \${esc(a.destination)}</div>
+  <div class="p-5"><div class="text-stone-400 text-xs mb-2">📅 \${fmtDateRange(a)} · 📍 \${esc(a.destination)}</div>
   <h3 class="font-display font-bold text-lg text-stone-900 mb-2 line-clamp-2 leading-snug">\${esc(a.title)}</h3>
   <p class="text-stone-500 text-sm leading-relaxed line-clamp-2 mb-4">\${esc(a.short_description)}</p>
   <span class="text-sky-600 text-sm font-bold">Lire la suite →</span></div></article>\`;}
@@ -126,7 +132,7 @@ async function init(){
         \${a.folder_name?'<div class="mb-3"><span class="bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/30">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</span></div>':''}
         <h1 class="font-display text-3xl sm:text-5xl font-bold text-white drop-shadow-lg mb-3 leading-tight">\${esc(a.title)}</h1>
         <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-white/80 text-sm font-medium">
-          <span>📅 \${fmtDate(a.date)}</span><span>📍 \${esc(a.destination)}</span><span>📷 \${photos.length} photos</span>
+          <span>📅 \${fmtDateRange(a)}</span><span>📍 \${esc(a.destination)}</span><span>📷 \${photos.length} photos</span>
         </div>
       </div>
     </div>
@@ -136,6 +142,7 @@ async function init(){
       <p class="text-stone-700 text-base sm:text-lg leading-relaxed font-medium italic">"\${esc(a.short_description)}"</p>
     </div>
     <div class="prose-vacation text-stone-700 text-base sm:text-lg leading-relaxed mb-12">\${renderedContent}</div>
+    \${renderWritingDays(a.writing_days || [])}
     <div class="border-t border-stone-200 pt-8 flex items-center justify-between">
       <a href="/voyages" class="flex items-center gap-2 text-stone-500 hover:text-sky-600 font-semibold transition-colors text-sm">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Tous les voyages
@@ -155,6 +162,17 @@ function renderVoyageContent(content, photos){
   wrapper.querySelectorAll('img').forEach(img => {
     img.className = `${img.className || ''} rounded-2xl my-6 shadow-md`.trim();
     img.loading = 'lazy';
+    if (!img.closest('figure')) {
+      const figure = document.createElement('figure');
+      img.replaceWith(figure);
+      figure.appendChild(img);
+      const alt = (img.getAttribute('alt') || '').trim();
+      if (alt) {
+        const cap = document.createElement('figcaption');
+        cap.textContent = alt;
+        figure.appendChild(cap);
+      }
+    }
     const idx = photoIndexByUrl.get(img.getAttribute('src') || '');
     if (typeof idx === 'number') {
       img.classList.add('cursor-zoom-in');
@@ -163,6 +181,25 @@ function renderVoyageContent(content, photos){
   });
 
   return wrapper.innerHTML;
+}
+
+function renderWritingDays(days){
+  if (!Array.isArray(days)) return '';
+  const items = days
+    .filter(d => d && d.date && d.summary)
+    .sort((a,b)=>a.date.localeCompare(b.date))
+    .map(d => \`
+      <article class="bg-white border border-stone-200 rounded-2xl p-5">
+        <h3 class="font-bold text-sky-800 text-sm mb-2">🗓️ \${fmtDate(d.date)}</h3>
+        <p class="text-stone-700 text-sm sm:text-base leading-relaxed">\${esc(d.summary)}</p>
+      </article>\`)
+    .join('');
+  if (!items) return '';
+  return \`
+    <section class="mb-12">
+      <h2 class="font-display text-2xl sm:text-3xl font-bold text-stone-900 mb-4">Journal quotidien</h2>
+      <div class="grid gap-3">\${items}</div>
+    </section>\`;
 }
 
 function share(){if(navigator.share)navigator.share({title:document.title,url:location.href}).catch(()=>{});else navigator.clipboard.writeText(location.href).then(()=>toast('Lien copié !','ok'))}

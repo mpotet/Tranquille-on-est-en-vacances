@@ -8,21 +8,21 @@ import { html } from '../utils.js';
 
 // ── Admin shared nav bar ──────────────────────────────────────
 const ADMIN_NAV = (subtitle = '') => `
-<nav class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-stone-900 to-stone-800 text-white shadow-lg">
+<nav class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-white via-sky-50 to-orange-50 text-stone-800 shadow-sm border-b border-stone-200/80">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
     <div class="flex items-center gap-4">
       <a href="/" class="flex items-center gap-2 group">
         <span class="text-xl">🌴</span>
-        <span class="font-display font-bold text-sm text-white/90 group-hover:text-white transition-colors">Blog Potet</span>
+        <span class="font-display font-bold text-sm text-stone-800 group-hover:text-sky-700 transition-colors">Blog Potet</span>
       </a>
-      <span class="text-stone-600">/</span>
-      <span class="text-stone-300 text-sm font-medium">Admin ${subtitle ? '/ ' + subtitle : ''}</span>
+      <span class="text-stone-400">/</span>
+      <span class="text-stone-600 text-sm font-medium">Admin ${subtitle ? '/ ' + subtitle : ''}</span>
     </div>
     <div class="flex items-center gap-3">
-      <a href="/" class="text-stone-400 hover:text-white text-sm font-medium transition-colors hidden sm:block">Voir le blog →</a>
-      <a href="/admin/dashboard" class="text-stone-400 hover:text-white text-sm font-medium transition-colors">Tableau de bord</a>
+      <a href="/" class="text-stone-500 hover:text-sky-700 text-sm font-medium transition-colors hidden sm:block">Voir le blog →</a>
+      <a href="/admin/dashboard" class="text-stone-600 hover:text-sky-700 text-sm font-medium transition-colors">Tableau de bord</a>
       <form method="POST" action="/admin/logout" class="inline">
-        <button type="submit" class="bg-red-500/20 text-red-400 hover:bg-red-500/30 font-semibold px-3 py-1.5 rounded-xl text-xs transition-colors">Déconnexion</button>
+        <button type="submit" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-semibold px-3 py-1.5 rounded-xl text-xs transition-colors">Déconnexion</button>
       </form>
     </div>
   </div>
@@ -150,6 +150,12 @@ let _folderParentId = null;
 
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
+function fmtDateRange(a){
+  const start = a.start_date || a.date;
+  const end = a.end_date || a.date;
+  if (!start) return 'Dates non définies';
+  return start === end ? fmtDate(start) : fmtDate(start) + ' → ' + fmtDate(end);
+}
 
 // ── Load dashboard data ───────────────────────────────────────
 async function init() {
@@ -198,7 +204,7 @@ function renderArticles(arts, folders) {
           <span class="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 \${isPub?'badge-published':'badge-draft'}">\${isPub?'✅ Publié':'📝 Brouillon'}</span>
         </div>
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-400">
-          <span>📅 \${fmtDate(a.date)}</span>
+          <span>📅 \${fmtDateRange(a)}</span>
           <span>📍 \${esc(a.destination)}</span>
           \${a.folder_name ? \`<span>\${esc(a.folder_icon||'')} \${esc(a.folder_name)}</span>\` : ''}
         </div>
@@ -314,6 +320,17 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
         </div>
       </div>
 
+      <!-- Writing days -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Jours de rédaction *</label>
+          <button type="button" onclick="generateWritingDays()" class="text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 px-3 py-1.5 rounded-lg font-semibold transition-colors">Générer depuis les dates</button>
+        </div>
+        <p class="text-xs text-stone-500 mb-3">Un résumé par jour du voyage est obligatoire.</p>
+        <div id="writing-days" class="space-y-2"></div>
+        <button type="button" onclick="addWritingDay()" class="mt-3 text-xs bg-stone-100 text-stone-700 hover:bg-stone-200 px-3 py-1.5 rounded-lg font-semibold transition-colors">+ Ajouter un jour</button>
+      </div>
+
       <!-- Photo upload -->
       <div>
         <div class="flex items-center justify-between mb-2">
@@ -370,8 +387,12 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
         <h3 class="font-bold text-stone-700 mb-4 text-sm">📋 Informations</h3>
         <div class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5">📅 Date du voyage</label>
-            <input type="date" id="e-date" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+            <label class="block text-xs font-bold text-stone-500 mb-1.5">📅 Début du voyage *</label>
+            <input type="date" id="e-start-date" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-500 mb-1.5">🏁 Fin du voyage *</label>
+            <input type="date" id="e-end-date" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
           </div>
           <div>
             <label class="block text-xs font-bold text-stone-500 mb-1.5">📍 Destination</label>
@@ -408,6 +429,7 @@ ${TOAST}
 const ARTICLE_ID = ${JSON.stringify(articleId)};
 let existingPhotos = [];  // photos already on the server
 let newPhotos = [];       // FileReader previews for new uploads
+let writingDays = [];
 
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
@@ -417,8 +439,12 @@ async function init() {
   const folders = await fetch('/api/folders').then(r=>r.json()).catch(()=>[]);
   populateFolderSelect(folders, null, 0);
 
-  // Set default date
-  document.getElementById('e-date').value = new Date().toISOString().slice(0,10);
+  // Set default dates
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('e-start-date').value = today;
+  document.getElementById('e-end-date').value = today;
+  writingDays = [{ date: today, summary: '' }];
+  renderWritingDays();
 
   if (ARTICLE_ID) {
     const a = await fetch('/api/articles/' + ARTICLE_ID).then(r=>r.json()).catch(()=>null);
@@ -426,7 +452,8 @@ async function init() {
       document.getElementById('e-title').value = a.title || '';
       document.getElementById('e-desc').value  = a.short_description || '';
       document.getElementById('e-content').value = a.content || '';
-      document.getElementById('e-date').value  = a.date || '';
+      document.getElementById('e-start-date').value  = a.start_date || a.date || today;
+      document.getElementById('e-end-date').value  = a.end_date || a.date || today;
       document.getElementById('e-dest').value  = a.destination || '';
       document.getElementById('e-cover').value = a.cover_url || '';
       previewCover(a.cover_url);
@@ -436,6 +463,8 @@ async function init() {
         if (opt) opt.selected = true;
       }
       existingPhotos = a.photos || [];
+      writingDays = Array.isArray(a.writing_days) && a.writing_days.length ? a.writing_days : [{ date: (a.start_date || a.date || today), summary: '' }];
+      renderWritingDays();
       renderPhotoGrid();
     }
   }
@@ -476,11 +505,61 @@ function insertMd(syntax) {
 function insertPhotoInText(url, caption) {
   edTab('write');
   const ta=document.getElementById('e-content'); if(!ta) return;
-  const md=`\n![${caption}](${url})\n`;
+  const md=`\n\n<figure>\n  <img src="\${url}" alt="\${caption}">\n  <figcaption>\${caption}</figcaption>\n</figure>\n\n`;
   const s=ta.selectionStart;
   ta.value=ta.value.slice(0,s)+md+ta.value.slice(ta.selectionEnd);
   ta.focus(); ta.setSelectionRange(s+md.length, s+md.length);
   toast('📎 Photo insérée dans le texte','ok');
+}
+
+// ── Writing days ────────────────────────────────────────────────
+function renderWritingDays() {
+  const host = document.getElementById('writing-days');
+  if (!host) return;
+  host.innerHTML = writingDays.map((d, i) => \`
+    <div class="bg-white border-2 border-stone-200 rounded-2xl p-3">
+      <div class="flex items-center gap-2 mb-2">
+        <input type="date" value="\${esc(d.date || '')}" onchange="updateWritingDay(\${i},'date',this.value)" class="flex-1 border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+        <button type="button" onclick="removeWritingDay(\${i})" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-bold px-3 py-2 rounded-xl transition-colors">🗑️</button>
+      </div>
+      <textarea rows="2" onchange="updateWritingDay(\${i},'summary',this.value)" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm" placeholder="Résumé du jour...">\${esc(d.summary || '')}</textarea>
+    </div>
+  \`).join('');
+}
+
+function addWritingDay() {
+  const start = document.getElementById('e-start-date').value || new Date().toISOString().slice(0,10);
+  writingDays.push({ date: start, summary: '' });
+  renderWritingDays();
+}
+
+function removeWritingDay(index) {
+  writingDays.splice(index, 1);
+  if (!writingDays.length) addWritingDay();
+  else renderWritingDays();
+}
+
+function updateWritingDay(index, field, value) {
+  writingDays[index] = writingDays[index] || { date: '', summary: '' };
+  writingDays[index][field] = value;
+}
+
+function generateWritingDays() {
+  const start = document.getElementById('e-start-date').value;
+  const end = document.getElementById('e-end-date').value;
+  if (!start || !end) { toast('Choisissez d’abord un début et une fin','err'); return; }
+  if (end < start) { toast('La fin doit être après le début','err'); return; }
+  const currentByDate = new Map(writingDays.map(d => [d.date, d.summary || '']));
+  const generated = [];
+  let cursor = new Date(start + 'T00:00:00');
+  const endDate = new Date(end + 'T00:00:00');
+  while (cursor <= endDate) {
+    const date = cursor.toISOString().slice(0,10);
+    generated.push({ date, summary: currentByDate.get(date) || '' });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  writingDays = generated;
+  renderWritingDays();
 }
 
 // ── Cover preview ─────────────────────────────────────────────
@@ -547,12 +626,25 @@ async function delExistingPhoto(photoId, i) {
 async function saveArticle(publish) {
   const title = document.getElementById('e-title').value.trim();
   if (!title) { toast('Le titre est obligatoire','err'); return; }
+  const startDate = document.getElementById('e-start-date').value;
+  const endDate = document.getElementById('e-end-date').value;
+  if (!startDate || !endDate) { toast('Le voyage doit avoir un début et une fin','err'); return; }
+  if (endDate < startDate) { toast('La fin doit être après le début','err'); return; }
+
+  const normalizedDays = writingDays
+    .map(d => ({ date: (d.date || '').trim(), summary: (d.summary || '').trim() }))
+    .filter(d => d.date || d.summary);
+  if (!normalizedDays.length) { toast('Ajoutez au moins un jour de rédaction','err'); return; }
+  if (normalizedDays.some(d => !d.date || !d.summary)) { toast('Chaque jour doit avoir une date et un résumé','err'); return; }
+  if (normalizedDays.some(d => d.date < startDate || d.date > endDate)) { toast('Les jours doivent être entre début et fin','err'); return; }
 
   const status = publish ? 'published' : (document.querySelector('input[name="pub-status"]:checked')?.value || 'draft');
   const payload = {
     title,
     destination:       document.getElementById('e-dest').value.trim(),
-    date:              document.getElementById('e-date').value,
+    start_date:        startDate,
+    end_date:          endDate,
+    writing_days:      normalizedDays,
     short_description: document.getElementById('e-desc').value.trim(),
     content:           document.getElementById('e-content').value,
     status,

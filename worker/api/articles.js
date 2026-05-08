@@ -66,7 +66,7 @@ export async function listArticles(request, env, isAdmin) {
     .bind(...bindings, limit, offset)
     .all();
 
-  return json({ articles: results, total, page, limit, pages: Math.ceil(total / limit) });
+  return json({ articles: results.map(normalizeArticle), total, page, limit, pages: Math.ceil(total / limit) });
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ export async function getArticle(env, slug, isAdmin) {
     .bind(article.id)
     .all();
 
-  return json({ ...article, photos });
+  return json({ ...normalizeArticle(article), photos });
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -100,20 +100,25 @@ export async function getArticle(env, slug, isAdmin) {
 export async function createArticle(request, env) {
   const body = await request.json().catch(() => null);
   if (!body?.title) return badRequest('title is required');
+  const { startDate, endDate, writingDays, error } = normalizeTripFields(body);
+  if (error) return badRequest(error);
 
   const slug = await uniqueSlug(env, toSlug(body.title));
 
   const result = await env.DB
     .prepare(`
       INSERT INTO articles
-        (title, slug, destination, date, short_description, content, status, folder_id, cover_url, cover_r2_key)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (title, slug, destination, date, start_date, end_date, writing_days, short_description, content, status, folder_id, cover_url, cover_r2_key)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     .bind(
       body.title,
       slug,
       body.destination         || '',
-      body.date                || new Date().toISOString().slice(0, 10),
+      startDate,
+      startDate,
+      endDate,
+      JSON.stringify(writingDays),
       body.short_description   || '',
       body.content             || '',
       body.status === 'published' ? 'published' : 'draft',
@@ -128,7 +133,7 @@ export async function createArticle(request, env) {
     .bind(result.meta.last_row_id)
     .first();
 
-  return json(article, 201);
+  return json(normalizeArticle(article), 201);
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -139,18 +144,30 @@ export async function updateArticle(request, env, id) {
   if (!article) return notFound('Article not found');
 
   const body = await request.json().catch(() => ({}));
+  const merged = {
+    ...article,
+    ...body,
+    start_date: body.start_date ?? article.start_date ?? article.date,
+    end_date: body.end_date ?? article.end_date ?? article.date,
+    writing_days: 'writing_days' in body ? body.writing_days : article.writing_days,
+  };
+  const { startDate, endDate, writingDays, error } = normalizeTripFields(merged);
+  if (error) return badRequest(error);
 
   await env.DB
     .prepare(`
       UPDATE articles
-      SET title=?, destination=?, date=?, short_description=?, content=?,
+      SET title=?, destination=?, date=?, start_date=?, end_date=?, writing_days=?, short_description=?, content=?,
           status=?, folder_id=?, cover_url=?, cover_r2_key=?, updated_at=CURRENT_TIMESTAMP
       WHERE id=?
     `)
     .bind(
       body.title             ?? article.title,
       body.destination       ?? article.destination,
-      body.date              ?? article.date,
+      startDate,
+      startDate,
+      endDate,
+      JSON.stringify(writingDays),
       body.short_description ?? article.short_description,
       body.content           ?? article.content,
       body.status && ['published','draft'].includes(body.status) ? body.status : article.status,
@@ -162,7 +179,7 @@ export async function updateArticle(request, env, id) {
     .run();
 
   const updated = await env.DB.prepare('SELECT * FROM articles WHERE id = ?').bind(id).first();
-  return json(updated);
+  return json(normalizeArticle(updated));
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -212,6 +229,67 @@ async function uniqueSlug(env, base) {
     if (!row) return slug;
     slug = `${base}-${++i}`;
   }
+}
+
+function normalizeArticle(article) {
+  if (!article) return article;
+  const startDate = article.start_date || article.date || '';
+  const endDate = article.end_date || article.date || '';
+  return {
+    ...article,
+    start_date: startDate,
+    end_date: endDate,
+    date: startDate,
+    writing_days: parseWritingDays(article.writing_days),
+  };
+}
+
+function parseWritingDays(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function normalizeTripFields(source) {
+  const startDate = (source.start_date || source.date || '').trim();
+  const endDate = (source.end_date || source.date || '').trim();
+  if (!startDate || !endDate) {
+    return { error: 'start_date and end_date are required' };
+  }
+  if (endDate < startDate) {
+    return { error: 'end_date must be after or equal to start_date' };
+  }
+
+  const rawWritingDays = parseWritingDays(source.writing_days);
+  if (!rawWritingDays.length) {
+    return { error: 'writing_days must contain at least one daily summary' };
+  }
+
+  const writingDays = [];
+  const seen = new Set();
+  for (const item of rawWritingDays) {
+    const date = (item?.date || '').trim();
+    const summary = (item?.summary || '').trim();
+    if (!date || !summary) {
+      return { error: 'each writing day must include date and summary' };
+    }
+    if (date < startDate || date > endDate) {
+      return { error: 'writing day dates must be between start_date and end_date' };
+    }
+    if (seen.has(date)) {
+      return { error: 'writing day dates must be unique' };
+    }
+    seen.add(date);
+    writingDays.push({ date, summary });
+  }
+
+  writingDays.sort((a, b) => a.date.localeCompare(b.date));
+  return { startDate, endDate, writingDays };
 }
 
 /** Return the flat list of all folder IDs in the subtree rooted at folderId. */
