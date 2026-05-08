@@ -47,7 +47,7 @@ body{background:radial-gradient(circle at 85% 10%,rgba(96,80,220,.13),transparen
 .hero-overlay{background:linear-gradient(to top,rgba(36,28,88,.88) 0%,rgba(36,28,88,.32) 54%,transparent 100%),linear-gradient(135deg,rgba(96,80,220,.56) 0%,rgba(47,122,89,.34) 100%)}
 .voyage-card{transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s ease;border:1px solid rgba(96,80,220,.08)}
 .voyage-card:hover{transform:translateY(-6px);box-shadow:0 24px 48px rgba(39,29,119,.14)}
-.gradient-text{background:linear-gradient(135deg,var(--majorelle) 0%,var(--majorelle) 45%,var(--palm) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.gradient-text{background:linear-gradient(135deg,var(--majorelle) 0%,var(--sun) 52%,var(--palm) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .prose-vacation h1,.prose-vacation h2,.prose-vacation h3{font-family:'Playfair Display',Georgia,serif;color:var(--majorelle-deep)}
 .prose-vacation h1{font-size:2rem;margin:2rem 0 1rem;font-weight:800}
 .prose-vacation h2{font-size:1.6rem;margin:1.8rem 0 .9rem;font-weight:700}
@@ -97,7 +97,7 @@ body{background:radial-gradient(circle at 85% 10%,rgba(96,80,220,.13),transparen
 .border-sky-500,.border-sky-400,.focus\:border-sky-400:focus,.hover\:border-sky-300:hover{border-color:rgba(96,80,220,.42)!important}
 .border-emerald-100{border-color:rgba(47,122,89,.18)!important}
 .border-amber-100,.border-orange-500,.hover\:border-orange-300:hover{border-color:rgba(244,200,93,.34)!important}
-.from-sky-500,.from-emerald-500,.from-sky-50{--tw-gradient-from:var(--majorelle)!important;--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to,rgba(96,80,220,0))!important}
+.from-sky-500{--tw-gradient-from:var(--majorelle)!important;--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to,rgba(96,80,220,0))!important}
 .from-emerald-500{--tw-gradient-from:var(--palm)!important;--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to,rgba(47,122,89,0))!important}
 .from-sky-50{--tw-gradient-from:var(--majorelle-wash)!important;--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to,rgba(246,241,255,0))!important}
 .via-white{--tw-gradient-stops:var(--tw-gradient-from),#FFFFFF,var(--tw-gradient-to,rgba(255,255,255,0))!important}
