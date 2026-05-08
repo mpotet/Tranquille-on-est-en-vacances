@@ -27,7 +27,21 @@ tailwind.config = {
 }
 </script>
 <style>
-:root{--majorelle:#6050DC;--majorelle-deep:#271D77;--majorelle-soft:#EEE9FF;--majorelle-wash:#F6F1FF;--palm:#2F7A59;--palm-deep:#1F5B41;--palm-soft:#E2F1E8;--sun:#F4C85D;--sun-soft:#FFF2CC;--sand:#FFF7E8;--ink:#241C58;--muted:#6D6598;--line:rgba(96,80,220,.18)}
+:root{
+  --majorelle:#6050DC;
+  --majorelle-deep:#271D77;
+  --majorelle-soft:#EEE9FF;
+  --majorelle-wash:#F6F1FF;
+  --palm:#2F7A59;
+  --palm-deep:#1F5B41;
+  --palm-soft:#E2F1E8;
+  --sun:#F4C85D;
+  --sun-soft:#FFF2CC;
+  --sand:#FFF7E8;
+  --ink:#241C58;
+  --muted:#6D6598;
+  --line:rgba(96,80,220,.18);
+}
 html{scroll-behavior:smooth}
 body{background:radial-gradient(circle at 85% 10%,rgba(96,80,220,.13),transparent 28%),radial-gradient(circle at 12% 18%,rgba(47,122,89,.11),transparent 24%),linear-gradient(180deg,#FCFBFF 0%,#F7F2FF 52%,#FFF8EC 100%);color:var(--ink)}
 .hero-overlay{background:linear-gradient(to top,rgba(36,28,88,.88) 0%,rgba(36,28,88,.32) 54%,transparent 100%),linear-gradient(135deg,rgba(96,80,220,.56) 0%,rgba(47,122,89,.34) 100%)}
