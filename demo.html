@@ -1694,7 +1694,7 @@ function editorNode() {
   return document.getElementById('e-content');
 }
 function setupEditorFloatingToolbar() {
-  const BLUR_DEBOUNCE_MS = 40;
+  const BLUR_DEBOUNCE_MS = 100;
   const editor = editorNode();
   const shell = document.getElementById('editor-shell');
   const toolbar = document.getElementById('editor-toolbar');
@@ -1707,7 +1707,7 @@ function setupEditorFloatingToolbar() {
       return;
     }
     const vv = window.visualViewport;
-    // Approximation de la hauteur de clavier visible (zone masquée en bas du viewport).
+    // approximation de la hauteur de clavier visible (zone masquée en bas du viewport).
     const overlap = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
     document.documentElement.style.setProperty('--editor-kb-offset', `${overlap}px`);
   };
