@@ -28,7 +28,7 @@ tailwind.config = {
 </script>
 <style>
 :root{
-  color-scheme:dark;
+  color-scheme: dark;
   --majorelle:#6050DC;
   --majorelle-rgb:96,80,220;
   --majorelle-deep:#2A116A;
