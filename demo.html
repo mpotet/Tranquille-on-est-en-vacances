@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Le blog de voyage de la famille Potet — Des aventures, des découvertes, des souvenirs à partager.">
-  <title>Tranquille, on est en vacances 🌴</title>
+  <title>Tranquille, on est en vacances</title>
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -12,7 +12,7 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,600&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 
   <!-- Marked.js for Markdown rendering -->
   <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
@@ -22,8 +22,14 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-            display: ['"Playfair Display"', 'Georgia', 'serif'],
+            sans: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            display: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            ink: '#050816',
+            panel: '#0f172a',
+            neon: '#67e8f9',
+            aurora: '#8b5cf6',
           }
         }
       }
@@ -31,152 +37,353 @@
   </script>
 
   <style>
-    html { scroll-behavior: smooth; }
+    :root {
+      color-scheme: dark;
+    }
+
+    html { scroll-behavior: smooth; background: #050816; }
+    body {
+      background:
+        radial-gradient(circle at 12% 12%, rgba(34, 211, 238, 0.18), transparent 28%),
+        radial-gradient(circle at 88% 14%, rgba(168, 85, 247, 0.16), transparent 32%),
+        radial-gradient(circle at 50% 100%, rgba(59, 130, 246, 0.12), transparent 40%),
+        linear-gradient(180deg, #050816 0%, #080d1d 42%, #04070f 100%);
+      color: #e2e8f0;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+      background-size: 80px 80px;
+      mask-image: linear-gradient(180deg, rgba(255,255,255,0.45), transparent 88%);
+      pointer-events: none;
+      z-index: -1;
+    }
 
     .hero-overlay {
       background:
-        linear-gradient(to top, rgba(2,6,23,0.82) 0%, rgba(2,6,23,0.22) 55%, transparent 100%),
-        linear-gradient(135deg, rgba(14,165,233,0.55) 0%, rgba(249,115,22,0.4) 100%);
+        linear-gradient(180deg, rgba(5,8,22,0.32) 0%, rgba(5,8,22,0.7) 52%, rgba(5,8,22,0.94) 100%),
+        linear-gradient(135deg, rgba(34,211,238,0.18) 0%, rgba(168,85,247,0.22) 55%, rgba(59,130,246,0.12) 100%);
     }
 
-    /* Card lift on hover */
+    .glass-panel,
+    .section-panel,
+    .voyage-card,
+    #folder-modal > div,
+    #toast {
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+    }
+
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.76), rgba(15, 23, 42, 0.58));
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 18px 60px rgba(2, 6, 23, 0.45);
+    }
+
+    .section-panel {
+      background: rgba(8, 15, 30, 0.74);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      box-shadow: 0 18px 46px rgba(2, 6, 23, 0.34);
+    }
+
+    .metric-card {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.54));
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 14px 36px rgba(2, 6, 23, 0.28);
+    }
+
     .voyage-card {
-      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+      transition: transform 0.32s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, border-color 0.3s ease;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.78), rgba(10, 15, 28, 0.92));
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      box-shadow: 0 18px 48px rgba(2, 6, 23, 0.28);
     }
     .voyage-card:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 24px 48px rgba(0,0,0,0.13);
+      transform: translateY(-8px);
+      border-color: rgba(103, 232, 249, 0.26);
+      box-shadow: 0 28px 64px rgba(2, 6, 23, 0.42);
     }
 
-    /* Gradient text */
     .gradient-text {
-      background: linear-gradient(135deg, #0EA5E9, #F97316);
+      background: linear-gradient(135deg, #f8fafc 0%, #67e8f9 32%, #c084fc 68%, #f8fafc 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
-    /* Photo gallery hover */
-    .photo-thumb { transition: transform 0.2s ease, opacity 0.2s ease; cursor: pointer; }
-    .photo-thumb:hover { transform: scale(1.05); opacity: 0.9; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      border-radius: 999px;
+      padding: 0.55rem 0.9rem;
+      background: rgba(15, 23, 42, 0.52);
+      border: 1px solid rgba(103, 232, 249, 0.18);
+      color: #cbd5e1;
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
 
-    /* Prose / Markdown styles */
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.6rem;
+      height: 2.6rem;
+      border-radius: 1rem;
+      background: linear-gradient(135deg, rgba(103,232,249,0.95), rgba(139,92,246,0.95));
+      color: #020617;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      box-shadow: 0 12px 30px rgba(103, 232, 249, 0.26);
+    }
+
+    .nav-link {
+      color: #94a3b8;
+      font-size: 0.92rem;
+      font-weight: 700;
+      padding: 0.7rem 0.95rem;
+      border-radius: 999px;
+      transition: color 0.2s ease, background-color 0.2s ease;
+    }
+    .nav-link:hover {
+      color: #f8fafc;
+      background: rgba(148, 163, 184, 0.08);
+    }
+
+    .action-btn,
+    .action-btn-sm {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      font-weight: 800;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+      background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 48%, #8b5cf6 100%);
+      color: #f8fafc;
+      box-shadow: 0 16px 34px rgba(37, 99, 235, 0.28);
+    }
+    .action-btn { padding: 0.95rem 1.5rem; }
+    .action-btn-sm { padding: 0.78rem 1.15rem; font-size: 0.9rem; }
+    .action-btn:hover,
+    .action-btn-sm:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 44px rgba(37, 99, 235, 0.34);
+    }
+
+    .subtle-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 0.95rem 1.5rem;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(15, 23, 42, 0.44);
+      color: #e2e8f0;
+      font-weight: 700;
+      transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+    .subtle-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(103, 232, 249, 0.28);
+      background: rgba(15, 23, 42, 0.68);
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(24px);
+      opacity: 0.55;
+      pointer-events: none;
+    }
+    .orb-a { width: 18rem; height: 18rem; top: 8%; right: 10%; background: rgba(103, 232, 249, 0.16); }
+    .orb-b { width: 14rem; height: 14rem; bottom: 12%; left: 8%; background: rgba(168, 85, 247, 0.16); }
+    .orb-c { width: 10rem; height: 10rem; top: 22%; left: 42%; background: rgba(59, 130, 246, 0.16); }
+
+    .photo-thumb { transition: transform 0.22s ease, opacity 0.22s ease; cursor: pointer; }
+    .photo-thumb:hover { transform: translateY(-4px) scale(1.01); opacity: 0.96; }
+
     .prose-vacation h1, .prose-vacation h2, .prose-vacation h3 {
-      font-family: 'Playfair Display', Georgia, serif;
-      color: #0C4A6E;
+      font-family: 'Space Grotesk', sans-serif;
+      color: #f8fafc;
+      letter-spacing: -0.025em;
     }
-    .prose-vacation h1 { font-size: 2rem; margin: 2rem 0 1rem; font-weight: 800; }
-    .prose-vacation h2 { font-size: 1.6rem; margin: 1.8rem 0 0.9rem; font-weight: 700; }
-    .prose-vacation h3 { font-size: 1.25rem; margin: 1.4rem 0 0.7rem; font-weight: 700; }
-    .prose-vacation p  { margin: 1rem 0; line-height: 1.85; }
-    .prose-vacation ul, .prose-vacation ol { margin: 1rem 0; padding-left: 1.5rem; }
+    .prose-vacation h1 { font-size: 2rem; margin: 2rem 0 1rem; font-weight: 700; }
+    .prose-vacation h2 { font-size: 1.55rem; margin: 1.8rem 0 0.9rem; font-weight: 700; }
+    .prose-vacation h3 { font-size: 1.18rem; margin: 1.4rem 0 0.7rem; font-weight: 700; }
+    .prose-vacation p  { margin: 1rem 0; line-height: 1.9; color: #cbd5e1; }
+    .prose-vacation ul, .prose-vacation ol { margin: 1rem 0; padding-left: 1.5rem; color: #cbd5e1; }
     .prose-vacation li { margin: 0.4rem 0; }
-    .prose-vacation strong { color: #0C4A6E; font-weight: 700; }
-    .prose-vacation em { color: #0369A1; }
+    .prose-vacation strong { color: #f8fafc; font-weight: 700; }
+    .prose-vacation em { color: #67e8f9; }
     .prose-vacation blockquote {
-      border-left: 4px solid #F97316;
-      padding: 0.5rem 0 0.5rem 1rem;
+      border-left: 3px solid rgba(103, 232, 249, 0.55);
+      padding: 0.85rem 0 0.85rem 1rem;
       margin: 1.5rem 0;
-      color: #78716C;
+      color: #cbd5e1;
       font-style: italic;
-      background: #FFF7ED;
-      border-radius: 0 12px 12px 0;
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 0 18px 18px 0;
     }
-    .prose-vacation a { color: #0EA5E9; text-decoration: underline; }
-    .prose-vacation hr { margin: 2rem 0; border-color: #E7E5E4; }
+    .prose-vacation a { color: #67e8f9; text-decoration: underline; }
+    .prose-vacation hr { margin: 2rem 0; border-color: rgba(148, 163, 184, 0.16); }
     .prose-vacation code {
-      background: #F1F5F9;
-      padding: 0.1em 0.4em;
-      border-radius: 4px;
+      background: rgba(15, 23, 42, 0.86);
+      padding: 0.12em 0.45em;
+      border-radius: 8px;
       font-size: 0.9em;
       font-family: 'Courier New', monospace;
+      color: #e2e8f0;
     }
 
-    /* Status badges */
-    .badge-published { background: linear-gradient(135deg,#D1FAE5,#A7F3D0); color: #065F46; }
-    .badge-draft     { background: linear-gradient(135deg,#FEF3C7,#FDE68A); color: #92400E; }
+    .badge-published { background: rgba(16, 185, 129, 0.16); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.24); }
+    .badge-draft     { background: rgba(245, 158, 11, 0.16); color: #fcd34d; border: 1px solid rgba(245,158,11,0.24); }
 
-    /* Lightbox backdrop blur */
-    .lightbox-bg { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+    .lightbox-bg { backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 
-    /* Markdown editor monospace */
     .md-editor {
       font-family: 'Courier New', Courier, monospace;
-      font-size: 0.88rem;
-      line-height: 1.65;
+      font-size: 0.9rem;
+      line-height: 1.72;
       resize: vertical;
     }
 
-    /* Page fade-in */
-    .page-in { animation: fadeIn 0.28s ease-in-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .page-in { animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Floating emoji */
-    .float-anim { animation: float 3.5s ease-in-out infinite; }
+    .float-anim { animation: float 5s ease-in-out infinite; }
     @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-    /* Mobile menu slide */
-    .menu-slide { animation: slideDown 0.2s ease-out; }
+    .menu-slide { animation: slideDown 0.22s ease-out; }
     @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
 
-    /* Folder tree hover */
-    .folder-row { transition: background-color 0.12s ease; }
-    .folder-row:hover { background: rgba(14,165,233,0.07); }
+    .folder-row { transition: background-color 0.14s ease, border-color 0.14s ease; border: 1px solid transparent; }
+    .folder-row:hover { background: rgba(14, 165, 233, 0.08); border-color: rgba(14, 165, 233, 0.12); }
 
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #F5F5F4; }
-    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
-
-    /* Line-clamp utilities */
     .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+    #navbar {
+      background: rgba(5, 8, 22, 0.72) !important;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.3);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    #site-footer {
+      background: rgba(2, 6, 23, 0.86) !important;
+      border-top: 1px solid rgba(148, 163, 184, 0.08);
+    }
+
+    #folder-modal > div,
+    #toast,
+    .bg-white,
+    .bg-stone-50,
+    .bg-sky-50,
+    .bg-emerald-50,
+    .bg-amber-50,
+    .bg-red-50 {
+      background: rgba(8, 15, 30, 0.84) !important;
+      border-color: rgba(148, 163, 184, 0.12) !important;
+      color: #e2e8f0;
+      box-shadow: 0 18px 46px rgba(2, 6, 23, 0.28);
+    }
+
+    .from-sky-50, .to-orange-50, .via-white, .from-stone-900, .to-stone-800,
+    .from-sky-500, .to-blue-700, .to-blue-600, .from-emerald-500, .to-green-600 {
+      --tw-gradient-from: initial;
+      --tw-gradient-stops: initial;
+      --tw-gradient-to: initial;
+    }
+
+    .text-stone-900, .text-stone-800, .text-stone-700 { color: #f8fafc !important; }
+    .text-stone-600 { color: #cbd5e1 !important; }
+    .text-stone-500 { color: #94a3b8 !important; }
+    .text-stone-400 { color: #64748b !important; }
+    .text-sky-700, .text-sky-600 { color: #67e8f9 !important; }
+    .text-orange-500, .text-orange-400, .text-yellow-300, .text-amber-700, .text-amber-600 { color: #c084fc !important; }
+    .text-emerald-700, .text-emerald-600, .text-red-700, .text-red-600 { color: #a5f3fc !important; }
+
+    .border-stone-100, .border-stone-200, .border-stone-300, .border-stone-800, .border-sky-100, .border-red-100, .border-emerald-100, .border-amber-100 {
+      border-color: rgba(148, 163, 184, 0.12) !important;
+    }
+
+    .bg-sky-500, .bg-sky-50, .hover\:bg-sky-600:hover, .hover\:bg-sky-100:hover {
+      background-color: rgba(34, 211, 238, 0.16) !important;
+    }
+    .bg-red-500, .hover\:bg-red-600:hover {
+      background-color: rgba(248, 113, 113, 0.24) !important;
+    }
+    .bg-stone-100, .hover\:bg-stone-200:hover, .hover\:bg-stone-100:hover, .hover\:bg-stone-50:hover {
+      background-color: rgba(15, 23, 42, 0.84) !important;
+    }
+    .bg-black\/40, .bg-black\/50, .bg-black\/88 { background-color: rgba(2, 6, 23, 0.7) !important; }
+
+    input, textarea, select {
+      background: rgba(5, 8, 22, 0.72) !important;
+      color: #e2e8f0 !important;
+      border-color: rgba(71, 85, 105, 0.9) !important;
+    }
+    input::placeholder, textarea::placeholder { color: #64748b; }
+    input:focus, textarea:focus, select:focus {
+      border-color: rgba(103, 232, 249, 0.6) !important;
+      box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12);
+    }
+
+    #dropzone {
+      background: rgba(8, 15, 30, 0.5);
+      border-color: rgba(148, 163, 184, 0.2) !important;
+    }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(8, 15, 30, 0.9); }
+    ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.8); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(103, 232, 249, 0.5); }
   </style>
+
 </head>
 
-<body class="bg-stone-50 font-sans text-stone-900 antialiased min-h-screen">
+<body class="bg-ink font-sans text-slate-100 antialiased min-h-screen">
 
 <!-- ═══════════════════════════════════════════
      NAVIGATION
 ═══════════════════════════════════════════ -->
-<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-stone-100">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex items-center justify-between h-16">
-
-      <!-- Logo -->
-      <a href="#/" onclick="go('/')" class="flex items-center gap-2 group cursor-pointer">
-        <span class="text-2xl">🌴</span>
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-20">
+      <a href="#/" onclick="go('/')" class="flex items-center gap-4 group cursor-pointer">
+        <span class="brand-mark">T</span>
         <div class="leading-none">
-          <span class="font-display font-bold text-base text-sky-600 group-hover:text-sky-700 transition-colors block">Tranquille,</span>
-          <span class="text-xs font-bold text-orange-500 block">on est en vacances</span>
+          <span class="font-display font-bold text-lg text-white group-hover:text-cyan-200 transition-colors block">Tranquille</span>
+          <span class="text-[0.75rem] font-semibold tracking-[0.24em] uppercase text-slate-400 block mt-1">on est en vacances</span>
         </div>
       </a>
 
-      <!-- Desktop nav -->
-      <div class="hidden md:flex items-center gap-5">
-        <a href="#/" onclick="go('/')" class="text-stone-600 hover:text-sky-600 font-semibold transition-colors text-sm">🏠 Accueil</a>
-        <a href="#/voyages" onclick="go('/voyages')" class="text-stone-600 hover:text-sky-600 font-semibold transition-colors text-sm">✈️ Voyages</a>
-        <a href="#/admin" onclick="go('/admin')"
-           class="bg-gradient-to-r from-sky-500 to-blue-600 text-white px-4 py-2 rounded-full text-sm font-bold hover:shadow-lg hover:scale-105 transition-all">
-          🔐 Admin
-        </a>
+      <div class="hidden md:flex items-center gap-2">
+        <a href="#/" onclick="go('/')" class="nav-link">Accueil</a>
+        <a href="#/voyages" onclick="go('/voyages')" class="nav-link">Destinations</a>
+        <a href="#/admin" onclick="go('/admin')" class="action-btn-sm">Studio</a>
       </div>
 
-      <!-- Mobile hamburger -->
-      <button onclick="toggleMenu()" class="md:hidden p-2 rounded-lg text-stone-600 hover:bg-stone-100 transition-colors">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      <button onclick="toggleMenu()" class="md:hidden p-3 rounded-2xl text-slate-300 hover:bg-white/5 transition-colors border border-white/10">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
       </button>
     </div>
 
-    <!-- Mobile menu -->
     <div id="mobile-menu" class="hidden md:hidden pb-4 menu-slide">
-      <div class="flex flex-col gap-1">
-        <a href="#/" onclick="go('/');toggleMenu()" class="px-4 py-2.5 text-stone-700 hover:bg-sky-50 hover:text-sky-600 rounded-xl font-semibold transition-colors text-sm">🏠 Accueil</a>
-        <a href="#/voyages" onclick="go('/voyages');toggleMenu()" class="px-4 py-2.5 text-stone-700 hover:bg-sky-50 hover:text-sky-600 rounded-xl font-semibold transition-colors text-sm">✈️ Voyages</a>
-        <a href="#/admin" onclick="go('/admin');toggleMenu()" class="px-4 py-2.5 bg-sky-50 text-sky-700 rounded-xl font-bold text-sm">🔐 Admin</a>
+      <div class="glass-panel rounded-3xl p-3 grid gap-2">
+        <a href="#/" onclick="go('/');toggleMenu()" class="px-4 py-3 text-slate-100 hover:bg-white/5 rounded-2xl font-semibold transition-colors text-sm">Accueil</a>
+        <a href="#/voyages" onclick="go('/voyages');toggleMenu()" class="px-4 py-3 text-slate-100 hover:bg-white/5 rounded-2xl font-semibold transition-colors text-sm">Destinations</a>
+        <a href="#/admin" onclick="go('/admin');toggleMenu()" class="px-4 py-3 rounded-2xl font-semibold text-sm action-btn-sm">Studio</a>
       </div>
     </div>
   </div>
@@ -190,33 +397,36 @@
 <!-- ═══════════════════════════════════════════
      FOOTER
 ═══════════════════════════════════════════ -->
-<footer id="site-footer" class="bg-stone-900 text-stone-300 py-12 mt-0">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-      <div>
-        <div class="flex items-center gap-2 mb-4">
-          <span class="text-3xl">🌴</span>
-          <div class="leading-none">
-            <div class="font-display font-bold text-white text-base">Tranquille,</div>
-            <div class="text-orange-400 text-xs font-bold">on est en vacances</div>
+<footer id="site-footer" class="py-16 mt-0">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="section-panel rounded-[2rem] px-6 py-8 sm:px-8 sm:py-10">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <div>
+          <div class="flex items-center gap-4 mb-4">
+            <span class="brand-mark">T</span>
+            <div class="leading-none">
+              <div class="font-display font-bold text-white text-lg">Tranquille</div>
+              <div class="text-slate-400 text-[0.75rem] font-semibold uppercase tracking-[0.24em] mt-1">on est en vacances</div>
+            </div>
           </div>
+          <p class="text-slate-400 text-sm leading-relaxed max-w-sm">Carnet de voyage immersif de la famille Potet. Une vitrine éditoriale pensée comme un journal visuel contemporain.</p>
         </div>
-        <p class="text-stone-400 text-sm leading-relaxed">Le blog de voyage de la famille Potet. Des aventures, des découvertes et des souvenirs à partager.</p>
+        <div>
+          <h3 class="text-slate-200 font-bold mb-4 text-sm uppercase tracking-[0.2em]">Explorer</h3>
+          <ul class="space-y-2 text-sm">
+            <li><a href="#/" onclick="go('/')" class="hover:text-cyan-300 transition-colors cursor-pointer">Accueil</a></li>
+            <li><a href="#/voyages" onclick="go('/voyages')" class="hover:text-cyan-300 transition-colors cursor-pointer">Tous les voyages</a></li>
+            <li><a href="#/admin" onclick="go('/admin')" class="hover:text-cyan-300 transition-colors cursor-pointer">Studio</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-slate-200 font-bold mb-4 text-sm uppercase tracking-[0.2em]">Collections</h3>
+          <ul id="footer-dest" class="space-y-2 text-sm"></ul>
+        </div>
       </div>
-      <div>
-        <h3 class="text-white font-bold mb-4 text-sm uppercase tracking-wide">Navigation</h3>
-        <ul class="space-y-2 text-sm">
-          <li><a href="#/" onclick="go('/')" class="hover:text-sky-400 transition-colors cursor-pointer">🏠 Accueil</a></li>
-          <li><a href="#/voyages" onclick="go('/voyages')" class="hover:text-sky-400 transition-colors cursor-pointer">✈️ Tous les voyages</a></li>
-        </ul>
+      <div class="border-t border-white/10 pt-6 text-center text-slate-500 text-sm">
+        Expérience statique pour GitHub Pages · <span id="footer-year"></span>
       </div>
-      <div>
-        <h3 class="text-white font-bold mb-4 text-sm uppercase tracking-wide">Destinations</h3>
-        <ul id="footer-dest" class="space-y-2 text-sm"></ul>
-      </div>
-    </div>
-    <div class="border-t border-stone-800 pt-6 text-center text-stone-500 text-sm">
-      ✨ Fait avec amour par la famille Potet &bull; <span id="footer-year"></span> ✨
     </div>
   </div>
 </footer>
@@ -252,8 +462,8 @@
 <!-- ═══════════════════════════════════════════
      TOAST NOTIFICATION
 ═══════════════════════════════════════════ -->
-<div id="toast" class="hidden fixed bottom-6 right-6 z-[200] bg-white rounded-2xl shadow-2xl px-5 py-4 flex items-center gap-3 border border-stone-100 max-w-xs">
-  <span id="toast-icon" class="text-xl flex-shrink-0"></span>
+<div id="toast" role="status" aria-live="polite" aria-atomic="true" class="hidden fixed bottom-6 right-6 z-[200] bg-white rounded-2xl shadow-2xl px-5 py-4 flex items-center gap-3 border border-stone-100 max-w-xs">
+  <span id="toast-icon" aria-hidden="true" class="text-xl flex-shrink-0"></span>
   <p id="toast-msg" class="text-stone-700 font-semibold text-sm"></p>
 </div>
 
@@ -262,23 +472,23 @@
 ═══════════════════════════════════════════ -->
 <div id="folder-modal" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4"
      onclick="if(event.target===this)closeFolderModal()">
-  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
-    <h3 class="font-display text-xl font-bold text-stone-900 mb-5">📁 Nouveau dossier</h3>
+  <div class="section-panel rounded-[2rem] w-full max-w-sm p-6">
+    <h3 class="font-display text-xl font-bold text-white mb-5">Nouveau dossier</h3>
     <div class="space-y-4 mb-6">
       <div>
-        <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Nom</label>
+        <label class="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wide">Nom</label>
         <input type="text" id="fm-name" placeholder="Ex: Asie du Sud-Est"
-               class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm font-medium">
+               class="w-full border-2 rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm font-medium">
       </div>
       <div>
-        <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Emoji</label>
-        <input type="text" id="fm-icon" placeholder="🌏" maxlength="2"
-               class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+        <label class="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wide">Icône / sigle</label>
+        <input type="text" id="fm-icon" placeholder="Ex: ◆" maxlength="4"
+               class="w-full border-2 rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm">
       </div>
     </div>
     <div class="flex gap-3">
       <button onclick="closeFolderModal()" class="flex-1 bg-stone-100 text-stone-700 font-bold py-2.5 rounded-xl hover:bg-stone-200 transition-colors text-sm">Annuler</button>
-      <button onclick="doAddFolder()" class="flex-1 bg-sky-500 text-white font-bold py-2.5 rounded-xl hover:bg-sky-600 transition-colors text-sm">Créer ✨</button>
+      <button onclick="doAddFolder()" class="flex-1 action-btn-sm">Créer</button>
     </div>
   </div>
 </div>
@@ -526,9 +736,10 @@ function esc(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function toast(msg, type='ok') {
-  document.getElementById('toast-icon').textContent = type==='ok'?'✅':type==='err'?'❌':'ℹ️';
+  document.getElementById('toast-icon').textContent = type==='ok'?'●':type==='err'?'×':'i';
   document.getElementById('toast-msg').textContent = msg;
   const el = document.getElementById('toast');
+  el.setAttribute('aria-label', type==='ok' ? 'Succès' : type==='err' ? 'Erreur' : 'Information');
   el.classList.remove('hidden');
   clearTimeout(el._t);
   el._t = setTimeout(() => el.classList.add('hidden'), 3000);
@@ -614,23 +825,27 @@ window.addEventListener('hashchange', route);
 function card(a) {
   const f = byId(a.folder_id);
   return `
-  <article class="voyage-card bg-white rounded-3xl overflow-hidden shadow-md cursor-pointer" onclick="go('/voyage/${a.slug}')">
-    <div class="relative h-52 overflow-hidden">
+  <article class="voyage-card rounded-[2rem] overflow-hidden cursor-pointer" onclick="go('/voyage/${a.slug}')">
+    <div class="relative h-56 overflow-hidden">
       <img src="${a.cover}" alt="${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy"
            onerror="this.src='https://picsum.photos/seed/${a.id}x/800/600'">
-      <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-      ${f ? `<div class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-bold text-stone-700 flex items-center gap-1"><span>${f.icon}</span><span>${f.name}</span></div>`:''}
-      <div class="absolute bottom-3 right-3 bg-black/40 backdrop-blur-sm text-white text-xs font-medium rounded-full px-2.5 py-1">📷 ${a.photos?.length||0}</div>
-    </div>
-    <div class="p-5">
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-stone-400 text-xs mb-2">
-        <span>📅 ${fmtDate(a.date)}</span>
-        <span class="hidden sm:inline">•</span>
-        <span>📍 ${a.destination}</span>
+      <div class="absolute inset-0 bg-gradient-to-t from-[#050816] via-[#050816]/30 to-transparent"></div>
+      <div class="absolute top-4 left-4 right-4 flex items-start justify-between gap-3">
+        ${f ? `<div class="glass-panel rounded-full px-3 py-1.5 text-[0.72rem] font-semibold text-slate-100 flex items-center gap-2"><span class="text-cyan-300">${f.icon}</span><span>${f.name}</span></div>` : ''}
+        <div class="glass-panel rounded-full px-3 py-1.5 text-[0.72rem] font-semibold text-slate-100">${a.photos?.length||0} photos</div>
       </div>
-      <h3 class="font-display font-bold text-lg text-stone-900 mb-2 line-clamp-2 leading-snug">${esc(a.title)}</h3>
-      <p class="text-stone-500 text-sm leading-relaxed line-clamp-2 mb-4">${esc(a.short_description)}</p>
-      <span class="text-sky-600 text-sm font-bold">Lire la suite →</span>
+    </div>
+    <div class="p-6">
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-400 text-xs mb-3 uppercase tracking-[0.18em]">
+        <span>${fmtDate(a.date)}</span>
+        <span class="hidden sm:inline text-slate-600">•</span>
+        <span>${a.destination}</span>
+      </div>
+      <h3 class="font-display font-bold text-2xl text-white mb-3 line-clamp-2 leading-tight">${esc(a.title)}</h3>
+      <p class="text-slate-400 text-sm leading-relaxed line-clamp-3 mb-5">${esc(a.short_description)}</p>
+      <span class="inline-flex items-center gap-2 text-cyan-300 text-sm font-bold tracking-[0.14em] uppercase">Explorer
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 17 17 7M8 7h9v9"/></svg>
+      </span>
     </div>
   </article>`;
 }
@@ -644,116 +859,126 @@ function pgHome(app) {
   const totalPhotos = pub.reduce((s,a) => s+(a.photos?.length||0), 0);
 
   app.innerHTML = `
-  <!-- Hero -->
-  <section class="relative min-h-screen flex items-end sm:items-center overflow-hidden bg-sky-950">
+  <section class="relative min-h-screen flex items-center overflow-hidden">
     <div class="absolute inset-0">
-      <img src="https://picsum.photos/seed/herotravel/1920/1080" alt="Voyage" class="w-full h-full object-cover"
-           onerror="this.style.background='linear-gradient(135deg,#0EA5E9,#F97316)'">
+      <img src="https://picsum.photos/seed/herotravel/1920/1080" alt="Voyage" class="w-full h-full object-cover opacity-45"
+           onerror="this.style.background='linear-gradient(135deg,#22d3ee,#8b5cf6)'">
       <div class="absolute inset-0 hero-overlay"></div>
+      <div class="orb orb-a"></div>
+      <div class="orb orb-b"></div>
+      <div class="orb orb-c"></div>
     </div>
-    <div class="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 text-white pb-24 pt-28 sm:py-24">
-      <div class="max-w-xl">
-        <div class="inline-flex items-center gap-2 mb-5 bg-white/15 backdrop-blur-sm border border-white/25 rounded-full px-4 py-2">
-          <span class="text-xl float-anim">🌴</span>
-          <span class="text-sm font-semibold">Le blog de voyage de la famille Potet</span>
+    <div class="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-28 pb-16 lg:pb-24">
+      <div class="grid lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center">
+        <div class="max-w-3xl">
+          <div class="eyebrow mb-6"><span class="w-2 h-2 rounded-full bg-cyan-300 float-anim"></span><span>Carnet de voyage · édition digitale</span></div>
+          <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-[0.98] mb-6 text-white">
+            Un carnet de voyage <span class="gradient-text">plus premium</span>, plus net, plus vivant.
+          </h1>
+          <p class="text-lg sm:text-xl text-slate-300 leading-relaxed mb-8 max-w-2xl">
+            Une démo GitHub Pages pensée comme une vitrine éditoriale moderne : atmosphère immersive, photographie au premier plan et navigation fluide.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <a href="#/voyages" onclick="go('/voyages')" class="action-btn">Explorer les voyages</a>
+            <a href="#/admin" onclick="go('/admin')" class="subtle-btn">Ouvrir le studio</a>
+          </div>
         </div>
-        <h1 class="font-display text-4xl sm:text-5xl lg:text-7xl font-bold leading-[1.1] mb-5 drop-shadow-lg">
-          Tranquille,<br>
-          <span class="text-yellow-300">on est en</span><br>
-          vacances ! ☀️
-        </h1>
-        <p class="text-base sm:text-xl text-white/85 leading-relaxed mb-8">
-          Nos aventures, nos découvertes, nos coups de cœur.<br class="hidden sm:block">
-          Des souvenirs à partager avec ceux qu'on aime.
-        </p>
-        <div class="flex flex-col sm:flex-row gap-3">
-          <a href="#/voyages" onclick="go('/voyages')"
-             class="inline-flex items-center justify-center gap-2 bg-white text-sky-700 font-bold px-7 py-4 rounded-2xl hover:bg-yellow-300 hover:text-stone-900 transition-all hover:scale-105 shadow-xl">
-            ✈️ Découvrir nos voyages
-          </a>
-          <a href="#/voyages" onclick="go('/voyages')"
-             class="inline-flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm text-white font-bold px-7 py-4 rounded-2xl hover:bg-white/30 transition-all border border-white/40">
-            📸 Voir les photos
-          </a>
+
+        <div class="glass-panel rounded-[2rem] p-6 sm:p-8">
+          <div class="flex items-center justify-between gap-4 mb-8">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-[0.22em] text-slate-400 mb-2">Signal</p>
+              <h2 class="font-display text-3xl text-white">Direction artistique</h2>
+            </div>
+            <div class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-cyan-300">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 19h16M5 15l4-4 4 4 6-8"/></svg>
+            </div>
+          </div>
+          <div class="grid gap-4 sm:grid-cols-3 mb-6">
+            <div class="metric-card rounded-2xl p-4">
+              <div class="text-3xl font-black gradient-text">${pub.length}</div>
+              <div class="text-xs uppercase tracking-[0.18em] text-slate-400 mt-2">récits publiés</div>
+            </div>
+            <div class="metric-card rounded-2xl p-4">
+              <div class="text-3xl font-black gradient-text">${folders.length}</div>
+              <div class="text-xs uppercase tracking-[0.18em] text-slate-400 mt-2">destinations</div>
+            </div>
+            <div class="metric-card rounded-2xl p-4">
+              <div class="text-3xl font-black gradient-text">${totalPhotos}</div>
+              <div class="text-xs uppercase tracking-[0.18em] text-slate-400 mt-2">photographies</div>
+            </div>
+          </div>
+          <div class="section-panel rounded-2xl p-5">
+            <p class="text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">Focus</p>
+            <div class="space-y-3">
+              ${featured.slice(0, 3).map((a, idx) => `
+                <button onclick="go('/voyage/${a.slug}')" class="w-full text-left rounded-2xl px-4 py-3 bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <div class="text-white font-semibold">${esc(a.title)}</div>
+                      <div class="text-slate-400 text-xs mt-1">${a.destination}</div>
+                    </div>
+                    <span class="text-slate-500 text-sm">0${idx + 1}</span>
+                  </div>
+                </button>`).join('')}
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 flex flex-col items-center gap-1 animate-bounce">
-      <span class="text-xs font-medium tracking-wider uppercase">Découvrir</span>
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-      </svg>
-    </div>
   </section>
 
-  <!-- Stats bar -->
-  <section class="bg-white shadow-sm border-b border-stone-100">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div class="grid grid-cols-3 gap-4 text-center">
-        <div>
-          <div class="text-3xl font-black gradient-text">${pub.length}</div>
-          <div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-wide">voyages</div>
-        </div>
-        <div>
-          <div class="text-3xl font-black gradient-text">${folders.length}</div>
-          <div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-wide">destinations</div>
-        </div>
-        <div>
-          <div class="text-3xl font-black gradient-text">${totalPhotos}</div>
-          <div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-wide">photos</div>
-        </div>
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-10">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="section-panel rounded-[1.75rem] p-5">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Éditorial</p>
+        <p class="text-white text-lg font-semibold">Une composition plus épurée, focalisée sur l'image et la lisibilité.</p>
+      </div>
+      <div class="section-panel rounded-[1.75rem] p-5">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Palette</p>
+        <p class="text-white text-lg font-semibold">Cyan, bleu électrique et violet doux pour une ambiance futuriste harmonieuse.</p>
+      </div>
+      <div class="section-panel rounded-[1.75rem] p-5">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Expérience</p>
+        <p class="text-white text-lg font-semibold">Même logique d'app, avec une identité plus premium pour la démo publique.</p>
       </div>
     </div>
   </section>
 
-  <!-- Latest voyages -->
-  <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-    <div class="flex items-end justify-between mb-10">
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-10">
       <div>
-        <h2 class="font-display text-3xl sm:text-4xl font-bold text-stone-900">Derniers voyages ✈️</h2>
-        <p class="text-stone-500 mt-2 text-sm">Nos aventures les plus récentes</p>
+        <div class="eyebrow mb-4">Dernières publications</div>
+        <h2 class="font-display text-3xl sm:text-5xl font-bold text-white">Voyages en avant-plan</h2>
+        <p class="text-slate-400 mt-3 text-sm sm:text-base">Les récits les plus récents, présentés comme des cartes éditoriales immersives.</p>
       </div>
-      <a href="#/voyages" onclick="go('/voyages')"
-         class="hidden sm:flex items-center gap-1.5 text-sky-600 hover:text-sky-700 font-bold transition-colors text-sm">
-        Tout voir <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-      </a>
+      <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn w-fit">Voir toute la collection</a>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
       ${featured.map(card).join('')}
     </div>
-    <div class="text-center mt-10 sm:hidden">
-      <a href="#/voyages" onclick="go('/voyages')"
-         class="inline-flex items-center gap-2 bg-sky-500 text-white font-bold px-6 py-3 rounded-2xl hover:bg-sky-600 transition-colors">
-        Voir tous les voyages →
-      </a>
-    </div>
   </section>
 
-  <!-- Destinations -->
-  <section class="bg-gradient-to-br from-sky-50 to-orange-50 py-16">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-10">
-        <h2 class="font-display text-3xl sm:text-4xl font-bold text-stone-900 mb-2">Nos destinations 🗺️</h2>
-        <p class="text-stone-500 text-sm">Explorez le monde avec nous</p>
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+    <div class="section-panel rounded-[2rem] p-8 sm:p-10">
+      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-8">
+        <div>
+          <div class="eyebrow mb-4">Collections</div>
+          <h2 class="font-display text-3xl sm:text-4xl font-bold text-white mb-2">Destinations structurées</h2>
+          <p class="text-slate-400 max-w-2xl">Chaque zone géographique devient une collection navigable, avec un repérage rapide des récits disponibles.</p>
+        </div>
+        <div class="text-slate-500 text-sm">Navigation hiérarchique · familles de voyages · lecture rapide</div>
       </div>
-      <div class="flex flex-wrap justify-center gap-3">
+      <div class="flex flex-wrap gap-3">
         ${roots().map(f => `
           <a href="#/voyages/${f.slug}" onclick="go('/voyages/${f.slug}')"
-             class="flex items-center gap-2 bg-white rounded-2xl px-5 py-3 shadow-sm hover:shadow-md hover:scale-105 transition-all font-semibold text-stone-700 border border-stone-100 cursor-pointer">
-            <span class="text-2xl">${f.icon}</span>
+             class="inline-flex items-center gap-3 rounded-full px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 transition-all font-semibold text-slate-100 cursor-pointer">
+            <span class="text-cyan-300">${f.icon}</span>
             <span>${f.name}</span>
-            <span class="text-xs bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">${articlesInTree(f.id).length}</span>
+            <span class="text-xs bg-white/10 text-slate-300 px-2.5 py-1 rounded-full font-bold">${articlesInTree(f.id).length}</span>
           </a>`).join('')}
       </div>
     </div>
-  </section>
-
-  <!-- Quote -->
-  <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-    <blockquote class="font-display text-2xl sm:text-3xl text-stone-600 italic leading-relaxed">
-      "Les voyages sont la seule chose qu'on achète qui nous rend plus riches."
-    </blockquote>
-    <p class="text-stone-400 mt-4 font-medium text-sm">— Devise de la famille Potet 🌍</p>
   </section>`;
 }
 
@@ -772,43 +997,43 @@ function pgVoyages(app, folderSlug) {
   }
 
   app.innerHTML = `
-  <div class="bg-gradient-to-br from-sky-500 to-blue-700 text-white py-14">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3">✈️ Tous nos voyages</h1>
-      <p class="text-sky-100 text-lg">
-        <strong class="text-white">${arts.length}</strong> aventure${arts.length>1?'s':''} à découvrir
-        ${activeF ? `dans <strong class="text-yellow-300">${activeF.icon} ${activeF.name}</strong>` : ''}
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-8">
+    <div class="section-panel rounded-[2rem] px-6 py-8 sm:px-10 sm:py-10">
+      <div class="eyebrow mb-5">Catalogue</div>
+      <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4">Tous nos voyages</h1>
+      <p class="text-slate-300 text-lg max-w-3xl">
+        <strong class="text-white">${arts.length}</strong> récit${arts.length>1?'s':''} à parcourir
+        ${activeF ? `dans <strong class="text-cyan-300">${activeF.icon} ${activeF.name}</strong>` : 'dans une interface plus nette et plus contemporaine'}.
       </p>
     </div>
-  </div>
+  </section>
 
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <!-- Filters -->
-    <div class="mb-8 flex flex-wrap gap-2">
-      <button onclick="go('/voyages')"
-              class="px-4 py-2 rounded-full font-bold text-sm border-2 transition-all ${!folderSlug ? 'bg-sky-500 text-white border-sky-500 shadow-md' : 'bg-white text-stone-600 border-stone-200 hover:border-sky-300 hover:text-sky-600'}">
-        🌍 Tous
-      </button>
-      ${roots().map(f => `
-        <button onclick="go('/voyages/${f.slug}')"
-                class="px-4 py-2 rounded-full font-bold text-sm border-2 transition-all ${folderSlug===f.slug ? 'bg-sky-500 text-white border-sky-500 shadow-md' : 'bg-white text-stone-600 border-stone-200 hover:border-sky-300 hover:text-sky-600'}">
-          ${f.icon} ${f.name}
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+    <div class="section-panel rounded-[2rem] p-4 sm:p-5 mb-8">
+      <div class="flex flex-wrap gap-2">
+        <button onclick="go('/voyages')"
+                class="px-4 py-2 rounded-full font-bold text-sm border transition-all ${!folderSlug ? 'bg-white/10 text-white border-white/10 shadow-md' : 'bg-transparent text-slate-400 border-white/10 hover:border-cyan-300/30 hover:text-cyan-300'}">
+          Tous
         </button>
-        ${children(f.id).map(c => `
-          <button onclick="go('/voyages/${c.slug}')"
-                  class="pl-5 pr-4 py-2 rounded-full font-semibold text-xs border-2 transition-all ${folderSlug===c.slug ? 'bg-orange-500 text-white border-orange-500 shadow-md' : 'bg-white text-stone-500 border-stone-200 hover:border-orange-300 hover:text-orange-600'}">
-            ↳ ${c.icon} ${c.name}
-          </button>`).join('')}`).join('')}
+        ${roots().map(f => `
+          <button onclick="go('/voyages/${f.slug}')"
+                  class="px-4 py-2 rounded-full font-bold text-sm border transition-all ${folderSlug===f.slug ? 'bg-white/10 text-white border-white/10 shadow-md' : 'bg-transparent text-slate-400 border-white/10 hover:border-cyan-300/30 hover:text-cyan-300'}">
+            ${f.icon} ${f.name}
+          </button>
+          ${children(f.id).map(c => `
+            <button onclick="go('/voyages/${c.slug}')"
+                    class="pl-5 pr-4 py-2 rounded-full font-semibold text-xs border transition-all ${folderSlug===c.slug ? 'bg-cyan-500/10 text-cyan-200 border-cyan-400/20 shadow-md' : 'bg-transparent text-slate-500 border-white/10 hover:border-cyan-300/30 hover:text-cyan-300'}">
+              ${c.icon} ${c.name}
+            </button>`).join('')}`).join('')}
+      </div>
     </div>
 
-    <!-- Grid -->
     ${arts.length ? `
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">${arts.map(card).join('')}</div>
     ` : `
-      <div class="text-center py-24 text-stone-400">
-        <span class="text-6xl block mb-4">🗺️</span>
-        <p class="text-xl font-semibold mb-1">Pas encore de voyage ici</p>
-        <p class="text-sm">Revenez bientôt, les aventures sont en cours !</p>
+      <div class="section-panel rounded-[2rem] text-center py-24 text-slate-400">
+        <p class="text-xl font-semibold mb-2 text-white">Aucun récit dans cette collection</p>
+        <p class="text-sm">Revenez bientôt, de nouvelles destinations arrivent.</p>
       </div>`}
   </div>`;
 }
@@ -821,11 +1046,11 @@ function pgVoyage(app, slug) {
   if (!a || (a.status !== 'published' && !S.admin)) {
     app.innerHTML = `
     <div class="max-w-2xl mx-auto px-4 py-32 text-center">
-      <span class="text-6xl block mb-6">🗺️</span>
-      <h1 class="font-display text-3xl font-bold text-stone-900 mb-4">Voyage introuvable</h1>
-      <p class="text-stone-500 mb-8">Ce voyage n'existe pas ou n'est pas encore publié.</p>
-      <a href="#/voyages" onclick="go('/voyages')"
-         class="bg-sky-500 text-white font-bold px-6 py-3 rounded-2xl hover:bg-sky-600 transition-colors">← Retour aux voyages</a>
+      <div class="section-panel rounded-[2rem] px-6 py-12">
+        <h1 class="font-display text-3xl font-bold text-white mb-4">Voyage introuvable</h1>
+        <p class="text-slate-400 mb-8">Ce récit n'existe pas ou n'est pas encore publié.</p>
+        <a href="#/voyages" onclick="go('/voyages')" class="action-btn-sm">Retour aux voyages</a>
+      </div>
     </div>`;
     return;
   }
@@ -833,47 +1058,41 @@ function pgVoyage(app, slug) {
   window._lbPhotos = a.photos || [];
 
   app.innerHTML = `
-  <!-- Hero image -->
-  <div class="relative h-[52vh] sm:h-[68vh] overflow-hidden">
+  <div class="relative h-[56vh] sm:h-[72vh] overflow-hidden">
     <img src="${a.cover}" alt="${esc(a.title)}" class="w-full h-full object-cover"
-         onerror="this.style.background='linear-gradient(135deg,#0EA5E9,#10B981)'">
-    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+         onerror="this.style.background='linear-gradient(135deg,#22d3ee,#8b5cf6)'">
+    <div class="absolute inset-0 bg-gradient-to-t from-[#050816] via-[#050816]/35 to-transparent"></div>
     <a href="#/voyages" onclick="go('/voyages')"
-       class="absolute top-5 left-5 flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white font-semibold px-4 py-2 rounded-full hover:bg-white/35 transition-all border border-white/30 text-sm">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+       class="absolute top-5 left-5 flex items-center gap-2 glass-panel text-white font-semibold px-4 py-2 rounded-full hover:bg-white/10 transition-all text-sm border border-white/10">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M15 19l-7-7 7-7"/></svg>
       Retour
     </a>
     <div class="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
-      <div class="max-w-4xl mx-auto">
-        ${f ? `<div class="mb-3"><span class="bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/30">${f.icon} ${f.name}</span></div>` : ''}
-        <h1 class="font-display text-3xl sm:text-5xl font-bold text-white drop-shadow-lg mb-3 leading-tight">${esc(a.title)}</h1>
-        <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-white/80 text-sm font-medium">
-          <span>📅 ${fmtDate(a.date)}</span>
-          <span>📍 ${a.destination}</span>
-          <span>📷 ${a.photos?.length||0} photos</span>
-          ${a.status==='draft' ? '<span class="badge-draft px-2 py-0.5 rounded-full text-xs font-bold">📝 Brouillon</span>' : ''}
+      <div class="max-w-5xl mx-auto">
+        ${f ? `<div class="mb-4"><span class="glass-panel text-slate-100 text-xs font-bold px-3 py-1.5 rounded-full border border-white/10">${f.icon} ${f.name}</span></div>` : ''}
+        <h1 class="font-display text-3xl sm:text-5xl lg:text-6xl font-bold text-white drop-shadow-lg mb-4 leading-tight max-w-4xl">${esc(a.title)}</h1>
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-slate-300 text-sm font-medium uppercase tracking-[0.15em]">
+          <span>${fmtDate(a.date)}</span>
+          <span>${a.destination}</span>
+          <span>${a.photos?.length||0} photos</span>
+          ${a.status==='draft' ? '<span class="badge-draft px-2.5 py-1 rounded-full text-xs font-bold">Brouillon</span>' : ''}
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Content -->
-  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-
-    <!-- Lead / short description -->
-    <div class="bg-gradient-to-r from-sky-50 to-orange-50 border-l-4 border-sky-500 rounded-r-2xl p-5 sm:p-6 mb-10">
-      <p class="text-stone-700 text-base sm:text-lg leading-relaxed font-medium italic">"${esc(a.short_description)}"</p>
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="section-panel rounded-[2rem] p-6 sm:p-8 mb-10 border border-white/10">
+      <p class="text-slate-200 text-base sm:text-lg leading-relaxed font-medium italic">${esc(a.short_description)}</p>
     </div>
 
-    <!-- Markdown body -->
-    <div class="prose-vacation text-stone-700 text-base sm:text-lg leading-relaxed mb-12">
+    <div class="prose-vacation text-base sm:text-lg leading-relaxed mb-12">
       ${marked.parse(a.content || '')}
     </div>
 
-    <!-- Photo gallery -->
     ${a.photos && a.photos.length ? `
     <div class="mb-12">
-      <h2 class="font-display text-2xl font-bold text-stone-900 mb-5">📸 Galerie photos</h2>
+      <h2 class="font-display text-2xl font-bold text-white mb-5">Galerie</h2>
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
         ${a.photos.map((p,i) => `
           <div class="relative aspect-square overflow-hidden rounded-2xl photo-thumb group"
@@ -886,17 +1105,13 @@ function pgVoyage(app, slug) {
       </div>
     </div>` : ''}
 
-    <!-- Bottom nav -->
-    <div class="border-t border-stone-200 pt-8 flex items-center justify-between">
+    <div class="border-t border-white/10 pt-8 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
       <a href="#/voyages" onclick="go('/voyages')"
-         class="flex items-center gap-2 text-stone-500 hover:text-sky-600 font-semibold transition-colors text-sm">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-        Tous les voyages
+         class="flex items-center gap-2 text-slate-400 hover:text-cyan-300 font-semibold transition-colors text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M15 19l-7-7 7-7"/></svg>
+        Toute la collection
       </a>
-      <button onclick="shareVoyage()"
-              class="flex items-center gap-2 bg-sky-50 text-sky-700 font-bold px-4 py-2.5 rounded-xl hover:bg-sky-100 transition-colors text-sm">
-        📤 Partager
-      </button>
+      <button onclick="shareVoyage()" class="subtle-btn w-fit">Partager ce voyage</button>
     </div>
   </div>`;
 }
@@ -905,7 +1120,7 @@ function shareVoyage() {
   if (navigator.share) {
     navigator.share({ title: document.title, url: location.href }).catch(()=>{});
   } else {
-    navigator.clipboard.writeText(location.href).then(() => toast('Lien copié !','ok'));
+    navigator.clipboard.writeText(location.href).then(() => toast('Lien copié.','ok'));
   }
 }
 
@@ -914,30 +1129,27 @@ function shareVoyage() {
 // ──────────────────────────────────────────────
 function pgLogin(app) {
   app.innerHTML = `
-  <div class="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-orange-50 px-4 py-12">
+  <div class="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-md">
-      <div class="text-center mb-8">
-        <span class="text-6xl block mb-4">🔐</span>
-        <h1 class="font-display text-3xl font-bold text-stone-900">Espace Admin</h1>
-        <p class="text-stone-500 mt-2 text-sm">Connexion réservée à la famille Potet</p>
-      </div>
-      <div class="bg-white rounded-3xl shadow-xl p-8 border border-stone-100">
+      <div class="glass-panel rounded-[2rem] p-8 sm:p-10 border border-white/10 shadow-2xl">
+        <div class="mb-8">
+          <div class="eyebrow mb-5">Studio privé</div>
+          <h1 class="font-display text-3xl font-bold text-white">Espace admin</h1>
+          <p class="text-slate-400 mt-3 text-sm leading-relaxed">Accès de démonstration pour explorer l'interface d'édition et la gestion des récits.</p>
+        </div>
         <form onsubmit="doLogin(event)">
           <div class="mb-6">
-            <label class="block text-sm font-bold text-stone-700 mb-2">Mot de passe</label>
+            <label class="block text-sm font-bold text-slate-300 mb-2">Mot de passe</label>
             <input type="password" id="login-pw" placeholder="••••••••"
-                   class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-medium"
+                   class="w-full border-2 rounded-2xl px-4 py-3 focus:outline-none transition-colors font-medium"
                    required autofocus>
-            <p class="text-xs text-stone-400 mt-2">🎮 Démo : tapez n'importe quel mot de passe</p>
+            <p class="text-xs text-slate-500 mt-2">Démo : n'importe quel mot de passe fonctionne.</p>
           </div>
-          <button type="submit"
-                  class="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-3.5 rounded-2xl hover:shadow-lg hover:scale-[1.02] transition-all text-base">
-            Se connecter ✨
-          </button>
+          <button type="submit" class="w-full action-btn-sm justify-center">Entrer dans le studio</button>
         </form>
       </div>
-      <p class="text-center text-stone-400 text-sm mt-6">
-        <a href="#/" onclick="go('/')" class="hover:text-sky-600 transition-colors">← Retour au blog</a>
+      <p class="text-center text-slate-500 text-sm mt-6">
+        <a href="#/" onclick="go('/')" class="hover:text-cyan-300 transition-colors">Retour au site</a>
       </p>
     </div>
   </div>`;
@@ -945,7 +1157,7 @@ function pgLogin(app) {
 function doLogin(e) {
   e.preventDefault();
   S.admin = true;
-  toast('Bienvenue dans l\'admin 👋','ok');
+  toast('Bienvenue dans le studio.','ok');
   go('/admin/dashboard');
 }
 
@@ -954,55 +1166,46 @@ function doLogin(e) {
 // ──────────────────────────────────────────────
 function pgDashboard(app) {
   app.innerHTML = `
-  <!-- Admin top bar -->
-  <div class="bg-gradient-to-r from-stone-900 to-stone-800 text-white py-5 px-4 sm:px-6">
-    <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <span class="text-2xl">⚙️</span>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-8">
+    <div class="section-panel rounded-[2rem] px-6 py-6 sm:px-8 sm:py-7 mb-8">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
         <div>
-          <h1 class="font-bold text-white text-lg leading-none">Interface Admin</h1>
-          <p class="text-stone-400 text-xs mt-0.5">Blog famille Potet</p>
+          <div class="eyebrow mb-4">Studio éditorial</div>
+          <h1 class="font-display text-3xl text-white">Interface admin</h1>
+          <p class="text-slate-400 mt-2 text-sm">Pilotage des récits, des collections et de la démonstration publique.</p>
         </div>
-      </div>
-      <div class="flex items-center gap-3">
-        <a href="#/" onclick="go('/')" class="text-stone-400 hover:text-white text-sm font-medium transition-colors">Voir le blog →</a>
-        <button onclick="doLogout()" class="bg-red-500/20 text-red-400 hover:bg-red-500/30 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">Déconnexion</button>
+        <div class="flex items-center gap-3">
+          <a href="#/" onclick="go('/')" class="subtle-btn">Voir le site</a>
+          <button onclick="doLogout()" class="px-4 py-2 rounded-full border border-white/10 text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-sm">Déconnexion</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-
-      <!-- SIDEBAR: folder tree + stats -->
       <aside class="lg:col-span-1 space-y-5">
-        <div class="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-100">
-            <h2 class="font-bold text-stone-700 text-sm">📁 Dossiers</h2>
-            <button onclick="openFolderModal(null)" class="text-sky-600 hover:text-sky-700 text-sm font-bold transition-colors">+ Nouveau</button>
+        <div class="section-panel rounded-[2rem] overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-white/10">
+            <h2 class="font-bold text-white text-sm uppercase tracking-[0.18em]">Collections</h2>
+            <button onclick="openFolderModal(null)" class="text-cyan-300 hover:text-cyan-200 text-sm font-bold transition-colors">Ajouter</button>
           </div>
-          <div class="p-2 max-h-80 overflow-y-auto" id="folder-tree">${folderTree(null)}</div>
+          <div class="p-3 max-h-80 overflow-y-auto" id="folder-tree">${folderTree(null)}</div>
         </div>
         <div class="grid grid-cols-2 gap-3">
-          <div class="bg-emerald-50 rounded-2xl p-4 text-center border border-emerald-100">
-            <div class="text-2xl font-black text-emerald-600">${articles.filter(a=>a.status==='published').length}</div>
-            <div class="text-xs font-bold text-emerald-700 mt-1">Publiés</div>
+          <div class="metric-card rounded-2xl p-4 text-center">
+            <div class="text-2xl font-black text-cyan-300">${articles.filter(a=>a.status==='published').length}</div>
+            <div class="text-xs font-bold text-slate-400 mt-1 uppercase tracking-[0.16em]">Publiés</div>
           </div>
-          <div class="bg-amber-50 rounded-2xl p-4 text-center border border-amber-100">
-            <div class="text-2xl font-black text-amber-600">${articles.filter(a=>a.status==='draft').length}</div>
-            <div class="text-xs font-bold text-amber-700 mt-1">Brouillons</div>
+          <div class="metric-card rounded-2xl p-4 text-center">
+            <div class="text-2xl font-black text-violet-300">${articles.filter(a=>a.status==='draft').length}</div>
+            <div class="text-xs font-bold text-slate-400 mt-1 uppercase tracking-[0.16em]">Brouillons</div>
           </div>
         </div>
       </aside>
 
-      <!-- MAIN: articles list -->
       <main class="lg:col-span-3">
         <div class="flex items-center justify-between mb-6">
-          <h2 class="font-display text-2xl font-bold text-stone-900">Tous les articles</h2>
-          <a href="#/admin/editor" onclick="go('/admin/editor')"
-             class="flex items-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold px-5 py-2.5 rounded-2xl hover:shadow-lg hover:scale-105 transition-all text-sm">
-            ✍️ Nouvel article
-          </a>
+          <h2 class="font-display text-2xl font-bold text-white">Tous les articles</h2>
+          <a href="#/admin/editor" onclick="go('/admin/editor')" class="action-btn-sm">Créer un article</a>
         </div>
         <div class="space-y-3" id="articles-list">
           ${articles.map(adminRow).join('')}
@@ -1037,34 +1240,34 @@ function adminRow(a) {
   const f = byId(a.folder_id);
   const isPub = a.status === 'published';
   return `
-  <div class="bg-white rounded-2xl border border-stone-100 p-4 flex items-center gap-4 hover:shadow-md transition-shadow group">
-    <img src="${a.cover}" alt="${esc(a.title)}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover flex-shrink-0"
+  <div class="section-panel rounded-[1.75rem] p-4 flex flex-col sm:flex-row sm:items-center gap-4 group">
+    <img src="${a.cover}" alt="${esc(a.title)}" class="w-full sm:w-20 h-44 sm:h-20 rounded-2xl object-cover flex-shrink-0"
          onerror="this.src='https://picsum.photos/seed/${a.id}y/200/200'">
     <div class="flex-1 min-w-0">
-      <div class="flex items-start justify-between gap-2 mb-1">
-        <h3 class="font-bold text-stone-900 text-sm sm:text-base truncate">${esc(a.title)}</h3>
+      <div class="flex items-start justify-between gap-2 mb-2">
+        <h3 class="font-bold text-white text-base truncate">${esc(a.title)}</h3>
         <span class="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${isPub?'badge-published':'badge-draft'}">
-          ${isPub ? '✅ Publié' : '📝 Brouillon'}
+          ${isPub ? 'Publié' : 'Brouillon'}
         </span>
       </div>
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-400">
-        <span>📅 ${fmtDate(a.date)}</span>
-        <span>📍 ${a.destination}</span>
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 uppercase tracking-[0.12em]">
+        <span>${fmtDate(a.date)}</span>
+        <span>${a.destination}</span>
         ${f ? `<span>${f.icon} ${f.name}</span>` : ''}
-        <span>📷 ${a.photos?.length||0}</span>
+        <span>${a.photos?.length||0} photos</span>
       </div>
     </div>
-    <div class="flex flex-col sm:flex-row items-center gap-1 flex-shrink-0">
+    <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
       <button onclick="toggleStatus(${a.id})" title="${isPub?'Dépublier':'Publier'}"
-              class="p-2 rounded-xl text-stone-400 hover:text-${isPub?'amber':'emerald'}-600 hover:bg-${isPub?'amber':'emerald'}-50 transition-all text-base" title="${isPub?'Dépublier':'Publier'}">
-        ${isPub ? '🔒' : '🚀'}
+              class="px-3 py-2 rounded-full border border-white/10 text-slate-300 hover:text-cyan-200 hover:bg-white/5 transition-all text-xs font-semibold">
+        ${isPub ? 'Dépublier' : 'Publier'}
       </button>
       <a href="#/admin/editor/${a.id}" onclick="go('/admin/editor/${a.id}')"
-         class="p-2 rounded-xl text-stone-400 hover:text-sky-600 hover:bg-sky-50 transition-all text-base">✏️</a>
+         class="px-3 py-2 rounded-full border border-white/10 text-slate-300 hover:text-white hover:bg-white/5 transition-all text-xs font-semibold">Éditer</a>
       <a href="#/voyage/${a.slug}" onclick="go('/voyage/${a.slug}')"
-         class="p-2 rounded-xl text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all text-base">👁️</a>
+         class="px-3 py-2 rounded-full border border-white/10 text-slate-300 hover:text-white hover:bg-white/5 transition-all text-xs font-semibold">Voir</a>
       <button onclick="rmArticle(${a.id})"
-              class="p-2 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 text-base">🗑️</button>
+              class="px-3 py-2 rounded-full border border-white/10 text-slate-500 hover:text-red-300 hover:bg-white/5 transition-all opacity-100 sm:opacity-0 group-hover:opacity-100 text-xs font-semibold">Supprimer</button>
     </div>
   </div>`;
 }
@@ -1072,7 +1275,7 @@ function adminRow(a) {
 function toggleStatus(id) {
   const a = articles.find(x=>x.id===id); if(!a) return;
   a.status = a.status==='published' ? 'draft' : 'published';
-  toast(a.status==='published' ? '🚀 Article publié !' : '📝 Mis en brouillon','ok');
+  toast(a.status==='published' ? 'Article publié.' : 'Article repassé en brouillon.','ok');
   pgDashboard(document.getElementById('app'));
 }
 function rmArticle(id) {
@@ -1103,7 +1306,7 @@ function doAddFolder() {
   if (!name) { toast('Nom requis','err'); return; }
   folders.push({ id: Math.max(0,...folders.map(f=>f.id))+1, name, slug:slugify(name), parent_id:S.folderModalParent, icon });
   closeFolderModal();
-  toast(`Dossier "${name}" créé !`,'ok');
+  toast(`Dossier "${name}" créé.`, 'ok');
   pgDashboard(document.getElementById('app'));
 }
 function rmFolder(id) {
@@ -1136,8 +1339,8 @@ function pgEditor(app, articleId) {
         <h1 class="font-bold text-white text-sm truncate">${isEdit ? `Modifier : ${esc(src.title)}` : 'Nouvel article'}</h1>
       </div>
       <div class="flex items-center gap-2 flex-shrink-0">
-        <button onclick="saveArticle(false)" class="bg-stone-700 hover:bg-stone-600 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors">💾 Brouillon</button>
-        <button onclick="saveArticle(true)" class="bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold px-4 py-2 rounded-xl text-sm hover:shadow-lg hover:scale-105 transition-all">🚀 Publier</button>
+        <button onclick="saveArticle(false)" class="px-4 py-2 rounded-full border border-white/10 text-slate-200 hover:bg-white/5 font-semibold text-sm transition-colors">Enregistrer</button>
+        <button onclick="saveArticle(true)" class="action-btn-sm">Publier</button>
       </div>
     </div>
   </div>
@@ -1151,7 +1354,7 @@ function pgEditor(app, articleId) {
         <!-- Title -->
         <div>
           <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide">Titre *</label>
-          <input type="text" id="e-title" value="${esc(S.editing.title)}" placeholder="Ex: Notre été à Santorin 🌊"
+          <input type="text" id="e-title" value="${esc(S.editing.title)}" placeholder="Ex: Notre été à Santorin"
                  class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-bold text-lg text-stone-800">
         </div>
 
@@ -1168,9 +1371,9 @@ function pgEditor(app, articleId) {
             <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Contenu (Markdown)</label>
             <div class="flex items-center gap-1 bg-stone-100 rounded-xl p-1">
               <button id="tab-write" onclick="edTab('write')"
-                      class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800">✏️ Écrire</button>
+                      class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800">Rédaction</button>
               <button id="tab-prev" onclick="edTab('preview')"
-                      class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700">👁️ Aperçu</button>
+                      class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700">Aperçu</button>
             </div>
           </div>
 
@@ -1194,15 +1397,22 @@ function pgEditor(app, articleId) {
         <div>
           <div class="flex items-center justify-between mb-2">
             <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Photos</label>
-            <p class="text-xs text-sky-600 font-semibold">💡 Survolez une photo et cliquez <strong>📎 Insérer</strong> pour l'ajouter dans le texte</p>
+            <p class="text-xs text-slate-400 font-semibold">Survolez une photo puis cliquez sur <strong>Insérer</strong> pour l'ajouter au texte.</p>
           </div>
-          <div id="dropzone"
-               class="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
-               onclick="document.getElementById('file-in').click()"
-               ondragover="event.preventDefault();this.classList.add('border-sky-400','bg-sky-50')"
-               ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
-               ondrop="handleDrop(event)">
-            <span class="text-4xl block mb-2">📸</span>
+          <div id="dropzone" role="button" tabindex="0" aria-label="Glissez vos photos ici ou cliquez pour sélectionner"
+                class="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
+                onclick="document.getElementById('file-in').click()"
+                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('file-in').click()}"
+                ondragover="event.preventDefault();this.classList.add('border-sky-400','bg-sky-50')"
+                ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
+                ondrop="handleDrop(event)">
+            <span class="flex justify-center mb-3 text-cyan-300">
+              <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M3 8.75A2.75 2.75 0 0 1 5.75 6h12.5A2.75 2.75 0 0 1 21 8.75v6.5A2.75 2.75 0 0 1 18.25 18H5.75A2.75 2.75 0 0 1 3 15.25z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="m7.5 14.5 2.4-2.4a1 1 0 0 1 1.4 0l1.7 1.7 2.2-2.2a1 1 0 0 1 1.4 0l1.9 1.9"/>
+                <circle cx="9" cy="9.5" r="1.2" fill="currentColor" stroke="none"/>
+              </svg>
+            </span>
             <p class="text-stone-600 font-semibold text-sm">Glissez vos photos ici</p>
             <p class="text-stone-400 text-xs mt-1">ou cliquez pour sélectionner · JPG, PNG, WebP</p>
             <input type="file" id="file-in" accept="image/*" multiple class="hidden" onchange="handleFiles(this.files)">
@@ -1218,19 +1428,19 @@ function pgEditor(app, articleId) {
 
         <!-- Status -->
         <div class="bg-white rounded-2xl border border-stone-100 p-5 shadow-sm">
-          <h3 class="font-bold text-stone-700 mb-4 text-sm">📊 Statut de publication</h3>
+          <h3 class="font-bold text-stone-700 mb-4 text-sm uppercase tracking-[0.18em]">Statut de publication</h3>
           <div class="space-y-2">
             <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
               <input type="radio" name="pub-status" value="draft" ${S.editing.status==='draft'?'checked':''} class="w-4 h-4 accent-amber-500">
               <div>
-                <div class="font-semibold text-stone-700 text-sm">📝 Brouillon</div>
+                <div class="font-semibold text-stone-700 text-sm">Brouillon</div>
                 <div class="text-xs text-stone-400">Visible uniquement par l'admin</div>
               </div>
             </label>
             <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
               <input type="radio" name="pub-status" value="published" ${S.editing.status==='published'?'checked':''} class="w-4 h-4 accent-emerald-500">
               <div>
-                <div class="font-semibold text-stone-700 text-sm">✅ Publié</div>
+                <div class="font-semibold text-stone-700 text-sm">Publié</div>
                 <div class="text-xs text-stone-400">Visible par tous les visiteurs</div>
               </div>
             </label>
@@ -1239,20 +1449,20 @@ function pgEditor(app, articleId) {
 
         <!-- Meta -->
         <div class="bg-white rounded-2xl border border-stone-100 p-5 shadow-sm">
-          <h3 class="font-bold text-stone-700 mb-4 text-sm">📋 Informations</h3>
+          <h3 class="font-bold text-stone-700 mb-4 text-sm uppercase tracking-[0.18em]">Informations</h3>
           <div class="space-y-4">
             <div>
-              <label class="block text-xs font-bold text-stone-500 mb-1.5">📅 Date du voyage</label>
+              <label class="block text-xs font-bold text-stone-500 mb-1.5">Date du voyage</label>
               <input type="date" id="e-date" value="${S.editing.date}"
                      class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
             </div>
             <div>
-              <label class="block text-xs font-bold text-stone-500 mb-1.5">📍 Destination</label>
+              <label class="block text-xs font-bold text-stone-500 mb-1.5">Destination</label>
               <input type="text" id="e-dest" value="${esc(S.editing.destination)}" placeholder="Ex: Paris, France"
                      class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
             </div>
             <div>
-              <label class="block text-xs font-bold text-stone-500 mb-1.5">📁 Dossier</label>
+              <label class="block text-xs font-bold text-stone-500 mb-1.5">Dossier</label>
               <select id="e-folder" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
                 <option value="">Aucun dossier</option>
                 ${folderOpts(null, S.editing.folder_id)}
@@ -1263,7 +1473,7 @@ function pgEditor(app, articleId) {
 
         <!-- Cover photo URL -->
         <div class="bg-white rounded-2xl border border-stone-100 p-5 shadow-sm">
-          <h3 class="font-bold text-stone-700 mb-3 text-sm">🖼️ Photo de couverture</h3>
+          <h3 class="font-bold text-stone-700 mb-3 text-sm uppercase tracking-[0.18em]">Photo de couverture</h3>
           <input type="text" id="e-cover" value="${esc(S.editing.cover||'')}" placeholder="URL de l'image..."
                  class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-xs mb-3"
                  oninput="previewCover(this.value)">
@@ -1275,8 +1485,8 @@ function pgEditor(app, articleId) {
         <!-- Danger zone -->
         ${isEdit ? `
         <div class="bg-red-50 rounded-2xl border border-red-100 p-5">
-          <h3 class="font-bold text-red-700 mb-3 text-sm">⚠️ Zone danger</h3>
-          <button onclick="rmArticle(${articleId})" class="w-full bg-red-500 text-white font-bold py-2.5 rounded-xl hover:bg-red-600 transition-colors text-sm">🗑️ Supprimer l'article</button>
+          <h3 class="font-bold text-red-700 mb-3 text-sm uppercase tracking-[0.18em]">Zone critique</h3>
+          <button onclick="rmArticle(${articleId})" class="w-full bg-red-500 text-white font-bold py-2.5 rounded-xl hover:bg-red-600 transition-colors text-sm">Supprimer l'article</button>
         </div>` : ''}
       </aside>
     </div>
@@ -1297,9 +1507,9 @@ function photoThumb(p, i) {
     <img src="${p.url}" alt="${esc(p.caption||'')}" class="w-full h-full object-cover">
     <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
       <button onclick="insertPhotoInText('${p.url}','${esc(p.caption||'photo')}')"
-              class="bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">📎 Insérer</button>
+              class="bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">Insérer</button>
       <button onclick="rmPhoto(${i})"
-              class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">🗑️ Supprimer</button>
+              class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">Supprimer</button>
     </div>
   </div>`;
 }
@@ -1335,7 +1545,7 @@ function insertPhotoInText(url, caption) {
   const s = ta.selectionStart;
   ta.value = ta.value.slice(0,s) + md + ta.value.slice(ta.selectionEnd);
   ta.focus(); ta.setSelectionRange(s+md.length, s+md.length);
-  toast('📎 Photo insérée dans le texte','ok');
+  toast('Photo insérée dans le texte.','ok');
 }
 
 function previewCover(url) {
@@ -1383,10 +1593,10 @@ function saveArticle(publish) {
   if (S.editing.id) {
     const i = articles.findIndex(a=>a.id===S.editing.id);
     if (i!==-1) articles[i] = { ...articles[i], ...data };
-    toast('Article mis à jour ' + (publish?'🚀':'💾'),'ok');
+    toast('Article mis à jour' + (publish ? ' et publié.' : '.'), 'ok');
   } else {
     articles.push({ id:Math.max(0,...articles.map(a=>a.id))+1, slug:slugify(title), ...data });
-    toast('Article créé ' + (publish?'🚀':'💾'),'ok');
+    toast('Article créé' + (publish ? ' et publié.' : '.'), 'ok');
   }
   go('/admin/dashboard');
 }
