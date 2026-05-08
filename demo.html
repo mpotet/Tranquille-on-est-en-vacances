@@ -1694,6 +1694,7 @@ function editorNode() {
   return document.getElementById('e-content');
 }
 function setupEditorFloatingToolbar() {
+  // Delay to let focus move from editor to toolbar buttons before hiding the floating bar.
   const BLUR_DEBOUNCE_MS = 100;
   const editor = editorNode();
   const shell = document.getElementById('editor-shell');
@@ -1707,8 +1708,8 @@ function setupEditorFloatingToolbar() {
       return;
     }
     const vv = window.visualViewport;
-    // approximation de la hauteur de clavier visible (zone masquée en bas du viewport).
-    const overlap = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+    // Approximation of visible keyboard height (area hidden at bottom of viewport).
+    const overlap = vv ? Math.max(0, window.innerHeight - vv.height) : 0;
     document.documentElement.style.setProperty('--editor-kb-offset', `${overlap}px`);
   };
   const showToolbar = () => {
