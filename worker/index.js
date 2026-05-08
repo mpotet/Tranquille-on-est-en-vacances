@@ -57,12 +57,6 @@ function fmtDateRange(a){
   if (!s) return 'Dates non définies';
   return s === e ? fmtDate(s) : fmtDate(s)+' → '+fmtDate(e);
 }
-function fmtDateRange(a){
-  const s = a.start_date || a.date;
-  const e = a.end_date || a.date;
-  if (!s) return 'Dates non définies';
-  return s === e ? fmtDate(s) : fmtDate(s)+' → '+fmtDate(e);
-}
 function card(a){return \`<article class="voyage-card bg-white rounded-3xl overflow-hidden shadow-md cursor-pointer" onclick="location.href='/voyage/\${a.slug}'">
   <div class="relative h-52 overflow-hidden"><img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy" onerror="this.src='https://picsum.photos/seed/\${a.id}x/800/600'">
   <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
