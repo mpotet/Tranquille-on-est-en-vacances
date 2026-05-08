@@ -603,7 +603,7 @@ const BRAND_CONTEXT = {
   title: 'Tranquille,',
   subtitle: 'on est en vacances',
 };
-let detachEditorFloatingToolbar = null;
+let editorFloatingToolbarCleanup = null;
 
 function applyBrandContext() {
   document.querySelectorAll('[data-brand-logo],[data-brand-title],[data-brand-subtitle]').forEach((el) => {
@@ -904,9 +904,9 @@ function go(path, e) {
   location.hash = '#' + path;
 }
 function route() {
-  if (typeof detachEditorFloatingToolbar === 'function') {
-    detachEditorFloatingToolbar();
-    detachEditorFloatingToolbar = null;
+  if (typeof editorFloatingToolbarCleanup === 'function') {
+    editorFloatingToolbarCleanup();
+    editorFloatingToolbarCleanup = null;
   }
   const hash = location.hash.slice(1) || '/';
   const parts = hash.split('/').filter(Boolean);
@@ -1694,6 +1694,7 @@ function editorNode() {
   return document.getElementById('e-content');
 }
 function setupEditorFloatingToolbar() {
+  const BLUR_DEBOUNCE_MS = 40;
   const editor = editorNode();
   const shell = document.getElementById('editor-shell');
   const toolbar = document.getElementById('editor-toolbar');
@@ -1706,6 +1707,7 @@ function setupEditorFloatingToolbar() {
       return;
     }
     const vv = window.visualViewport;
+    // Approximation de la hauteur de clavier visible (zone masquée en bas du viewport).
     const overlap = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
     document.documentElement.style.setProperty('--editor-kb-offset', `${overlap}px`);
   };
@@ -1723,7 +1725,7 @@ function setupEditorFloatingToolbar() {
       const active = document.activeElement;
       if (active === editor || toolbar.contains(active)) return;
       hideToolbar();
-    }, 40);
+    }, BLUR_DEBOUNCE_MS);
   };
   const onToolbarPointerDown = () => editor.focus();
 
@@ -1737,7 +1739,7 @@ function setupEditorFloatingToolbar() {
   }
   setKeyboardOffset();
 
-  detachEditorFloatingToolbar = () => {
+  editorFloatingToolbarCleanup = () => {
     editor.removeEventListener('focus', showToolbar);
     editor.removeEventListener('blur', onBlur);
     toolbar.removeEventListener('pointerdown', onToolbarPointerDown);
