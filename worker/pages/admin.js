@@ -334,7 +334,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
       <!-- Save buttons (mobile) -->
       <div class="flex gap-3 lg:hidden">
         <button onclick="saveArticle(false)" class="flex-1 bg-stone-200 text-stone-800 font-bold py-3 rounded-2xl hover:bg-stone-300 transition-colors">💾 Brouillon</button>
-        <button onclick="saveArticle(true)" class="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3 rounded-2xl hover:shadow-lg transition-all">🚀 Publier</button>
+        <button onclick="saveArticle(true)" class="flex-1 action-btn text-white font-bold py-3 rounded-2xl transition-all">🚀 Publier</button>
       </div>
     </div>
 
@@ -343,7 +343,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
 
       <!-- Save buttons (desktop) -->
       <div class="hidden lg:flex flex-col gap-3">
-        <button onclick="saveArticle(true)" class="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3 rounded-2xl hover:shadow-lg hover:scale-[1.02] transition-all">🚀 Publier</button>
+        <button onclick="saveArticle(true)" class="w-full action-btn text-white font-bold py-3 rounded-2xl transition-all">🚀 Publier</button>
         <button onclick="saveArticle(false)" class="w-full bg-stone-200 text-stone-800 font-bold py-2.5 rounded-2xl hover:bg-stone-300 transition-colors text-sm">💾 Sauvegarder en brouillon</button>
       </div>
 
