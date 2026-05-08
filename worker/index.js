@@ -122,7 +122,7 @@ async function init(){
   const renderedContent = renderVoyageContent(a.content || '', photos);
   document.getElementById('main').innerHTML = \`
   <div class="relative h-[52vh] sm:h-[68vh] overflow-hidden">
-    <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover" onerror="this.style.background='linear-gradient(135deg,#0EA5E9,#10B981)'">
+    <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover" onerror="this.style.background='linear-gradient(135deg,#6050DC,#2F7A59)'">
     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
     <a href="/voyages" class="absolute top-5 left-5 flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white font-semibold px-4 py-2 rounded-full hover:bg-white/35 transition-all border border-white/30 text-sm">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Retour
