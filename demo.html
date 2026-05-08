@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Le blog de voyage de la famille Potet — Des aventures, des découvertes, des souvenirs à partager.">
+  <title>Tranquille, on est en vacances 🌴</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,600&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap" rel="stylesheet">
+
+  <!-- Marked.js for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            display: ['"Playfair Display"', 'Georgia', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    html { scroll-behavior: smooth; }
+
+    /* Hero gradient overlay */
+    .hero-overlay {
+      background: linear-gradient(160deg, rgba(14,165,233,0.65) 0%, rgba(249,115,22,0.45) 100%);
+    }
+
+    /* Card lift on hover */
+    .voyage-card {
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+    }
+    .voyage-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 24px 48px rgba(0,0,0,0.13);
+    }
+
+    /* Gradient text */
+    .gradient-text {
+      background: linear-gradient(135deg, #0EA5E9, #F97316);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Photo gallery hover */
+    .photo-thumb { transition: transform 0.2s ease, opacity 0.2s ease; cursor: pointer; }
+    .photo-thumb:hover { transform: scale(1.05); opacity: 0.9; }
+
+    /* Prose / Markdown styles */
+    .prose-vacation h1, .prose-vacation h2, .prose-vacation h3 {
+      font-family: 'Playfair Display', Georgia, serif;
+      color: #0C4A6E;
+    }
+    .prose-vacation h1 { font-size: 2rem; margin: 2rem 0 1rem; font-weight: 800; }
+    .prose-vacation h2 { font-size: 1.6rem; margin: 1.8rem 0 0.9rem; font-weight: 700; }
+    .prose-vacation h3 { font-size: 1.25rem; margin: 1.4rem 0 0.7rem; font-weight: 700; }
+    .prose-vacation p  { margin: 1rem 0; line-height: 1.85; }
+    .prose-vacation ul, .prose-vacation ol { margin: 1rem 0; padding-left: 1.5rem; }
+    .prose-vacation li { margin: 0.4rem 0; }
+    .prose-vacation strong { color: #0C4A6E; font-weight: 700; }
+    .prose-vacation em { color: #0369A1; }
+    .prose-vacation blockquote {
+      border-left: 4px solid #F97316;
+      padding: 0.5rem 0 0.5rem 1rem;
+      margin: 1.5rem 0;
+      color: #78716C;
+      font-style: italic;
+      background: #FFF7ED;
+      border-radius: 0 12px 12px 0;
+    }
+    .prose-vacation a { color: #0EA5E9; text-decoration: underline; }
+    .prose-vacation hr { margin: 2rem 0; border-color: #E7E5E4; }
+    .prose-vacation code {
+      background: #F1F5F9;
+      padding: 0.1em 0.4em;
+      border-radius: 4px;
+      font-size: 0.9em;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* Status badges */
+    .badge-published { background: linear-gradient(135deg,#D1FAE5,#A7F3D0); color: #065F46; }
+    .badge-draft     { background: linear-gradient(135deg,#FEF3C7,#FDE68A); color: #92400E; }
+
+    /* Lightbox backdrop blur */
+    .lightbox-bg { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+
+    /* Markdown editor monospace */
+    .md-editor {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.88rem;
+      line-height: 1.65;
+      resize: vertical;
+    }
+
+    /* Page fade-in */
+    .page-in { animation: fadeIn 0.28s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Floating emoji */
+    .float-anim { animation: float 3.5s ease-in-out infinite; }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+    /* Mobile menu slide */
+    .menu-slide { animation: slideDown 0.2s ease-out; }
+    @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+
+    /* Folder tree hover */
+    .folder-row { transition: background-color 0.12s ease; }
+    .folder-row:hover { background: rgba(14,165,233,0.07); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #F5F5F4; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+    /* Line-clamp utilities */
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  </style>
+</head>
+
+<body class="bg-stone-50 font-sans text-stone-900 antialiased min-h-screen">
+
+<!-- ═══════════════════════════════════════════
+     NAVIGATION
+═══════════════════════════════════════════ -->
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-stone-100">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+
+      <!-- Logo -->
+      <a href="#/" onclick="go('/')" class="flex items-center gap-2 group cursor-pointer">
+        <span class="text-2xl">🌴</span>
+        <div class="leading-none">
+          <span class="font-display font-bold text-base text-sky-600 group-hover:text-sky-700 transition-colors block">Tranquille,</span>
+          <span class="text-xs font-bold text-orange-500 block">on est en vacances</span>
+        </div>
+      </a>
+
+      <!-- Desktop nav -->
+      <div class="hidden md:flex items-center gap-5">
+        <a href="#/" onclick="go('/')" class="text-stone-600 hover:text-sky-600 font-semibold transition-colors text-sm">🏠 Accueil</a>
+        <a href="#/voyages" onclick="go('/voyages')" class="text-stone-600 hover:text-sky-600 font-semibold transition-colors text-sm">✈️ Voyages</a>
+        <a href="#/admin" onclick="go('/admin')"
+           class="bg-gradient-to-r from-sky-500 to-blue-600 text-white px-4 py-2 rounded-full text-sm font-bold hover:shadow-lg hover:scale-105 transition-all">
+          🔐 Admin
+        </a>
+      </div>
+
+      <!-- Mobile hamburger -->
+      <button onclick="toggleMenu()" class="md:hidden p-2 rounded-lg text-stone-600 hover:bg-stone-100 transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="hidden md:hidden pb-4 menu-slide">
+      <div class="flex flex-col gap-1">
+        <a href="#/" onclick="go('/');toggleMenu()" class="px-4 py-2.5 text-stone-700 hover:bg-sky-50 hover:text-sky-600 rounded-xl font-semibold transition-colors text-sm">🏠 Accueil</a>
+        <a href="#/voyages" onclick="go('/voyages');toggleMenu()" class="px-4 py-2.5 text-stone-700 hover:bg-sky-50 hover:text-sky-600 rounded-xl font-semibold transition-colors text-sm">✈️ Voyages</a>
+        <a href="#/admin" onclick="go('/admin');toggleMenu()" class="px-4 py-2.5 bg-sky-50 text-sky-700 rounded-xl font-bold text-sm">🔐 Admin</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════ -->
+<main id="app" class="pt-16 min-h-screen"></main>
+
+<!-- ═══════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════ -->
+<footer id="site-footer" class="bg-stone-900 text-stone-300 py-12 mt-0">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+      <div>
+        <div class="flex items-center gap-2 mb-4">
+          <span class="text-3xl">🌴</span>
+          <div class="leading-none">
+            <div class="font-display font-bold text-white text-base">Tranquille,</div>
+            <div class="text-orange-400 text-xs font-bold">on est en vacances</div>
+          </div>
+        </div>
+        <p class="text-stone-400 text-sm leading-relaxed">Le blog de voyage de la famille Potet. Des aventures, des découvertes et des souvenirs à partager.</p>
+      </div>
+      <div>
+        <h3 class="text-white font-bold mb-4 text-sm uppercase tracking-wide">Navigation</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#/" onclick="go('/')" class="hover:text-sky-400 transition-colors cursor-pointer">🏠 Accueil</a></li>
+          <li><a href="#/voyages" onclick="go('/voyages')" class="hover:text-sky-400 transition-colors cursor-pointer">✈️ Tous les voyages</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-white font-bold mb-4 text-sm uppercase tracking-wide">Destinations</h3>
+        <ul id="footer-dest" class="space-y-2 text-sm"></ul>
+      </div>
+    </div>
+    <div class="border-t border-stone-800 pt-6 text-center text-stone-500 text-sm">
+      ✨ Fait avec amour par la famille Potet &bull; 2024 ✨
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════
+     LIGHTBOX
+═══════════════════════════════════════════ -->
+<div id="lightbox"
+     class="hidden fixed inset-0 z-[100] lightbox-bg bg-black/88 flex items-center justify-center"
+     onclick="closeLightbox()">
+  <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white/80 hover:text-white bg-black/40 hover:bg-black/60 rounded-full p-2.5 transition-all z-10">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+    </svg>
+  </button>
+  <button id="lb-prev" onclick="event.stopPropagation();lbNav(-1)" class="absolute left-3 sm:left-6 text-white/80 hover:text-white bg-black/40 hover:bg-black/60 rounded-full p-3 transition-all">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+  </button>
+  <button id="lb-next" onclick="event.stopPropagation();lbNav(1)" class="absolute right-3 sm:right-6 text-white/80 hover:text-white bg-black/40 hover:bg-black/60 rounded-full p-3 transition-all">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+  </button>
+  <div class="max-w-5xl w-full px-16" onclick="event.stopPropagation()">
+    <img id="lb-img" src="" alt="" class="max-w-full max-h-[78vh] mx-auto object-contain rounded-xl shadow-2xl">
+    <p id="lb-caption" class="text-white/80 text-center mt-3 text-sm"></p>
+    <p id="lb-counter" class="text-white/45 text-center text-xs mt-1"></p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TOAST NOTIFICATION
+═══════════════════════════════════════════ -->
+<div id="toast" class="hidden fixed bottom-6 right-6 z-[200] bg-white rounded-2xl shadow-2xl px-5 py-4 flex items-center gap-3 border border-stone-100 max-w-xs">
+  <span id="toast-icon" class="text-xl flex-shrink-0"></span>
+  <p id="toast-msg" class="text-stone-700 font-semibold text-sm"></p>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     FOLDER MODAL
+═══════════════════════════════════════════ -->
+<div id="folder-modal" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4"
+     onclick="if(event.target===this)closeFolderModal()">
+  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+    <h3 class="font-display text-xl font-bold text-stone-900 mb-5">📁 Nouveau dossier</h3>
+    <div class="space-y-4 mb-6">
+      <div>
+        <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Nom</label>
+        <input type="text" id="fm-name" placeholder="Ex: Asie du Sud-Est"
+               class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm font-medium">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Emoji</label>
+        <input type="text" id="fm-icon" placeholder="🌏" maxlength="2"
+               class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+      </div>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="closeFolderModal()" class="flex-1 bg-stone-100 text-stone-700 font-bold py-2.5 rounded-xl hover:bg-stone-200 transition-colors text-sm">Annuler</button>
+      <button onclick="doAddFolder()" class="flex-1 bg-sky-500 text-white font-bold py-2.5 rounded-xl hover:bg-sky-600 transition-colors text-sm">Créer ✨</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT — ALL LOGIC
+═══════════════════════════════════════════ -->
+<script>
+// ──────────────────────────────────────────────
+// STATE & DEMO DATA
+// ──────────────────────────────────────────────
+const S = {
+  admin: false,
+  lbPhotos: [],
+  lbIdx: 0,
+  editing: null,
+  folderModalParent: null,
+};
+
+const folders = [
+  { id:1, name:'Europe',    slug:'europe',    parent_id:null, icon:'🇪🇺' },
+  { id:2, name:'France',    slug:'france',    parent_id:1,    icon:'🇫🇷' },
+  { id:3, name:'Italie',    slug:'italie',    parent_id:1,    icon:'🇮🇹' },
+  { id:4, name:'Grèce',     slug:'grece',     parent_id:1,    icon:'🇬🇷' },
+  { id:5, name:'Amériques', slug:'ameriques', parent_id:null, icon:'🌎' },
+  { id:6, name:'Canada',    slug:'canada',    parent_id:5,    icon:'🇨🇦' },
+  { id:7, name:'Mexique',   slug:'mexique',   parent_id:5,    icon:'🇲🇽' },
+  { id:8, name:'Asie',      slug:'asie',      parent_id:null, icon:'🌏' },
+  { id:9, name:'Japon',     slug:'japon',     parent_id:8,    icon:'🇯🇵' },
+];
+
+const articles = [
+  {
+    id:1, title:'Été magique à Santorin', slug:'ete-magique-santorin',
+    destination:'Santorin, Grèce', date:'2024-07-15',
+    short_description:'Maisons blanches, dômes bleus et couchers de soleil à couper le souffle. Notre séjour grec restera gravé dans les mémoires.',
+    status:'published', folder_id:4,
+    cover:'https://picsum.photos/seed/santorini/1200/800',
+    photos:[
+      { id:1, url:'https://picsum.photos/seed/sant1/800/600', caption:'Vue sur la caldera depuis Oia' },
+      { id:2, url:'https://picsum.photos/seed/sant2/800/600', caption:'Les célèbres dômes bleus' },
+      { id:3, url:'https://picsum.photos/seed/sant3/800/600', caption:'Coucher de soleil' },
+      { id:4, url:'https://picsum.photos/seed/sant4/800/600', caption:'La plage de pierres rouges' },
+      { id:5, url:'https://picsum.photos/seed/sant5/800/600', caption:'Excursion en bateau' },
+      { id:6, url:'https://picsum.photos/seed/sant6/800/600', caption:'Taverne du bord de mer' },
+    ],
+    content:`# Santorin, île de tous les rêves
+
+Nous voilà enfin arrivés sur l'île dont on rêvait depuis des années ! L'avion a atterri à **Héraklion** en Crète, et après un ferry de 2h, nous posions le pied sur les volcans de Santorin.
+
+## Premier jour : Oia et ses ruelles
+
+Le village d'**Oia** est tout ce qu'on imaginait, et encore plus. Les maisons blanches aux dômes bleus s'accrochent à la falaise comme par magie. Nous avons déambulé pendant des heures dans les ruelles étroites, nous perdant volontairement.
+
+> "Papa, on dirait un dessin animé !" — Emma, 8 ans
+
+Le coucher de soleil depuis le château d'Oia est un spectacle qu'on ne peut pas décrire. Il faut le vivre.
+
+## Deuxième jour : La caldera en bateau
+
+Excursion en bateau autour de la **caldera volcanique**. Baignade dans les sources d'eau chaude de couleur ocre, randonnée sur le volcan Nea Kameni.
+
+**Conseil :** Apportez beaucoup d'eau et de la crème solaire 50+. Le soleil grec est impitoyable !
+
+## La gastronomie
+
+Les tavernes locales nous ont régalés :
+- *Salade grecque* avec une feta incroyable
+- *Moussaka* maison
+- *Poulpe grillé* directement sorti de la mer
+
+## Bilan
+
+5 jours trop courts mais inoubliables. Les enfants ont déjà demandé à revenir l'année prochaine 😄`
+  },
+  {
+    id:2, title:'Paris en famille, le retour !', slug:'paris-famille-retour',
+    destination:'Paris, France', date:'2024-04-20',
+    short_description:'Tour Eiffel, Musée du Louvre et promenades au bord de la Seine. Paris ne se découvre jamais vraiment en entier.',
+    status:'published', folder_id:2,
+    cover:'https://picsum.photos/seed/paris7/1200/800',
+    photos:[
+      { id:7, url:'https://picsum.photos/seed/paris1x/800/600', caption:'Tour Eiffel illuminée' },
+      { id:8, url:'https://picsum.photos/seed/louvre8/800/600', caption:'La pyramide du Louvre' },
+      { id:9, url:'https://picsum.photos/seed/seine9/800/600', caption:'Balade en bateau-mouche' },
+    ],
+    content:`# Paris, toujours recommencer
+
+Troisième visite à Paris pour les parents, première pour les enfants ! Et pourtant, la ville nous réserve encore des surprises.
+
+## Le must : La Tour Eiffel de nuit
+
+Rien ne prépare à la magie de la **Dame de fer** qui scintille à 23h précises. Les enfants ont eu les yeux écarquillés ! On s'est installé sur le Champ de Mars avec un pique-nique improvisé — baguette, fromages, jambon — pour profiter du spectacle.
+
+## Le Louvre en mode "mission"
+
+Plutôt que de tout voir (impossible !), on a adopté la stratégie *mission Mona Lisa* :
+1. Directement salle 711, aile Denon
+2. Photo de la Joconde (de loin… beaucoup trop de monde)
+3. Exploration libre selon les envies
+
+Thomas (6 ans) était fasciné par les sculptures égyptiennes. Nouvelle vocation d'archéologue ? 🏺
+
+## Balade en bateau-mouche
+
+L'incontournable balade sur la Seine. Vue magnifique sur Notre-Dame en reconstruction, le Pont Neuf, l'île Saint-Louis...`
+  },
+  {
+    id:3, title:"Rome en 4 jours : l'éternité en accéléré", slug:'rome-4-jours',
+    destination:'Rome, Italie', date:'2024-02-10',
+    short_description:"Colisée, Vatican, Fontaine de Trevi... Rome est une ville où chaque ruelle est une leçon d'histoire.",
+    status:'published', folder_id:3,
+    cover:'https://picsum.photos/seed/rome11/1200/800',
+    photos:[
+      { id:10, url:'https://picsum.photos/seed/colos10/800/600', caption:'Le Colisée' },
+      { id:11, url:'https://picsum.photos/seed/vatic11/800/600', caption:'Place Saint-Pierre' },
+      { id:12, url:'https://picsum.photos/seed/trevi12/800/600', caption:'Fontaine de Trevi' },
+      { id:13, url:'https://picsum.photos/seed/trast13/800/600', caption:'Trastevere au coucher de soleil' },
+    ],
+    content:`# Roma aeterna
+
+Impossible de résumer Rome en quelques lignes, mais on va essayer !
+
+## Jour 1 : La Rome antique
+
+Le **Colisée** est encore plus impressionnant en vrai qu'en photo. La visite guidée a vraiment aidé les enfants à comprendre ce qui s'y passait (version édulcorée, naturellement).
+
+## Jour 2 : Le Vatican
+
+La **Chapelle Sixtine** est un des rares endroits qui tient vraiment ses promesses. Le plafond de Michel-Ange... les mots manquent.
+
+> **Conseil pratique :** Réservez vos billets à l'avance ! Deux heures de queue en moins, ça compte.
+
+## Jour 3 : La Fontaine de Trevi
+
+La tradition : on lance une pièce dans la **Fontaine de Trevi** pour être sûr de revenir. Emma a lancé deux pièces, "une pour revenir et une pour trouver un amoureux" 😂
+
+## La gastronomie romaine
+
+Les *supplì* dans le Trastevere, la glace chez *Giolitti*, les *cacio e pepe* maison... Roma, ti amo 🍝`
+  },
+  {
+    id:4, title:"Québec et les Laurentides en automne", slug:'quebec-automne',
+    destination:'Québec, Canada', date:'2023-10-05',
+    short_description:"Les couleurs de l'automne québécois sont indescriptibles. Feuilles rouges, oranges et jaunes à perte de vue.",
+    status:'published', folder_id:6,
+    cover:'https://picsum.photos/seed/quebec14/1200/800',
+    photos:[
+      { id:14, url:'https://picsum.photos/seed/chatea14/800/600', caption:'Château Frontenac' },
+      { id:15, url:'https://picsum.photos/seed/autu15/800/600', caption:"Couleurs d'automne" },
+      { id:16, url:'https://picsum.photos/seed/forest16/800/600', caption:'Randonnée en forêt' },
+    ],
+    content:`# Le Canada en automne, une explosion de couleurs
+
+Nous avions entendu parler de l'**Indian Summer** québécois depuis des années. La réalité dépasse la légende.
+
+## Québec Ville : le château et les remparts
+
+**Château Frontenac** domine le fleuve Saint-Laurent comme une sentinelle majestueuse. La vieille ville, classée UNESCO, est un enchantement.
+
+## Les Laurentides : l'automne en majesté
+
+Un road trip de 3 jours dans les **Laurentides**. Les feuilles rouges, oranges et dorées forment un tapis multicolore à perte de vue. Randonnées magnifiques dans le Parc du Mont-Tremblant.
+
+## Culture et gastronomie
+
+- *Poutine* bien sûr, obligatoire !
+- Dégustation de sirop d'érable à la *cabane à sucre*
+- Rencontre improbable avec une famille d'orignaux en forêt 🦌`
+  },
+  {
+    id:5, title:'Tokyo : entre tradition et ultramodernité', slug:'tokyo-tradition-modernite',
+    destination:'Tokyo, Japon', date:'2023-03-28',
+    short_description:'Le Japon en mars pour la saison des cerisiers (hanami). Un rêve devenu réalité.',
+    status:'published', folder_id:9,
+    cover:'https://picsum.photos/seed/tokyo17/1200/800',
+    photos:[
+      { id:17, url:'https://picsum.photos/seed/toky1a/800/600', caption:'Tokyo de nuit' },
+      { id:18, url:'https://picsum.photos/seed/sakur18/800/600', caption:'Hanami au parc Ueno' },
+      { id:19, url:'https://picsum.photos/seed/templ19/800/600', caption:'Temple Senso-ji' },
+      { id:20, url:'https://picsum.photos/seed/ramen20/800/600', caption:'Ramen à Shinjuku' },
+    ],
+    content:`# Konnichiwa, Tokyo !
+
+Le Japon est sur notre liste de rêves depuis toujours. On a sauté sur l'occasion du *hanami* (contemplation des cerisiers en fleurs).
+
+## Shinjuku, le cœur urbain
+
+Le quartier de **Shinjuku** le soir est une explosion de néons et d'animation. Les *izakayas* (bars à tapas japonaises) regorgent de salarymen en fin de journée.
+
+## Asakusa : le vieux Tokyo
+
+Le temple **Senso-ji** est le plus vieux temple de Tokyo. Les lanternes rouge et or, la rue Nakamise... on a l'impression de voyager dans le temps.
+
+## Le hanami à Ueno
+
+Les cerisiers (*sakura*) du parc Ueno en pleine floraison : une magie absolue. Les enfants ont voulu rester là toute la journée. On a cédé. 🌸
+
+## Logistique Japon
+
+- **JR Pass** : indispensable
+- **IC Card** (Suica) : pour les transports locaux
+- **Traducteur photo** : sauveur de vie dans les restaurants 🍱`
+  },
+  {
+    id:6, title:"Côte d'Azur : la Provence en été", slug:'cote-azur-provence',
+    destination:"Nice & Antibes, France", date:'2023-08-12',
+    short_description:"Lavandes de Provence, marchés provençaux et plages de galets. En cours de rédaction...",
+    status:'draft', folder_id:2,
+    cover:'https://picsum.photos/seed/prov21/1200/800',
+    photos:[],
+    content:`# La Côte d'Azur, encore et toujours
+
+*Article en cours de rédaction...*`
+  },
+];
+
+// ──────────────────────────────────────────────
+// UTILITY HELPERS
+// ──────────────────────────────────────────────
+const byId    = id   => folders.find(f => f.id === id);
+const bySlug  = sl   => folders.find(f => f.slug === sl);
+const artBySlug = sl => articles.find(a => a.slug === sl);
+const children  = pid => folders.filter(f => f.parent_id === pid);
+const roots     = ()  => folders.filter(f => f.parent_id === null);
+const published = ()  => articles.filter(a => a.status === 'published');
+
+function allFolderIds(fid) {
+  return [fid, ...children(fid).flatMap(c => allFolderIds(c.id))];
+}
+function articlesInTree(fid) {
+  const ids = allFolderIds(fid);
+  return articles.filter(a => ids.includes(a.folder_id) && a.status === 'published');
+}
+
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
+}
+function slugify(t) {
+  return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-');
+}
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function toast(msg, type='ok') {
+  document.getElementById('toast-icon').textContent = type==='ok'?'✅':type==='err'?'❌':'ℹ️';
+  document.getElementById('toast-msg').textContent = msg;
+  const el = document.getElementById('toast');
+  el.classList.remove('hidden');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.add('hidden'), 3000);
+}
+function toggleMenu() {
+  document.getElementById('mobile-menu').classList.toggle('hidden');
+}
+
+// ──────────────────────────────────────────────
+// LIGHTBOX
+// ──────────────────────────────────────────────
+function openLb(photos, idx) {
+  S.lbPhotos = photos; S.lbIdx = idx;
+  updLb();
+  document.getElementById('lightbox').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+function lbNav(dir) {
+  S.lbIdx = (S.lbIdx + dir + S.lbPhotos.length) % S.lbPhotos.length;
+  updLb();
+}
+function updLb() {
+  const p = S.lbPhotos[S.lbIdx];
+  document.getElementById('lb-img').src = p.url;
+  document.getElementById('lb-img').alt = p.caption||'';
+  document.getElementById('lb-caption').textContent = p.caption||'';
+  document.getElementById('lb-counter').textContent = `${S.lbIdx+1} / ${S.lbPhotos.length}`;
+}
+document.addEventListener('keydown', e => {
+  if (document.getElementById('lightbox').classList.contains('hidden')) return;
+  if (e.key==='Escape') closeLightbox();
+  if (e.key==='ArrowLeft') lbNav(-1);
+  if (e.key==='ArrowRight') lbNav(1);
+});
+
+// ──────────────────────────────────────────────
+// ROUTER
+// ──────────────────────────────────────────────
+function go(path, e) {
+  if (e) e.preventDefault();
+  location.hash = '#' + path;
+}
+function route() {
+  const hash = location.hash.slice(1) || '/';
+  const parts = hash.split('/').filter(Boolean);
+  const base = parts[0];
+  const app = document.getElementById('app');
+  document.getElementById('mobile-menu').classList.add('hidden');
+  window.scrollTo({ top:0, behavior:'instant' });
+  app.className = 'pt-16 min-h-screen page-in';
+
+  if (!base || base === '/') {
+    pgHome(app);
+  } else if (base === 'voyages') {
+    pgVoyages(app, parts[1]||null);
+  } else if (base === 'voyage') {
+    pgVoyage(app, parts[1]);
+  } else if (base === 'admin') {
+    if (!S.admin) {
+      pgLogin(app);
+    } else if (parts[1] === 'editor') {
+      pgEditor(app, parts[2] ? parseInt(parts[2]) : null);
+    } else {
+      pgDashboard(app);
+    }
+  } else {
+    pgHome(app);
+  }
+
+  // footer destinations
+  document.getElementById('footer-dest').innerHTML =
+    roots().map(f => `<li><a href="#/voyages/${f.slug}" onclick="go('/voyages/${f.slug}')" class="hover:text-sky-400 transition-colors cursor-pointer flex items-center gap-1.5">${f.icon} ${f.name}</a></li>`).join('');
+}
+window.addEventListener('hashchange', route);
+
+// ──────────────────────────────────────────────
+// SHARED: ARTICLE CARD
+// ──────────────────────────────────────────────
+function card(a) {
+  const f = byId(a.folder_id);
+  return `
+  <article class="voyage-card bg-white rounded-3xl overflow-hidden shadow-md cursor-pointer" onclick="go('/voyage/${a.slug}')">
+    <div class="relative h-52 overflow-hidden">
+      <img src="${a.cover}" alt="${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy"
+           onerror="this.src='https://picsum.photos/seed/${a.id}x/800/600'">
+      <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+      ${f ? `<div class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-bold text-stone-700 flex items-center gap-1"><span>${f.icon}</span><span>${f.name}</span></div>`:''}
+      <div class="absolute bottom-3 right-3 bg-black/40 backdrop-blur-sm text-white text-xs font-medium rounded-full px-2.5 py-1">📷 ${a.photos?.length||0}</div>
+    </div>
+    <div class="p-5">
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-stone-400 text-xs mb-2">
+        <span>📅 ${fmtDate(a.date)}</span>
+        <span class="hidden sm:inline">•</span>
+        <span>📍 ${a.destination}</span>
+      </div>
+      <h3 class="font-display font-bold text-lg text-stone-900 mb-2 line-clamp-2 leading-snug">${esc(a.title)}</h3>
+      <p class="text-stone-500 text-sm leading-relaxed line-clamp-2 mb-4">${esc(a.short_description)}</p>
+      <span class="text-sky-600 text-sm font-bold">Lire la suite →</span>
+    </div>
+  </article>`;
+}
+
+// ──────────────────────────────────────────────
+// PAGE: HOME
+// ──────────────────────────────────────────────
+function pgHome(app) {
+  const pub = published();
+  const featured = pub.slice(0, 6);
+  const totalPhotos = pub.reduce((s,a) => s+(a.photos?.length||0), 0);
+
+  app.innerHTML = `
+  <!-- Hero -->
+  <section class="relative min-h-[88vh] flex items-center overflow-hidden">
+    <div class="absolute inset-0">
+      <img src="https://picsum.photos/seed/herotravel/1920/1080" alt="Voyage" class="w-full h-full object-cover"
+           onerror="this.style.background='linear-gradient(135deg,#0EA5E9,#F97316)'">
+      <div class="absolute inset-0 hero-overlay"></div>
+    </div>
+    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-white py-20">
+      <div class="max-w-2xl">
+        <div class="flex items-center gap-3 mb-6">
+          <span class="text-5xl float-anim">🌴</span>
+          <span class="bg-white/20 backdrop-blur-sm text-white text-sm font-bold px-4 py-2 rounded-full border border-white/30">
+            Le blog de voyage de la famille Potet
+          </span>
+        </div>
+        <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-6 drop-shadow-lg">
+          Tranquille,<br>
+          <span class="text-yellow-300">on est en</span><br>
+          vacances ! ☀️
+        </h1>
+        <p class="text-xl sm:text-2xl text-white/90 leading-relaxed mb-8 font-medium">
+          Nos aventures, nos découvertes, nos coups de cœur.<br>
+          Des souvenirs à partager avec ceux qu'on aime.
+        </p>
+        <div class="flex flex-wrap gap-4">
+          <a href="#/voyages" onclick="go('/voyages')"
+             class="bg-white text-sky-700 font-bold px-8 py-4 rounded-2xl hover:bg-yellow-300 hover:text-stone-900 transition-all hover:scale-105 shadow-xl text-base">
+            ✈️ Découvrir nos voyages
+          </a>
+          <a href="#/voyages" onclick="go('/voyages')"
+             class="bg-white/20 backdrop-blur-sm text-white font-bold px-8 py-4 rounded-2xl hover:bg-white/30 transition-all border border-white/40 text-base">
+            📸 Voir les photos
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/70 flex flex-col items-center gap-1.5 animate-bounce">
+      <span class="text-xs font-medium">Découvrir</span>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Stats bar -->
+  <section class="bg-white shadow-sm border-b border-stone-100">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div>
+          <div class="text-3xl font-black gradient-text">${pub.length}</div>
+          <div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-wide">voyages</div>
+        </div>
+        <div>
+          <div class="text-3xl font-black gradient-text">${folders.length}</div>
+          <div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-wide">destinations</div>
+        </div>
+        <div>
+          <div class="text-3xl font-black gradient-text">${totalPhotos}</div>
+          <div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-wide">photos</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Latest voyages -->
+  <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div class="flex items-end justify-between mb-10">
+      <div>
+        <h2 class="font-display text-3xl sm:text-4xl font-bold text-stone-900">Derniers voyages ✈️</h2>
+        <p class="text-stone-500 mt-2 text-sm">Nos aventures les plus récentes</p>
+      </div>
+      <a href="#/voyages" onclick="go('/voyages')"
+         class="hidden sm:flex items-center gap-1.5 text-sky-600 hover:text-sky-700 font-bold transition-colors text-sm">
+        Tout voir <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      ${featured.map(card).join('')}
+    </div>
+    <div class="text-center mt-10 sm:hidden">
+      <a href="#/voyages" onclick="go('/voyages')"
+         class="inline-flex items-center gap-2 bg-sky-500 text-white font-bold px-6 py-3 rounded-2xl hover:bg-sky-600 transition-colors">
+        Voir tous les voyages →
+      </a>
+    </div>
+  </section>
+
+  <!-- Destinations -->
+  <section class="bg-gradient-to-br from-sky-50 to-orange-50 py-16">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-10">
+        <h2 class="font-display text-3xl sm:text-4xl font-bold text-stone-900 mb-2">Nos destinations 🗺️</h2>
+        <p class="text-stone-500 text-sm">Explorez le monde avec nous</p>
+      </div>
+      <div class="flex flex-wrap justify-center gap-3">
+        ${roots().map(f => `
+          <a href="#/voyages/${f.slug}" onclick="go('/voyages/${f.slug}')"
+             class="flex items-center gap-2 bg-white rounded-2xl px-5 py-3 shadow-sm hover:shadow-md hover:scale-105 transition-all font-semibold text-stone-700 border border-stone-100 cursor-pointer">
+            <span class="text-2xl">${f.icon}</span>
+            <span>${f.name}</span>
+            <span class="text-xs bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">${articlesInTree(f.id).length}</span>
+          </a>`).join('')}
+      </div>
+    </div>
+  </section>
+
+  <!-- Quote -->
+  <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+    <blockquote class="font-display text-2xl sm:text-3xl text-stone-600 italic leading-relaxed">
+      "Les voyages sont la seule chose qu'on achète qui nous rend plus riches."
+    </blockquote>
+    <p class="text-stone-400 mt-4 font-medium text-sm">— Devise de la famille Potet 🌍</p>
+  </section>`;
+}
+
+// ──────────────────────────────────────────────
+// PAGE: VOYAGES LIST
+// ──────────────────────────────────────────────
+function pgVoyages(app, folderSlug) {
+  let arts = published();
+  let activeF = null;
+  if (folderSlug) {
+    activeF = bySlug(folderSlug);
+    if (activeF) {
+      const ids = allFolderIds(activeF.id);
+      arts = arts.filter(a => ids.includes(a.folder_id));
+    }
+  }
+
+  app.innerHTML = `
+  <div class="bg-gradient-to-br from-sky-500 to-blue-700 text-white py-14">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3">✈️ Tous nos voyages</h1>
+      <p class="text-sky-100 text-lg">
+        <strong class="text-white">${arts.length}</strong> aventure${arts.length>1?'s':''} à découvrir
+        ${activeF ? `dans <strong class="text-yellow-300">${activeF.icon} ${activeF.name}</strong>` : ''}
+      </p>
+    </div>
+  </div>
+
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <!-- Filters -->
+    <div class="mb-8 flex flex-wrap gap-2">
+      <button onclick="go('/voyages')"
+              class="px-4 py-2 rounded-full font-bold text-sm border-2 transition-all ${!folderSlug ? 'bg-sky-500 text-white border-sky-500 shadow-md' : 'bg-white text-stone-600 border-stone-200 hover:border-sky-300 hover:text-sky-600'}">
+        🌍 Tous
+      </button>
+      ${roots().map(f => `
+        <button onclick="go('/voyages/${f.slug}')"
+                class="px-4 py-2 rounded-full font-bold text-sm border-2 transition-all ${folderSlug===f.slug ? 'bg-sky-500 text-white border-sky-500 shadow-md' : 'bg-white text-stone-600 border-stone-200 hover:border-sky-300 hover:text-sky-600'}">
+          ${f.icon} ${f.name}
+        </button>
+        ${children(f.id).map(c => `
+          <button onclick="go('/voyages/${c.slug}')"
+                  class="pl-5 pr-4 py-2 rounded-full font-semibold text-xs border-2 transition-all ${folderSlug===c.slug ? 'bg-orange-500 text-white border-orange-500 shadow-md' : 'bg-white text-stone-500 border-stone-200 hover:border-orange-300 hover:text-orange-600'}">
+            ↳ ${c.icon} ${c.name}
+          </button>`).join('')}`).join('')}
+    </div>
+
+    <!-- Grid -->
+    ${arts.length ? `
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">${arts.map(card).join('')}</div>
+    ` : `
+      <div class="text-center py-24 text-stone-400">
+        <span class="text-6xl block mb-4">🗺️</span>
+        <p class="text-xl font-semibold mb-1">Pas encore de voyage ici</p>
+        <p class="text-sm">Revenez bientôt, les aventures sont en cours !</p>
+      </div>`}
+  </div>`;
+}
+
+// ──────────────────────────────────────────────
+// PAGE: VOYAGE DETAIL
+// ──────────────────────────────────────────────
+function pgVoyage(app, slug) {
+  const a = artBySlug(slug);
+  if (!a || (a.status !== 'published' && !S.admin)) {
+    app.innerHTML = `
+    <div class="max-w-2xl mx-auto px-4 py-32 text-center">
+      <span class="text-6xl block mb-6">🗺️</span>
+      <h1 class="font-display text-3xl font-bold text-stone-900 mb-4">Voyage introuvable</h1>
+      <p class="text-stone-500 mb-8">Ce voyage n'existe pas ou n'est pas encore publié.</p>
+      <a href="#/voyages" onclick="go('/voyages')"
+         class="bg-sky-500 text-white font-bold px-6 py-3 rounded-2xl hover:bg-sky-600 transition-colors">← Retour aux voyages</a>
+    </div>`;
+    return;
+  }
+  const f = byId(a.folder_id);
+  window._lbPhotos = a.photos || [];
+
+  app.innerHTML = `
+  <!-- Hero image -->
+  <div class="relative h-[52vh] sm:h-[68vh] overflow-hidden">
+    <img src="${a.cover}" alt="${esc(a.title)}" class="w-full h-full object-cover"
+         onerror="this.style.background='linear-gradient(135deg,#0EA5E9,#10B981)'">
+    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+    <a href="#/voyages" onclick="go('/voyages')"
+       class="absolute top-5 left-5 flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white font-semibold px-4 py-2 rounded-full hover:bg-white/35 transition-all border border-white/30 text-sm">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      Retour
+    </a>
+    <div class="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
+      <div class="max-w-4xl mx-auto">
+        ${f ? `<div class="mb-3"><span class="bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/30">${f.icon} ${f.name}</span></div>` : ''}
+        <h1 class="font-display text-3xl sm:text-5xl font-bold text-white drop-shadow-lg mb-3 leading-tight">${esc(a.title)}</h1>
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-white/80 text-sm font-medium">
+          <span>📅 ${fmtDate(a.date)}</span>
+          <span>📍 ${a.destination}</span>
+          <span>📷 ${a.photos?.length||0} photos</span>
+          ${a.status==='draft' ? '<span class="badge-draft px-2 py-0.5 rounded-full text-xs font-bold">📝 Brouillon</span>' : ''}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- Lead / short description -->
+    <div class="bg-gradient-to-r from-sky-50 to-orange-50 border-l-4 border-sky-500 rounded-r-2xl p-5 sm:p-6 mb-10">
+      <p class="text-stone-700 text-base sm:text-lg leading-relaxed font-medium italic">"${esc(a.short_description)}"</p>
+    </div>
+
+    <!-- Markdown body -->
+    <div class="prose-vacation text-stone-700 text-base sm:text-lg leading-relaxed mb-12">
+      ${marked.parse(a.content || '')}
+    </div>
+
+    <!-- Photo gallery -->
+    ${a.photos && a.photos.length ? `
+    <div class="mb-12">
+      <h2 class="font-display text-2xl font-bold text-stone-900 mb-5">📸 Galerie photos</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        ${a.photos.map((p,i) => `
+          <div class="relative aspect-square overflow-hidden rounded-2xl photo-thumb group"
+               onclick="openLb(window._lbPhotos, ${i})">
+            <img src="${p.url}" alt="${esc(p.caption||'')}" class="w-full h-full object-cover" loading="lazy">
+            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-end p-3">
+              ${p.caption ? `<span class="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity line-clamp-2">${esc(p.caption)}</span>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Bottom nav -->
+    <div class="border-t border-stone-200 pt-8 flex items-center justify-between">
+      <a href="#/voyages" onclick="go('/voyages')"
+         class="flex items-center gap-2 text-stone-500 hover:text-sky-600 font-semibold transition-colors text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Tous les voyages
+      </a>
+      <button onclick="shareVoyage()"
+              class="flex items-center gap-2 bg-sky-50 text-sky-700 font-bold px-4 py-2.5 rounded-xl hover:bg-sky-100 transition-colors text-sm">
+        📤 Partager
+      </button>
+    </div>
+  </div>`;
+}
+
+function shareVoyage() {
+  if (navigator.share) {
+    navigator.share({ title: document.title, url: location.href }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(location.href).then(() => toast('Lien copié !','ok'));
+  }
+}
+
+// ──────────────────────────────────────────────
+// PAGE: ADMIN LOGIN
+// ──────────────────────────────────────────────
+function pgLogin(app) {
+  app.innerHTML = `
+  <div class="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-orange-50 px-4 py-12">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-8">
+        <span class="text-6xl block mb-4">🔐</span>
+        <h1 class="font-display text-3xl font-bold text-stone-900">Espace Admin</h1>
+        <p class="text-stone-500 mt-2 text-sm">Connexion réservée à la famille Potet</p>
+      </div>
+      <div class="bg-white rounded-3xl shadow-xl p-8 border border-stone-100">
+        <form onsubmit="doLogin(event)">
+          <div class="mb-6">
+            <label class="block text-sm font-bold text-stone-700 mb-2">Mot de passe</label>
+            <input type="password" id="login-pw" placeholder="••••••••"
+                   class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-medium"
+                   required autofocus>
+            <p class="text-xs text-stone-400 mt-2">🎮 Démo : tapez n'importe quel mot de passe</p>
+          </div>
+          <button type="submit"
+                  class="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-3.5 rounded-2xl hover:shadow-lg hover:scale-[1.02] transition-all text-base">
+            Se connecter ✨
+          </button>
+        </form>
+      </div>
+      <p class="text-center text-stone-400 text-sm mt-6">
+        <a href="#/" onclick="go('/')" class="hover:text-sky-600 transition-colors">← Retour au blog</a>
+      </p>
+    </div>
+  </div>`;
+}
+function doLogin(e) {
+  e.preventDefault();
+  S.admin = true;
+  toast('Bienvenue dans l\'admin 👋','ok');
+  go('/admin/dashboard');
+}
+
+// ──────────────────────────────────────────────
+// PAGE: ADMIN DASHBOARD
+// ──────────────────────────────────────────────
+function pgDashboard(app) {
+  app.innerHTML = `
+  <!-- Admin top bar -->
+  <div class="bg-gradient-to-r from-stone-900 to-stone-800 text-white py-5 px-4 sm:px-6">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">⚙️</span>
+        <div>
+          <h1 class="font-bold text-white text-lg leading-none">Interface Admin</h1>
+          <p class="text-stone-400 text-xs mt-0.5">Blog famille Potet</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="#/" onclick="go('/')" class="text-stone-400 hover:text-white text-sm font-medium transition-colors">Voir le blog →</a>
+        <button onclick="doLogout()" class="bg-red-500/20 text-red-400 hover:bg-red-500/30 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">Déconnexion</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+      <!-- SIDEBAR: folder tree + stats -->
+      <aside class="lg:col-span-1 space-y-5">
+        <div class="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-100">
+            <h2 class="font-bold text-stone-700 text-sm">📁 Dossiers</h2>
+            <button onclick="openFolderModal(null)" class="text-sky-600 hover:text-sky-700 text-sm font-bold transition-colors">+ Nouveau</button>
+          </div>
+          <div class="p-2 max-h-80 overflow-y-auto" id="folder-tree">${folderTree(null)}</div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-emerald-50 rounded-2xl p-4 text-center border border-emerald-100">
+            <div class="text-2xl font-black text-emerald-600">${articles.filter(a=>a.status==='published').length}</div>
+            <div class="text-xs font-bold text-emerald-700 mt-1">Publiés</div>
+          </div>
+          <div class="bg-amber-50 rounded-2xl p-4 text-center border border-amber-100">
+            <div class="text-2xl font-black text-amber-600">${articles.filter(a=>a.status==='draft').length}</div>
+            <div class="text-xs font-bold text-amber-700 mt-1">Brouillons</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN: articles list -->
+      <main class="lg:col-span-3">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="font-display text-2xl font-bold text-stone-900">Tous les articles</h2>
+          <a href="#/admin/editor" onclick="go('/admin/editor')"
+             class="flex items-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold px-5 py-2.5 rounded-2xl hover:shadow-lg hover:scale-105 transition-all text-sm">
+            ✍️ Nouvel article
+          </a>
+        </div>
+        <div class="space-y-3" id="articles-list">
+          ${articles.map(adminRow).join('')}
+        </div>
+      </main>
+    </div>
+  </div>`;
+}
+
+function folderTree(parentId, depth=0) {
+  return children(parentId).map(f => {
+    const count = articlesInTree(f.id).length;
+    return `
+    <div style="padding-left:${depth*14}px">
+      <div class="folder-row flex items-center justify-between px-3 py-2 rounded-xl group">
+        <button onclick="go('/voyages/${f.slug}')"
+                class="flex items-center gap-2 flex-1 text-left text-sm font-semibold text-stone-700 hover:text-sky-600 transition-colors">
+          <span>${f.icon}</span><span>${f.name}</span>
+          <span class="ml-auto text-xs text-stone-400 font-normal">${count}</span>
+        </button>
+        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+          <button onclick="openFolderModal(${f.id})" title="Sous-dossier" class="text-stone-400 hover:text-sky-600 p-1 text-xs font-bold transition-colors">+</button>
+          <button onclick="rmFolder(${f.id})" title="Supprimer" class="text-stone-400 hover:text-red-500 p-1 text-xs font-bold transition-colors">×</button>
+        </div>
+      </div>
+      ${folderTree(f.id, depth+1)}
+    </div>`;
+  }).join('');
+}
+
+function adminRow(a) {
+  const f = byId(a.folder_id);
+  const isPub = a.status === 'published';
+  return `
+  <div class="bg-white rounded-2xl border border-stone-100 p-4 flex items-center gap-4 hover:shadow-md transition-shadow group">
+    <img src="${a.cover}" alt="${esc(a.title)}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover flex-shrink-0"
+         onerror="this.src='https://picsum.photos/seed/${a.id}y/200/200'">
+    <div class="flex-1 min-w-0">
+      <div class="flex items-start justify-between gap-2 mb-1">
+        <h3 class="font-bold text-stone-900 text-sm sm:text-base truncate">${esc(a.title)}</h3>
+        <span class="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${isPub?'badge-published':'badge-draft'}">
+          ${isPub ? '✅ Publié' : '📝 Brouillon'}
+        </span>
+      </div>
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-400">
+        <span>📅 ${fmtDate(a.date)}</span>
+        <span>📍 ${a.destination}</span>
+        ${f ? `<span>${f.icon} ${f.name}</span>` : ''}
+        <span>📷 ${a.photos?.length||0}</span>
+      </div>
+    </div>
+    <div class="flex flex-col sm:flex-row items-center gap-1 flex-shrink-0">
+      <button onclick="toggleStatus(${a.id})" title="${isPub?'Dépublier':'Publier'}"
+              class="p-2 rounded-xl text-stone-400 hover:text-${isPub?'amber':'emerald'}-600 hover:bg-${isPub?'amber':'emerald'}-50 transition-all text-base" title="${isPub?'Dépublier':'Publier'}">
+        ${isPub ? '🔒' : '🚀'}
+      </button>
+      <a href="#/admin/editor/${a.id}" onclick="go('/admin/editor/${a.id}')"
+         class="p-2 rounded-xl text-stone-400 hover:text-sky-600 hover:bg-sky-50 transition-all text-base">✏️</a>
+      <a href="#/voyage/${a.slug}" onclick="go('/voyage/${a.slug}')"
+         class="p-2 rounded-xl text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all text-base">👁️</a>
+      <button onclick="rmArticle(${a.id})"
+              class="p-2 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 text-base">🗑️</button>
+    </div>
+  </div>`;
+}
+
+function toggleStatus(id) {
+  const a = articles.find(x=>x.id===id); if(!a) return;
+  a.status = a.status==='published' ? 'draft' : 'published';
+  toast(a.status==='published' ? '🚀 Article publié !' : '📝 Mis en brouillon','ok');
+  pgDashboard(document.getElementById('app'));
+}
+function rmArticle(id) {
+  if(!confirm('Supprimer cet article définitivement ?')) return;
+  const i = articles.findIndex(a=>a.id===id); if(i===-1) return;
+  articles.splice(i,1);
+  toast('Article supprimé','ok');
+  pgDashboard(document.getElementById('app'));
+}
+function doLogout() { S.admin=false; toast('Déconnexion réussie','ok'); go('/'); }
+
+// ──────────────────────────────────────────────
+// FOLDER MODAL
+// ──────────────────────────────────────────────
+function openFolderModal(parentId) {
+  S.folderModalParent = parentId;
+  document.getElementById('fm-name').value = '';
+  document.getElementById('fm-icon').value = '';
+  document.getElementById('folder-modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('fm-name').focus(), 50);
+}
+function closeFolderModal() {
+  document.getElementById('folder-modal').classList.add('hidden');
+}
+function doAddFolder() {
+  const name = document.getElementById('fm-name').value.trim();
+  const icon = document.getElementById('fm-icon').value.trim() || '📁';
+  if (!name) { toast('Nom requis','err'); return; }
+  folders.push({ id: Math.max(0,...folders.map(f=>f.id))+1, name, slug:slugify(name), parent_id:S.folderModalParent, icon });
+  closeFolderModal();
+  toast(`Dossier "${name}" créé !`,'ok');
+  pgDashboard(document.getElementById('app'));
+}
+function rmFolder(id) {
+  if(!confirm('Supprimer ce dossier ?')) return;
+  const i = folders.findIndex(f=>f.id===id); if(i===-1) return;
+  folders.splice(i,1);
+  toast('Dossier supprimé','ok');
+  pgDashboard(document.getElementById('app'));
+}
+
+// ──────────────────────────────────────────────
+// PAGE: ADMIN EDITOR
+// ──────────────────────────────────────────────
+function pgEditor(app, articleId) {
+  const isEdit = articleId !== null;
+  const src = isEdit ? articles.find(a=>a.id===articleId) : null;
+  S.editing = src
+    ? { ...src, photos:[...(src.photos||[])] }
+    : { id:null, title:'', destination:'', date:new Date().toISOString().slice(0,10),
+        short_description:'', content:'# Mon nouveau voyage\n\n*Commence à écrire ici...*\n\n## Jour 1\n\nRaconte ton aventure !',
+        status:'draft', folder_id:null, cover:'', photos:[] };
+
+  app.innerHTML = `
+  <!-- Editor top bar -->
+  <div class="bg-gradient-to-r from-stone-900 to-stone-800 text-white py-4 px-4 sm:px-6">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="#/admin/dashboard" onclick="go('/admin/dashboard')" class="text-stone-400 hover:text-white transition-colors text-sm flex-shrink-0">← Tableau de bord</a>
+        <span class="text-stone-600">·</span>
+        <h1 class="font-bold text-white text-sm truncate">${isEdit ? `Modifier : ${esc(src.title)}` : 'Nouvel article'}</h1>
+      </div>
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <button onclick="saveArticle(false)" class="bg-stone-700 hover:bg-stone-600 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors">💾 Brouillon</button>
+        <button onclick="saveArticle(true)" class="bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold px-4 py-2 rounded-xl text-sm hover:shadow-lg hover:scale-105 transition-all">🚀 Publier</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+      <!-- Editor main -->
+      <div class="lg:col-span-2 space-y-5">
+
+        <!-- Title -->
+        <div>
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide">Titre *</label>
+          <input type="text" id="e-title" value="${esc(S.editing.title)}" placeholder="Ex: Notre été à Santorin 🌊"
+                 class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-bold text-lg text-stone-800">
+        </div>
+
+        <!-- Short description -->
+        <div>
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide">Description courte</label>
+          <textarea id="e-desc" rows="2" placeholder="Un résumé accrocheur de 1-2 phrases..."
+                    class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 resize-none text-sm">${esc(S.editing.short_description)}</textarea>
+        </div>
+
+        <!-- Markdown editor with preview -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Contenu (Markdown)</label>
+            <div class="flex items-center gap-1 bg-stone-100 rounded-xl p-1">
+              <button id="tab-write" onclick="edTab('write')"
+                      class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800">✏️ Écrire</button>
+              <button id="tab-prev" onclick="edTab('preview')"
+                      class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700">👁️ Aperçu</button>
+            </div>
+          </div>
+
+          <div id="pane-write">
+            <textarea id="e-content" rows="22" placeholder="# Titre\n\nÉcris ici en Markdown..."
+                      class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 md-editor">${esc(S.editing.content)}</textarea>
+            <!-- Markdown toolbar -->
+            <div class="flex flex-wrap gap-1 mt-2">
+              ${[['**Gras**','G'],['*Italique*','I'],['# Titre','H1'],['## Titre','H2'],['> Citation','❝'],['- Item','—'],['[texte](url)','🔗']].map(([s,l])=>`
+                <button type="button" onclick="insertMd('${s.replace(/'/g,"\\'")}')"
+                        class="text-xs bg-stone-100 hover:bg-sky-100 text-stone-600 hover:text-sky-700 px-2.5 py-1.5 rounded-lg font-mono transition-colors">${l}</button>`).join('')}
+            </div>
+          </div>
+
+          <div id="pane-preview" class="hidden">
+            <div id="preview-out" class="prose-vacation border-2 border-stone-200 rounded-2xl px-6 py-4 bg-white min-h-[400px] text-stone-800"></div>
+          </div>
+        </div>
+
+        <!-- Photos -->
+        <div>
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide">Photos</label>
+          <div id="dropzone"
+               class="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
+               onclick="document.getElementById('file-in').click()"
+               ondragover="event.preventDefault();this.classList.add('border-sky-400','bg-sky-50')"
+               ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
+               ondrop="handleDrop(event)">
+            <span class="text-4xl block mb-2">📸</span>
+            <p class="text-stone-600 font-semibold text-sm">Glissez vos photos ici</p>
+            <p class="text-stone-400 text-xs mt-1">ou cliquez pour sélectionner · JPG, PNG, WebP</p>
+            <input type="file" id="file-in" accept="image/*" multiple class="hidden" onchange="handleFiles(this.files)">
+          </div>
+          <div id="photo-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">
+            ${(S.editing.photos||[]).map((p,i)=>photoThumb(p,i)).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar settings -->
+      <aside class="lg:col-span-1 space-y-5">
+
+        <!-- Status -->
+        <div class="bg-white rounded-2xl border border-stone-100 p-5 shadow-sm">
+          <h3 class="font-bold text-stone-700 mb-4 text-sm">📊 Statut de publication</h3>
+          <div class="space-y-2">
+            <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
+              <input type="radio" name="pub-status" value="draft" ${S.editing.status==='draft'?'checked':''} class="w-4 h-4 accent-amber-500">
+              <div>
+                <div class="font-semibold text-stone-700 text-sm">📝 Brouillon</div>
+                <div class="text-xs text-stone-400">Visible uniquement par l'admin</div>
+              </div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
+              <input type="radio" name="pub-status" value="published" ${S.editing.status==='published'?'checked':''} class="w-4 h-4 accent-emerald-500">
+              <div>
+                <div class="font-semibold text-stone-700 text-sm">✅ Publié</div>
+                <div class="text-xs text-stone-400">Visible par tous les visiteurs</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Meta -->
+        <div class="bg-white rounded-2xl border border-stone-100 p-5 shadow-sm">
+          <h3 class="font-bold text-stone-700 mb-4 text-sm">📋 Informations</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-stone-500 mb-1.5">📅 Date du voyage</label>
+              <input type="date" id="e-date" value="${S.editing.date}"
+                     class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-500 mb-1.5">📍 Destination</label>
+              <input type="text" id="e-dest" value="${esc(S.editing.destination)}" placeholder="Ex: Paris, France"
+                     class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-500 mb-1.5">📁 Dossier</label>
+              <select id="e-folder" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+                <option value="">Aucun dossier</option>
+                ${folderOpts(null, S.editing.folder_id)}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cover photo URL -->
+        <div class="bg-white rounded-2xl border border-stone-100 p-5 shadow-sm">
+          <h3 class="font-bold text-stone-700 mb-3 text-sm">🖼️ Photo de couverture</h3>
+          <input type="text" id="e-cover" value="${esc(S.editing.cover||'')}" placeholder="URL de l'image..."
+                 class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-xs mb-3"
+                 oninput="previewCover(this.value)">
+          <div id="cover-preview" class="${S.editing.cover ? '' : 'hidden'}">
+            <img id="cover-img" src="${S.editing.cover||''}" alt="" class="w-full h-32 object-cover rounded-xl">
+          </div>
+        </div>
+
+        <!-- Danger zone -->
+        ${isEdit ? `
+        <div class="bg-red-50 rounded-2xl border border-red-100 p-5">
+          <h3 class="font-bold text-red-700 mb-3 text-sm">⚠️ Zone danger</h3>
+          <button onclick="rmArticle(${articleId})" class="w-full bg-red-500 text-white font-bold py-2.5 rounded-xl hover:bg-red-600 transition-colors text-sm">🗑️ Supprimer l'article</button>
+        </div>` : ''}
+      </aside>
+    </div>
+  </div>`;
+}
+
+function folderOpts(parentId, selectedId, depth=0) {
+  return children(parentId).map(f => `
+    <option value="${f.id}" ${selectedId===f.id?'selected':''}>
+      ${'　'.repeat(depth)}${f.icon} ${f.name}
+    </option>
+    ${folderOpts(f.id, selectedId, depth+1)}`).join('');
+}
+
+function photoThumb(p, i) {
+  return `
+  <div class="relative aspect-square overflow-hidden rounded-xl group">
+    <img src="${p.url}" alt="${esc(p.caption||'')}" class="w-full h-full object-cover">
+    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
+      <button onclick="rmPhoto(${i})"
+              class="bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>`;
+}
+
+function edTab(tab) {
+  const wp = document.getElementById('pane-write');
+  const pp = document.getElementById('pane-preview');
+  const tw = document.getElementById('tab-write');
+  const tp = document.getElementById('tab-prev');
+  if (tab==='write') {
+    wp.classList.remove('hidden'); pp.classList.add('hidden');
+    tw.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800';
+    tp.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700';
+  } else {
+    const content = document.getElementById('e-content')?.value || '';
+    document.getElementById('preview-out').innerHTML = marked.parse(content);
+    wp.classList.add('hidden'); pp.classList.remove('hidden');
+    tp.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800';
+    tw.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700';
+  }
+}
+
+function insertMd(syntax) {
+  const ta = document.getElementById('e-content'); if (!ta) return;
+  const s=ta.selectionStart, e=ta.selectionEnd;
+  ta.value = ta.value.slice(0,s) + syntax + ta.value.slice(e);
+  ta.focus(); ta.setSelectionRange(s+syntax.length, s+syntax.length);
+}
+
+function previewCover(url) {
+  const pr = document.getElementById('cover-preview');
+  const img = document.getElementById('cover-img');
+  if (url) { pr.classList.remove('hidden'); img.src=url; }
+  else { pr.classList.add('hidden'); }
+}
+
+function handleFiles(files) {
+  Array.from(files).forEach(file => {
+    const r = new FileReader();
+    r.onload = e => {
+      S.editing.photos.push({ id:Date.now()+Math.random(), url:e.target.result, caption:file.name.replace(/\.[^.]+$/,'').replace(/[-_]/g,' ') });
+      refreshPhotoGrid();
+    };
+    r.readAsDataURL(file);
+  });
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropzone').classList.remove('border-sky-400','bg-sky-50');
+  handleFiles(e.dataTransfer.files);
+}
+function rmPhoto(i) { S.editing.photos.splice(i,1); refreshPhotoGrid(); }
+function refreshPhotoGrid() {
+  const g = document.getElementById('photo-grid'); if(g) g.innerHTML = (S.editing.photos||[]).map((p,i)=>photoThumb(p,i)).join('');
+}
+
+function saveArticle(publish) {
+  const title = document.getElementById('e-title')?.value.trim();
+  if (!title) { toast('Le titre est obligatoire','err'); return; }
+  const status = publish ? 'published' : (document.querySelector('input[name="pub-status"]:checked')?.value||'draft');
+  const data = {
+    title,
+    destination: document.getElementById('e-dest')?.value.trim()||'',
+    date: document.getElementById('e-date')?.value||new Date().toISOString().slice(0,10),
+    short_description: document.getElementById('e-desc')?.value.trim()||'',
+    content: document.getElementById('e-content')?.value||'',
+    status,
+    folder_id: parseInt(document.getElementById('e-folder')?.value)||null,
+    cover: document.getElementById('e-cover')?.value.trim() || `https://picsum.photos/seed/${slugify(title)}/1200/800`,
+    photos: S.editing.photos,
+  };
+  if (S.editing.id) {
+    const i = articles.findIndex(a=>a.id===S.editing.id);
+    if (i!==-1) articles[i] = { ...articles[i], ...data };
+    toast('Article mis à jour ' + (publish?'🚀':'💾'),'ok');
+  } else {
+    articles.push({ id:Math.max(0,...articles.map(a=>a.id))+1, slug:slugify(title), ...data });
+    toast('Article créé ' + (publish?'🚀':'💾'),'ok');
+  }
+  go('/admin/dashboard');
+}
+
+// ──────────────────────────────────────────────
+// BOOT
+// ──────────────────────────────────────────────
+route();
+</script>
+</body>
+</html>
