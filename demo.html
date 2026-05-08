@@ -38,78 +38,132 @@
 
   <style>
     :root {
-      color-scheme: light dark;
+      color-scheme: dark light;
+      --majorelle: #6050DC;
+      --majorelle-rgb: 96, 80, 220;
+      --majorelle-deep: #2A116A;
+      --majorelle-night: #14022E;
+      --majorelle-soft: #8375EF;
+      --gold: #D7B15E;
+      --gold-rgb: 215, 177, 94;
+      --gold-soft: #F2DFB0;
+      --ivory: #FBF4E4;
+      --sand: #CBBE9C;
+      --ink: #F8F0DE;
+      --muted: #C9BCD9;
+      --muted-deep: #9E90B5;
+      --panel: rgba(23, 6, 56, 0.82);
+      --panel-soft: rgba(41, 17, 106, 0.56);
+      --panel-strong: rgba(19, 4, 47, 0.9);
+      --line: rgba(215, 177, 94, 0.18);
+      --line-strong: rgba(215, 177, 94, 0.38);
+      --shadow: 0 28px 72px rgba(6, 1, 22, 0.44);
     }
 
-    html { scroll-behavior: smooth; background: #1A1450; }
+    html { scroll-behavior: smooth; background: var(--majorelle-night); }
     body {
+      position: relative;
+      min-height: 100vh;
       background:
-        radial-gradient(circle at 12% 12%, rgba(96, 80, 220, 0.18), transparent 28%),
-        radial-gradient(circle at 88% 14%, rgba(47, 122, 89, 0.16), transparent 32%),
-        radial-gradient(circle at 50% 100%, rgba(96, 80, 220, 0.12), transparent 40%),
-        linear-gradient(180deg, #1A1450 0%, #241B62 42%, #140F3D 100%);
-      color: #e2e8f0;
+        radial-gradient(circle at 16% 18%, rgba(96, 80, 220, 0.28), transparent 28%),
+        radial-gradient(circle at 84% 14%, rgba(215, 177, 94, 0.18), transparent 24%),
+        radial-gradient(circle at 50% 100%, rgba(96, 80, 220, 0.12), transparent 34%),
+        linear-gradient(180deg, #110126 0%, #19043A 26%, #22094F 58%, #150331 100%);
+      color: var(--ink);
     }
-    body::before {
+    body::before,
+    body::after {
       content: '';
       position: fixed;
       inset: 0;
-      background-image:
-        linear-gradient(rgba(244, 200, 93, 0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(96, 80, 220, 0.05) 1px, transparent 1px);
-      background-size: 80px 80px;
-      mask-image: linear-gradient(180deg, rgba(255,255,255,0.45), transparent 88%);
       pointer-events: none;
       z-index: -1;
+    }
+    body::before {
+      background:
+        linear-gradient(rgba(215, 177, 94, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(215, 177, 94, 0.08) 1px, transparent 1px),
+        radial-gradient(circle at center, rgba(255,255,255,0.04) 0, transparent 62%);
+      background-size: 96px 96px, 96px 96px, auto;
+      mask-image: radial-gradient(circle at center, rgba(255,255,255,0.7), transparent 82%);
+      opacity: 0.6;
+    }
+    body::after {
+      background:
+        radial-gradient(circle at 50% -8%, rgba(255, 237, 196, 0.16), transparent 30%),
+        radial-gradient(circle at 50% 40%, rgba(96, 80, 220, 0.08), transparent 40%);
     }
 
     .hero-overlay {
       background:
-        linear-gradient(180deg, rgba(26,20,80,0.22) 0%, rgba(26,20,80,0.72) 52%, rgba(20,15,61,0.95) 100%),
-        linear-gradient(135deg, rgba(96,80,220,0.24) 0%, rgba(47,122,89,0.26) 55%, rgba(244,200,93,0.14) 100%);
+        linear-gradient(180deg, rgba(20, 2, 46, 0.08) 0%, rgba(20, 2, 46, 0.72) 54%, rgba(20, 2, 46, 0.96) 100%),
+        radial-gradient(circle at 50% 10%, rgba(255, 240, 205, 0.12), transparent 28%),
+        linear-gradient(135deg, rgba(96, 80, 220, 0.18) 0%, rgba(42, 17, 106, 0.42) 100%);
     }
 
     .glass-panel,
     .section-panel,
     .voyage-card,
+    .metric-card,
     #folder-modal > div,
     #toast {
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
+
+    .glass-panel,
+    .section-panel,
+    .metric-card,
+    .voyage-card,
+    #folder-modal > div,
+    #toast,
+    .bg-white,
+    .bg-stone-50,
+    .bg-sky-50,
+    .bg-emerald-50,
+    .bg-amber-50,
+    .bg-red-50 {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%),
+        var(--panel) !important;
+      border: 1px solid var(--line) !important;
+      color: var(--ink);
+      box-shadow: var(--shadow);
     }
 
     .glass-panel {
-      background: linear-gradient(180deg, rgba(38, 30, 102, 0.78), rgba(26, 20, 80, 0.62));
-      border: 1px solid rgba(244, 200, 93, 0.14);
-      box-shadow: 0 18px 60px rgba(26, 20, 80, 0.42);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%),
+        linear-gradient(135deg, rgba(96,80,220,0.18) 0%, rgba(19,4,47,0.92) 100%) !important;
     }
 
     .section-panel {
-      background: rgba(38, 30, 102, 0.7);
-      border: 1px solid rgba(244, 200, 93, 0.12);
-      box-shadow: 0 18px 46px rgba(26, 20, 80, 0.34);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%),
+        linear-gradient(135deg, rgba(41,17,106,0.62) 0%, rgba(19,4,47,0.92) 100%) !important;
     }
 
     .metric-card {
-      background: linear-gradient(180deg, rgba(38, 30, 102, 0.82), rgba(26, 20, 80, 0.58));
-      border: 1px solid rgba(244, 200, 93, 0.12);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 14px 36px rgba(26, 20, 80, 0.28);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 100%),
+        linear-gradient(180deg, rgba(41,17,106,0.92) 0%, rgba(19,4,47,0.94) 100%) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 18px 44px rgba(6,1,22,0.32);
     }
 
     .voyage-card {
       transition: transform 0.32s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, border-color 0.3s ease;
-      background: linear-gradient(180deg, rgba(38, 30, 102, 0.8), rgba(26, 20, 80, 0.94));
-      border: 1px solid rgba(244, 200, 93, 0.1);
-      box-shadow: 0 18px 48px rgba(26, 20, 80, 0.3);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%),
+        linear-gradient(180deg, rgba(34, 10, 80, 0.94) 0%, rgba(18, 4, 47, 0.96) 100%) !important;
     }
     .voyage-card:hover {
-      transform: translateY(-8px);
-      border-color: rgba(96, 80, 220, 0.26);
-      box-shadow: 0 28px 64px rgba(2, 6, 23, 0.42);
+      transform: translateY(-10px);
+      border-color: var(--line-strong) !important;
+      box-shadow: 0 36px 80px rgba(6,1,22,0.5);
     }
 
     .gradient-text {
-      background: linear-gradient(135deg, #f8fafc 0%, #6050DC 32%, #2F7A59 68%, #f8fafc 100%);
+      background: linear-gradient(180deg, #FFF7E0 0%, #D7B15E 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -120,40 +174,36 @@
       align-items: center;
       gap: 0.65rem;
       border-radius: 999px;
-      padding: 0.55rem 0.9rem;
-      background: rgba(38, 30, 102, 0.52);
-      border: 1px solid rgba(244, 200, 93, 0.2);
-      color: #cbd5e1;
+      padding: 0.7rem 1rem;
+      background: rgba(251, 244, 228, 0.06);
+      border: 1px solid var(--line-strong);
+      color: var(--gold-soft);
       font-size: 0.72rem;
-      letter-spacing: 0.18em;
+      letter-spacing: 0.24em;
       text-transform: uppercase;
-      font-weight: 700;
+      font-weight: 800;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
     }
-
-    .brand-mark {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 2.6rem;
-      height: 2.6rem;
-      border-radius: 1rem;
-      background: rgba(255, 255, 255, 0.08);
-      box-shadow: 0 12px 30px rgba(2, 6, 23, 0.3);
-      font-size: 1.45rem;
+    .eyebrow::before {
+      content: '✦';
+      color: var(--gold);
+      font-size: 0.9rem;
       line-height: 1;
     }
 
     .nav-link {
-      color: #94a3b8;
+      color: var(--muted);
       font-size: 0.92rem;
       font-weight: 700;
-      padding: 0.7rem 0.95rem;
+      padding: 0.72rem 1rem;
       border-radius: 999px;
-      transition: color 0.2s ease, background-color 0.2s ease;
+      transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+      border: 1px solid transparent;
     }
     .nav-link:hover {
-      color: #f8fafc;
-      background: rgba(96, 80, 220, 0.12);
+      color: var(--ivory);
+      background: rgba(251, 244, 228, 0.05);
+      border-color: rgba(215, 177, 94, 0.2);
     }
 
     .action-btn,
@@ -161,88 +211,105 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 0.7rem;
       border-radius: 999px;
       font-weight: 800;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-      background: linear-gradient(135deg, #6050DC 0%, #F4C85D 52%, #2F7A59 100%);
-      color: #f8fafc;
-      box-shadow: 0 16px 34px rgba(96, 80, 220, 0.28);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+      background: var(--majorelle);
+      color: var(--ivory);
+      border: 1px solid rgba(215, 177, 94, 0.56);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 18px 36px rgba(20, 2, 46, 0.34);
     }
-    .action-btn { padding: 0.95rem 1.5rem; }
-    .action-btn-sm { padding: 0.78rem 1.15rem; font-size: 0.9rem; }
+    .action-btn { padding: 1rem 1.55rem; }
+    .action-btn-sm { padding: 0.82rem 1.18rem; font-size: 0.82rem; }
     .action-btn:hover,
     .action-btn-sm:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 20px 44px rgba(96, 80, 220, 0.34);
+      transform: translateY(-2px);
+      background: #4F41C5;
+      border-color: rgba(242, 223, 176, 0.8);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 24px 46px rgba(20, 2, 46, 0.46);
     }
 
     .subtle-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 0.7rem;
       border-radius: 999px;
-      padding: 0.95rem 1.5rem;
-      border: 1px solid rgba(244, 200, 93, 0.18);
-      background: rgba(38, 30, 102, 0.46);
-      color: #e2e8f0;
+      padding: 0.98rem 1.5rem;
+      border: 1px solid var(--line-strong);
+      background: rgba(251, 244, 228, 0.05);
+      color: var(--gold-soft);
       font-weight: 700;
-      transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
     }
     .subtle-btn:hover {
-      transform: translateY(-1px);
-      border-color: rgba(96, 80, 220, 0.28);
-      background: rgba(38, 30, 102, 0.72);
+      transform: translateY(-2px);
+      border-color: rgba(242, 223, 176, 0.78);
+      background: rgba(251, 244, 228, 0.1);
+      color: var(--ivory);
+    }
+
+    .luxe-divider {
+      height: 1px;
+      width: 100%;
+      background: linear-gradient(90deg, transparent 0%, rgba(215, 177, 94, 0.35) 20%, rgba(215, 177, 94, 0.7) 50%, rgba(215, 177, 94, 0.35) 80%, transparent 100%);
     }
 
     .orb {
       position: absolute;
       border-radius: 999px;
-      filter: blur(24px);
-      opacity: 0.55;
+      filter: blur(32px);
+      opacity: 0.6;
       pointer-events: none;
     }
-    .orb-a { width: 18rem; height: 18rem; top: 8%; right: 10%; background: rgba(96, 80, 220, 0.16); }
-    .orb-b { width: 14rem; height: 14rem; bottom: 12%; left: 8%; background: rgba(47, 122, 89, 0.16); }
-    .orb-c { width: 10rem; height: 10rem; top: 22%; left: 42%; background: rgba(96, 80, 220, 0.16); }
+    .orb-a { width: 19rem; height: 19rem; top: 8%; right: 10%; background: rgba(96, 80, 220, 0.24); }
+    .orb-b { width: 15rem; height: 15rem; bottom: 10%; left: 7%; background: rgba(215, 177, 94, 0.18); }
+    .orb-c { width: 11rem; height: 11rem; top: 20%; left: 44%; background: rgba(251, 244, 228, 0.1); }
 
     .photo-thumb { transition: transform 0.22s ease, opacity 0.22s ease; cursor: pointer; }
     .photo-thumb:hover { transform: translateY(-4px) scale(1.01); opacity: 0.96; }
 
     .prose-vacation h1, .prose-vacation h2, .prose-vacation h3 {
-      font-family: 'Space Grotesk', sans-serif;
-      color: #f8fafc;
-      letter-spacing: -0.025em;
+      font-family: 'Playfair Display', Georgia, serif;
+      color: var(--ivory);
+      letter-spacing: -0.03em;
     }
     .prose-vacation h1 { font-size: 2rem; margin: 2rem 0 1rem; font-weight: 700; }
     .prose-vacation h2 { font-size: 1.55rem; margin: 1.8rem 0 0.9rem; font-weight: 700; }
     .prose-vacation h3 { font-size: 1.18rem; margin: 1.4rem 0 0.7rem; font-weight: 700; }
-    .prose-vacation p  { margin: 1rem 0; line-height: 1.9; color: #cbd5e1; }
-    .prose-vacation ul, .prose-vacation ol { margin: 1rem 0; padding-left: 1.5rem; color: #cbd5e1; }
+    .prose-vacation p  { margin: 1rem 0; line-height: 1.9; color: var(--muted); }
+    .prose-vacation ul, .prose-vacation ol { margin: 1rem 0; padding-left: 1.5rem; color: var(--muted); }
     .prose-vacation li { margin: 0.4rem 0; }
-    .prose-vacation strong { color: #f8fafc; font-weight: 700; }
-    .prose-vacation em { color: #6050DC; }
+    .prose-vacation strong { color: var(--ivory); font-weight: 700; }
+    .prose-vacation em { color: var(--gold-soft); }
     .prose-vacation blockquote {
-      border-left: 3px solid rgba(96, 80, 220, 0.55);
-      padding: 0.85rem 0 0.85rem 1rem;
-      margin: 1.5rem 0;
-      color: #cbd5e1;
+      border-left: 3px solid rgba(215, 177, 94, 0.65);
+      padding: 0.95rem 0 0.95rem 1.1rem;
+      margin: 1.7rem 0;
+      color: var(--muted);
       font-style: italic;
-      background: rgba(15, 23, 42, 0.6);
-      border-radius: 0 18px 18px 0;
+      background: rgba(251, 244, 228, 0.05);
+      border-radius: 0 20px 20px 0;
     }
-    .prose-vacation a { color: #6050DC; text-decoration: underline; }
-    .prose-vacation hr { margin: 2rem 0; border-color: rgba(148, 163, 184, 0.16); }
+    .prose-vacation a { color: var(--gold-soft); text-decoration: underline; }
+    .prose-vacation hr { margin: 2rem 0; border-color: rgba(215, 177, 94, 0.18); }
     .prose-vacation code {
-      background: rgba(15, 23, 42, 0.86);
+      background: rgba(251, 244, 228, 0.06);
       padding: 0.12em 0.45em;
       border-radius: 8px;
       font-size: 0.9em;
       font-family: 'Courier New', monospace;
-      color: #e2e8f0;
+      color: var(--ivory);
     }
 
-    .badge-published { background: rgba(16, 185, 129, 0.16); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.24); }
-    .badge-draft     { background: rgba(245, 158, 11, 0.16); color: #fcd34d; border: 1px solid rgba(245,158,11,0.24); }
+    .badge-published { background: rgba(215, 177, 94, 0.12); color: var(--gold-soft); border: 1px solid rgba(215,177,94,0.3); }
+    .badge-draft     { background: rgba(131, 117, 239, 0.16); color: #D8D1FF; border: 1px solid rgba(131,117,239,0.3); }
 
     .lightbox-bg { backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 
@@ -255,19 +322,19 @@
 
     .md-toolbar-btn {
       font-size: 0.75rem;
-      background: rgba(38, 30, 102, 0.75);
-      color: #cbd5e1;
-      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(251, 244, 228, 0.04);
+      color: var(--muted);
+      border: 1px solid rgba(215, 177, 94, 0.18);
       padding: 0.36rem 0.62rem;
-      border-radius: 0.6rem;
+      border-radius: 0.7rem;
       font-family: 'Courier New', Courier, monospace;
       font-weight: 700;
       transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     }
     .md-toolbar-btn:hover {
-      background: rgba(96, 80, 220, 0.16);
-      color: #6050DC;
-      border-color: rgba(96, 80, 220, 0.42);
+      background: rgba(251, 244, 228, 0.08);
+      color: var(--ivory);
+      border-color: rgba(215, 177, 94, 0.4);
     }
     .editor-toolbar {
       display: flex;
@@ -279,9 +346,9 @@
       padding-bottom: 0.75rem;
     }
     .inline-image-btn {
-      background: linear-gradient(135deg, rgba(96, 80, 220, 0.4), rgba(96, 80, 220, 0.35));
-      color: #FFF7E8;
-      border-color: rgba(96, 80, 220, 0.7);
+      background: rgba(96, 80, 220, 0.18);
+      color: var(--ivory);
+      border-color: rgba(215, 177, 94, 0.4);
       font-family: inherit;
       display: inline-flex;
       align-items: center;
@@ -289,9 +356,9 @@
       font-weight: 700;
     }
     .inline-image-btn:hover {
-      background: linear-gradient(135deg, rgba(96, 80, 220, 0.55), rgba(96, 80, 220, 0.5));
-      color: #FFF8E8;
-      border-color: rgba(244, 200, 93, 0.55);
+      background: rgba(96, 80, 220, 0.3);
+      color: var(--ivory);
+      border-color: rgba(242, 223, 176, 0.68);
     }
     @media (max-width: 767px) {
       .editor-toolbar {
@@ -302,9 +369,9 @@
         margin: 0.75rem -0.2rem 0.5rem;
         padding: 0.6rem;
         border-radius: 1rem;
-        background: rgba(26, 20, 80, 0.96);
-        border: 1px solid rgba(148, 163, 184, 0.35);
-        box-shadow: 0 10px 28px rgba(2, 6, 23, 0.35);
+        background: rgba(19, 4, 47, 0.96);
+        border: 1px solid rgba(215, 177, 94, 0.22);
+        box-shadow: 0 10px 28px rgba(6, 1, 22, 0.4);
       }
       .editor-content {
         padding-bottom: 5rem;
@@ -325,36 +392,22 @@
     @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
 
     .folder-row { transition: background-color 0.14s ease, border-color 0.14s ease; border: 1px solid transparent; }
-    .folder-row:hover { background: rgba(96, 80, 220, 0.08); border-color: rgba(96, 80, 220, 0.12); }
+    .folder-row:hover { background: rgba(251, 244, 228, 0.05); border-color: rgba(215, 177, 94, 0.22); }
 
     .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
     #navbar {
-      background: rgba(26, 20, 80, 0.74) !important;
-      border-bottom: 1px solid rgba(244, 200, 93, 0.12) !important;
-      box-shadow: 0 10px 30px rgba(26, 20, 80, 0.28);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      background: rgba(17, 1, 38, 0.74) !important;
+      border-bottom: 1px solid rgba(215, 177, 94, 0.14) !important;
+      box-shadow: 0 10px 36px rgba(6, 1, 22, 0.32);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
     }
 
     #site-footer {
-      background: rgba(26, 20, 80, 0.88) !important;
-      border-top: 1px solid rgba(244, 200, 93, 0.1);
-    }
-
-    #folder-modal > div,
-    #toast,
-    .bg-white,
-    .bg-stone-50,
-    .bg-sky-50,
-    .bg-emerald-50,
-    .bg-amber-50,
-    .bg-red-50 {
-      background: rgba(38, 30, 102, 0.82) !important;
-      border-color: rgba(244, 200, 93, 0.12) !important;
-      color: #e2e8f0;
-      box-shadow: 0 18px 46px rgba(2, 6, 23, 0.28);
+      background: rgba(17, 1, 38, 0.82) !important;
+      border-top: 1px solid rgba(215, 177, 94, 0.1);
     }
 
     .from-sky-50, .to-orange-50, .via-white, .from-stone-900, .to-stone-800,
@@ -364,164 +417,52 @@
       --tw-gradient-to: initial;
     }
 
-    .text-stone-900, .text-stone-800, .text-stone-700 { color: #f8fafc !important; }
-    .text-stone-600 { color: #cbd5e1 !important; }
-    .text-stone-500 { color: #94a3b8 !important; }
-    .text-stone-400 { color: #64748b !important; }
-    .text-sky-700, .text-sky-600 { color: #6050DC !important; }
-    .text-orange-500, .text-orange-400, .text-yellow-300, .text-amber-700, .text-amber-600 { color: #F4C85D !important; }
-    .text-emerald-700, .text-emerald-600, .text-red-700, .text-red-600 { color: #2F7A59 !important; }
+    .text-white, .text-slate-100, .text-slate-200, .text-stone-900, .text-stone-800, .text-stone-700 { color: var(--ivory) !important; }
+    .text-slate-300, .text-stone-600 { color: var(--muted) !important; }
+    .text-slate-400, .text-stone-500 { color: var(--muted-deep) !important; }
+    .text-slate-500, .text-stone-400 { color: rgba(201, 188, 217, 0.72) !important; }
+    .text-sky-700, .text-sky-600, .text-cyan-300, .text-cyan-200, .hover\:text-cyan-300:hover, .hover\:text-cyan-200:hover { color: var(--gold-soft) !important; }
+    .text-orange-500, .text-orange-400, .text-yellow-300, .text-amber-700, .text-amber-600 { color: var(--gold) !important; }
+    .text-emerald-700, .text-emerald-600, .text-red-700, .text-red-600, .text-violet-300 { color: #D8D1FF !important; }
 
     .border-stone-100, .border-stone-200, .border-stone-300, .border-stone-800, .border-sky-100, .border-red-100, .border-emerald-100, .border-amber-100 {
-      border-color: rgba(148, 163, 184, 0.12) !important;
+      border-color: rgba(215, 177, 94, 0.14) !important;
+    }
+    .border-white\/10 { border-color: rgba(215, 177, 94, 0.14) !important; }
+    .border-sky-500, .border-sky-400, .focus\:border-sky-400:focus, .hover\:border-sky-300:hover, .hover\:border-cyan-300\/30:hover, .border-cyan-400\/20 {
+      border-color: rgba(215, 177, 94, 0.34) !important;
     }
 
-    .bg-sky-500, .hover\:bg-sky-600:hover {
-      background-color: rgba(96, 80, 220, 0.28) !important;
-    }
-    .bg-sky-50, .hover\:bg-sky-100:hover {
-      background-color: rgba(96, 80, 220, 0.16) !important;
-    }
-    .bg-red-500, .hover\:bg-red-600:hover {
-      background-color: rgba(248, 113, 113, 0.24) !important;
-    }
+    .bg-sky-500, .hover\:bg-sky-600:hover { background-color: var(--majorelle) !important; }
+    .bg-cyan-500\/10, .bg-white\/5 { background-color: rgba(251, 244, 228, 0.05) !important; }
+    .bg-white\/10 { background-color: rgba(251, 244, 228, 0.08) !important; }
+    .bg-sky-50, .hover\:bg-sky-100:hover { background-color: rgba(96, 80, 220, 0.16) !important; }
+    .bg-red-500, .hover\:bg-red-600:hover { background-color: rgba(160, 60, 82, 0.3) !important; }
     .bg-stone-100, .hover\:bg-stone-200:hover, .hover\:bg-stone-100:hover, .hover\:bg-stone-50:hover {
-      background-color: rgba(15, 23, 42, 0.84) !important;
+      background-color: rgba(251, 244, 228, 0.06) !important;
     }
-    .bg-black\/40, .bg-black\/50, .bg-black\/88 { background-color: rgba(2, 6, 23, 0.7) !important; }
+    .bg-black\/40, .bg-black\/50, .bg-black\/88 { background-color: rgba(10, 2, 24, 0.76) !important; }
 
     input, textarea, select {
-      background: rgba(26, 20, 80, 0.72) !important;
-      color: #e2e8f0 !important;
-      border-color: rgba(71, 85, 105, 0.9) !important;
+      background: rgba(15, 3, 38, 0.78) !important;
+      color: var(--ivory) !important;
+      border-color: rgba(215, 177, 94, 0.26) !important;
     }
-    input::placeholder, textarea::placeholder { color: #64748b; }
+    input::placeholder, textarea::placeholder { color: rgba(201, 188, 217, 0.52); }
     input:focus, textarea:focus, select:focus {
-      border-color: rgba(96, 80, 220, 0.6) !important;
-      box-shadow: 0 0 0 3px rgba(96, 80, 220, 0.12);
+      border-color: rgba(215, 177, 94, 0.62) !important;
+      box-shadow: 0 0 0 3px rgba(215, 177, 94, 0.12);
     }
 
     #dropzone {
-      background: rgba(38, 30, 102, 0.48);
-      border-color: rgba(148, 163, 184, 0.2) !important;
+      background: rgba(41, 17, 106, 0.34);
+      border-color: rgba(215, 177, 94, 0.24) !important;
     }
 
     ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: rgba(8, 15, 30, 0.9); }
-    ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.8); border-radius: 999px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(96, 80, 220, 0.5); }
-
-    @media (prefers-color-scheme: light) {
-      html { background: #f8fafc; }
-      body {
-        background:
-          radial-gradient(circle at 12% 12%, rgba(96, 80, 220, 0.14), transparent 28%),
-          radial-gradient(circle at 88% 14%, rgba(47, 122, 89, 0.12), transparent 32%),
-          linear-gradient(180deg, #FFF9F1 0%, #F5EFFF 48%, #FFF6E8 100%);
-        color: #261E66;
-      }
-      body::before {
-        background-image:
-          linear-gradient(rgba(244, 200, 93, 0.1) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(96, 80, 220, 0.1) 1px, transparent 1px);
-      }
-      #navbar {
-        background: rgba(255, 250, 242, 0.9) !important;
-        border-bottom: 1px solid rgba(96, 80, 220, 0.16) !important;
-        box-shadow: 0 10px 30px rgba(96, 80, 220, 0.08);
-      }
-      #site-footer {
-        background: rgba(255, 248, 238, 0.92) !important;
-        border-top: 1px solid rgba(96, 80, 220, 0.12);
-      }
-      .glass-panel,
-      .section-panel,
-      .metric-card,
-      .voyage-card,
-      #folder-modal > div,
-      #toast,
-      .bg-white,
-      .bg-stone-50,
-      .bg-sky-50,
-      .bg-emerald-50,
-      .bg-amber-50,
-      .bg-red-50 {
-        background: rgba(255, 255, 255, 0.84) !important;
-        border-color: rgba(96, 80, 220, 0.16) !important;
-        color: #261E66 !important;
-        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
-      }
-      .hero-overlay {
-        background:
-          linear-gradient(180deg, rgba(255,249,241,0.08) 0%, rgba(255,249,241,0.58) 52%, rgba(255,249,241,0.9) 100%),
-          linear-gradient(135deg, rgba(96,80,220,0.12) 0%, rgba(47,122,89,0.12) 55%, rgba(244,200,93,0.1) 100%);
-      }
-      .subtle-btn {
-        border-color: rgba(148, 163, 184, 0.32);
-        background: rgba(255, 255, 255, 0.75);
-        color: #334155;
-      }
-      .subtle-btn:hover {
-        border-color: rgba(47, 122, 89, 0.28);
-        background: rgba(255, 255, 255, 0.95);
-      }
-      .nav-link { color: #475569; }
-      .nav-link:hover { color: #261E66; background: rgba(148, 163, 184, 0.14); }
-      .bg-stone-100, .hover\:bg-stone-200:hover, .hover\:bg-stone-100:hover, .hover\:bg-stone-50:hover {
-        background-color: rgba(241, 245, 249, 0.95) !important;
-      }
-      .prose-vacation h1, .prose-vacation h2, .prose-vacation h3, .prose-vacation strong { color: #261E66; }
-      .prose-vacation p, .prose-vacation ul, .prose-vacation ol, .prose-vacation li, .prose-vacation blockquote { color: #334155; }
-      .prose-vacation blockquote {
-        border-left-color: rgba(96, 80, 220, 0.46);
-        background: rgba(241, 245, 249, 0.85);
-      }
-      .prose-vacation code {
-        background: rgba(241, 245, 249, 0.95);
-        color: #334155;
-      }
-      .text-white, .text-slate-100, .text-slate-200, .text-stone-900, .text-stone-800, .text-stone-700 { color: #261E66 !important; }
-      .text-slate-300, .text-stone-600 { color: #334155 !important; }
-      .text-slate-400, .text-stone-500 { color: #475569 !important; }
-      .text-slate-500, .text-stone-400 { color: #64748b !important; }
-      .bg-white\/5 { background-color: rgba(15, 23, 42, 0.04) !important; }
-      .bg-white\/10 { background-color: rgba(15, 23, 42, 0.08) !important; }
-      .border-white\/10 { border-color: rgba(148, 163, 184, 0.35) !important; }
-      .bg-black\/40, .bg-black\/50, .bg-black\/88 { background-color: rgba(15, 23, 42, 0.5) !important; }
-      input, textarea, select {
-        background: rgba(255, 255, 255, 0.92) !important;
-        color: #261E66 !important;
-        border-color: rgba(148, 163, 184, 0.46) !important;
-      }
-      input::placeholder, textarea::placeholder { color: #94a3b8; }
-      .md-toolbar-btn {
-        background: rgba(248, 250, 252, 0.96);
-        color: #1e293b;
-        border-color: rgba(148, 163, 184, 0.46);
-      }
-      .md-toolbar-btn:hover {
-        background: rgba(245, 238, 255, 0.95);
-        color: #271D77;
-        border-color: rgba(96, 80, 220, 0.5);
-      }
-      .inline-image-btn {
-        background: linear-gradient(135deg, rgba(96, 80, 220, 0.22), rgba(96, 80, 220, 0.24));
-        color: #271D77;
-        border-color: rgba(96, 80, 220, 0.56);
-      }
-      .inline-image-btn:hover {
-        background: linear-gradient(135deg, rgba(96, 80, 220, 0.32), rgba(96, 80, 220, 0.35));
-        color: #1F5B41;
-        border-color: rgba(47, 122, 89, 0.62);
-      }
-      @media (max-width: 767px) {
-        .editor-toolbar {
-          background: rgba(255, 255, 255, 0.97);
-          border-color: rgba(148, 163, 184, 0.5);
-          box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
-        }
-      }
-    }
+    ::-webkit-scrollbar-track { background: rgba(8, 2, 22, 0.92); }
+    ::-webkit-scrollbar-thumb { background: rgba(215, 177, 94, 0.34); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(242, 223, 176, 0.48); }
   </style>
 
 </head>
@@ -1064,54 +1005,73 @@ function pgHome(app) {
   <section class="relative min-h-screen flex items-center overflow-hidden">
     <div class="absolute inset-0">
       <img src="https://picsum.photos/seed/herotravel/1920/1080" alt="Voyage" class="w-full h-full object-cover opacity-45"
-           onerror="this.style.background='linear-gradient(135deg,#6050DC,#2F7A59)'">
+           onerror="this.style.background='linear-gradient(135deg,#6050DC,#2A116A)'">
       <div class="absolute inset-0 hero-overlay"></div>
       <div class="orb orb-a"></div>
       <div class="orb orb-b"></div>
       <div class="orb orb-c"></div>
     </div>
-    <div class="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-28 pb-16 lg:pb-24">
-      <div class="grid lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center">
+    <div class="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-32 pb-16 lg:pb-24">
+      <div class="grid lg:grid-cols-[1.08fr_0.92fr] gap-10 items-center">
         <div class="max-w-3xl">
-          <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-[0.98] mb-6 text-white">
-            Les aventures de la <span class="gradient-text">famille Potet</span>
+          <div class="eyebrow mb-6">Bleu Majorelle · Esprit riad</div>
+          <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-[0.96] mb-6 text-white">
+            Un carnet de voyage de la <span class="gradient-text">famille Potet</span>, inspiré des salons marocains d'exception.
           </h1>
           <p class="text-lg sm:text-xl text-slate-300 leading-relaxed mb-8 max-w-2xl">
-            Notre carnet de voyage — itinéraires, moments forts et souvenirs en photos partagés avec nos proches.
+            Des récits baignés de bleu Majorelle, des matières précieuses, des souvenirs mis en scène comme des trésors rapportés du voyage.
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
-            <a href="#/voyages" onclick="go('/voyages')" class="action-btn">Voir nos voyages</a>
+            <a href="#/voyages" onclick="go('/voyages')" class="action-btn">Explorer nos voyages</a>
+            <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn">Ouvrir le salon photo</a>
+          </div>
+          <div class="flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Collections éditoriales</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Récits immersifs</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Carnet familial</span>
           </div>
         </div>
 
-        <div class="glass-panel rounded-[2rem] p-6 sm:p-8">
+        <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative">
+          <div class="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#F2DFB0]/70 to-transparent"></div>
           <div class="grid gap-4 sm:grid-cols-3 mb-6">
-            <div class="metric-card rounded-2xl p-4">
+            <div class="metric-card rounded-[1.6rem] p-4">
               <div class="text-3xl font-black gradient-text">${pub.length}</div>
-              <div class="text-xs uppercase tracking-[0.18em] text-slate-400 mt-2">récits</div>
+              <div class="text-xs uppercase tracking-[0.2em] text-slate-400 mt-2">récits</div>
             </div>
-            <div class="metric-card rounded-2xl p-4">
+            <div class="metric-card rounded-[1.6rem] p-4">
               <div class="text-3xl font-black gradient-text">${folders.length}</div>
-              <div class="text-xs uppercase tracking-[0.18em] text-slate-400 mt-2">destinations</div>
+              <div class="text-xs uppercase tracking-[0.2em] text-slate-400 mt-2">destinations</div>
             </div>
-            <div class="metric-card rounded-2xl p-4">
+            <div class="metric-card rounded-[1.6rem] p-4">
               <div class="text-3xl font-black gradient-text">${totalPhotos}</div>
-              <div class="text-xs uppercase tracking-[0.18em] text-slate-400 mt-2">photos</div>
+              <div class="text-xs uppercase tracking-[0.2em] text-slate-400 mt-2">photos</div>
             </div>
           </div>
-          <div class="section-panel rounded-2xl p-5">
-            <p class="text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">Derniers récits</p>
+          <div class="section-panel rounded-[1.75rem] p-5 mb-5">
+            <p class="text-xs font-bold uppercase tracking-[0.22em] text-slate-400 mb-3">Dernières escales</p>
             <div class="space-y-3">
               ${featured.slice(0, 3).map((a, idx) => `
-                <button onclick="go('/voyage/${a.slug}')" class="w-full text-left rounded-2xl px-4 py-3 bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
+                <button onclick="go('/voyage/${a.slug}')" class="w-full text-left rounded-[1.4rem] px-4 py-3 bg-white/5 hover:bg-white/10 transition-colors border border-white/10">
                   <div class="flex items-center justify-between gap-3">
                     <div>
                       <div class="text-white font-semibold">${esc(a.title)}</div>
-                      <div class="text-slate-400 text-xs mt-1">${a.destination}</div>
+                      <div class="text-slate-400 text-xs mt-1 uppercase tracking-[0.18em]">${a.destination}</div>
                     </div>
                     <span class="text-slate-500 text-sm">0${idx + 1}</span>
                   </div>
                 </button>`).join('')}
+            </div>
+          </div>
+          <div class="luxe-divider mb-5"></div>
+          <div class="grid sm:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p class="text-slate-400 uppercase tracking-[0.18em] text-xs mb-2">Direction artistique</p>
+              <p class="text-slate-200 leading-relaxed">Bleu Majorelle, ivoire minéral et éclats dorés pour un rendu plus précieux, plus éditorial, plus mémorable.</p>
+            </div>
+            <div>
+              <p class="text-slate-400 uppercase tracking-[0.18em] text-xs mb-2">Ambiance</p>
+              <p class="text-slate-200 leading-relaxed">Une sensation de riad contemporain, feutré et solaire, pensée pour mettre les souvenirs au centre.</p>
             </div>
           </div>
         </div>
@@ -1122,10 +1082,11 @@ function pgHome(app) {
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-10">
       <div>
+        <div class="eyebrow mb-4">Sélection maison</div>
         <h2 class="font-display text-3xl sm:text-5xl font-bold text-white">Nos derniers voyages</h2>
-        <p class="text-slate-400 mt-3 text-sm sm:text-base">Les récits les plus récents avec photos et itinéraires.</p>
+        <p class="text-slate-400 mt-3 text-sm sm:text-base max-w-2xl">Les plus beaux récits de la collection, enveloppés dans une ambiance plus raffinée et plus immersive.</p>
       </div>
-      <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn w-fit">Tous les voyages</a>
+      <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn w-fit">Voir toute la collection</a>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
       ${featured.map(card).join('')}
@@ -1134,18 +1095,21 @@ function pgHome(app) {
 
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
     <div class="section-panel rounded-[2rem] p-8 sm:p-10">
-      <div class="mb-8">
-        <h2 class="font-display text-3xl sm:text-4xl font-bold text-white mb-2">Nos destinations</h2>
-        <p class="text-slate-400 max-w-2xl">Parcourez nos voyages par région du monde.</p>
-      </div>
-      <div class="flex flex-wrap gap-3">
-        ${roots().map(f => `
-          <a href="#/voyages/${f.slug}" onclick="go('/voyages/${f.slug}')"
-             class="inline-flex items-center gap-3 rounded-full px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 transition-all font-semibold text-slate-100 cursor-pointer">
-            <span class="text-cyan-300">${f.icon}</span>
-            <span>${f.name}</span>
-            <span class="text-xs bg-white/10 text-slate-300 px-2.5 py-1 rounded-full font-bold">${articlesInTree(f.id).length}</span>
-          </a>`).join('')}
+      <div class="grid lg:grid-cols-[0.78fr_1.22fr] gap-8 items-start">
+        <div>
+          <div class="eyebrow mb-4">Routes & collections</div>
+          <h2 class="font-display text-3xl sm:text-4xl font-bold text-white mb-3">Nos destinations</h2>
+          <p class="text-slate-400 max-w-md">Parcourez les récits comme on traverse les salons d'un riad : une ambiance, une destination, une histoire.</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          ${roots().map(f => `
+            <a href="#/voyages/${f.slug}" onclick="go('/voyages/${f.slug}')"
+               class="inline-flex items-center gap-3 rounded-full px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 transition-all font-semibold text-slate-100 cursor-pointer">
+              <span class="text-cyan-300">${f.icon}</span>
+              <span>${f.name}</span>
+              <span class="text-xs bg-white/10 text-slate-300 px-2.5 py-1 rounded-full font-bold">${articlesInTree(f.id).length}</span>
+            </a>`).join('')}
+        </div>
       </div>
     </div>
   </section>`;
@@ -1167,12 +1131,14 @@ function pgVoyages(app, folderSlug) {
 
   app.innerHTML = `
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-8">
-    <div class="section-panel rounded-[2rem] px-6 py-8 sm:px-10 sm:py-10">
-      <div class="eyebrow mb-5">Catalogue</div>
+    <div class="section-panel rounded-[2rem] px-6 py-8 sm:px-10 sm:py-10 overflow-hidden relative">
+      <div aria-hidden="true" class="absolute right-8 top-8 hidden lg:block text-[10rem] leading-none text-white/5">✦</div>
+      <div class="eyebrow mb-5">Collection Majorelle</div>
       <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4">Tous nos voyages</h1>
-      <p class="text-slate-300 text-lg max-w-3xl">
-        <strong class="text-white">${arts.length}</strong> récit${arts.length>1?'s':''} à parcourir
-        ${activeF ? `dans <strong class="text-cyan-300">${activeF.icon} ${activeF.name}</strong>.` : ''}
+      <p class="text-slate-300 text-lg max-w-3xl leading-relaxed">
+        <strong class="text-white">${arts.length}</strong> récit${arts.length>1?'s':''} à parcourir,
+        façonnés comme une bibliothèque de souvenirs précieux.
+        ${activeF ? `Focus actuel : <strong class="text-cyan-300">${activeF.icon} ${activeF.name}</strong>.` : ''}
       </p>
     </div>
   </section>
@@ -1202,7 +1168,7 @@ function pgVoyages(app, folderSlug) {
     ` : `
       <div class="section-panel rounded-[2rem] text-center py-24 text-slate-400">
         <p class="text-xl font-semibold mb-2 text-white">Aucun récit dans cette collection</p>
-        <p class="text-sm">Revenez bientôt, de nouvelles destinations arrivent.</p>
+        <p class="text-sm">Revenez bientôt, une nouvelle escale viendra enrichir le carnet.</p>
       </div>`}
   </div>`;
 }
@@ -1228,10 +1194,10 @@ function pgVoyage(app, slug) {
   const renderedContent = renderVoyageContent(a.content || '', window._lbPhotos);
 
   app.innerHTML = `
-  <div class="relative h-[56vh] sm:h-[72vh] overflow-hidden">
+  <div class="relative h-[58vh] sm:h-[74vh] overflow-hidden">
     <img src="${a.cover}" alt="${esc(a.title)}" class="w-full h-full object-cover"
-         onerror="this.style.background='linear-gradient(135deg,#6050DC,#2F7A59)'">
-    <div class="absolute inset-0 bg-gradient-to-t from-[#1A1450] via-[#1A1450]/35 to-transparent"></div>
+         onerror="this.style.background='linear-gradient(135deg,#6050DC,#2A116A)'">
+    <div class="absolute inset-0 hero-overlay"></div>
     <a href="#/voyages" onclick="go('/voyages')"
        class="absolute top-5 left-5 flex items-center gap-2 glass-panel text-white font-semibold px-4 py-2 rounded-full hover:bg-white/10 transition-all text-sm border border-white/10">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M15 19l-7-7 7-7"/></svg>
@@ -1253,6 +1219,7 @@ function pgVoyage(app, slug) {
 
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <div class="section-panel rounded-[2rem] p-6 sm:p-8 mb-10 border border-white/10">
+      <div class="eyebrow mb-4">Note d'ambiance</div>
       <p class="text-slate-200 text-base sm:text-lg leading-relaxed font-medium italic">${esc(a.short_description)}</p>
     </div>
 
@@ -1262,7 +1229,7 @@ function pgVoyage(app, slug) {
 
     <div class="border-t border-white/10 pt-8 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
       <a href="#/voyages" onclick="go('/voyages')"
-         class="flex items-center gap-2 text-slate-400 hover:text-cyan-300 font-semibold transition-colors text-sm">
+         class="flex items-center gap-2 text-slate-400 hover:text-cyan-300 font-semibold transition-colors text-sm uppercase tracking-[0.14em]">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M15 19l-7-7 7-7"/></svg>
         Toute la collection
       </a>
