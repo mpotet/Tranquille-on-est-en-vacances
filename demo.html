@@ -12,7 +12,7 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap" rel="stylesheet">
 
   <!-- Marked.js for Markdown rendering -->
   <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
@@ -22,8 +22,8 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-            display: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            sans: ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            display: ['"Playfair Display"', 'Georgia', 'serif'],
           },
           colors: {
             ink: '#050816',
@@ -137,11 +137,10 @@
       width: 2.6rem;
       height: 2.6rem;
       border-radius: 1rem;
-      background: linear-gradient(135deg, rgba(103,232,249,0.95), rgba(139,92,246,0.95));
-      color: #020617;
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 700;
-      box-shadow: 0 12px 30px rgba(103, 232, 249, 0.26);
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 12px 30px rgba(2, 6, 23, 0.3);
+      font-size: 1.45rem;
+      line-height: 1;
     }
 
     .nav-link {
@@ -441,17 +440,17 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-20">
       <a href="#/" onclick="go('/')" class="flex items-center gap-4 group cursor-pointer">
-        <span class="brand-mark">T</span>
+        <span class="brand-mark" data-brand-logo></span>
         <div class="leading-none">
-          <span class="font-display font-bold text-lg text-white group-hover:text-cyan-200 transition-colors block">Tranquille</span>
-          <span class="text-[0.75rem] font-semibold tracking-[0.24em] uppercase text-slate-400 block mt-1">on est en vacances</span>
+          <span class="font-display font-bold text-lg text-white group-hover:text-cyan-200 transition-colors block" data-brand-title>Tranquille</span>
+          <span class="text-[0.75rem] font-semibold tracking-[0.24em] uppercase text-slate-400 block mt-1" data-brand-subtitle>on est en vacances</span>
         </div>
       </a>
 
       <div class="hidden md:flex items-center gap-2">
-        <a href="#/" onclick="go('/')" class="nav-link">Accueil</a>
-        <a href="#/voyages" onclick="go('/voyages')" class="nav-link">Destinations</a>
-        <a href="#/admin" onclick="go('/admin')" class="action-btn-sm">Studio</a>
+        <a href="#/" onclick="go('/')" class="nav-link">🏠 Accueil</a>
+        <a href="#/voyages" onclick="go('/voyages')" class="nav-link">✈️ Voyages</a>
+        <a href="#/admin" onclick="go('/admin')" class="action-btn-sm">🔐 Admin</a>
       </div>
 
       <button onclick="toggleMenu()" class="md:hidden p-3 rounded-2xl text-slate-300 hover:bg-white/5 transition-colors border border-white/10">
@@ -461,13 +460,13 @@
       </button>
     </div>
 
-    <div id="mobile-menu" class="hidden md:hidden pb-4 menu-slide">
-      <div class="glass-panel rounded-3xl p-3 grid gap-2">
-        <a href="#/" onclick="go('/');toggleMenu()" class="px-4 py-3 text-slate-100 hover:bg-white/5 rounded-2xl font-semibold transition-colors text-sm">Accueil</a>
-        <a href="#/voyages" onclick="go('/voyages');toggleMenu()" class="px-4 py-3 text-slate-100 hover:bg-white/5 rounded-2xl font-semibold transition-colors text-sm">Destinations</a>
-        <a href="#/admin" onclick="go('/admin');toggleMenu()" class="px-4 py-3 rounded-2xl font-semibold text-sm action-btn-sm">Studio</a>
+      <div id="mobile-menu" class="hidden md:hidden pb-4 menu-slide">
+        <div class="glass-panel rounded-3xl p-3 grid gap-2">
+          <a href="#/" onclick="go('/');toggleMenu()" class="px-4 py-3 text-slate-100 hover:bg-white/5 rounded-2xl font-semibold transition-colors text-sm">🏠 Accueil</a>
+          <a href="#/voyages" onclick="go('/voyages');toggleMenu()" class="px-4 py-3 text-slate-100 hover:bg-white/5 rounded-2xl font-semibold transition-colors text-sm">✈️ Voyages</a>
+          <a href="#/admin" onclick="go('/admin');toggleMenu()" class="px-4 py-3 rounded-2xl font-semibold text-sm action-btn-sm">🔐 Admin</a>
+        </div>
       </div>
-    </div>
   </div>
 </nav>
 
@@ -485,10 +484,10 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
         <div>
           <div class="flex items-center gap-4 mb-4">
-            <span class="brand-mark">T</span>
+            <span class="brand-mark" data-brand-logo></span>
             <div class="leading-none">
-              <div class="font-display font-bold text-white text-lg">Tranquille</div>
-              <div class="text-slate-400 text-[0.75rem] font-semibold uppercase tracking-[0.24em] mt-1">on est en vacances</div>
+              <div class="font-display font-bold text-white text-lg" data-brand-title>Tranquille</div>
+              <div class="text-slate-400 text-[0.75rem] font-semibold uppercase tracking-[0.24em] mt-1" data-brand-subtitle>on est en vacances</div>
             </div>
           </div>
           <p class="text-slate-400 text-sm leading-relaxed max-w-sm">Carnet de voyage immersif de la famille Potet. Une vitrine éditoriale pensée comme un journal visuel contemporain.</p>
@@ -496,9 +495,9 @@
         <div>
           <h3 class="text-slate-200 font-bold mb-4 text-sm uppercase tracking-[0.2em]">Explorer</h3>
           <ul class="space-y-2 text-sm">
-            <li><a href="#/" onclick="go('/')" class="hover:text-cyan-300 transition-colors cursor-pointer">Accueil</a></li>
-            <li><a href="#/voyages" onclick="go('/voyages')" class="hover:text-cyan-300 transition-colors cursor-pointer">Tous les voyages</a></li>
-            <li><a href="#/admin" onclick="go('/admin')" class="hover:text-cyan-300 transition-colors cursor-pointer">Studio</a></li>
+            <li><a href="#/" onclick="go('/')" class="hover:text-cyan-300 transition-colors cursor-pointer">🏠 Accueil</a></li>
+            <li><a href="#/voyages" onclick="go('/voyages')" class="hover:text-cyan-300 transition-colors cursor-pointer">✈️ Tous les voyages</a></li>
+            <li><a href="#/admin" onclick="go('/admin')" class="hover:text-cyan-300 transition-colors cursor-pointer">🔐 Admin</a></li>
           </ul>
         </div>
         <div>
@@ -590,6 +589,20 @@ const S = {
   editing: null,
   folderModalParent: null,
 };
+
+const BRAND_CONTEXT = {
+  logo: '🌴',
+  title: 'Tranquille,',
+  subtitle: 'on est en vacances',
+};
+
+function applyBrandContext() {
+  document.querySelectorAll('[data-brand-logo],[data-brand-title],[data-brand-subtitle]').forEach((el) => {
+    if (el.hasAttribute('data-brand-logo')) el.textContent = BRAND_CONTEXT.logo;
+    else if (el.hasAttribute('data-brand-title')) el.textContent = BRAND_CONTEXT.title;
+    else if (el.hasAttribute('data-brand-subtitle')) el.textContent = BRAND_CONTEXT.subtitle;
+  });
+}
 
 const folders = [
   { id:1, name:'Europe',    slug:'europe',    parent_id:null, icon:'🇪🇺' },
@@ -900,6 +913,7 @@ function route() {
     roots().map(f => `<li><a href="#/voyages/${f.slug}" onclick="go('/voyages/${f.slug}')" class="hover:text-sky-400 transition-colors cursor-pointer flex items-center gap-1.5">${f.icon} ${f.name}</a></li>`).join('');
 }
 window.addEventListener('hashchange', route);
+applyBrandContext();
 
 // ──────────────────────────────────────────────
 // SHARED: ARTICLE CARD
