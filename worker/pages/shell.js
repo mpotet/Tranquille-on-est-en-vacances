@@ -28,7 +28,7 @@ tailwind.config = {
 </script>
 <style>
 html{scroll-behavior:smooth}
-.hero-overlay{background:linear-gradient(160deg,rgba(14,165,233,.65) 0%,rgba(249,115,22,.45) 100%)}
+.hero-overlay{background:linear-gradient(to top,rgba(2,6,23,.82) 0%,rgba(2,6,23,.22) 55%,transparent 100%),linear-gradient(135deg,rgba(14,165,233,.55) 0%,rgba(249,115,22,.4) 100%)}
 .voyage-card{transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s ease}
 .voyage-card:hover{transform:translateY(-6px);box-shadow:0 24px 48px rgba(0,0,0,.13)}
 .gradient-text{background:linear-gradient(135deg,#0EA5E9,#F97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}

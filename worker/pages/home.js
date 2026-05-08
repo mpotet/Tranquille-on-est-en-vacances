@@ -15,31 +15,31 @@ ${NAV('home')}
 <main class="pt-16">
 
   <!-- Hero -->
-  <section id="hero" class="relative min-h-[88vh] flex items-center overflow-hidden bg-sky-900">
+  <section id="hero" class="relative min-h-screen flex items-end sm:items-center overflow-hidden bg-sky-950">
     <div class="absolute inset-0">
-      <img id="hero-img" src="" alt="Voyage en famille" class="w-full h-full object-cover opacity-0 transition-opacity duration-700">
+      <img id="hero-img" src="" alt="Voyage en famille" class="w-full h-full object-cover opacity-0 transition-opacity duration-1000">
       <div class="absolute inset-0 hero-overlay"></div>
     </div>
-    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-white py-20">
-      <div class="max-w-2xl">
-        <div class="flex items-center gap-3 mb-6">
-          <span class="text-5xl float-anim">🌴</span>
-          <span class="bg-white/20 backdrop-blur-sm text-white text-sm font-bold px-4 py-2 rounded-full border border-white/30">Le blog de voyage de la famille Potet</span>
+    <div class="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 text-white pb-24 pt-28 sm:py-24">
+      <div class="max-w-xl">
+        <div class="inline-flex items-center gap-2 mb-5 bg-white/15 backdrop-blur-sm border border-white/25 rounded-full px-4 py-2">
+          <span class="text-xl float-anim">🌴</span>
+          <span class="text-sm font-semibold">Le blog de voyage de la famille Potet</span>
         </div>
-        <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-6 drop-shadow-lg">
+        <h1 class="font-display text-4xl sm:text-5xl lg:text-7xl font-bold leading-[1.1] mb-5 drop-shadow-lg">
           Tranquille,<br><span class="text-yellow-300">on est en</span><br>vacances ! ☀️
         </h1>
-        <p class="text-xl sm:text-2xl text-white/90 leading-relaxed mb-8 font-medium">
-          Nos aventures, nos découvertes, nos coups de cœur.<br>Des souvenirs à partager avec ceux qu'on aime.
+        <p class="text-base sm:text-xl text-white/85 leading-relaxed mb-8">
+          Nos aventures, nos découvertes, nos coups de cœur.<br class="hidden sm:block">Des souvenirs à partager avec ceux qu'on aime.
         </p>
-        <div class="flex flex-wrap gap-4">
-          <a href="/voyages" class="bg-white text-sky-700 font-bold px-8 py-4 rounded-2xl hover:bg-yellow-300 hover:text-stone-900 transition-all hover:scale-105 shadow-xl">✈️ Découvrir nos voyages</a>
-          <a href="/voyages" class="bg-white/20 backdrop-blur-sm text-white font-bold px-8 py-4 rounded-2xl hover:bg-white/30 transition-all border border-white/40">📸 Voir les photos</a>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <a href="/voyages" class="inline-flex items-center justify-center gap-2 bg-white text-sky-700 font-bold px-7 py-4 rounded-2xl hover:bg-yellow-300 hover:text-stone-900 transition-all hover:scale-105 shadow-xl">✈️ Découvrir nos voyages</a>
+          <a href="/voyages" class="inline-flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm text-white font-bold px-7 py-4 rounded-2xl hover:bg-white/30 transition-all border border-white/40">📸 Voir les photos</a>
         </div>
       </div>
     </div>
-    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/70 flex flex-col items-center gap-1.5 animate-bounce">
-      <span class="text-xs font-medium">Découvrir</span>
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 flex flex-col items-center gap-1 animate-bounce">
+      <span class="text-xs font-medium tracking-wider uppercase">Découvrir</span>
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
     </div>
   </section>

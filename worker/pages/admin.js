@@ -316,7 +316,10 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
 
       <!-- Photo upload -->
       <div>
-        <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide">Photos</label>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Photos</label>
+          ${articleId !== null ? '<p class="text-xs text-sky-600 font-semibold">💡 Survolez une photo et cliquez <strong>📎 Insérer</strong> pour l\'ajouter dans le texte</p>' : '<p class="text-xs text-stone-400">Sauvegardez d\'abord, puis insérez les photos dans le texte</p>'}
+        </div>
         <div id="dropzone"
              class="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
              onclick="document.getElementById('file-in').click()"
@@ -470,6 +473,15 @@ function insertMd(syntax) {
   ta.value=ta.value.slice(0,s)+syntax+ta.value.slice(e);
   ta.focus(); ta.setSelectionRange(s+syntax.length, s+syntax.length);
 }
+function insertPhotoInText(url, caption) {
+  edTab('write');
+  const ta=document.getElementById('e-content'); if(!ta) return;
+  const md=`\n![${caption}](${url})\n`;
+  const s=ta.selectionStart;
+  ta.value=ta.value.slice(0,s)+md+ta.value.slice(ta.selectionEnd);
+  ta.focus(); ta.setSelectionRange(s+md.length, s+md.length);
+  toast('📎 Photo insérée dans le texte','ok');
+}
 
 // ── Cover preview ─────────────────────────────────────────────
 function previewCover(url) {
@@ -483,19 +495,17 @@ function renderPhotoGrid() {
   const existing = existingPhotos.map((p,i)=>\`
     <div class="relative aspect-square overflow-hidden rounded-xl group">
       <img src="\${esc(p.url)}" alt="\${esc(p.caption||'')}" class="w-full h-full object-cover">
-      <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
-        <button onclick="delExistingPhoto(\${p.id}, \${i})" class="bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
+      <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
+        <button onclick="insertPhotoInText('\${esc(p.url)}','\${esc(p.caption||'photo')}')" class="bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">📎 Insérer</button>
+        <button onclick="delExistingPhoto(\${p.id}, \${i})" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">🗑️ Supprimer</button>
       </div>
     </div>\`).join('');
   const newPics = newPhotos.map((p,i)=>\`
     <div class="relative aspect-square overflow-hidden rounded-xl group">
       <img src="\${p.dataUrl}" alt="\${esc(p.name)}" class="w-full h-full object-cover">
-      <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
-        <button onclick="rmNewPhoto(\${i})" class="bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
+      <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
+        <span class="bg-stone-800/80 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-center leading-tight">Sauvegardez<br>pour insérer</span>
+        <button onclick="rmNewPhoto(\${i})" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">🗑️ Supprimer</button>
       </div>
       <div class="absolute bottom-1 right-1 bg-orange-500 text-white text-xs rounded-full px-1.5 font-bold">Nouveau</div>
     </div>\`).join('');
@@ -503,11 +513,23 @@ function renderPhotoGrid() {
 }
 
 function handleFiles(files) {
-  Array.from(files).forEach(f => {
-    const r=new FileReader();
-    r.onload=e=>{ newPhotos.push({dataUrl:e.target.result, name:f.name, file:f}); renderPhotoGrid(); };
-    r.readAsDataURL(f);
-  });
+  if (ARTICLE_ID) {
+    // Existing article: upload immediately so photos can be inserted in text right away
+    toast('📤 Upload en cours...','ok');
+    const fd = new FormData();
+    Array.from(files).forEach(f => fd.append('photo', f));
+    fetch('/api/articles/'+ARTICLE_ID+'/photos', {method:'POST', body:fd})
+      .then(r=>r.json())
+      .then(data=>{ existingPhotos.push(...(data.uploaded||[])); renderPhotoGrid(); toast('✅ Photos ajoutées ! Survolez pour insérer.','ok'); })
+      .catch(()=>toast('Erreur upload','err'));
+  } else {
+    // New article: queue locally, will be uploaded after save
+    Array.from(files).forEach(f => {
+      const r=new FileReader();
+      r.onload=e=>{ newPhotos.push({dataUrl:e.target.result, name:f.name, file:f}); renderPhotoGrid(); };
+      r.readAsDataURL(f);
+    });
+  }
 }
 function handleDrop(e) {
   e.preventDefault(); document.getElementById('dropzone').classList.remove('border-sky-400','bg-sky-50');
@@ -557,7 +579,12 @@ async function saveArticle(publish) {
   }
 
   toast((publish?'🚀 Publié !':'💾 Sauvegardé !'),'ok');
-  setTimeout(()=>location.href='/admin/dashboard', 800);
+  // For new articles: redirect to editor so photos can be inserted in text
+  if (!ARTICLE_ID && savedId) {
+    setTimeout(()=>location.href='/admin/editor/'+savedId, 800);
+  } else {
+    setTimeout(()=>location.href='/admin/dashboard', 800);
+  }
 }
 
 async function delArticle() {
