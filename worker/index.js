@@ -60,7 +60,7 @@ function fmtDateRange(a){
 }
 function card(a){return \`<article class="voyage-card bg-white rounded-3xl overflow-hidden shadow-md cursor-pointer" onclick="location.href='/voyage/\${a.slug}'">
   <div class="relative h-52 overflow-hidden"><img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy" onerror="this.src='https://picsum.photos/seed/\${a.id}x/800/600'">
-  <div class="absolute inset-0 bg-black/50"></div>
+  <div class="absolute inset-0 bg-sky-950"></div>
   \${a.folder_name?'<div class="absolute top-3 left-3 glass-panel rounded-full px-3 py-1 text-xs font-bold text-stone-700">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</div>':''}
   </div>
   <div class="p-5"><div class="text-stone-400 text-xs mb-2">📅 \${fmtDateRange(a)} · 📍 \${esc(a.destination)}</div>
@@ -77,7 +77,7 @@ async function init(){
   ]);
   const activeF = folder ? folders.find(f=>f.slug===folder) : null;
   const totalCount = (artData.total ?? artData.articles.length);
-  document.getElementById('subtitle').innerHTML = '<strong class="text-sky-700">'+totalCount+'</strong> aventure'+(totalCount>1?'s':'')+' à découvrir'+(activeF?' dans <strong class="text-orange-500">'+esc(activeF.icon||'')+' '+esc(activeF.name)+'</strong>':'');
+  document.getElementById('subtitle').innerHTML = '<strong class="text-sky-700">'+totalCount+'</strong> aventure'+(totalCount!==1?'s':'')+' à découvrir'+(activeF?' dans <strong class="text-orange-500">'+esc(activeF.icon||'')+' '+esc(activeF.name)+'</strong>':'');
   const roots = folders.filter(f=>!f.parent_id);
   const children = pid => folders.filter(f=>f.parent_id===pid);
   let btns='<a href="/voyages" class="px-4 py-2 rounded-full font-bold text-sm border-2 transition-all '+((!folder)?'bg-sky-500 text-white border-sky-500 shadow-md':'bg-white text-stone-600 border-stone-200 hover:border-sky-300 hover:text-sky-600')+'">🌍 Tous</a>';
