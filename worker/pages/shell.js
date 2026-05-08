@@ -34,9 +34,9 @@ tailwind.config = {
   --orange:#C65A1E;
   --orange-rgb:198,90,30;
   --white:#FFFFFF;
-  --ink:#2C246E;
-  --muted:#655D97;
-  --muted-deep:#8279B3;
+  --ink:#6050DC;
+  --muted:rgba(96,80,220,.82);
+  --muted-deep:rgba(96,80,220,.62);
   --panel:#FFFFFF;
   --panel-soft:rgba(96,80,220,.05);
   --line:rgba(96,80,220,.22);
@@ -60,7 +60,7 @@ body::before,body::after{display:none}
 .action-btn,.action-btn-sm{display:inline-flex;align-items:center;justify-content:center;gap:.7rem;border-radius:999px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;transition:transform .2s ease,box-shadow .2s ease,background-color .2s ease,border-color .2s ease;background:var(--blue)!important;color:#fff!important;border:1px solid rgba(96,80,220,.65);box-shadow:0 12px 28px rgba(96,80,220,.22)}
 .action-btn{padding:1rem 1.55rem}
 .action-btn-sm{padding:.82rem 1.18rem;font-size:.82rem}
-.action-btn:hover,.action-btn-sm:hover{transform:translateY(-2px);background:#5243cf!important;border-color:#5243cf;box-shadow:0 16px 34px rgba(96,80,220,.26)}
+.action-btn:hover,.action-btn-sm:hover{transform:translateY(-2px);background:var(--blue)!important;border-color:var(--blue);box-shadow:0 16px 34px rgba(96,80,220,.26)}
 .subtle-btn{display:inline-flex;align-items:center;justify-content:center;gap:.7rem;border-radius:999px;padding:.98rem 1.5rem;border:1px solid var(--line-strong);background:#fff;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;transition:background-color .2s ease,border-color .2s ease,transform .2s ease,color .2s ease}
 .subtle-btn:hover{transform:translateY(-2px);border-color:var(--blue);background:rgba(96,80,220,.08);color:var(--blue)}
 .luxe-divider{height:1px;width:100%;background:rgba(96,80,220,.25)}
@@ -111,7 +111,7 @@ body::before,body::after{display:none}
 .text-sky-100,.text-sky-800,.text-sky-700,.text-sky-600,.hover\:text-sky-700:hover,.hover\:text-sky-600:hover,.hover\:text-sky-400:hover,.text-cyan-300,.text-cyan-200,.hover\:text-cyan-300:hover,.hover\:text-cyan-200:hover{color:var(--blue)!important}
 .group:hover .group-hover\:text-sky-700{color:var(--blue)!important}
 .text-orange-500,.text-orange-400,.hover\:text-orange-600:hover,.text-yellow-300,.text-amber-700,.text-amber-600,.text-red-700,.text-red-600{color:var(--orange)!important}
-.text-emerald-700,.text-emerald-600,.hover\:text-emerald-600:hover,.text-violet-300{color:var(--blue)!important}
+.text-emerald-700,.text-emerald-600,.hover\:text-emerald-600:hover{color:var(--blue)!important}
 .border-stone-100,.border-stone-200,.border-stone-300,.border-stone-800,.border-sky-100,.border-red-100,.border-emerald-100,.border-amber-100,.border-white\/10{border-color:var(--line)!important}
 .border-sky-500,.border-sky-400,.focus\:border-sky-400:focus,.hover\:border-sky-300:hover,.hover\:border-cyan-300\/30:hover,.border-cyan-400\/20,.border-orange-500,.hover\:border-orange-300:hover{border-color:var(--line-strong)!important}
 .bg-cyan-500\/10,.bg-white\/5{background-color:rgba(96,80,220,.06)!important}
@@ -172,7 +172,7 @@ export const FOOTER = `
               <div class="text-slate-400 text-[0.72rem] font-bold uppercase tracking-[0.24em] mt-1">on est en vacances</div>
             </div>
           </div>
-          <p class="text-stone-500 text-sm leading-relaxed">Un carnet de voyage familial mis en scène comme une collection précieuse, entre bleu Majorelle et lumière dorée.</p>
+          <p class="text-stone-500 text-sm leading-relaxed">Un carnet de voyage familial épuré, sur fond blanc avec bleu #6050DC et quelques touches orange brûlé.</p>
         </div>
         <div>
           <h3 class="text-white font-bold mb-4 text-sm uppercase tracking-[0.22em]">Explorer</h3>
@@ -189,7 +189,7 @@ export const FOOTER = `
         </div>
       </div>
       <div class="border-t border-stone-800 pt-6 text-center text-stone-500 text-sm">
-        Bleu Majorelle, souvenirs dorés &bull; ${new Date().getFullYear()}
+        Bleu #6050DC &bull; ${new Date().getFullYear()}
       </div>
     </div>
   </div>
