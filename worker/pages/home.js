@@ -116,19 +116,19 @@ function fmtDateRange(a){
 }
 
 function articleCard(a){
-  return '<article class="voyage-card bg-white rounded-3xl overflow-hidden shadow-md cursor-pointer" onclick="location.href=\\'/voyage/'+a.slug+'\\'">'+
-    '<div class="relative h-52 overflow-hidden">'+
-      '<img src="'+esc(a.cover_url||'')+'" alt="'+esc(a.title)+'" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy" onerror="this.src=\\'https://picsum.photos/seed/'+a.id+'x/800/600\\'">'+
-      '<div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>'+
-      (a.folder_name?'<div class="absolute top-3 left-3 glass-panel rounded-full px-3 py-1 text-xs font-bold text-stone-700">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</div>':'')+
-    '</div>'+
-    '<div class="p-5">'+
-      '<div class="text-stone-400 text-xs mb-2 uppercase tracking-[0.16em]">📅 '+fmtDateRange(a)+' · 📍 '+esc(a.destination)+'</div>'+
-      '<h3 class="font-display font-bold text-lg text-stone-900 mb-2 line-clamp-2 leading-snug">'+esc(a.title)+'</h3>'+
-      '<p class="text-stone-500 text-sm leading-relaxed line-clamp-2 mb-4">'+esc(a.short_description)+'</p>'+
-      '<span class="text-sky-600 text-sm font-bold uppercase tracking-[0.14em]">Lire la suite →</span>'+
-    '</div>'+
-  '</article>';
+  return \`<article class="voyage-card bg-white rounded-3xl overflow-hidden shadow-md cursor-pointer" onclick="location.href='/voyage/\${a.slug}'">
+    <div class="relative h-52 overflow-hidden">
+      <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy" onerror="this.src='https://picsum.photos/seed/\${a.id}x/800/600'">
+      <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+      \${a.folder_name?'<div class="absolute top-3 left-3 glass-panel rounded-full px-3 py-1 text-xs font-bold text-stone-700">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</div>':''}
+    </div>
+    <div class="p-5">
+      <div class="text-stone-400 text-xs mb-2 uppercase tracking-[0.16em]">📅 \${fmtDateRange(a)} · 📍 \${esc(a.destination)}</div>
+      <h3 class="font-display font-bold text-lg text-stone-900 mb-2 line-clamp-2 leading-snug">\${esc(a.title)}</h3>
+      <p class="text-stone-500 text-sm leading-relaxed line-clamp-2 mb-4">\${esc(a.short_description)}</p>
+      <span class="text-sky-600 text-sm font-bold uppercase tracking-[0.14em]">Lire la suite →</span>
+    </div>
+  </article>\`;
 }
 
 async function init(){
