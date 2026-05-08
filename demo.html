@@ -296,7 +296,7 @@
     @media (max-width: 767px) {
       .editor-toolbar {
         position: sticky;
-        bottom: calc(env(safe-area-inset-bottom, 0) + 0.35rem);
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 0.35rem);
         z-index: 60;
         margin: 0.75rem -0.2rem 0.5rem;
         padding: 0.6rem;
@@ -1630,7 +1630,7 @@ function pgEditor(app, articleId) {
               ['Lien','formatEditor(\'createLink\')'],
             ].map(([label,action])=>`
               <button type="button" onclick="${action}" class="md-toolbar-btn">${label}</button>`).join('')}
-            <button type="button" onclick="triggerInlineImageImport()" class="md-toolbar-btn inline-image-btn" aria-label="Importer une image dans le texte">🖼️ Ajouter une image</button>
+            <button type="button" onclick="triggerInlineImageImport()" class="md-toolbar-btn inline-image-btn" aria-label="Importer une image dans le texte"><span aria-hidden="true">🖼️</span><span>Ajouter une image</span></button>
           </div>
           <div id="e-content"
                contenteditable="true"
@@ -1757,7 +1757,7 @@ function photoThumb(p, i) {
   <div class="relative aspect-square overflow-hidden rounded-xl group">
     <img src="${p.url}" alt="${esc(p.caption||'')}" class="w-full h-full object-cover">
     <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
-      <button onclick="insertPhotoInText('${p.url}')"
+      <button onclick="insertPhotoInText('${p.url}','${esc(p.caption||'Photo du voyage')}')"
               class="bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">Insérer</button>
       <button onclick="rmPhoto(${i})"
               class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">Supprimer</button>
@@ -1767,6 +1767,9 @@ function photoThumb(p, i) {
 
 function editorNode() {
   return document.getElementById('e-content');
+}
+function escapeHtmlAttr(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 function placeCaretAtEnd(el) {
   const range = document.createRange();
@@ -1806,10 +1809,11 @@ function insertHtmlInEditor(html) {
   }
   document.execCommand('insertHTML', false, safeHtml);
 }
-function insertPhotoInText(url) {
+function insertPhotoInText(url, altText = '') {
   const safeUrl = sanitizeUrl(url, { allowDataImage: true });
   if (!safeUrl) { toast('Image invalide.','err'); return; }
-  insertHtmlInEditor(`<figure><img src="${safeUrl}" alt="Image importée"></figure><p><br></p>`);
+  const safeAlt = escapeHtmlAttr((altText || '').trim().slice(0, 180));
+  insertHtmlInEditor(`<figure><img src="${safeUrl}" alt="${safeAlt}"></figure><p><br></p>`);
   toast('Photo importée dans l’éditeur.','ok');
 }
 function triggerInlineImageImport() {
@@ -1827,7 +1831,7 @@ function handleInlineImageImport(files) {
       };
       S.editing.photos.push(photo);
       refreshPhotoGrid();
-      insertPhotoInText(photo.url);
+      insertPhotoInText(photo.url, photo.caption || 'Photo du voyage');
     };
     reader.readAsDataURL(file);
   });
