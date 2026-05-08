@@ -269,6 +269,44 @@
       color: #67e8f9;
       border-color: rgba(103, 232, 249, 0.42);
     }
+    .editor-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.75rem;
+    }
+    .inline-image-btn {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.4), rgba(59, 130, 246, 0.35));
+      color: #e0f2fe;
+      border-color: rgba(56, 189, 248, 0.7);
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-weight: 800;
+    }
+    .inline-image-btn:hover {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.55), rgba(59, 130, 246, 0.5));
+      color: #f0f9ff;
+      border-color: rgba(125, 211, 252, 0.9);
+    }
+    @media (max-width: 767px) {
+      .editor-toolbar {
+        position: sticky;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 0.35rem);
+        z-index: 60;
+        margin: 0.75rem -0.2rem 0.5rem;
+        padding: 0.6rem;
+        border-radius: 1rem;
+        background: rgba(2, 6, 23, 0.95);
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        box-shadow: 0 10px 28px rgba(2, 6, 23, 0.35);
+      }
+      .editor-toolbar .md-toolbar-btn {
+        font-size: 0.74rem;
+        padding: 0.42rem 0.66rem;
+      }
+    }
 
     .page-in { animation: fadeIn 0.3s ease-in-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -455,6 +493,23 @@
         background: rgba(224, 242, 254, 0.95);
         color: #0369a1;
         border-color: rgba(56, 189, 248, 0.5);
+      }
+      .inline-image-btn {
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.22), rgba(59, 130, 246, 0.24));
+        color: #0c4a6e;
+        border-color: rgba(14, 165, 233, 0.56);
+      }
+      .inline-image-btn:hover {
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.32), rgba(59, 130, 246, 0.35));
+        color: #075985;
+        border-color: rgba(2, 132, 199, 0.62);
+      }
+      @media (max-width: 767px) {
+        .editor-toolbar {
+          background: rgba(255, 255, 255, 0.97);
+          border-color: rgba(148, 163, 184, 0.5);
+          box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
+        }
       }
     }
   </style>
@@ -1558,10 +1613,7 @@ function pgEditor(app, articleId) {
             <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Contenu de l'article</label>
             <span class="text-xs text-stone-500 font-semibold">Mise en forme en direct</span>
           </div>
-          <div id="e-content"
-               contenteditable="true"
-               class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 bg-white min-h-[420px]">${S.editing.content}</div>
-          <div class="flex flex-wrap gap-1 mt-3">
+          <div class="editor-toolbar" role="toolbar" aria-label="Outils de mise en forme du texte">
             ${[
               ['Gras','formatEditor(\'bold\')'],
               ['Italique','formatEditor(\'italic\')'],
@@ -1572,8 +1624,11 @@ function pgEditor(app, articleId) {
               ['Lien','formatEditor(\'createLink\')'],
             ].map(([label,action])=>`
               <button type="button" onclick="${action}" class="md-toolbar-btn">${label}</button>`).join('')}
-            <button type="button" onclick="triggerInlineImageImport()" class="md-toolbar-btn bg-sky-500/20 border-sky-400/40 text-sky-700 font-semibold">Importer une image</button>
+            <button type="button" onclick="triggerInlineImageImport()" class="md-toolbar-btn inline-image-btn" aria-label="Importer une image dans le texte">🖼️ Ajouter une image</button>
           </div>
+          <div id="e-content"
+               contenteditable="true"
+               class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 pb-24 md:pb-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 bg-white min-h-[420px]">${S.editing.content}</div>
           <input type="file" id="inline-image-in" accept="image/*" multiple class="hidden" onchange="handleInlineImageImport(this.files)">
         </div>
 
@@ -1696,7 +1751,7 @@ function photoThumb(p, i) {
   <div class="relative aspect-square overflow-hidden rounded-xl group">
     <img src="${p.url}" alt="${esc(p.caption||'')}" class="w-full h-full object-cover">
     <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
-      <button onclick="insertPhotoInText('${p.url}','${esc(p.caption||'photo')}')"
+      <button onclick="insertPhotoInText('${p.url}')"
               class="bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">Insérer</button>
       <button onclick="rmPhoto(${i})"
               class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">Supprimer</button>
@@ -1706,9 +1761,6 @@ function photoThumb(p, i) {
 
 function editorNode() {
   return document.getElementById('e-content');
-}
-function escapeHtmlText(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 function placeCaretAtEnd(el) {
   const range = document.createRange();
@@ -1748,11 +1800,10 @@ function insertHtmlInEditor(html) {
   }
   document.execCommand('insertHTML', false, safeHtml);
 }
-function insertPhotoInText(url, caption) {
+function insertPhotoInText(url) {
   const safeUrl = sanitizeUrl(url, { allowDataImage: true });
   if (!safeUrl) { toast('Image invalide.','err'); return; }
-  const safeCaption = escapeHtmlText(caption || 'photo');
-  insertHtmlInEditor(`<figure><img src="${safeUrl}" alt=""><figcaption>${safeCaption}</figcaption></figure><p><br></p>`);
+  insertHtmlInEditor(`<figure><img src="${safeUrl}" alt=""></figure><p><br></p>`);
   toast('Photo importée dans l’éditeur.','ok');
 }
 function triggerInlineImageImport() {
@@ -1766,11 +1817,11 @@ function handleInlineImageImport(files) {
       const photo = {
         id: createLocalId(),
         url: e.target.result,
-        caption: normalizeCaption(file.name),
+        caption: '',
       };
       S.editing.photos.push(photo);
       refreshPhotoGrid();
-      insertPhotoInText(photo.url, photo.caption || 'photo');
+      insertPhotoInText(photo.url);
     };
     reader.readAsDataURL(file);
   });
