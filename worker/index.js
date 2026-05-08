@@ -153,7 +153,7 @@ function renderVoyageContent(content, photos){
   const photoIndexByUrl = new Map((photos || []).map((p, i) => [p.url, i]));
 
   wrapper.querySelectorAll('img').forEach(img => {
-    img.className = (img.className ? img.className + ' ' : '') + 'rounded-2xl my-6 shadow-md';
+    img.className = `${img.className || ''} rounded-2xl my-6 shadow-md`.trim();
     img.loading = 'lazy';
     const idx = photoIndexByUrl.get(img.getAttribute('src') || '');
     if (typeof idx === 'number') {
