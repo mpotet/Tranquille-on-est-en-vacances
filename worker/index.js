@@ -60,7 +60,7 @@ function fmtDateRange(a){
 }
 function card(a){return \`<article class="voyage-card bg-white rounded-3xl overflow-hidden shadow-md cursor-pointer" onclick="location.href='/voyage/\${a.slug}'">
   <div class="relative h-52 overflow-hidden"><img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy" onerror="this.src='https://picsum.photos/seed/\${a.id}x/800/600'">
-  <div class="absolute inset-0 hero-overlay"></div>
+  <div class="absolute inset-0 bg-black/50"></div>
   \${a.folder_name?'<div class="absolute top-3 left-3 glass-panel rounded-full px-3 py-1 text-xs font-bold text-stone-700">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</div>':''}
   </div>
   <div class="p-5"><div class="text-stone-400 text-xs mb-2">📅 \${fmtDateRange(a)} · 📍 \${esc(a.destination)}</div>
