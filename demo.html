@@ -26,10 +26,10 @@
             display: ['"Playfair Display"', 'Georgia', 'serif'],
           },
           colors: {
-            ink: '#1A1450',
-            panel: '#261E66',
+            ink: '#6050DC',
+            panel: '#FFFFFF',
             neon: '#6050DC',
-            aurora: '#2F7A59',
+            aurora: '#C65A1E',
           }
         }
       }
@@ -44,9 +44,9 @@
   --orange:#C65A1E;
   --orange-rgb:198,90,30;
   --white:#FFFFFF;
-  --ink:#2C246E;
-  --muted:#655D97;
-  --muted-deep:#8279B3;
+  --ink:#6050DC;
+  --muted:rgba(96,80,220,.82);
+  --muted-deep:rgba(96,80,220,.62);
   --panel:#FFFFFF;
   --panel-soft:rgba(96,80,220,.05);
   --line:rgba(96,80,220,.22);
@@ -70,7 +70,7 @@ body::before,body::after{display:none}
 .action-btn,.action-btn-sm{display:inline-flex;align-items:center;justify-content:center;gap:.7rem;border-radius:999px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;transition:transform .2s ease,box-shadow .2s ease,background-color .2s ease,border-color .2s ease;background:var(--blue)!important;color:#fff!important;border:1px solid rgba(96,80,220,.65);box-shadow:0 12px 28px rgba(96,80,220,.22)}
 .action-btn{padding:1rem 1.55rem}
 .action-btn-sm{padding:.82rem 1.18rem;font-size:.82rem}
-.action-btn:hover,.action-btn-sm:hover{transform:translateY(-2px);background:#5243cf!important;border-color:#5243cf;box-shadow:0 16px 34px rgba(96,80,220,.26)}
+.action-btn:hover,.action-btn-sm:hover{transform:translateY(-2px);background:var(--blue)!important;border-color:var(--blue);box-shadow:0 16px 34px rgba(96,80,220,.26)}
 .subtle-btn{display:inline-flex;align-items:center;justify-content:center;gap:.7rem;border-radius:999px;padding:.98rem 1.5rem;border:1px solid var(--line-strong);background:#fff;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;transition:background-color .2s ease,border-color .2s ease,transform .2s ease,color .2s ease}
 .subtle-btn:hover{transform:translateY(-2px);border-color:var(--blue);background:rgba(96,80,220,.08);color:var(--blue)}
 .luxe-divider{height:1px;width:100%;background:rgba(96,80,220,.25)}
@@ -140,7 +140,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--line-strong)!importan
 
 </head>
 
-<body class="bg-ink font-sans text-slate-100 antialiased min-h-screen">
+<body class="bg-white font-sans text-stone-900 antialiased min-h-screen">
 
 <!-- ═══════════════════════════════════════════
      NAVIGATION
