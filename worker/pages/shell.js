@@ -29,22 +29,25 @@ tailwind.config = {
 <style>
 :root{
   --majorelle:#6050DC;
+  --majorelle-rgb:96,80,220;
   --majorelle-deep:#271D77;
   --majorelle-soft:#EEE9FF;
   --majorelle-wash:#F6F1FF;
   --palm:#2F7A59;
+  --palm-rgb:47,122,89;
   --palm-deep:#1F5B41;
   --palm-soft:#E2F1E8;
   --sun:#F4C85D;
   --sun-soft:#FFF2CC;
   --sand:#FFF7E8;
   --ink:#241C58;
+  --ink-rgb:36,28,88;
   --muted:#6D6598;
   --line:rgba(96,80,220,.18);
 }
 html{scroll-behavior:smooth}
-body{background:radial-gradient(circle at 85% 10%,rgba(96,80,220,.13),transparent 28%),radial-gradient(circle at 12% 18%,rgba(47,122,89,.11),transparent 24%),linear-gradient(180deg,#FCFBFF 0%,#F7F2FF 52%,#FFF8EC 100%);color:var(--ink)}
-.hero-overlay{background:linear-gradient(to top,rgba(36,28,88,.88) 0%,rgba(36,28,88,.32) 54%,transparent 100%),linear-gradient(135deg,rgba(96,80,220,.56) 0%,rgba(47,122,89,.34) 100%)}
+body{background:radial-gradient(circle at 85% 10%,rgba(var(--majorelle-rgb),.13),transparent 28%),radial-gradient(circle at 12% 18%,rgba(var(--palm-rgb),.11),transparent 24%),linear-gradient(180deg,#FCFBFF 0%,#F7F2FF 52%,#FFF8EC 100%);color:var(--ink)}
+.hero-overlay{background:linear-gradient(to top,rgba(var(--ink-rgb),.88) 0%,rgba(var(--ink-rgb),.32) 54%,transparent 100%),linear-gradient(135deg,rgba(var(--majorelle-rgb),.56) 0%,rgba(var(--palm-rgb),.34) 100%)}
 .voyage-card{transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s ease;border:1px solid rgba(96,80,220,.08)}
 .voyage-card:hover{transform:translateY(-6px);box-shadow:0 24px 48px rgba(39,29,119,.14)}
 .gradient-text{background:linear-gradient(135deg,var(--majorelle) 0%,var(--sun) 52%,var(--palm) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
@@ -115,7 +118,7 @@ export const NAV = (active = '') => `
         <span class="text-2xl">🌴</span>
         <div class="leading-none">
           <span class="font-display font-bold text-base text-sky-600 group-hover:text-sky-700 transition-colors block">Tranquille,</span>
-          <span class="text-xs font-bold text-orange-500 block">on est en vacances</span>
+          <span class="text-xs font-bold text-emerald-600 block">on est en vacances</span>
         </div>
       </a>
       <div class="hidden md:flex items-center gap-5">
@@ -146,7 +149,7 @@ export const FOOTER = `
           <span class="text-3xl">🌴</span>
           <div class="leading-none">
             <div class="font-display font-bold text-white text-base">Tranquille,</div>
-            <div class="text-orange-400 text-xs font-bold">on est en vacances</div>
+            <div class="text-emerald-600 text-xs font-bold">on est en vacances</div>
           </div>
         </div>
         <p class="text-stone-400 text-sm leading-relaxed">Le blog de voyage de la famille Potet.</p>
