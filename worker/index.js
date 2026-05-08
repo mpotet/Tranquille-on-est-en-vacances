@@ -33,9 +33,10 @@ function voyagesPage() {
 <body class="bg-stone-50 font-sans text-stone-900 antialiased">
 ${NAV('voyages')}
 <main class="pt-16">
-  <div class="bg-gradient-to-br from-sky-500 to-blue-700 text-white py-14">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3">✈️ Tous nos voyages</h1>
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="section-panel rounded-[2rem] px-6 py-8 sm:px-10 sm:py-10 overflow-hidden relative">
+      <div class="eyebrow mb-5">Collection Majorelle</div>
+      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3 text-white">✈️ Tous nos voyages</h1>
       <p id="subtitle" class="text-sky-100 text-lg">Chargement...</p>
     </div>
   </div>
@@ -60,7 +61,7 @@ function fmtDateRange(a){
 function card(a){return \`<article class="voyage-card bg-white rounded-3xl overflow-hidden shadow-md cursor-pointer" onclick="location.href='/voyage/\${a.slug}'">
   <div class="relative h-52 overflow-hidden"><img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy" onerror="this.src='https://picsum.photos/seed/\${a.id}x/800/600'">
   <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-  \${a.folder_name?'<div class="absolute top-3 left-3 bg-white/90 rounded-full px-3 py-1 text-xs font-bold text-stone-700">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</div>':''}
+  \${a.folder_name?'<div class="absolute top-3 left-3 glass-panel rounded-full px-3 py-1 text-xs font-bold text-stone-700">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</div>':''}
   </div>
   <div class="p-5"><div class="text-stone-400 text-xs mb-2">📅 \${fmtDateRange(a)} · 📍 \${esc(a.destination)}</div>
   <h3 class="font-display font-bold text-lg text-stone-900 mb-2 line-clamp-2 leading-snug">\${esc(a.title)}</h3>
@@ -114,7 +115,7 @@ function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric'
 async function init(){
   const a = await fetch('/api/articles/'+SLUG).then(r=>r.json()).catch(()=>null);
   if (!a || a.error) {
-    document.getElementById('main').innerHTML = \`<div class="max-w-2xl mx-auto px-4 py-32 text-center"><span class="text-6xl block mb-6">🗺️</span><h1 class="font-display text-3xl font-bold text-stone-900 mb-4">Voyage introuvable</h1><p class="text-stone-500 mb-8">Ce voyage n'existe pas ou n'est pas encore publié.</p><a href="/voyages" class="bg-sky-500 text-white font-bold px-6 py-3 rounded-2xl hover:bg-sky-600 transition-colors">← Retour aux voyages</a></div>\`;
+    document.getElementById('main').innerHTML = \`<div class="max-w-2xl mx-auto px-4 py-32 text-center"><span class="text-6xl block mb-6">🗺️</span><h1 class="font-display text-3xl font-bold text-stone-900 mb-4">Voyage introuvable</h1><p class="text-stone-500 mb-8">Ce voyage n'existe pas ou n'est pas encore publié.</p><a href="/voyages" class="action-btn">← Retour aux voyages</a></div>\`;
     return;
   }
   document.title = esc(a.title) + ' — Tranquille, on est en vacances 🌴';
@@ -123,7 +124,7 @@ async function init(){
   document.getElementById('main').innerHTML = \`
   <div class="relative h-[52vh] sm:h-[68vh] overflow-hidden">
     <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover" onerror="this.style.background='linear-gradient(135deg,#6050DC,#2F7A59)'">
-    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+    <div class="absolute inset-0 hero-overlay"></div>
     <a href="/voyages" class="absolute top-5 left-5 flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white font-semibold px-4 py-2 rounded-full hover:bg-white/35 transition-all border border-white/30 text-sm">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Retour
     </a>
@@ -137,18 +138,18 @@ async function init(){
       </div>
     </div>
   </div>
-  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="bg-gradient-to-r from-sky-50 to-orange-50 border-l-4 border-sky-500 rounded-r-2xl p-5 sm:p-6 mb-10">
-      <p class="text-stone-700 text-base sm:text-lg leading-relaxed font-medium italic">"\${esc(a.short_description)}"</p>
-    </div>
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="section-panel rounded-[2rem] p-5 sm:p-6 mb-10">
+        <p class="text-stone-700 text-base sm:text-lg leading-relaxed font-medium italic">"\${esc(a.short_description)}"</p>
+      </div>
     <div class="prose-vacation text-stone-700 text-base sm:text-lg leading-relaxed mb-12">\${renderedContent}</div>
     \${renderWritingDays(a.writing_days || [])}
-    <div class="border-t border-stone-200 pt-8 flex items-center justify-between">
-      <a href="/voyages" class="flex items-center gap-2 text-stone-500 hover:text-sky-600 font-semibold transition-colors text-sm">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Tous les voyages
-      </a>
-      <button onclick="share()" class="flex items-center gap-2 bg-sky-50 text-sky-700 font-bold px-4 py-2.5 rounded-xl hover:bg-sky-100 transition-colors text-sm">📤 Partager</button>
-    </div>
+      <div class="border-t border-stone-200 pt-8 flex items-center justify-between">
+        <a href="/voyages" class="flex items-center gap-2 text-stone-500 hover:text-sky-600 font-semibold transition-colors text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Tous les voyages
+        </a>
+        <button onclick="share()" class="subtle-btn">📤 Partager</button>
+      </div>
   </div>\`;
   // expose photos array to lightbox
   window.photos = photos;

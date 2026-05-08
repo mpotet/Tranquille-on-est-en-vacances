@@ -8,7 +8,7 @@ import { html } from '../utils.js';
 
 // ── Admin shared nav bar ──────────────────────────────────────
 const ADMIN_NAV = (subtitle = '') => `
-<nav class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-white via-sky-50 to-orange-50 text-stone-800 shadow-sm border-b border-stone-200/80">
+<nav class="fixed top-0 left-0 right-0 z-50 bg-[rgba(17,1,38,0.78)] text-stone-800 shadow-sm border-b border-stone-200/80 backdrop-blur-md">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
     <div class="flex items-center gap-4">
       <a href="/" class="flex items-center gap-2 group">
@@ -33,7 +33,7 @@ export function loginPage(error = '') {
   return html(`<!DOCTYPE html>
 <html lang="fr">
 <head>${HEAD('Admin — Connexion')}</head>
-<body class="bg-gradient-to-br from-sky-50 via-white to-orange-50 min-h-screen font-sans antialiased">
+<body class="bg-stone-50 min-h-screen font-sans antialiased">
 <div class="min-h-screen flex items-center justify-center px-4 py-12">
   <div class="w-full max-w-md">
     <div class="text-center mb-8">
@@ -52,7 +52,7 @@ export function loginPage(error = '') {
                  class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-medium">
         </div>
         <button type="submit"
-                class="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-3.5 rounded-2xl hover:shadow-lg hover:scale-[1.02] transition-all text-base">
+                class="w-full action-btn justify-center text-base">
           Se connecter ✨
         </button>
       </form>
@@ -104,8 +104,8 @@ ${ADMIN_NAV()}
     <main class="lg:col-span-3">
       <div class="flex items-center justify-between mb-6">
         <h2 class="font-display text-2xl font-bold text-stone-900">Tous les articles</h2>
-        <a href="/admin/editor"
-           class="flex items-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold px-5 py-2.5 rounded-2xl hover:shadow-lg hover:scale-105 transition-all text-sm">
+         <a href="/admin/editor"
+            class="action-btn-sm">
           ✍️ Nouvel article
         </a>
       </div>
@@ -139,7 +139,7 @@ ${ADMIN_NAV()}
     </div>
     <div class="flex gap-3">
       <button onclick="closeFolderModal()" class="flex-1 bg-stone-100 text-stone-700 font-bold py-2.5 rounded-xl hover:bg-stone-200 transition-colors text-sm">Annuler</button>
-      <button onclick="submitFolder()" class="flex-1 bg-sky-500 text-white font-bold py-2.5 rounded-xl hover:bg-sky-600 transition-colors text-sm">Créer ✨</button>
+      <button onclick="submitFolder()" class="flex-1 action-btn-sm">Créer ✨</button>
     </div>
   </div>
 </div>
