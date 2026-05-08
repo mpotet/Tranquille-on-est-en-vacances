@@ -442,7 +442,7 @@
       <a href="#/" onclick="go('/')" class="flex items-center gap-4 group cursor-pointer">
         <span class="brand-mark" data-brand-logo></span>
         <div class="leading-none">
-          <span class="font-display font-bold text-lg text-white group-hover:text-cyan-200 transition-colors block" data-brand-title>Tranquille,</span>
+          <span class="font-display font-bold text-lg text-white group-hover:text-cyan-200 transition-colors block" data-brand-title>Tranquille</span>
           <span class="text-[0.75rem] font-semibold tracking-[0.24em] uppercase text-slate-400 block mt-1" data-brand-subtitle>on est en vacances</span>
         </div>
       </a>
@@ -486,7 +486,7 @@
           <div class="flex items-center gap-4 mb-4">
             <span class="brand-mark" data-brand-logo></span>
             <div class="leading-none">
-              <div class="font-display font-bold text-white text-lg" data-brand-title>Tranquille,</div>
+              <div class="font-display font-bold text-white text-lg" data-brand-title>Tranquille</div>
               <div class="text-slate-400 text-[0.75rem] font-semibold uppercase tracking-[0.24em] mt-1" data-brand-subtitle>on est en vacances</div>
             </div>
           </div>
@@ -597,9 +597,11 @@ const BRAND_CONTEXT = {
 };
 
 function applyBrandContext() {
-  document.querySelectorAll('[data-brand-logo]').forEach((el) => { el.textContent = BRAND_CONTEXT.logo; });
-  document.querySelectorAll('[data-brand-title]').forEach((el) => { el.textContent = BRAND_CONTEXT.title; });
-  document.querySelectorAll('[data-brand-subtitle]').forEach((el) => { el.textContent = BRAND_CONTEXT.subtitle; });
+  document.querySelectorAll('[data-brand-logo],[data-brand-title],[data-brand-subtitle]').forEach((el) => {
+    if (el.hasAttribute('data-brand-logo')) el.textContent = BRAND_CONTEXT.logo;
+    else if (el.hasAttribute('data-brand-title')) el.textContent = BRAND_CONTEXT.title;
+    else if (el.hasAttribute('data-brand-subtitle')) el.textContent = BRAND_CONTEXT.subtitle;
+  });
 }
 
 const folders = [
