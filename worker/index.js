@@ -113,6 +113,7 @@ async function init(){
   }
   document.title = esc(a.title) + ' — Tranquille, on est en vacances 🌴';
   const photos = a.photos || [];
+  const renderedContent = renderVoyageContent(a.content || '', photos);
   document.getElementById('main').innerHTML = \`
   <div class="relative h-[52vh] sm:h-[68vh] overflow-hidden">
     <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover" onerror="this.style.background='linear-gradient(135deg,#0EA5E9,#10B981)'">
@@ -134,8 +135,7 @@ async function init(){
     <div class="bg-gradient-to-r from-sky-50 to-orange-50 border-l-4 border-sky-500 rounded-r-2xl p-5 sm:p-6 mb-10">
       <p class="text-stone-700 text-base sm:text-lg leading-relaxed font-medium italic">"\${esc(a.short_description)}"</p>
     </div>
-    <div class="prose-vacation text-stone-700 text-base sm:text-lg leading-relaxed mb-12">\${marked.parse(a.content||'')}</div>
-    \${photos.length ? \`<div class="mb-12"><h2 class="font-display text-2xl font-bold text-stone-900 mb-5">📸 Galerie photos</h2><div class="grid grid-cols-2 sm:grid-cols-3 gap-3">\${photos.map((p,i)=>'<div class="relative aspect-square overflow-hidden rounded-2xl cursor-pointer group" onclick="openLightbox(photos,'+i+')"><img src="'+esc(p.url)+'" alt="'+esc(p.caption||'')+'" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy"><div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all"></div></div>').join('')}</div></div>\` : ''}
+    <div class="prose-vacation text-stone-700 text-base sm:text-lg leading-relaxed mb-12">\${renderedContent}</div>
     <div class="border-t border-stone-200 pt-8 flex items-center justify-between">
       <a href="/voyages" class="flex items-center gap-2 text-stone-500 hover:text-sky-600 font-semibold transition-colors text-sm">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Tous les voyages
@@ -145,6 +145,24 @@ async function init(){
   </div>\`;
   // expose photos array to lightbox
   window.photos = photos;
+}
+
+function renderVoyageContent(content, photos){
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = marked.parse(content || '');
+  const photoIndexByUrl = new Map((photos || []).map((p, i) => [p.url, i]));
+
+  wrapper.querySelectorAll('img').forEach(img => {
+    img.className = (img.className ? img.className + ' ' : '') + 'rounded-2xl my-6 shadow-md';
+    img.loading = 'lazy';
+    const idx = photoIndexByUrl.get(img.getAttribute('src') || '');
+    if (typeof idx === 'number') {
+      img.classList.add('cursor-zoom-in');
+      img.setAttribute('onclick', 'openLightbox(window.photos,'+idx+')');
+    }
+  });
+
+  return wrapper.innerHTML;
 }
 
 function share(){if(navigator.share)navigator.share({title:document.title,url:location.href}).catch(()=>{});else navigator.clipboard.writeText(location.href).then(()=>toast('Lien copié !','ok'))}
