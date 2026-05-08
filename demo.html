@@ -215,7 +215,7 @@
       </div>
     </div>
     <div class="border-t border-stone-800 pt-6 text-center text-stone-500 text-sm">
-      ✨ Fait avec amour par la famille Potet &bull; 2024 ✨
+      ✨ Fait avec amour par la famille Potet &bull; <span id="footer-year"></span> ✨
     </div>
   </div>
 </footer>
@@ -1181,7 +1181,7 @@ function pgEditor(app, articleId) {
             <!-- Markdown toolbar -->
             <div class="flex flex-wrap gap-1 mt-2">
               ${[['**Gras**','G'],['*Italique*','I'],['# Titre','H1'],['## Titre','H2'],['> Citation','❝'],['- Item','—'],['[texte](url)','🔗']].map(([s,l])=>`
-                <button type="button" onclick="insertMd('${s.replace(/'/g,"\\'")}')"
+                <button type="button" onclick="insertMd('${s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"
                         class="text-xs bg-stone-100 hover:bg-sky-100 text-stone-600 hover:text-sky-700 px-2.5 py-1.5 rounded-lg font-mono transition-colors">${l}</button>`).join('')}
             </div>
           </div>
@@ -1385,6 +1385,7 @@ function saveArticle(publish) {
 // ──────────────────────────────────────────────
 // BOOT
 // ──────────────────────────────────────────────
+document.getElementById('footer-year').textContent = new Date().getFullYear();
 route();
 </script>
 </body>

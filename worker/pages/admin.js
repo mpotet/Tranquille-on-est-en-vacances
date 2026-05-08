@@ -306,7 +306,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
                     class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 md-editor"></textarea>
           <div class="flex flex-wrap gap-1 mt-2">
             ${[['**Gras**','G'],['*Ital.*','I'],['# H1','H1'],['## H2','H2'],['> Citation','❝'],['- Item','—'],['[lien](url)','🔗']].map(([s,l])=>`
-              <button type="button" onclick="insertMd('${s.replace(/'/g,"\\'")}','e-content')" class="text-xs bg-stone-100 hover:bg-sky-100 text-stone-600 hover:text-sky-700 px-2.5 py-1.5 rounded-lg font-mono transition-colors">${l}</button>`).join('')}
+              <button type="button" onclick="insertMd('${s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}','e-content')" class="text-xs bg-stone-100 hover:bg-sky-100 text-stone-600 hover:text-sky-700 px-2.5 py-1.5 rounded-lg font-mono transition-colors">${l}</button>`).join('')}
           </div>
         </div>
         <div id="pane-preview" class="hidden">

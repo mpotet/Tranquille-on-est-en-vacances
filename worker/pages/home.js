@@ -144,6 +144,7 @@ async function init(){
   const statsEl = document.getElementById('stats');
   statsEl.querySelector('div:nth-child(1) .gradient-text').textContent = artData.total ?? artData.articles.length;
   statsEl.querySelector('div:nth-child(2) .gradient-text').textContent = folderData.length || '—';
+  statsEl.querySelector('div:nth-child(3) .gradient-text').textContent = totalPhotos || '—';
 
   // Destinations
   const roots = folderData.filter(f=>!f.parent_id);
