@@ -69,33 +69,45 @@ body::before,body::after{display:none}
   position:relative;
   isolation:isolate;
   overflow:visible;
-  border-radius:3.4rem 3.4rem 1.8rem 1.8rem;
-  border:1px solid var(--line-strong);
+  border-radius:2.8rem 2.8rem 1.4rem 1.4rem;
+  border:2px solid var(--line-strong);
   background:
-    radial-gradient(circle at 50% -10%, rgba(198,90,30,.2), transparent 60%),
-    linear-gradient(180deg, rgba(2,71,254,.07), rgba(255,255,255,.97));
-  padding:clamp(2.1rem,3.2vw,2.8rem) clamp(1.1rem,3vw,2.3rem) clamp(1.6rem,2.6vw,2.2rem);
+    radial-gradient(ellipse 80% 30% at 50% 0%, rgba(198,90,30,.18), transparent 70%),
+    #fff;
+  padding:clamp(3.4rem,5vw,4.4rem) clamp(1.4rem,3vw,2.4rem) clamp(2rem,3vw,2.4rem);
   box-shadow:var(--shadow);
 }
 .maroc-arch>*{position:relative;z-index:1}
 .maroc-arch::before{
   content:'';
   position:absolute;
-  inset:.8rem .8rem auto .8rem;
-  height:42%;
-  border-radius:3rem 3rem 1.1rem 1.1rem;
-  border:1px solid rgba(2,71,254,.14);
+  top:.5rem;left:.5rem;right:.5rem;
+  height:2.6rem;
+  border-radius:2.4rem 2.4rem 1rem 1rem / 2.6rem 2.6rem .8rem .8rem;
+  background:linear-gradient(180deg,rgba(198,90,30,.16),transparent);
+  border:1.5px solid rgba(198,90,30,.28);
+  border-bottom:none;
+  z-index:0;
+  pointer-events:none;
+}
+.maroc-arch::after{
+  content:'';
+  position:absolute;
+  bottom:.9rem;left:2.2rem;right:2.2rem;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(198,90,30,.35),transparent);
   z-index:0;
   pointer-events:none;
 }
 @media (max-width:640px){
   .maroc-arch{
-    border-radius:2.4rem 2.4rem 1.35rem 1.35rem;
-    padding:2rem 1.05rem 1.45rem;
+    border-radius:2.2rem 2.2rem 1.1rem 1.1rem;
+    padding:3rem 1.1rem 1.6rem;
   }
   .maroc-arch::before{
-    inset:.55rem .55rem auto .55rem;
-    height:40%;
+    top:.4rem;left:.4rem;right:.4rem;
+    height:2.2rem;
+    border-radius:1.9rem 1.9rem .7rem .7rem / 2.2rem 2.2rem .5rem .5rem;
   }
 }
 .prose-vacation h1,.prose-vacation h2,.prose-vacation h3{font-family:'Playfair Display',Georgia,serif;color:var(--ink);letter-spacing:-.03em}
@@ -205,7 +217,7 @@ export const FOOTER = `
               <div class="text-slate-400 text-[0.72rem] font-bold uppercase tracking-[0.24em] mt-1">on est en vacances</div>
             </div>
           </div>
-          <p class="text-stone-500 text-sm leading-relaxed">Des itinéraires testés en famille, des adresses utiles et des retours de terrain pour préparer vos prochaines vacances.</p>
+          <p class="text-stone-500 text-sm leading-relaxed">Le carnet de voyage de la famille Potet — des souvenirs partagés avec ceux qu'on aime.</p>
         </div>
         <div>
           <h3 class="text-white font-bold mb-4 text-sm uppercase tracking-[0.22em]">Explorer</h3>

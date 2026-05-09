@@ -26,12 +26,11 @@ ${NAV('home')}
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
             <a href="/voyages" class="action-btn">Explorer nos voyages</a>
-            <a href="/voyages" class="subtle-btn">Voir toutes les étapes</a>
+            <a href="/voyages" class="subtle-btn">Parcourir le carnet</a>
           </div>
           <div class="flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
             <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Voyages vécus</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Budget réel</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Avec les enfants</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">En famille</span>
           </div>
         </div>
         <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative">
