@@ -48,31 +48,33 @@
   --muted:#6B7280;
   --muted-deep:#374151;
   --panel:#FFFFFF;
-  --panel-soft:rgba(2,71,254,.05);
+  --panel-soft:rgba(255,255,255,.72);
   --line:rgba(2,71,254,.22);
   --line-strong:rgba(2,71,254,.38);
-  --shadow:0 16px 38px rgba(2,71,254,.12);
+  --shadow:0 18px 42px rgba(2,71,254,.11);
+  --shadow-soft:0 10px 24px rgba(17,24,39,.06);
+  --shadow-strong:0 24px 52px rgba(2,71,254,.16);
 }
 html{scroll-behavior:smooth;background:var(--white)}
-body{position:relative;min-height:100vh;background:var(--white);color:var(--ink)}
+body{position:relative;min-height:100vh;background:radial-gradient(circle at top right,rgba(var(--orange-rgb),.08),transparent 30%),radial-gradient(circle at top left,rgba(2,71,254,.07),transparent 38%),var(--white);color:var(--ink)}
 body::before,body::after{display:none}
 .hero-overlay{background:rgba(2,71,254,.26)}
 .glass-panel,.section-panel,.voyage-card,#toast{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.section-panel,.voyage-card,.bg-white,.bg-stone-50,.bg-sky-50,.bg-emerald-50,.bg-amber-50,.bg-red-50,#toast{background:var(--panel)!important;border:1px solid var(--line)!important;color:var(--ink)!important;box-shadow:var(--shadow)}
-.glass-panel,.metric-card{background:var(--panel-soft)!important;border:1px solid var(--line)!important;box-shadow:var(--shadow)}
+.section-panel,.voyage-card,.bg-white,.bg-stone-50,.bg-sky-50,.bg-emerald-50,.bg-amber-50,.bg-red-50,#toast{background:var(--panel)!important;border:1px solid var(--line)!important;color:var(--ink)!important;box-shadow:var(--shadow-soft)}
+.glass-panel,.metric-card{background:var(--panel-soft)!important;border:1px solid rgba(2,71,254,.18)!important;box-shadow:var(--shadow)}
 .voyage-card{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;background:var(--panel)!important}
-.voyage-card:hover{transform:translateY(-6px);border-color:var(--line-strong)!important;box-shadow:0 20px 44px rgba(2,71,254,.16)}
+.voyage-card:hover{transform:translateY(-6px);border-color:var(--line-strong)!important;box-shadow:var(--shadow-strong)}
 .gradient-text{color:var(--blue);background:none!important;-webkit-text-fill-color:currentColor}
 .eyebrow{display:inline-flex;align-items:center;gap:.6rem;border-radius:999px;padding:.65rem 1rem;background:rgba(2,71,254,.08);border:1px solid var(--line-strong);color:var(--muted);font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;font-weight:800}
 .eyebrow::before{content:'✦';color:var(--orange);font-size:.9rem;line-height:1}
 .nav-link{color:var(--muted);font-size:.92rem;font-weight:700;padding:.72rem 1rem;border-radius:999px;transition:color .2s ease,background-color .2s ease,border-color .2s ease;border:1px solid transparent}
 .nav-link:hover{color:var(--blue);background:rgba(2,71,254,.08);border-color:var(--line)}
-.action-btn,.action-btn-sm{display:inline-flex;align-items:center;justify-content:center;gap:.7rem;border-radius:999px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;transition:transform .2s ease,box-shadow .2s ease,background-color .2s ease,border-color .2s ease;background:var(--blue)!important;color:#fff!important;border:1px solid rgba(2,71,254,.65);box-shadow:0 12px 28px rgba(2,71,254,.22)}
+.action-btn,.action-btn-sm{display:inline-flex;align-items:center;justify-content:center;gap:.7rem;border-radius:999px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;transition:transform .2s ease,box-shadow .2s ease,background-color .2s ease,border-color .2s ease;background:linear-gradient(135deg,#0247fe,#2f67ff)!important;color:#fff!important;border:1px solid rgba(2,71,254,.55);box-shadow:0 14px 30px rgba(2,71,254,.24)}
 .action-btn{padding:1rem 1.55rem}
 .action-btn-sm{padding:.82rem 1.18rem;font-size:.82rem}
-.action-btn:hover,.action-btn-sm:hover{transform:translateY(-2px);background:var(--blue)!important;border-color:var(--blue);box-shadow:0 16px 34px rgba(2,71,254,.26)}
+.action-btn:hover,.action-btn-sm:hover{transform:translateY(-2px);background:linear-gradient(135deg,#013de0,#2556de)!important;border-color:#013de0;box-shadow:0 18px 36px rgba(2,71,254,.28)}
 .subtle-btn{display:inline-flex;align-items:center;justify-content:center;gap:.7rem;border-radius:999px;padding:.98rem 1.5rem;border:1px solid var(--line-strong);background:#fff;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;transition:background-color .2s ease,border-color .2s ease,transform .2s ease,color .2s ease}
-.subtle-btn:hover{transform:translateY(-2px);border-color:var(--blue);background:rgba(2,71,254,.08);color:var(--blue)}
+.subtle-btn:hover{transform:translateY(-2px);border-color:var(--blue);background:rgba(2,71,254,.08);color:var(--blue);box-shadow:0 14px 28px rgba(2,71,254,.14)}
 .luxe-divider{height:1px;width:100%;background:rgba(2,71,254,.25)}
 .orb{display:none}
 .maroc-arch{
@@ -228,7 +230,7 @@ input,textarea,select{background:#fff!important;color:var(--ink)!important;borde
 input::placeholder,textarea::placeholder{color:var(--muted-deep)}
 input:focus,textarea:focus,select:focus{border-color:var(--line-strong)!important;box-shadow:0 0 0 3px rgba(2,71,254,.12)}
 #dropzone{background:rgba(2,71,254,.06);border-color:var(--line)!important}
-#navbar{background:rgba(255,255,255,.95)!important;border-bottom:1px solid var(--line)!important;box-shadow:0 8px 24px rgba(2,71,254,.1);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+#navbar{background:rgba(255,255,255,.92)!important;border-bottom:1px solid var(--line)!important;box-shadow:0 10px 28px rgba(2,71,254,.08);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 #site-footer{background:#fff!important;border-top:1px solid var(--line)!important}
 .bg-gradient-to-t,.bg-gradient-to-tr,.bg-gradient-to-r,.bg-gradient-to-br,.bg-gradient-to-b,.bg-gradient-to-bl,.bg-gradient-to-l,.bg-gradient-to-tl{background-image:none!important}
 .from-sky-500,.from-emerald-500,.from-sky-50,.from-stone-900,.via-white,.to-blue-600,.to-blue-700,.to-green-600,.to-orange-50,.to-stone-800{--tw-gradient-from:initial!important;--tw-gradient-stops:initial!important;--tw-gradient-to:initial!important}
@@ -777,21 +779,21 @@ function pgHome(app) {
           <div class="maroc-arch-copy">
             <div class="eyebrow mb-6">Carnet de bord de la famille Potet</div>
             <h1 class="font-display text-4xl sm:text-5xl xl:text-[4.2rem] font-bold leading-[1.06] mb-6 text-stone-900">
-              Nos <span class="gradient-text">voyages en famille</span>, étape par étape.
+              Nos <span class="gradient-text">voyages en famille</span>, sans filtre.
             </h1>
             <p class="hero-intro text-lg sm:text-xl text-stone-500 leading-relaxed mb-8">
-              Chaque article raconte un voyage vécu par la famille Potet : itinéraire réel, activités avec les enfants et retours utiles.
+              Chaque article documente un vrai itinéraire : rythme avec les enfants, budget terrain, adresses testées et retours honnêtes.
             </p>
-            <p class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm italic text-stone-500 mb-8">"ça c'était bien avant le drame.."</p>
+            <p class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-600 mb-8">Démo fidèle au rendu final : même ton, mêmes parcours, mêmes usages.</p>
           </div>
           <div class="maroc-arch-actions flex flex-col sm:flex-row gap-3">
             <a href="#/voyages" onclick="go('/voyages')" class="action-btn">Explorer nos voyages</a>
             <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn">Parcourir le carnet</a>
           </div>
           <div class="maroc-arch-highlights flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Voyages vécus</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Avec les enfants</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Moments partagés</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Itinéraires réels</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Voyages en famille</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Conseils testés</span>
           </div>
         </div>
 
@@ -846,8 +848,8 @@ function pgHome(app) {
     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-10">
         <div>
           <div class="eyebrow mb-4">Sélection maison</div>
-          <h2 class="font-display text-3xl sm:text-5xl font-bold text-stone-900">Nos derniers voyages</h2>
-          <p class="text-slate-400 mt-3 text-sm sm:text-base max-w-2xl">Les récits les plus récents de nos vacances, avec nos coups de cœur, nos galères et nos meilleures trouvailles.</p>
+          <h2 class="font-display text-3xl sm:text-5xl font-bold text-stone-900">Derniers voyages publiés</h2>
+          <p class="text-slate-400 mt-3 text-sm sm:text-base max-w-2xl">Les récits les plus récents, structurés comme sur le site final : étapes, photos et retours concrets.</p>
         </div>
       <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn w-fit">Voir tous les voyages</a>
     </div>

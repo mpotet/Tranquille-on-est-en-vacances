@@ -20,21 +20,21 @@ ${NAV('home')}
           <div class="maroc-arch-copy">
             <div class="eyebrow mb-6">Carnet de bord de la famille Potet</div>
             <h1 class="font-display text-4xl sm:text-5xl xl:text-[4.2rem] font-bold leading-[1.06] mb-6 drop-shadow-lg">
-              Nos <span class="gradient-text">voyages en famille</span>, étape par étape.
+              Nos <span class="gradient-text">voyages en famille</span>, sans filtre.
             </h1>
-            <p class="hero-intro text-base sm:text-xl text-stone-500 leading-relaxed mb-8">
-              Chaque article raconte un voyage vécu par la famille Potet : itinéraire réel, activités avec les enfants et retours utiles.
+            <p class="hero-intro text-lg sm:text-xl text-stone-500 leading-relaxed mb-8">
+              Chaque article documente un vrai itinéraire : rythme avec les enfants, budget terrain, adresses testées et retours honnêtes.
             </p>
-            <p class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm italic text-stone-500 mb-8">"ça c'était bien avant le drame.."</p>
+            <p class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-600 mb-8">Démo fidèle au rendu final : même ton, mêmes parcours, mêmes usages.</p>
           </div>
           <div class="maroc-arch-actions flex flex-col sm:flex-row gap-3">
             <a href="/voyages" class="action-btn">Explorer nos voyages</a>
             <a href="/voyages" class="subtle-btn">Parcourir le carnet</a>
           </div>
           <div class="maroc-arch-highlights flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Voyages vécus</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Avec les enfants</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Moments partagés</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Itinéraires réels</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Voyages en famille</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Conseils testés</span>
           </div>
         </div>
         <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative w-full max-w-xl mx-auto">
@@ -71,8 +71,8 @@ ${NAV('home')}
     <div class="flex items-end justify-between mb-10 gap-6">
         <div>
           <div class="eyebrow mb-4">Sélection maison</div>
-          <h2 class="font-display text-3xl sm:text-4xl font-bold text-stone-900">Derniers voyages</h2>
-          <p class="text-stone-500 mt-2 text-sm max-w-2xl">Les récits les plus récents de nos vacances, avec nos coups de cœur, nos galères et nos meilleures trouvailles.</p>
+          <h2 class="font-display text-3xl sm:text-5xl font-bold text-stone-900">Derniers voyages publiés</h2>
+          <p class="text-slate-400 mt-3 text-sm sm:text-base max-w-2xl">Les récits les plus récents, structurés comme sur le site final : étapes, photos et retours concrets.</p>
         </div>
       <a href="/voyages" class="hidden sm:flex subtle-btn">Voir tous les voyages</a>
     </div>
