@@ -41,8 +41,8 @@
   color-scheme:light;
   --blue:#0247fe;
   --blue-rgb:2,71,254;
-  --orange:#C65A1E;
-  --orange-rgb:198,90,30;
+  --orange:#DA8350;
+  --orange-rgb:218,131,80;
   --white:#FFFFFF;
   --ink:#111827;
   --muted:#6B7280;
@@ -80,23 +80,27 @@ body::before,body::after{display:none}
   isolation:isolate;
   display:flex;
   flex-direction:column;
+  align-items:flex-start;
   justify-content:flex-end;
-  width:min(100%,42rem);
-  min-height:clamp(31rem,44vw,38rem);
+  width:min(100%,46rem);
+  min-height:clamp(34rem,46vw,42rem);
   overflow:clip;
-  border:1.5px solid rgba(198,90,30,.4);
+  border:1.5px solid rgba(var(--orange-rgb),.3);
   border-radius:26rem 26rem 2rem 2rem / 18rem 18rem 2rem 2rem;
   background:
-    radial-gradient(circle at 50% -18%, rgba(198,90,30,.16) 0 32%, transparent 58%),
+    radial-gradient(circle at 50% -18%, rgba(var(--orange-rgb),.12) 0 32%, transparent 58%),
     linear-gradient(180deg, rgba(255,255,255,.96) 0, rgba(2,71,254,.05) 42%, #fff 100%);
-  padding:clamp(6rem,9vw,7.3rem) clamp(1.5rem,4vw,3.2rem) clamp(2.4rem,4vw,3.4rem);
+  padding:clamp(6.4rem,8vw,7.8rem) clamp(1.6rem,4vw,3.8rem) clamp(2.8rem,4vw,3.8rem);
   box-shadow:0 24px 54px rgba(2,71,254,.13), inset 0 1px 0 rgba(255,255,255,.92);
 }
+.maroc-arch-copy,.maroc-arch-actions,.maroc-arch-highlights{width:min(100%,32rem)}
+.maroc-arch-copy h1{max-width:11ch;text-wrap:balance}
+.maroc-arch-copy .hero-intro{max-width:29rem}
 .maroc-arch .eyebrow{
   align-self:flex-start;
   margin-top:0;
   margin-bottom:1.35rem;
-  max-width:min(100%,28rem);
+  max-width:min(100%,25rem);
   padding:.8rem 1.15rem;
   font-size:.68rem;
   letter-spacing:.16em;
@@ -111,7 +115,7 @@ body::before,body::after{display:none}
   inset:.9rem;
   border-radius:24rem 24rem 1.45rem 1.45rem / 16.5rem 16.5rem 1.45rem 1.45rem;
   border:1px solid rgba(2,71,254,.14);
-  background:linear-gradient(180deg,rgba(198,90,30,.1),rgba(198,90,30,0) 52%);
+  background:linear-gradient(180deg,rgba(var(--orange-rgb),.08),rgba(var(--orange-rgb),0) 52%);
   z-index:0;
   pointer-events:none;
 }
@@ -121,18 +125,24 @@ body::before,body::after{display:none}
   top:1.55rem;
   left:50%;
   transform:translateX(-50%);
-  color:rgba(198,90,30,.56);
+  color:rgba(var(--orange-rgb),.48);
   font-size:1.1rem;
   line-height:1;
-  text-shadow:0 2px 8px rgba(198,90,30,.22);
+  text-shadow:0 2px 8px rgba(var(--orange-rgb),.18);
   z-index:0;
   pointer-events:none;
+}
+@media (min-width:1024px){
+  .maroc-arch-copy{width:min(100%,33rem)}
+  .maroc-arch-copy h1{max-width:10.5ch}
+  .maroc-arch .eyebrow{max-width:min(100%,24rem)}
 }
 @media (max-width:1023px){
   .maroc-arch{
     width:100%;
     min-height:auto;
   }
+  .maroc-arch-copy,.maroc-arch-actions,.maroc-arch-highlights{width:100%}
 }
 @media (max-width:640px){
   .maroc-arch{
@@ -750,29 +760,31 @@ function pgHome(app) {
 
   app.innerHTML = `
   <section class="relative min-h-screen flex items-center overflow-hidden bg-white">
-    <div class="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-32 pb-16 lg:pb-24">
-      <div class="grid lg:grid-cols-[minmax(0,1.04fr)_minmax(18rem,.96fr)] gap-8 lg:gap-14 items-center">
-        <div class="maroc-arch max-w-3xl mx-auto lg:mx-0">
-          <div class="eyebrow mb-6">Carnet de bord de la famille Potet</div>
-          <h1 class="font-display text-4xl sm:text-5xl xl:text-[4.15rem] font-bold leading-[1.04] mb-6 text-stone-900">
-            Nos <span class="gradient-text">voyages en famille</span>, étape par étape.
-          </h1>
-          <p class="text-lg sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
-            Chaque article raconte un voyage vécu par la famille Potet : itinéraire réel, activités avec les enfants et retours utiles.
-          </p>
-          <p class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm italic text-stone-500 mb-8">"ça c'était bien avant le drame.."</p>
-          <div class="flex flex-col sm:flex-row gap-3">
+    <div class="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-28 pb-20 sm:py-20">
+      <div class="grid lg:grid-cols-[minmax(0,1.08fr)_minmax(19rem,.92fr)] gap-8 lg:gap-10 xl:gap-14 items-start lg:items-center">
+        <div class="maroc-arch w-full max-w-4xl mx-auto lg:mx-0">
+          <div class="maroc-arch-copy">
+            <div class="eyebrow mb-6">Carnet de bord de la famille Potet</div>
+            <h1 class="font-display text-4xl sm:text-5xl xl:text-[4.2rem] font-bold leading-[1.06] mb-6 text-stone-900">
+              Nos <span class="gradient-text">voyages en famille</span>, étape par étape.
+            </h1>
+            <p class="hero-intro text-lg sm:text-xl text-stone-500 leading-relaxed mb-8">
+              Chaque article raconte un voyage vécu par la famille Potet : itinéraire réel, activités avec les enfants et retours utiles.
+            </p>
+            <p class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm italic text-stone-500 mb-8">"ça c'était bien avant le drame.."</p>
+          </div>
+          <div class="maroc-arch-actions flex flex-col sm:flex-row gap-3">
             <a href="#/voyages" onclick="go('/voyages')" class="action-btn">Explorer nos voyages</a>
             <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn">Parcourir le carnet</a>
           </div>
-          <div class="flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
+          <div class="maroc-arch-highlights flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
             <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Voyages vécus</span>
             <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Avec les enfants</span>
             <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Moments partagés</span>
           </div>
         </div>
 
-        <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative w-full max-w-xl lg:max-w-none mx-auto">
+        <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative w-full max-w-xl lg:max-w-none mx-auto lg:sticky lg:top-28">
           <div class="absolute inset-x-10 top-0 h-px bg-sky-100"></div>
           <div class="grid gap-4 sm:grid-cols-3 mb-6">
             <div class="metric-card rounded-[1.6rem] p-4">
@@ -804,14 +816,14 @@ function pgHome(app) {
             </div>
           </div>
           <div class="luxe-divider mb-5"></div>
-          <div class="grid sm:grid-cols-2 gap-4 text-sm">
+          <div class="grid gap-4 text-sm lg:grid-cols-2">
             <div>
               <p class="text-slate-400 uppercase tracking-[0.18em] text-xs mb-2">Dans les valises</p>
               <p class="text-stone-700 leading-relaxed">Des étapes vécues avec les enfants, les adresses qu'on a gardées et les petits moments qui ont rendu le voyage unique.</p>
             </div>
             <div>
-              <p class="text-slate-400 uppercase tracking-[0.18em] text-xs mb-2">Moments marquants</p>
-              <p class="text-stone-700 leading-relaxed">Petites galères vécues, bonnes surprises et moments qu'on a gardés en mémoire.</p>
+              <p class="text-slate-400 uppercase tracking-[0.18em] text-xs mb-2">Repères utiles</p>
+              <p class="text-stone-700 leading-relaxed">Un aperçu rapide des récits récents, des destinations visitées et des souvenirs photo à parcourir sans se perdre.</p>
             </div>
           </div>
         </div>

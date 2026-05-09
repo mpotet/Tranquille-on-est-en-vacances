@@ -31,8 +31,8 @@ tailwind.config = {
   color-scheme:light;
   --blue:#0247fe;
   --blue-rgb:2,71,254;
-  --orange:#C65A1E;
-  --orange-rgb:198,90,30;
+  --orange:#DA8350;
+  --orange-rgb:218,131,80;
   --white:#FFFFFF;
   --ink:#111827;
   --muted:#6B7280;
@@ -70,23 +70,27 @@ body::before,body::after{display:none}
   isolation:isolate;
   display:flex;
   flex-direction:column;
+  align-items:flex-start;
   justify-content:flex-end;
-  width:min(100%,42rem);
-  min-height:clamp(31rem,44vw,38rem);
+  width:min(100%,46rem);
+  min-height:clamp(34rem,46vw,42rem);
   overflow:clip;
-  border:1.5px solid rgba(198,90,30,.4);
+  border:1.5px solid rgba(var(--orange-rgb),.3);
   border-radius:26rem 26rem 2rem 2rem / 18rem 18rem 2rem 2rem;
   background:
-    radial-gradient(circle at 50% -18%, rgba(198,90,30,.16) 0 32%, transparent 58%),
+    radial-gradient(circle at 50% -18%, rgba(var(--orange-rgb),.12) 0 32%, transparent 58%),
     linear-gradient(180deg, rgba(255,255,255,.96) 0, rgba(2,71,254,.05) 42%, #fff 100%);
-  padding:clamp(6rem,9vw,7.3rem) clamp(1.5rem,4vw,3.2rem) clamp(2.4rem,4vw,3.4rem);
+  padding:clamp(6.4rem,8vw,7.8rem) clamp(1.6rem,4vw,3.8rem) clamp(2.8rem,4vw,3.8rem);
   box-shadow:0 24px 54px rgba(2,71,254,.13), inset 0 1px 0 rgba(255,255,255,.92);
 }
+.maroc-arch-copy,.maroc-arch-actions,.maroc-arch-highlights{width:min(100%,32rem)}
+.maroc-arch-copy h1{max-width:11ch;text-wrap:balance}
+.maroc-arch-copy .hero-intro{max-width:29rem}
 .maroc-arch .eyebrow{
   align-self:flex-start;
   margin-top:0;
   margin-bottom:1.35rem;
-  max-width:min(100%,28rem);
+  max-width:min(100%,25rem);
   padding:.8rem 1.15rem;
   font-size:.68rem;
   letter-spacing:.16em;
@@ -101,7 +105,7 @@ body::before,body::after{display:none}
   inset:.9rem;
   border-radius:24rem 24rem 1.45rem 1.45rem / 16.5rem 16.5rem 1.45rem 1.45rem;
   border:1px solid rgba(2,71,254,.14);
-  background:linear-gradient(180deg,rgba(198,90,30,.1),rgba(198,90,30,0) 52%);
+  background:linear-gradient(180deg,rgba(var(--orange-rgb),.08),rgba(var(--orange-rgb),0) 52%);
   z-index:0;
   pointer-events:none;
 }
@@ -111,18 +115,24 @@ body::before,body::after{display:none}
   top:1.55rem;
   left:50%;
   transform:translateX(-50%);
-  color:rgba(198,90,30,.56);
+  color:rgba(var(--orange-rgb),.48);
   font-size:1.1rem;
   line-height:1;
-  text-shadow:0 2px 8px rgba(198,90,30,.22);
+  text-shadow:0 2px 8px rgba(var(--orange-rgb),.18);
   z-index:0;
   pointer-events:none;
+}
+@media (min-width:1024px){
+  .maroc-arch-copy{width:min(100%,33rem)}
+  .maroc-arch-copy h1{max-width:10.5ch}
+  .maroc-arch .eyebrow{max-width:min(100%,24rem)}
 }
 @media (max-width:1023px){
   .maroc-arch{
     width:100%;
     min-height:auto;
   }
+  .maroc-arch-copy,.maroc-arch-actions,.maroc-arch-highlights{width:100%}
 }
 @media (max-width:640px){
   .maroc-arch{
