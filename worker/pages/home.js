@@ -17,21 +17,21 @@ ${NAV('home')}
     <div class="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 text-stone-900 pb-24 pt-28 sm:py-24">
       <div class="grid lg:grid-cols-[1.08fr_0.92fr] gap-10 items-center">
         <div class="max-w-3xl maroc-arch">
-          <div class="eyebrow mb-6">Carnet de terrain en famille</div>
-          <h1 class="font-display text-4xl sm:text-5xl lg:text-7xl font-bold leading-[1.04] mb-6 drop-shadow-lg">
-            Nos <span class="gradient-text">itinéraires testés</span> en famille, ville par ville.
+          <div class="eyebrow mb-6">Carnet de bord de la famille Potet</div>
+          <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.08] mb-6 drop-shadow-lg">
+            Nos <span class="gradient-text">voyages en famille</span>, étape par étape.
           </h1>
           <p class="text-base sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
-            Chaque récit partage l'organisation réelle du séjour : étapes, activités faisables avec enfants, budget pratique et points d'attention.
+            Chaque article raconte un voyage vécu par la famille Potet : itinéraire réel, activités avec les enfants et retours utiles.
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
             <a href="/voyages" class="action-btn">Explorer nos voyages</a>
-            <a href="/voyages" class="subtle-btn">Découvrir les escales</a>
+            <a href="/voyages" class="subtle-btn">Voir toutes les étapes</a>
           </div>
           <div class="flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Itinéraires concrets</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Adresses vérifiées</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Conseils familles</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Voyages vécus</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Budget réel</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Avec les enfants</span>
           </div>
         </div>
         <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative">
@@ -60,7 +60,7 @@ ${NAV('home')}
           <h2 class="font-display text-3xl sm:text-4xl font-bold text-stone-900">Derniers voyages</h2>
           <p class="text-stone-500 mt-2 text-sm max-w-2xl">Les récits les plus récents de nos vacances, avec nos coups de cœur, nos galères et nos meilleures trouvailles.</p>
         </div>
-      <a href="/voyages" class="hidden sm:flex subtle-btn">Voir toute la collection</a>
+      <a href="/voyages" class="hidden sm:flex subtle-btn">Voir tous les voyages</a>
     </div>
     <div id="articles-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
       ${skeletonCards(6)}
@@ -75,7 +75,7 @@ ${NAV('home')}
       <div class="section-panel rounded-[2rem] p-8 sm:p-10">
         <div class="grid lg:grid-cols-[0.78fr_1.22fr] gap-8 items-start">
           <div>
-            <div class="eyebrow mb-4">Routes & collections</div>
+            <div class="eyebrow mb-4">Destinations de voyage</div>
             <h2 class="font-display text-3xl sm:text-4xl font-bold text-stone-900 mb-3">Nos destinations</h2>
             <p class="text-stone-500 text-sm">Choisissez une destination et retrouvez nos itinéraires, nos photos et ce qu'on referait (ou non) en famille.</p>
           </div>

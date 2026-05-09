@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Le blog de voyage de la famille Potet — Des aventures, des découvertes, des souvenirs à partager.">
+  <meta name="description" content="Le carnet de bord des voyages de la famille Potet.">
   <title>Tranquille, on est en vacances</title>
 
   <!-- Tailwind CSS CDN -->
@@ -78,24 +78,35 @@ body::before,body::after{display:none}
 .maroc-arch{
   position:relative;
   isolation:isolate;
-  border-radius:999px 999px 1.8rem 1.8rem;
+  overflow:visible;
+  border-radius:3.4rem 3.4rem 1.8rem 1.8rem;
   border:1px solid var(--line-strong);
   background:
-    radial-gradient(circle at 50% -18%, rgba(198,90,30,.22), transparent 56%),
-    linear-gradient(180deg, rgba(2,71,254,.07), rgba(255,255,255,.96));
-  padding:2.45rem 2.15rem 1.9rem;
+    radial-gradient(circle at 50% -10%, rgba(198,90,30,.2), transparent 60%),
+    linear-gradient(180deg, rgba(2,71,254,.07), rgba(255,255,255,.97));
+  padding:clamp(2.1rem,3.2vw,2.8rem) clamp(1.1rem,3vw,2.3rem) clamp(1.6rem,2.6vw,2.2rem);
   box-shadow:var(--shadow);
 }
 .maroc-arch>*{position:relative;z-index:1}
 .maroc-arch::before{
   content:'';
   position:absolute;
-  inset:.7rem .7rem auto .7rem;
-  height:48%;
-  border-radius:999px 999px 1.25rem 1.25rem;
+  inset:.8rem .8rem auto .8rem;
+  height:42%;
+  border-radius:3rem 3rem 1.1rem 1.1rem;
   border:1px solid rgba(2,71,254,.14);
   z-index:0;
   pointer-events:none;
+}
+@media (max-width:640px){
+  .maroc-arch{
+    border-radius:2.4rem 2.4rem 1.35rem 1.35rem;
+    padding:2rem 1.05rem 1.45rem;
+  }
+  .maroc-arch::before{
+    inset:.55rem .55rem auto .55rem;
+    height:40%;
+  }
 }
 .prose-vacation h1,.prose-vacation h2,.prose-vacation h3{font-family:'Playfair Display',Georgia,serif;color:var(--ink);letter-spacing:-.03em}
 .prose-vacation h1{font-size:2rem;margin:2rem 0 1rem;font-weight:700}
@@ -700,21 +711,21 @@ function pgHome(app) {
     <div class="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-32 pb-16 lg:pb-24">
       <div class="grid lg:grid-cols-[1.08fr_0.92fr] gap-10 items-center">
         <div class="max-w-3xl maroc-arch">
-          <div class="eyebrow mb-6">Carnet de terrain en famille</div>
-          <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.04] mb-6 text-stone-900">
-            Nos <span class="gradient-text">itinéraires testés</span> en famille, ville par ville.
+          <div class="eyebrow mb-6">Carnet de bord de la famille Potet</div>
+          <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.08] mb-6 text-stone-900">
+            Nos <span class="gradient-text">voyages en famille</span>, étape par étape.
           </h1>
           <p class="text-lg sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
-            Chaque récit partage l'organisation réelle du séjour : étapes, activités faisables avec enfants, budget pratique et points d'attention.
+            Chaque article raconte un voyage vécu par la famille Potet : itinéraire réel, activités avec les enfants et retours utiles.
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
             <a href="#/voyages" onclick="go('/voyages')" class="action-btn">Explorer nos voyages</a>
-            <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn">Découvrir les escales</a>
+            <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn">Voir toutes les étapes</a>
           </div>
           <div class="flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Itinéraires concrets</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Adresses vérifiées</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Conseils familles</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Voyages vécus</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Budget réel</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Avec les enfants</span>
           </div>
         </div>
 
@@ -772,7 +783,7 @@ function pgHome(app) {
           <h2 class="font-display text-3xl sm:text-5xl font-bold text-stone-900">Nos derniers voyages</h2>
           <p class="text-slate-400 mt-3 text-sm sm:text-base max-w-2xl">Les récits les plus récents de nos vacances, avec nos coups de cœur, nos galères et nos meilleures trouvailles.</p>
         </div>
-      <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn w-fit">Voir toute la collection</a>
+      <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn w-fit">Voir tous les voyages</a>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
       ${featured.map(card).join('')}
@@ -783,7 +794,7 @@ function pgHome(app) {
     <div class="section-panel rounded-[2rem] p-8 sm:p-10">
       <div class="grid lg:grid-cols-[0.78fr_1.22fr] gap-8 items-start">
         <div>
-          <div class="eyebrow mb-4">Routes & collections</div>
+          <div class="eyebrow mb-4">Destinations de voyage</div>
           <h2 class="font-display text-3xl sm:text-4xl font-bold text-stone-900 mb-3">Nos destinations</h2>
           <p class="text-slate-400 max-w-md">Choisissez une destination et retrouvez nos itinéraires, nos photos et ce qu'on referait (ou non) en famille.</p>
         </div>
@@ -819,12 +830,12 @@ function pgVoyages(app, folderSlug) {
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-8">
     <div class="section-panel rounded-[2rem] px-6 py-8 sm:px-10 sm:py-10 overflow-hidden relative">
       <div aria-hidden="true" class="absolute right-8 top-8 hidden lg:block text-[10rem] leading-none text-white/5">✦</div>
-      <div class="eyebrow mb-5">Collection Majorelle</div>
+      <div class="eyebrow mb-5">Carnet de bord des Potet</div>
       <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-stone-900 mb-4">Tous nos voyages</h1>
       <p class="text-stone-600 text-lg max-w-3xl leading-relaxed">
         <strong class="text-stone-900">${arts.length}</strong> itinéraire${arts.length>1?'s':''} documenté${arts.length>1?'s':''},
         avec infos utiles pour organiser logement, trajets et activités.
-        ${activeF ? `Focus actuel : <strong class="text-cyan-300">${activeF.icon} ${activeF.name}</strong>.` : ''}
+        ${activeF ? `Destination : <strong class="text-cyan-300">${activeF.icon} ${activeF.name}</strong>.` : ''}
       </p>
     </div>
   </section>
@@ -853,7 +864,7 @@ function pgVoyages(app, folderSlug) {
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">${arts.map(card).join('')}</div>
     ` : `
       <div class="section-panel rounded-[2rem] text-center py-24 text-slate-400">
-        <p class="text-xl font-semibold mb-2 text-stone-900">Aucun récit dans cette collection</p>
+        <p class="text-xl font-semibold mb-2 text-stone-900">Aucun récit pour cette destination</p>
         <p class="text-sm">Revenez bientôt, une nouvelle escale viendra enrichir le carnet.</p>
       </div>`}
   </div>`;
@@ -916,7 +927,7 @@ function pgVoyage(app, slug) {
       <a href="#/voyages" onclick="go('/voyages')"
          class="flex items-center gap-2 text-slate-400 hover:text-cyan-300 font-semibold transition-colors text-sm uppercase tracking-[0.14em]">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M15 19l-7-7 7-7"/></svg>
-        Toute la collection
+        Tous les voyages
       </a>
       <button onclick="shareVoyage()" class="subtle-btn w-fit">Partager ce voyage</button>
     </div>

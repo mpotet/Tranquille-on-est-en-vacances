@@ -5,7 +5,7 @@
  * Each page is a single HTML file; JavaScript fetches data from /api/* at runtime.
  */
 
-export const HEAD = (title = 'Tranquille, on est en vacances 🌴', description = "Le blog de voyage de la famille Potet") => `
+export const HEAD = (title = 'Tranquille, on est en vacances 🌴', description = "Le carnet de bord des voyages de la famille Potet") => `
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="${description}">
@@ -68,24 +68,35 @@ body::before,body::after{display:none}
 .maroc-arch{
   position:relative;
   isolation:isolate;
-  border-radius:999px 999px 1.8rem 1.8rem;
+  overflow:visible;
+  border-radius:3.4rem 3.4rem 1.8rem 1.8rem;
   border:1px solid var(--line-strong);
   background:
-    radial-gradient(circle at 50% -18%, rgba(198,90,30,.22), transparent 56%),
-    linear-gradient(180deg, rgba(2,71,254,.07), rgba(255,255,255,.96));
-  padding:2.45rem 2.15rem 1.9rem;
+    radial-gradient(circle at 50% -10%, rgba(198,90,30,.2), transparent 60%),
+    linear-gradient(180deg, rgba(2,71,254,.07), rgba(255,255,255,.97));
+  padding:clamp(2.1rem,3.2vw,2.8rem) clamp(1.1rem,3vw,2.3rem) clamp(1.6rem,2.6vw,2.2rem);
   box-shadow:var(--shadow);
 }
 .maroc-arch>*{position:relative;z-index:1}
 .maroc-arch::before{
   content:'';
   position:absolute;
-  inset:.7rem .7rem auto .7rem;
-  height:48%;
-  border-radius:999px 999px 1.25rem 1.25rem;
+  inset:.8rem .8rem auto .8rem;
+  height:42%;
+  border-radius:3rem 3rem 1.1rem 1.1rem;
   border:1px solid rgba(2,71,254,.14);
   z-index:0;
   pointer-events:none;
+}
+@media (max-width:640px){
+  .maroc-arch{
+    border-radius:2.4rem 2.4rem 1.35rem 1.35rem;
+    padding:2rem 1.05rem 1.45rem;
+  }
+  .maroc-arch::before{
+    inset:.55rem .55rem auto .55rem;
+    height:40%;
+  }
 }
 .prose-vacation h1,.prose-vacation h2,.prose-vacation h3{font-family:'Playfair Display',Georgia,serif;color:var(--ink);letter-spacing:-.03em}
 .prose-vacation h1{font-size:2rem;margin:2rem 0 1rem;font-weight:700}
@@ -211,7 +222,7 @@ export const FOOTER = `
         </div>
       </div>
       <div class="border-t border-stone-800 pt-6 text-center text-stone-500 text-sm">
-        Bleu #0247fe &bull; ${new Date().getFullYear()}
+        Famille Potet &bull; ${new Date().getFullYear()}
       </div>
     </div>
   </div>
