@@ -13,29 +13,31 @@ export function homePage() {
 ${NAV('home')}
 
 <main class="pt-16">
-  <section id="hero" class="relative min-h-screen flex items-end sm:items-center overflow-hidden bg-white">
-    <div class="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 text-stone-900 pb-24 pt-28 sm:py-24">
-      <div class="grid lg:grid-cols-[minmax(0,1.04fr)_minmax(18rem,.96fr)] gap-8 lg:gap-14 items-center">
-        <div class="maroc-arch max-w-3xl mx-auto lg:mx-0">
-          <div class="eyebrow mb-6">Carnet de bord de la famille Potet</div>
-          <h1 class="font-display text-4xl sm:text-5xl xl:text-[4.15rem] font-bold leading-[1.04] mb-6 drop-shadow-lg">
-            Nos <span class="gradient-text">voyages en famille</span>, étape par étape.
-          </h1>
-          <p class="text-base sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
-            Chaque article raconte un voyage vécu par la famille Potet : itinéraire réel, activités avec les enfants et retours utiles.
-          </p>
-          <p class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm italic text-stone-500 mb-8">"ça c'était bien avant le drame.."</p>
-          <div class="flex flex-col sm:flex-row gap-3">
+  <section id="hero" class="relative min-h-screen flex items-center overflow-hidden bg-white">
+    <div class="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 text-stone-900 pb-20 pt-28 sm:py-20">
+      <div class="grid lg:grid-cols-[minmax(0,1.08fr)_minmax(19rem,.92fr)] gap-8 lg:gap-10 xl:gap-14 items-start lg:items-center">
+        <div class="maroc-arch w-full max-w-4xl mx-auto lg:mx-0">
+          <div class="maroc-arch-copy">
+            <div class="eyebrow mb-6">Carnet de bord de la famille Potet</div>
+            <h1 class="font-display text-4xl sm:text-5xl xl:text-[4.2rem] font-bold leading-[1.06] mb-6 drop-shadow-lg">
+              Nos <span class="gradient-text">voyages en famille</span>, étape par étape.
+            </h1>
+            <p class="hero-intro text-base sm:text-xl text-stone-500 leading-relaxed mb-8">
+              Chaque article raconte un voyage vécu par la famille Potet : itinéraire réel, activités avec les enfants et retours utiles.
+            </p>
+            <p class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm italic text-stone-500 mb-8">"ça c'était bien avant le drame.."</p>
+          </div>
+          <div class="maroc-arch-actions flex flex-col sm:flex-row gap-3">
             <a href="/voyages" class="action-btn">Explorer nos voyages</a>
             <a href="/voyages" class="subtle-btn">Parcourir le carnet</a>
           </div>
-          <div class="flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
+          <div class="maroc-arch-highlights flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
             <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Voyages vécus</span>
             <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Avec les enfants</span>
             <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Moments partagés</span>
           </div>
         </div>
-        <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative w-full max-w-xl lg:max-w-none mx-auto">
+        <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative w-full max-w-xl lg:max-w-none mx-auto lg:sticky lg:top-28">
           <div class="grid gap-4 sm:grid-cols-3 mb-6" id="stats">
             <div class="bg-white rounded-[1.6rem] p-4 text-center"><div class="text-3xl font-black gradient-text">—</div><div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-[0.2em]">voyages</div></div>
             <div class="bg-white rounded-[1.6rem] p-4 text-center"><div class="text-3xl font-black gradient-text">—</div><div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-[0.2em]">destinations</div></div>
@@ -47,6 +49,17 @@ ${NAV('home')}
               <div class="h-16 rounded-[1.4rem] bg-white/5 border border-white/10 animate-pulse"></div>
               <div class="h-16 rounded-[1.4rem] bg-white/5 border border-white/10 animate-pulse"></div>
               <div class="h-16 rounded-[1.4rem] bg-white/5 border border-white/10 animate-pulse"></div>
+            </div>
+          </div>
+          <div class="luxe-divider my-5"></div>
+          <div class="grid gap-4 text-sm text-stone-700 lg:grid-cols-2">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-[0.2em] text-stone-500 mb-2">Dans les valises</p>
+              <p class="leading-relaxed">Des étapes vécues avec les enfants, les adresses qu'on a gardées et les petits moments qui ont rendu le voyage unique.</p>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase tracking-[0.2em] text-stone-500 mb-2">Repères utiles</p>
+              <p class="leading-relaxed">Un aperçu rapide des récits récents, des destinations visitées et des souvenirs photo à parcourir sans se perdre.</p>
             </div>
           </div>
         </div>
