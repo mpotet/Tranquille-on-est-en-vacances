@@ -36,8 +36,8 @@ ${NAV('voyages')}
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     <div class="section-panel rounded-[2rem] px-6 py-8 sm:px-10 sm:py-10 overflow-hidden relative">
       <div class="eyebrow mb-5">Collection Majorelle</div>
-      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3 text-white">✈️ Tous nos voyages</h1>
-      <p id="subtitle" class="text-sky-100 text-lg">Chargement...</p>
+      <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3 text-stone-900">✈️ Tous nos voyages</h1>
+      <p id="subtitle" class="text-stone-600 text-lg">Chargement...</p>
     </div>
   </div>
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -60,11 +60,11 @@ function fmtDateRange(a){
 }
 function card(a){return \`<article class="voyage-card bg-white rounded-3xl overflow-hidden shadow-md cursor-pointer" onclick="location.href='/voyage/\${a.slug}'">
   <div class="relative h-52 overflow-hidden"><img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy" onerror="this.src='https://picsum.photos/seed/\${a.id}x/800/600'">
-  \${a.folder_name?'<div class="absolute top-3 left-3 glass-panel rounded-full px-3 py-1 text-xs font-bold text-stone-700">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</div>':''}
   </div>
   <div class="p-5"><div class="text-stone-400 text-xs mb-2">📅 \${fmtDateRange(a)} · 📍 \${esc(a.destination)}</div>
   <h3 class="font-display font-bold text-lg text-stone-900 mb-2 line-clamp-2 leading-snug">\${esc(a.title)}</h3>
   <p class="text-stone-500 text-sm leading-relaxed line-clamp-2 mb-4">\${esc(a.short_description)}</p>
+  \${a.folder_name?'<div class="mb-4"><span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold bg-white border border-stone-200 text-stone-700">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</span></div>':''}
   <span class="text-sky-600 text-sm font-bold">Lire la suite →</span></div></article>\`;}
 
 async function init(){
@@ -78,10 +78,10 @@ async function init(){
   const totalCount = (artData.total ?? artData.articles.length);
   const pluralSuffix = totalCount !== 1 ? 's' : '';
   const activeFolderLabel = activeF
-    ? ' dans <strong class="text-orange-500">'+esc(activeF.icon||'')+' '+esc(activeF.name)+'</strong>'
+    ? ' — focus <strong class="text-orange-500">'+esc(activeF.icon||'')+' '+esc(activeF.name)+'</strong>'
     : '';
   document.getElementById('subtitle').innerHTML =
-    '<strong class="text-sky-700">'+totalCount+'</strong> aventure'+pluralSuffix+' à découvrir'+activeFolderLabel;
+    '<strong class="text-sky-700">'+totalCount+'</strong> itinéraire'+pluralSuffix+' documenté'+activeFolderLabel;
   const roots = folders.filter(f=>!f.parent_id);
   const children = pid => folders.filter(f=>f.parent_id===pid);
   let btns='<a href="/voyages" class="px-4 py-2 rounded-full font-bold text-sm border-2 transition-all '+((!folder)?'bg-sky-500 text-white border-sky-500 shadow-md':'bg-white text-stone-600 border-stone-200 hover:border-sky-300 hover:text-sky-600')+'">🌍 Tous</a>';
@@ -127,23 +127,20 @@ async function init(){
   const photos = a.photos || [];
   const renderedContent = renderVoyageContent(a.content || '', photos);
   document.getElementById('main').innerHTML = \`
-  <div class="relative h-[52vh] sm:h-[68vh] overflow-hidden">
+  <div class="h-[52vh] sm:h-[68vh] overflow-hidden">
     <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover" onerror="this.style.background='#6050DC'">
-    <div class="absolute inset-0 hero-overlay"></div>
-    <a href="/voyages" class="absolute top-5 left-5 flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white font-semibold px-4 py-2 rounded-full hover:bg-white/35 transition-all border border-white/30 text-sm">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Retour
-    </a>
-    <div class="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
-      <div class="max-w-4xl mx-auto">
-        \${a.folder_name?'<div class="mb-3"><span class="bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/30">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</span></div>':''}
-        <h1 class="font-display text-3xl sm:text-5xl font-bold text-white drop-shadow-lg mb-3 leading-tight">\${esc(a.title)}</h1>
-        <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-white/80 text-sm font-medium">
+  </div>
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+      <a href="/voyages" class="inline-flex items-center gap-2 text-stone-500 hover:text-sky-600 font-semibold transition-colors text-sm mb-5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Retour aux voyages
+      </a>
+      <div class="section-panel rounded-[2rem] p-5 sm:p-6 mb-6">
+        \${a.folder_name?'<div class="mb-3"><span class="inline-flex items-center gap-1.5 bg-white text-stone-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-stone-200">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</span></div>':''}
+        <h1 class="font-display text-3xl sm:text-5xl font-bold text-stone-900 mb-3 leading-tight">\${esc(a.title)}</h1>
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-stone-500 text-sm font-medium">
           <span>📅 \${fmtDateRange(a)}</span><span>📍 \${esc(a.destination)}</span><span>📷 \${photos.length} photos</span>
         </div>
       </div>
-    </div>
-  </div>
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div class="section-panel rounded-[2rem] p-5 sm:p-6 mb-10">
         <p class="text-stone-700 text-base sm:text-lg leading-relaxed font-medium italic">"\${esc(a.short_description)}"</p>
       </div>
