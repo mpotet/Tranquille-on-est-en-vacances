@@ -70,20 +70,20 @@ body::before,body::after{display:none}
   isolation:isolate;
   overflow:hidden;
   border:2px solid rgba(198,90,30,.42);
-  border-radius:500px;
+  border-radius:500px 500px .95rem .95rem / 420px 420px .95rem .95rem;
   background:
     radial-gradient(circle at 50% -22%, rgba(198,90,30,.13) 0 34%, transparent 58%),
     linear-gradient(180deg, rgba(2,71,254,.04), rgba(255,255,255,.95) 28%, #fff 100%);
-  padding:clamp(3.6rem,5vw,4.8rem) clamp(1.4rem,3vw,2.4rem) clamp(2rem,3vw,2.5rem);
+  padding:clamp(4.2rem,5.8vw,5.5rem) clamp(1.4rem,3vw,2.4rem) clamp(2rem,3vw,2.5rem);
   box-shadow:0 20px 46px rgba(2,71,254,.14),inset 0 1px 0 rgba(255,255,255,.85);
 }
-.maroc-arch .eyebrow{margin-top:.45rem}
+.maroc-arch .eyebrow{margin-top:1.05rem}
 .maroc-arch>*{position:relative;z-index:1}
 .maroc-arch::before{
   content:'';
   position:absolute;
   inset:.55rem;
-  border-radius:500px;
+  border-radius:500px 500px .7rem .7rem / 420px 420px .7rem .7rem;
   border:1px solid rgba(2,71,254,.16);
   background:linear-gradient(180deg,rgba(198,90,30,.08),rgba(198,90,30,0) 48%);
   z-index:0;
@@ -103,13 +103,13 @@ body::before,body::after{display:none}
 }
 @media (max-width:640px){
   .maroc-arch{
-    border-radius:500px;
-    padding:3.1rem 1.1rem 1.7rem;
+    border-radius:360px 360px .78rem .78rem / 280px 280px .78rem .78rem;
+    padding:3.8rem 1.1rem 1.7rem;
   }
-  .maroc-arch .eyebrow{margin-top:.3rem}
+  .maroc-arch .eyebrow{margin-top:.7rem}
   .maroc-arch::before{
     inset:.42rem;
-    border-radius:500px;
+    border-radius:360px 360px .6rem .6rem / 280px 280px .6rem .6rem;
   }
 }
 .prose-vacation h1,.prose-vacation h2,.prose-vacation h3{font-family:'Playfair Display',Georgia,serif;color:var(--ink);letter-spacing:-.03em}
