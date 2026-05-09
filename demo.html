@@ -44,9 +44,9 @@
   --orange:#C65A1E;
   --orange-rgb:198,90,30;
   --white:#FFFFFF;
-  --ink:#0247fe;
-  --muted:rgba(2,71,254,.82);
-  --muted-deep:rgba(2,71,254,.62);
+  --ink:#111827;
+  --muted:#6B7280;
+  --muted-deep:#374151;
   --panel:#FFFFFF;
   --panel-soft:rgba(2,71,254,.05);
   --line:rgba(2,71,254,.22);
@@ -101,11 +101,11 @@ body::before,body::after{display:none}
 .prose-vacation h1{font-size:2rem;margin:2rem 0 1rem;font-weight:700}
 .prose-vacation h2{font-size:1.6rem;margin:1.8rem 0 .9rem;font-weight:700}
 .prose-vacation h3{font-size:1.25rem;margin:1.4rem 0 .7rem;font-weight:700}
-.prose-vacation p{margin:1rem 0;line-height:1.85;color:var(--muted)}
+.prose-vacation p{margin:1rem 0;line-height:1.85;color:var(--ink)}
 .prose-vacation figure{margin:2rem auto;max-width:100%}
 .prose-vacation figure img{border-radius:1rem;box-shadow:0 10px 24px rgba(2,71,254,.16);margin:0 auto}
 .prose-vacation figcaption{margin-top:.6rem;font-size:.85rem;color:var(--muted-deep);text-align:center;font-style:italic}
-.prose-vacation ul,.prose-vacation ol{margin:1rem 0;padding-left:1.5rem;color:var(--muted)}
+.prose-vacation ul,.prose-vacation ol{margin:1rem 0;padding-left:1.5rem;color:var(--ink)}
 .prose-vacation li{margin:.4rem 0}
 .prose-vacation strong{color:var(--ink);font-weight:700}
 .prose-vacation em{color:var(--orange);font-weight:600}
@@ -667,11 +667,6 @@ function card(a) {
     <div class="relative h-56 overflow-hidden">
       <img src="${a.cover}" alt="${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy"
            onerror="this.src='https://picsum.photos/seed/${a.id}x/800/600'">
-      <div class="absolute inset-0 bg-transparent"></div>
-      <div class="absolute top-4 left-4 right-4 flex items-start justify-between gap-3">
-        ${f ? `<div class="glass-panel rounded-full px-3 py-1.5 text-[0.72rem] font-semibold text-slate-100 flex items-center gap-2"><span class="text-cyan-300">${f.icon}</span><span>${f.name}</span></div>` : ''}
-        <div class="glass-panel rounded-full px-3 py-1.5 text-[0.72rem] font-semibold text-slate-100">${a.photos?.length||0} photos</div>
-      </div>
     </div>
     <div class="p-6">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-400 text-xs mb-3 uppercase tracking-[0.18em]">
@@ -679,8 +674,12 @@ function card(a) {
         <span class="hidden sm:inline text-slate-600">•</span>
         <span>${a.destination}</span>
       </div>
-      <h3 class="font-display font-bold text-2xl text-white mb-3 line-clamp-2 leading-tight">${esc(a.title)}</h3>
+      <h3 class="font-display font-bold text-2xl text-stone-900 mb-3 line-clamp-2 leading-tight">${esc(a.title)}</h3>
       <p class="text-slate-400 text-sm leading-relaxed line-clamp-3 mb-5">${esc(a.short_description)}</p>
+      <div class="mb-5 flex flex-wrap items-center gap-2">
+        ${f ? `<span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[0.72rem] font-semibold bg-white border border-stone-200 text-stone-700">${f.icon} ${f.name}</span>` : ''}
+        <span class="inline-flex items-center rounded-full px-3 py-1 text-[0.72rem] font-semibold bg-white border border-stone-200 text-stone-700">${a.photos?.length||0} photos</span>
+      </div>
       <span class="inline-flex items-center gap-2 text-cyan-300 text-sm font-bold tracking-[0.14em] uppercase">Explorer
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 17 17 7M8 7h9v9"/></svg>
       </span>
@@ -701,21 +700,21 @@ function pgHome(app) {
     <div class="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-32 pb-16 lg:pb-24">
       <div class="grid lg:grid-cols-[1.08fr_0.92fr] gap-10 items-center">
         <div class="max-w-3xl maroc-arch">
-          <div class="eyebrow mb-6">Bienvenue sous l'arche Majorelle</div>
+          <div class="eyebrow mb-6">Carnet de terrain en famille</div>
           <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.04] mb-6 text-stone-900">
-            Les aventures de la <span class="gradient-text">famille Potet</span>, racontées étape par étape.
+            Nos <span class="gradient-text">itinéraires testés</span> en famille, ville par ville.
           </h1>
           <p class="text-lg sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
-            Entre valises, fous rires et découvertes, on partage ici nos itinéraires, nos bonnes adresses et nos souvenirs en famille.
+            Chaque récit partage l'organisation réelle du séjour : étapes, activités faisables avec enfants, budget pratique et points d'attention.
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
             <a href="#/voyages" onclick="go('/voyages')" class="action-btn">Explorer nos voyages</a>
             <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn">Découvrir les escales</a>
           </div>
           <div class="flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Carnets du jour</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Idées avec enfants</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Souvenirs familiaux</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Itinéraires concrets</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Adresses vérifiées</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Conseils familles</span>
           </div>
         </div>
 
@@ -739,10 +738,10 @@ function pgHome(app) {
             <p class="text-xs font-bold uppercase tracking-[0.22em] text-slate-400 mb-3">Dernières escales</p>
             <div class="space-y-3">
               ${featured.slice(0, 3).map((a, idx) => `
-                <button onclick="go('/voyage/${a.slug}')" class="w-full text-left rounded-[1.4rem] px-4 py-3 bg-white/5 hover:bg-white/10 transition-colors border border-white/10">
+                <button onclick="go('/voyage/${a.slug}')" aria-label="${esc(`Consulter le voyage ${a.title||''} à ${a.destination||''}`)}" class="w-full text-left rounded-[1.4rem] px-4 py-3 bg-white hover:bg-sky-50 transition-colors border border-stone-200">
                   <div class="flex items-center justify-between gap-3">
                     <div>
-                      <div class="text-white font-semibold">${esc(a.title)}</div>
+                      <div class="text-stone-900 font-semibold">${esc(a.title)}</div>
                       <div class="text-slate-400 text-xs mt-1 uppercase tracking-[0.18em]">${a.destination}</div>
                     </div>
                     <span class="text-slate-500 text-sm">0${idx + 1}</span>
@@ -754,11 +753,11 @@ function pgHome(app) {
           <div class="grid sm:grid-cols-2 gap-4 text-sm">
             <div>
               <p class="text-slate-400 uppercase tracking-[0.18em] text-xs mb-2">Dans les valises</p>
-              <p class="text-slate-200 leading-relaxed">Nos étapes testées en famille, les adresses qui ont plu aux enfants et les trajets qui nous ont vraiment simplifié la vie.</p>
+              <p class="text-stone-700 leading-relaxed">Nos étapes testées en famille, les adresses qui ont plu aux enfants et les trajets qui nous ont vraiment simplifié la vie.</p>
             </div>
             <div>
               <p class="text-slate-400 uppercase tracking-[0.18em] text-xs mb-2">Moments marquants</p>
-              <p class="text-slate-200 leading-relaxed">Petites galères, gros fous rires et souvenirs qu'on veut garder pour plus tard, tout simplement.</p>
+              <p class="text-stone-700 leading-relaxed">Petites galères évitées, bonnes surprises et retours utiles pour planifier plus sereinement le prochain départ.</p>
             </div>
           </div>
         </div>
@@ -770,7 +769,7 @@ function pgHome(app) {
     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-10">
         <div>
           <div class="eyebrow mb-4">Sélection maison</div>
-          <h2 class="font-display text-3xl sm:text-5xl font-bold text-white">Nos derniers voyages</h2>
+          <h2 class="font-display text-3xl sm:text-5xl font-bold text-stone-900">Nos derniers voyages</h2>
           <p class="text-slate-400 mt-3 text-sm sm:text-base max-w-2xl">Les récits les plus récents de nos vacances, avec nos coups de cœur, nos galères et nos meilleures trouvailles.</p>
         </div>
       <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn w-fit">Voir toute la collection</a>
@@ -785,13 +784,13 @@ function pgHome(app) {
       <div class="grid lg:grid-cols-[0.78fr_1.22fr] gap-8 items-start">
         <div>
           <div class="eyebrow mb-4">Routes & collections</div>
-          <h2 class="font-display text-3xl sm:text-4xl font-bold text-white mb-3">Nos destinations</h2>
+          <h2 class="font-display text-3xl sm:text-4xl font-bold text-stone-900 mb-3">Nos destinations</h2>
           <p class="text-slate-400 max-w-md">Choisissez une destination et retrouvez nos itinéraires, nos photos et ce qu'on referait (ou non) en famille.</p>
         </div>
         <div class="flex flex-wrap gap-3">
           ${roots().map(f => `
             <a href="#/voyages/${f.slug}" onclick="go('/voyages/${f.slug}')"
-               class="inline-flex items-center gap-3 rounded-full px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 transition-all font-semibold text-slate-100 cursor-pointer">
+                class="inline-flex items-center gap-3 rounded-full px-5 py-3 bg-white hover:bg-sky-50 border border-stone-200 transition-all font-semibold text-stone-900 cursor-pointer">
               <span class="text-cyan-300">${f.icon}</span>
               <span>${f.name}</span>
               <span class="text-xs bg-white/10 text-slate-300 px-2.5 py-1 rounded-full font-bold">${articlesInTree(f.id).length}</span>
@@ -821,10 +820,10 @@ function pgVoyages(app, folderSlug) {
     <div class="section-panel rounded-[2rem] px-6 py-8 sm:px-10 sm:py-10 overflow-hidden relative">
       <div aria-hidden="true" class="absolute right-8 top-8 hidden lg:block text-[10rem] leading-none text-white/5">✦</div>
       <div class="eyebrow mb-5">Collection Majorelle</div>
-      <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4">Tous nos voyages</h1>
-      <p class="text-slate-300 text-lg max-w-3xl leading-relaxed">
-        <strong class="text-white">${arts.length}</strong> récit${arts.length>1?'s':''} à parcourir,
-        façonnés comme une bibliothèque de souvenirs précieux.
+      <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-stone-900 mb-4">Tous nos voyages</h1>
+      <p class="text-stone-600 text-lg max-w-3xl leading-relaxed">
+        <strong class="text-stone-900">${arts.length}</strong> itinéraire${arts.length>1?'s':''} documenté${arts.length>1?'s':''},
+        avec infos utiles pour organiser logement, trajets et activités.
         ${activeF ? `Focus actuel : <strong class="text-cyan-300">${activeF.icon} ${activeF.name}</strong>.` : ''}
       </p>
     </div>
@@ -834,12 +833,12 @@ function pgVoyages(app, folderSlug) {
     <div class="section-panel rounded-[2rem] p-4 sm:p-5 mb-8">
       <div class="flex flex-wrap gap-2">
         <button onclick="go('/voyages')"
-                class="px-4 py-2 rounded-full font-bold text-sm border transition-all ${!folderSlug ? 'bg-white/10 text-white border-white/10 shadow-md' : 'bg-transparent text-slate-400 border-white/10 hover:border-cyan-300/30 hover:text-cyan-300'}">
+                class="px-4 py-2 rounded-full font-bold text-sm border transition-all ${!folderSlug ? 'bg-white text-stone-900 border-stone-200 shadow-md' : 'bg-transparent text-slate-400 border-white/10 hover:border-cyan-300/30 hover:text-cyan-300'}">
           Tous
         </button>
         ${roots().map(f => `
           <button onclick="go('/voyages/${f.slug}')"
-                  class="px-4 py-2 rounded-full font-bold text-sm border transition-all ${folderSlug===f.slug ? 'bg-white/10 text-white border-white/10 shadow-md' : 'bg-transparent text-slate-400 border-white/10 hover:border-cyan-300/30 hover:text-cyan-300'}">
+                  class="px-4 py-2 rounded-full font-bold text-sm border transition-all ${folderSlug===f.slug ? 'bg-white text-stone-900 border-stone-200 shadow-md' : 'bg-transparent text-slate-400 border-white/10 hover:border-cyan-300/30 hover:text-cyan-300'}">
             ${f.icon} ${f.name}
           </button>
           ${children(f.id).map(c => `
@@ -854,7 +853,7 @@ function pgVoyages(app, folderSlug) {
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">${arts.map(card).join('')}</div>
     ` : `
       <div class="section-panel rounded-[2rem] text-center py-24 text-slate-400">
-        <p class="text-xl font-semibold mb-2 text-white">Aucun récit dans cette collection</p>
+        <p class="text-xl font-semibold mb-2 text-stone-900">Aucun récit dans cette collection</p>
         <p class="text-sm">Revenez bientôt, une nouvelle escale viendra enrichir le carnet.</p>
       </div>`}
   </div>`;
@@ -884,30 +883,29 @@ function pgVoyage(app, slug) {
   <div class="relative h-[58vh] sm:h-[74vh] overflow-hidden">
     <img src="${a.cover}" alt="${esc(a.title)}" class="w-full h-full object-cover"
          onerror="this.style.background='var(--panel-soft)'">
-    <div class="absolute inset-0 hero-overlay"></div>
-    <a href="#/voyages" onclick="go('/voyages')"
-       class="absolute top-5 left-5 flex items-center gap-2 glass-panel text-white font-semibold px-4 py-2 rounded-full hover:bg-white/10 transition-all text-sm border border-white/10">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M15 19l-7-7 7-7"/></svg>
-      Retour
-    </a>
-    <div class="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
-      <div class="max-w-5xl mx-auto">
-        ${f ? `<div class="mb-4"><span class="glass-panel text-slate-100 text-xs font-bold px-3 py-1.5 rounded-full border border-white/10">${f.icon} ${f.name}</span></div>` : ''}
-        <h1 class="font-display text-3xl sm:text-5xl lg:text-6xl font-bold text-white drop-shadow-lg mb-4 leading-tight max-w-4xl">${esc(a.title)}</h1>
-        <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-slate-300 text-sm font-medium uppercase tracking-[0.15em]">
-          <span>${fmtDateRange(a)}</span>
-          <span>${a.destination}</span>
-          <span>${a.photos?.length||0} photos</span>
-          ${a.status==='draft' ? '<span class="badge-draft px-2.5 py-1 rounded-full text-xs font-bold">Brouillon</span>' : ''}
-        </div>
-      </div>
-    </div>
   </div>
 
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+    <a href="#/voyages" onclick="go('/voyages')"
+       class="inline-flex items-center gap-2 text-stone-500 hover:text-cyan-300 font-semibold transition-colors text-sm mb-5">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M15 19l-7-7 7-7"/></svg>
+      Retour aux voyages
+    </a>
+
+    <div class="section-panel rounded-[2rem] p-6 sm:p-8 mb-6 border border-white/10">
+      ${f ? `<div class="mb-4"><span class="inline-flex items-center gap-1.5 bg-white text-stone-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-stone-200">${f.icon} ${f.name}</span></div>` : ''}
+      <h1 class="font-display text-3xl sm:text-5xl lg:text-6xl font-bold text-stone-900 mb-4 leading-tight max-w-4xl">${esc(a.title)}</h1>
+      <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-stone-500 text-sm font-medium uppercase tracking-[0.15em]">
+        <span>${fmtDateRange(a)}</span>
+        <span>${a.destination}</span>
+        <span>${a.photos?.length||0} photos</span>
+        ${a.status==='draft' ? '<span class="badge-draft px-2.5 py-1 rounded-full text-xs font-bold">Brouillon</span>' : ''}
+      </div>
+    </div>
+
     <div class="section-panel rounded-[2rem] p-6 sm:p-8 mb-10 border border-white/10">
       <div class="eyebrow mb-4">Note d'ambiance</div>
-      <p class="text-slate-200 text-base sm:text-lg leading-relaxed font-medium italic">${esc(a.short_description)}</p>
+      <p class="text-stone-700 text-base sm:text-lg leading-relaxed font-medium italic">${esc(a.short_description)}</p>
     </div>
 
     <div class="prose-vacation text-base sm:text-lg leading-relaxed mb-12">
@@ -964,7 +962,7 @@ function pgLogin(app) {
         <div class="mb-8">
           <div class="eyebrow mb-5">Studio privé</div>
           <h1 class="font-display text-3xl font-bold text-white">Espace admin</h1>
-          <p class="text-slate-400 mt-3 text-sm leading-relaxed">Accès de démonstration pour explorer l'interface d'édition et la gestion des récits.</p>
+          <p class="text-slate-400 mt-3 text-sm leading-relaxed">Accès de démonstration pour gérer les voyages, organiser les collections et publier les retours de terrain.</p>
         </div>
         <form onsubmit="doLogin(event)">
           <div class="mb-6">

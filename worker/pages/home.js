@@ -17,21 +17,21 @@ ${NAV('home')}
     <div class="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 text-stone-900 pb-24 pt-28 sm:py-24">
       <div class="grid lg:grid-cols-[1.08fr_0.92fr] gap-10 items-center">
         <div class="max-w-3xl maroc-arch">
-          <div class="eyebrow mb-6">Bienvenue sous l'arche Majorelle</div>
+          <div class="eyebrow mb-6">Carnet de terrain en famille</div>
           <h1 class="font-display text-4xl sm:text-5xl lg:text-7xl font-bold leading-[1.04] mb-6 drop-shadow-lg">
-            Les aventures de la <span class="gradient-text">famille Potet</span>, racontées étape par étape.
+            Nos <span class="gradient-text">itinéraires testés</span> en famille, ville par ville.
           </h1>
           <p class="text-base sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
-            Entre valises, fous rires et découvertes, on partage ici nos itinéraires, nos bonnes adresses et nos souvenirs en famille.
+            Chaque récit partage l'organisation réelle du séjour : étapes, activités faisables avec enfants, budget pratique et points d'attention.
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
             <a href="/voyages" class="action-btn">Explorer nos voyages</a>
             <a href="/voyages" class="subtle-btn">Découvrir les escales</a>
           </div>
           <div class="flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Carnets du jour</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Idées avec enfants</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Souvenirs familiaux</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Itinéraires concrets</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Adresses vérifiées</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Conseils familles</span>
           </div>
         </div>
         <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative">
@@ -115,13 +115,12 @@ function articleCard(a){
   return \`<article class="voyage-card bg-white rounded-3xl overflow-hidden shadow-md cursor-pointer" onclick="location.href='/voyage/\${a.slug}'">
     <div class="relative h-52 overflow-hidden">
       <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy" onerror="this.src='https://picsum.photos/seed/\${a.id}x/800/600'">
-      <div class="absolute inset-0 bg-transparent"></div>
-      \${a.folder_name?'<div class="absolute top-3 left-3 glass-panel rounded-full px-3 py-1 text-xs font-bold text-stone-700">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</div>':''}
     </div>
     <div class="p-5">
       <div class="text-stone-400 text-xs mb-2 uppercase tracking-[0.16em]">📅 \${fmtDateRange(a)} · 📍 \${esc(a.destination)}</div>
       <h3 class="font-display font-bold text-lg text-stone-900 mb-2 line-clamp-2 leading-snug">\${esc(a.title)}</h3>
       <p class="text-stone-500 text-sm leading-relaxed line-clamp-2 mb-4">\${esc(a.short_description)}</p>
+      \${a.folder_name?'<div class="mb-4"><span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold bg-white border border-stone-200 text-stone-700">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</span></div>':''}
       <span class="text-sky-600 text-sm font-bold uppercase tracking-[0.14em]">Lire la suite →</span>
     </div>
   </article>\`;
@@ -141,9 +140,9 @@ async function init(){
   statsEl.querySelector('div:nth-child(3) .gradient-text').textContent = totalPhotos || '—';
 
   document.getElementById('hero-selection').innerHTML = artData.articles.slice(0,3).map((a, idx)=>
-    '<a href="/voyage/'+a.slug+'" class="block rounded-[1.4rem] px-4 py-3 bg-white/5 hover:bg-white/10 transition-colors border border-white/10">'+
+    '<a href="/voyage/'+a.slug+'" aria-label="'+esc('Consulter le voyage '+(a.title||'')+' à '+(a.destination||''))+'" class="block rounded-[1.4rem] px-4 py-3 bg-white hover:bg-sky-50 transition-colors border border-stone-200">'+
       '<div class="flex items-center justify-between gap-3">'+
-        '<div><div class="text-white font-semibold">'+esc(a.title)+'</div><div class="text-stone-400 text-xs mt-1 uppercase tracking-[0.18em]">'+esc(a.destination)+'</div></div>'+
+        '<div><div class="text-stone-900 font-semibold">'+esc(a.title)+'</div><div class="text-stone-500 text-xs mt-1 uppercase tracking-[0.18em]">'+esc(a.destination)+'</div></div>'+
         '<span class="text-stone-500 text-sm">0'+(idx + 1)+'</span>'+
       '</div>'+
     '</a>'

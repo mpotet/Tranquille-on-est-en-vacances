@@ -34,9 +34,9 @@ tailwind.config = {
   --orange:#C65A1E;
   --orange-rgb:198,90,30;
   --white:#FFFFFF;
-  --ink:#0247fe;
-  --muted:rgba(2,71,254,.82);
-  --muted-deep:rgba(2,71,254,.62);
+  --ink:#111827;
+  --muted:#6B7280;
+  --muted-deep:#374151;
   --panel:#FFFFFF;
   --panel-soft:rgba(2,71,254,.05);
   --line:rgba(2,71,254,.22);
@@ -91,11 +91,11 @@ body::before,body::after{display:none}
 .prose-vacation h1{font-size:2rem;margin:2rem 0 1rem;font-weight:700}
 .prose-vacation h2{font-size:1.6rem;margin:1.8rem 0 .9rem;font-weight:700}
 .prose-vacation h3{font-size:1.25rem;margin:1.4rem 0 .7rem;font-weight:700}
-.prose-vacation p{margin:1rem 0;line-height:1.85;color:var(--muted)}
+.prose-vacation p{margin:1rem 0;line-height:1.85;color:var(--ink)}
 .prose-vacation figure{margin:2rem auto;max-width:100%}
 .prose-vacation figure img{border-radius:1rem;box-shadow:0 10px 24px rgba(2,71,254,.16);margin:0 auto}
 .prose-vacation figcaption{margin-top:.6rem;font-size:.85rem;color:var(--muted-deep);text-align:center;font-style:italic}
-.prose-vacation ul,.prose-vacation ol{margin:1rem 0;padding-left:1.5rem;color:var(--muted)}
+.prose-vacation ul,.prose-vacation ol{margin:1rem 0;padding-left:1.5rem;color:var(--ink)}
 .prose-vacation li{margin:.4rem 0}
 .prose-vacation strong{color:var(--ink);font-weight:700}
 .prose-vacation em{color:var(--orange);font-weight:600}
@@ -194,7 +194,7 @@ export const FOOTER = `
               <div class="text-slate-400 text-[0.72rem] font-bold uppercase tracking-[0.24em] mt-1">on est en vacances</div>
             </div>
           </div>
-          <p class="text-stone-500 text-sm leading-relaxed">Un carnet de voyage familial épuré, sur fond blanc avec bleu #0247fe et quelques touches orange brûlé.</p>
+          <p class="text-stone-500 text-sm leading-relaxed">Des itinéraires testés en famille, des adresses utiles et des retours de terrain pour préparer vos prochaines vacances.</p>
         </div>
         <div>
           <h3 class="text-white font-bold mb-4 text-sm uppercase tracking-[0.22em]">Explorer</h3>
