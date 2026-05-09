@@ -21,7 +21,7 @@ ${NAV('home')}
           <h1 class="font-display text-4xl sm:text-5xl lg:text-7xl font-bold leading-[0.98] mb-6 drop-shadow-lg">
             Un carnet de voyage pensé comme un <span class="gradient-text">écrin familial</span>.
           </h1>
-          <p class="text-base sm:text-xl text-slate-300 leading-relaxed mb-8 max-w-2xl">
+          <p class="text-base sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
             Des souvenirs enveloppés de bleu Majorelle, de lumière dorée et d'une mise en scène plus précieuse, plus chaleureuse, plus mémorable.
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
