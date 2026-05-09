@@ -35,7 +35,7 @@ ${NAV('voyages')}
 <main class="pt-16">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     <div class="section-panel rounded-[2rem] px-6 py-8 sm:px-10 sm:py-10 overflow-hidden relative">
-      <div class="eyebrow mb-5">Collection Majorelle</div>
+      <div class="eyebrow mb-5">Carnet de bord des Potet</div>
       <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3 text-stone-900">✈️ Tous nos voyages</h1>
       <p id="subtitle" class="text-stone-600 text-lg">Chargement...</p>
     </div>
@@ -78,7 +78,7 @@ async function init(){
   const totalCount = (artData.total ?? artData.articles.length);
   const pluralSuffix = totalCount !== 1 ? 's' : '';
   const activeFolderLabel = activeF
-    ? ' — Filtre actif : <strong class="text-orange-500">'+esc(activeF.icon||'')+' '+esc(activeF.name)+'</strong>'
+    ? ' — Destination : <strong class="text-orange-500">'+esc(activeF.icon||'')+' '+esc(activeF.name)+'</strong>'
     : '';
   document.getElementById('subtitle').innerHTML =
     '<strong class="text-sky-700">'+totalCount+'</strong> itinéraire'+pluralSuffix+' documenté'+activeFolderLabel;
