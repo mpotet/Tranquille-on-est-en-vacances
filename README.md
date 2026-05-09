@@ -151,7 +151,7 @@ Accédez à `/admin` et connectez-vous avec le mot de passe défini à l'étape 
 |---------|--------|
 | Police principale | Nunito (amicale, arrondie) |
 | Police titres | Playfair Display (élégante) |
-| Couleur principale | Bleu `#6050DC` |
+| Couleur principale | Bleu Majorelle `#0247FE` |
 | Couleur accent | Orange brûlé (touches) `#C65A1E` |
 | Fond | Blanc `#FFFFFF` |
 | Framework CSS | Tailwind CSS (CDN) |
