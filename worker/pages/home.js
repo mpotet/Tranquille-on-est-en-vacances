@@ -16,22 +16,22 @@ ${NAV('home')}
   <section id="hero" class="relative min-h-screen flex items-end sm:items-center overflow-hidden bg-white">
     <div class="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 text-stone-900 pb-24 pt-28 sm:py-24">
       <div class="grid lg:grid-cols-[1.08fr_0.92fr] gap-10 items-center">
-        <div class="max-w-3xl">
-          <div class="eyebrow mb-6">Bleu Majorelle · Esprit riad</div>
+        <div class="max-w-3xl maroc-arch">
+          <div class="eyebrow mb-6">Bienvenue sous l'arche Majorelle</div>
           <h1 class="font-display text-4xl sm:text-5xl lg:text-7xl font-bold leading-[0.98] mb-6 drop-shadow-lg">
-            Un carnet de voyage pensé comme un <span class="gradient-text">écrin familial</span>.
+            Un carnet de voyage au style <span class="gradient-text">palace marocain moderne</span>.
           </h1>
           <p class="text-base sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
-            Des souvenirs enveloppés de bleu Majorelle, de lumière dorée et d'une mise en scène plus précieuse, plus chaleureuse, plus mémorable.
+            Bleu Majorelle en teinte principale, fond blanc lumineux et accents orange brûlé pour des récits élégants, clairs et chaleureux.
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
             <a href="/voyages" class="action-btn">Explorer nos voyages</a>
-            <a href="/voyages" class="subtle-btn">Ouvrir le salon photo</a>
+            <a href="/voyages" class="subtle-btn">Découvrir les escales</a>
           </div>
           <div class="flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Récits immersifs</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Collections familiales</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Souvenirs éditorialisés</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Esprit marocain</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Ligne contemporaine</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Souvenirs familiaux</span>
           </div>
         </div>
         <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative">
@@ -58,7 +58,7 @@ ${NAV('home')}
       <div>
         <div class="eyebrow mb-4">Sélection maison</div>
         <h2 class="font-display text-3xl sm:text-4xl font-bold text-stone-900">Derniers voyages</h2>
-        <p class="text-stone-500 mt-2 text-sm max-w-2xl">Les aventures les plus récentes, mises en scène avec davantage de contraste, de matière et d'élégance.</p>
+        <p class="text-stone-500 mt-2 text-sm max-w-2xl">Les aventures les plus récentes dans une ambiance inspirée du Maroc, épurée et lumineuse.</p>
       </div>
       <a href="/voyages" class="hidden sm:flex subtle-btn">Voir toute la collection</a>
     </div>
@@ -77,7 +77,7 @@ ${NAV('home')}
           <div>
             <div class="eyebrow mb-4">Routes & collections</div>
             <h2 class="font-display text-3xl sm:text-4xl font-bold text-stone-900 mb-3">Nos destinations</h2>
-            <p class="text-stone-500 text-sm">Explorez le monde comme on traverse les salons d'un riad : une ambiance, une destination, une histoire.</p>
+            <p class="text-stone-500 text-sm">Explorez le monde comme on franchit des arches marocaines : une ambiance, une destination, une histoire.</p>
           </div>
           <div id="destinations" class="flex flex-wrap gap-3">
             <div class="w-32 h-12 bg-white/60 rounded-2xl animate-pulse"></div>
