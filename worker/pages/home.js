@@ -15,10 +15,10 @@ ${NAV('home')}
 <main class="pt-16">
   <section id="hero" class="relative min-h-screen flex items-end sm:items-center overflow-hidden bg-white">
     <div class="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 text-stone-900 pb-24 pt-28 sm:py-24">
-      <div class="grid lg:grid-cols-[1.08fr_0.92fr] gap-10 items-center">
-        <div class="max-w-3xl maroc-arch">
+      <div class="grid lg:grid-cols-[minmax(0,1.04fr)_minmax(18rem,.96fr)] gap-8 lg:gap-14 items-center">
+        <div class="maroc-arch max-w-3xl mx-auto lg:mx-0">
           <div class="eyebrow mb-6">Carnet de bord de la famille Potet</div>
-          <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.08] mb-6 drop-shadow-lg">
+          <h1 class="font-display text-4xl sm:text-5xl xl:text-[4.15rem] font-bold leading-[1.04] mb-6 drop-shadow-lg">
             Nos <span class="gradient-text">voyages en famille</span>, étape par étape.
           </h1>
           <p class="text-base sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
@@ -35,7 +35,7 @@ ${NAV('home')}
             <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Moments partagés</span>
           </div>
         </div>
-        <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative">
+        <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative w-full max-w-xl lg:max-w-none mx-auto">
           <div class="grid gap-4 sm:grid-cols-3 mb-6" id="stats">
             <div class="bg-white rounded-[1.6rem] p-4 text-center"><div class="text-3xl font-black gradient-text">—</div><div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-[0.2em]">voyages</div></div>
             <div class="bg-white rounded-[1.6rem] p-4 text-center"><div class="text-3xl font-black gradient-text">—</div><div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-[0.2em]">destinations</div></div>

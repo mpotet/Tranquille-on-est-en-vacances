@@ -68,49 +68,77 @@ body::before,body::after{display:none}
 .maroc-arch{
   position:relative;
   isolation:isolate;
-  overflow:hidden;
-  border:2px solid rgba(198,90,30,.42);
-  border-radius:400px 400px .5rem .5rem / 400px 400px .5rem .5rem;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  width:min(100%,42rem);
+  min-height:clamp(31rem,44vw,38rem);
+  overflow:clip;
+  border:1.5px solid rgba(198,90,30,.4);
+  border-radius:26rem 26rem 2rem 2rem / 18rem 18rem 2rem 2rem;
   background:
-    radial-gradient(circle at 50% -22%, rgba(198,90,30,.13) 0 34%, transparent 58%),
-    linear-gradient(180deg, rgba(2,71,254,.04), rgba(255,255,255,.95) 28%, #fff 100%);
-  padding:clamp(4.2rem,5.8vw,5.5rem) clamp(1.4rem,3vw,2.4rem) clamp(2rem,3vw,2.5rem);
-  box-shadow:0 20px 46px rgba(2,71,254,.14),inset 0 1px 0 rgba(255,255,255,.85);
+    radial-gradient(circle at 50% -18%, rgba(198,90,30,.16) 0 32%, transparent 58%),
+    linear-gradient(180deg, rgba(255,255,255,.96) 0, rgba(2,71,254,.05) 42%, #fff 100%);
+  padding:clamp(6rem,9vw,7.3rem) clamp(1.5rem,4vw,3.2rem) clamp(2.4rem,4vw,3.4rem);
+  box-shadow:0 24px 54px rgba(2,71,254,.13), inset 0 1px 0 rgba(255,255,255,.92);
 }
-.maroc-arch .eyebrow{margin-top:1.45rem}
+.maroc-arch .eyebrow{
+  align-self:flex-start;
+  margin-top:0;
+  margin-bottom:1.35rem;
+  max-width:min(100%,28rem);
+  padding:.8rem 1.15rem;
+  font-size:.68rem;
+  letter-spacing:.16em;
+  line-height:1.45;
+  white-space:normal;
+  text-wrap:balance;
+}
 .maroc-arch>*{position:relative;z-index:1}
 .maroc-arch::before{
   content:'';
   position:absolute;
-  inset:.55rem;
-  border-radius:400px 400px .35rem .35rem / 400px 400px .35rem .35rem;
-  border:1px solid rgba(2,71,254,.16);
-  background:linear-gradient(180deg,rgba(198,90,30,.08),rgba(198,90,30,0) 48%);
+  inset:.9rem;
+  border-radius:24rem 24rem 1.45rem 1.45rem / 16.5rem 16.5rem 1.45rem 1.45rem;
+  border:1px solid rgba(2,71,254,.14);
+  background:linear-gradient(180deg,rgba(198,90,30,.1),rgba(198,90,30,0) 52%);
   z-index:0;
   pointer-events:none;
 }
 .maroc-arch::after{
   content:'✦';
   position:absolute;
-  top:1rem;left:50%;
+  top:1.55rem;
+  left:50%;
   transform:translateX(-50%);
   color:rgba(198,90,30,.56);
-  font-size:1rem;
+  font-size:1.1rem;
   line-height:1;
-  text-shadow:0 2px 6px rgba(198,90,30,.2);
+  text-shadow:0 2px 8px rgba(198,90,30,.22);
   z-index:0;
   pointer-events:none;
 }
+@media (max-width:1023px){
+  .maroc-arch{
+    width:100%;
+    min-height:auto;
+  }
+}
 @media (max-width:640px){
   .maroc-arch{
-    border-radius:400px 400px .45rem .45rem / 400px 400px .45rem .45rem;
-    padding:3.8rem 1.1rem 1.7rem;
+    border-radius:12rem 12rem 1.6rem 1.6rem / 9rem 9rem 1.6rem 1.6rem;
+    padding:6.2rem 1rem 1.7rem;
   }
-  .maroc-arch .eyebrow{margin-top:1rem}
+  .maroc-arch .eyebrow{
+    margin-bottom:1.15rem;
+    font-size:.62rem;
+    letter-spacing:.13em;
+  }
   .maroc-arch::before{
-    inset:.42rem;
-    border-radius:400px 400px .3rem .3rem / 400px 400px .3rem .3rem;
+    inset:.55rem;
+    border-radius:11.2rem 11.2rem 1.2rem 1.2rem / 8.2rem 8.2rem 1.2rem 1.2rem;
   }
+  .maroc-arch::after{top:1.15rem}
 }
 .prose-vacation h1,.prose-vacation h2,.prose-vacation h3{font-family:'Playfair Display',Georgia,serif;color:var(--ink);letter-spacing:-.03em}
 .prose-vacation h1{font-size:2rem;margin:2rem 0 1rem;font-weight:700}
