@@ -70,7 +70,7 @@ body::before,body::after{display:none}
   isolation:isolate;
   overflow:hidden;
   border:2px solid rgba(198,90,30,.42);
-  border-radius:3.8rem 3.8rem 1.6rem 1.6rem / 7rem 7rem 1.6rem 1.6rem;
+  border-radius:500px;
   background:
     radial-gradient(circle at 50% -22%, rgba(198,90,30,.2) 0 36%, transparent 56%),
     linear-gradient(180deg, rgba(2,71,254,.04), rgba(255,255,255,.95) 28%, #fff 100%);
@@ -82,7 +82,7 @@ body::before,body::after{display:none}
   content:'';
   position:absolute;
   inset:.55rem;
-  border-radius:3.2rem 3.2rem 1.2rem 1.2rem / 6.2rem 6.2rem 1.2rem 1.2rem;
+  border-radius:500px;
   border:1px solid rgba(2,71,254,.16);
   background:linear-gradient(180deg,rgba(198,90,30,.12),rgba(198,90,30,0) 45%);
   z-index:0;
@@ -102,12 +102,12 @@ body::before,body::after{display:none}
 }
 @media (max-width:640px){
   .maroc-arch{
-    border-radius:3rem 3rem 1.2rem 1.2rem / 5rem 5rem 1.2rem 1.2rem;
+    border-radius:500px;
     padding:3.1rem 1.1rem 1.7rem;
   }
   .maroc-arch::before{
     inset:.42rem;
-    border-radius:2.5rem 2.5rem .9rem .9rem / 4.3rem 4.3rem .9rem .9rem;
+    border-radius:500px;
   }
 }
 .prose-vacation h1,.prose-vacation h2,.prose-vacation h3{font-family:'Playfair Display',Georgia,serif;color:var(--ink);letter-spacing:-.03em}
