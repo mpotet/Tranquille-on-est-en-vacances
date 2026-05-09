@@ -45,8 +45,8 @@
   --orange-rgb:198,90,30;
   --white:#FFFFFF;
   --ink:#111827;
-  --muted:#374151;
-  --muted-deep:#6B7280;
+  --muted:#6B7280;
+  --muted-deep:#374151;
   --panel:#FFFFFF;
   --panel-soft:rgba(2,71,254,.05);
   --line:rgba(2,71,254,.22);
@@ -880,7 +880,7 @@ function pgVoyage(app, slug) {
   const renderedContent = renderVoyageContent(a.content || '', window._lbPhotos);
 
   app.innerHTML = `
-  <div class="h-[58vh] sm:h-[74vh] overflow-hidden">
+  <div class="relative h-[58vh] sm:h-[74vh] overflow-hidden">
     <img src="${a.cover}" alt="${esc(a.title)}" class="w-full h-full object-cover"
          onerror="this.style.background='var(--panel-soft)'">
   </div>

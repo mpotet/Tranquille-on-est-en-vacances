@@ -35,8 +35,8 @@ tailwind.config = {
   --orange-rgb:198,90,30;
   --white:#FFFFFF;
   --ink:#111827;
-  --muted:#374151;
-  --muted-deep:#6B7280;
+  --muted:#6B7280;
+  --muted-deep:#374151;
   --panel:#FFFFFF;
   --panel-soft:rgba(2,71,254,.05);
   --line:rgba(2,71,254,.22);

@@ -127,7 +127,7 @@ async function init(){
   const photos = a.photos || [];
   const renderedContent = renderVoyageContent(a.content || '', photos);
   document.getElementById('main').innerHTML = \`
-  <div class="h-[52vh] sm:h-[68vh] overflow-hidden">
+  <div class="relative h-[52vh] sm:h-[68vh] overflow-hidden">
     <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover" onerror="this.style.background='#6050DC'">
   </div>
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
