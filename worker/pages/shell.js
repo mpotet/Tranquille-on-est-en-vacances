@@ -194,7 +194,7 @@ export const FOOTER = `
               <div class="text-slate-400 text-[0.72rem] font-bold uppercase tracking-[0.24em] mt-1">on est en vacances</div>
             </div>
           </div>
-          <p class="text-stone-500 text-sm leading-relaxed">Des itinéraires testés en famille, des adresses utiles et des retours terrain pour préparer vos prochaines vacances.</p>
+          <p class="text-stone-500 text-sm leading-relaxed">Des itinéraires testés en famille, des adresses utiles et des retours de terrain pour préparer vos prochaines vacances.</p>
         </div>
         <div>
           <h3 class="text-white font-bold mb-4 text-sm uppercase tracking-[0.22em]">Explorer</h3>
