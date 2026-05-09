@@ -738,7 +738,7 @@ function pgHome(app) {
             <p class="text-xs font-bold uppercase tracking-[0.22em] text-slate-400 mb-3">Dernières escales</p>
             <div class="space-y-3">
               ${featured.slice(0, 3).map((a, idx) => `
-                <button onclick="go('/voyage/${a.slug}')" class="w-full text-left rounded-[1.4rem] px-4 py-3 bg-white/5 hover:bg-white/10 transition-colors border border-white/10">
+                <button onclick="go('/voyage/${a.slug}')" class="w-full text-left rounded-[1.4rem] px-4 py-3 bg-white hover:bg-sky-50 transition-colors border border-stone-200">
                   <div class="flex items-center justify-between gap-3">
                     <div>
                       <div class="text-stone-900 font-semibold">${esc(a.title)}</div>
@@ -790,7 +790,7 @@ function pgHome(app) {
         <div class="flex flex-wrap gap-3">
           ${roots().map(f => `
             <a href="#/voyages/${f.slug}" onclick="go('/voyages/${f.slug}')"
-                class="inline-flex items-center gap-3 rounded-full px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 transition-all font-semibold text-stone-900 cursor-pointer">
+                class="inline-flex items-center gap-3 rounded-full px-5 py-3 bg-white hover:bg-sky-50 border border-stone-200 transition-all font-semibold text-stone-900 cursor-pointer">
               <span class="text-cyan-300">${f.icon}</span>
               <span>${f.name}</span>
               <span class="text-xs bg-white/10 text-slate-300 px-2.5 py-1 rounded-full font-bold">${articlesInTree(f.id).length}</span>
