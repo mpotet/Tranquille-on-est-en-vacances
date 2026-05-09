@@ -13,19 +13,15 @@ export function homePage() {
 ${NAV('home')}
 
 <main class="pt-16">
-  <section id="hero" class="relative min-h-screen flex items-end sm:items-center overflow-hidden bg-sky-950">
-    <div class="absolute inset-0">
-      <img id="hero-img" src="" alt="Voyage en famille" class="w-full h-full object-cover opacity-0 transition-opacity duration-1000">
-      <div class="absolute inset-0 hero-overlay"></div>
-    </div>
-    <div class="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 text-white pb-24 pt-28 sm:py-24">
+  <section id="hero" class="relative min-h-screen flex items-end sm:items-center overflow-hidden bg-white">
+    <div class="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 text-stone-900 pb-24 pt-28 sm:py-24">
       <div class="grid lg:grid-cols-[1.08fr_0.92fr] gap-10 items-center">
         <div class="max-w-3xl">
           <div class="eyebrow mb-6">Bleu Majorelle · Esprit riad</div>
           <h1 class="font-display text-4xl sm:text-5xl lg:text-7xl font-bold leading-[0.98] mb-6 drop-shadow-lg">
             Un carnet de voyage pensé comme un <span class="gradient-text">écrin familial</span>.
           </h1>
-          <p class="text-base sm:text-xl text-slate-300 leading-relaxed mb-8 max-w-2xl">
+          <p class="text-base sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
             Des souvenirs enveloppés de bleu Majorelle, de lumière dorée et d'une mise en scène plus précieuse, plus chaleureuse, plus mémorable.
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
@@ -132,14 +128,6 @@ function articleCard(a){
 }
 
 async function init(){
-  fetch('/api/articles?limit=1').then(r=>r.json()).then(data=>{
-    if(data.articles?.[0]?.cover_url){
-      const img=document.getElementById('hero-img');
-      img.src=data.articles[0].cover_url;
-      img.addEventListener('load',()=>img.classList.remove('opacity-0'));
-    }
-  }).catch(()=>{});
-
   const artData = await fetch('/api/articles?limit=6').then(r=>r.json()).catch(()=>({articles:[]}));
   document.getElementById('articles-grid').innerHTML = artData.articles.length
     ? artData.articles.map(articleCard).join('')

@@ -675,21 +675,15 @@ function pgHome(app) {
   const totalPhotos = pub.reduce((s,a) => s+(a.photos?.length||0), 0);
 
   app.innerHTML = `
-  <section class="relative min-h-screen flex items-center overflow-hidden">
-    <div class="absolute inset-0">
-      <img src="https://picsum.photos/seed/herotravel/1920/1080" alt="Voyage" class="w-full h-full object-cover opacity-45"
-           onerror="this.style.background='var(--panel-soft)'">
-      <div class="absolute inset-0 hero-overlay"></div>
-      
-    </div>
+  <section class="relative min-h-screen flex items-center overflow-hidden bg-white">
     <div class="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-32 pb-16 lg:pb-24">
       <div class="grid lg:grid-cols-[1.08fr_0.92fr] gap-10 items-center">
         <div class="max-w-3xl">
           <div class="eyebrow mb-6">Bleu Majorelle · Esprit riad</div>
-          <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-[0.96] mb-6 text-white">
+          <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-[0.96] mb-6 text-stone-900">
             Un carnet de voyage de la <span class="gradient-text">famille Potet</span>, inspiré des salons marocains d'exception.
           </h1>
-          <p class="text-lg sm:text-xl text-slate-300 leading-relaxed mb-8 max-w-2xl">
+          <p class="text-lg sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
             Des récits baignés de bleu Majorelle, des matières précieuses, des souvenirs mis en scène comme des trésors rapportés du voyage.
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
