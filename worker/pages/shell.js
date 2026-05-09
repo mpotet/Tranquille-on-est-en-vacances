@@ -29,12 +29,12 @@ tailwind.config = {
 <style>
 :root{
   color-scheme:light;
-  --blue:#6050DC;
+  --blue:#0247fe;
   --blue-rgb:96,80,220;
   --orange:#C65A1E;
   --orange-rgb:198,90,30;
   --white:#FFFFFF;
-  --ink:#6050DC;
+  --ink:#0247fe;
   --muted:rgba(96,80,220,.82);
   --muted-deep:rgba(96,80,220,.62);
   --panel:#FFFFFF;
@@ -172,7 +172,7 @@ export const FOOTER = `
               <div class="text-slate-400 text-[0.72rem] font-bold uppercase tracking-[0.24em] mt-1">on est en vacances</div>
             </div>
           </div>
-          <p class="text-stone-500 text-sm leading-relaxed">Un carnet de voyage familial épuré, sur fond blanc avec bleu #6050DC et quelques touches orange brûlé.</p>
+          <p class="text-stone-500 text-sm leading-relaxed">Un carnet de voyage familial épuré, sur fond blanc avec bleu #0247fe et quelques touches orange brûlé.</p>
         </div>
         <div>
           <h3 class="text-white font-bold mb-4 text-sm uppercase tracking-[0.22em]">Explorer</h3>
@@ -189,7 +189,7 @@ export const FOOTER = `
         </div>
       </div>
       <div class="border-t border-stone-800 pt-6 text-center text-stone-500 text-sm">
-        Bleu #6050DC &bull; ${new Date().getFullYear()}
+        Bleu #0247fe &bull; ${new Date().getFullYear()}
       </div>
     </div>
   </div>
