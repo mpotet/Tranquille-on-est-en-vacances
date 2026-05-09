@@ -17,7 +17,7 @@ ${NAV('home')}
     <div class="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 text-stone-900 pb-24 pt-28 sm:py-24">
       <div class="grid lg:grid-cols-[1.08fr_0.92fr] gap-10 items-center">
         <div class="max-w-3xl maroc-arch">
-          <div class="eyebrow mb-6">Carnet terrain famille</div>
+          <div class="eyebrow mb-6">Carnet de terrain famille</div>
           <h1 class="font-display text-4xl sm:text-5xl lg:text-7xl font-bold leading-[1.04] mb-6 drop-shadow-lg">
             Nos <span class="gradient-text">itinéraires testés</span> en famille, ville par ville.
           </h1>
@@ -140,7 +140,7 @@ async function init(){
   statsEl.querySelector('div:nth-child(3) .gradient-text').textContent = totalPhotos || '—';
 
   document.getElementById('hero-selection').innerHTML = artData.articles.slice(0,3).map((a, idx)=>
-    '<a href="/voyage/'+a.slug+'" class="block rounded-[1.4rem] px-4 py-3 bg-white hover:bg-sky-50 transition-colors border border-stone-200">'+
+    '<a href="/voyage/'+a.slug+'" aria-label="Ouvrir le voyage '+esc(a.title)+' à '+esc(a.destination)+'" class="block rounded-[1.4rem] px-4 py-3 bg-white hover:bg-sky-50 transition-colors border border-stone-200">'+
       '<div class="flex items-center justify-between gap-3">'+
         '<div><div class="text-stone-900 font-semibold">'+esc(a.title)+'</div><div class="text-stone-500 text-xs mt-1 uppercase tracking-[0.18em]">'+esc(a.destination)+'</div></div>'+
         '<span class="text-stone-500 text-sm">0'+(idx + 1)+'</span>'+
