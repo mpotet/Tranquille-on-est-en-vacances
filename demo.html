@@ -139,10 +139,14 @@ body::before,body::after{display:none}
     justify-content:center;
     padding-top:clamp(5rem,7vw,7rem);
     padding-bottom:clamp(4rem,6vw,6rem);
+    text-align:center;
   }
   .maroc-arch-copy{width:min(100%,33rem)}
-  .maroc-arch-copy h1{max-width:10.5ch}
+  .maroc-arch-copy h1{max-width:10.5ch;margin-left:auto;margin-right:auto}
+  .maroc-arch-copy .hero-intro{margin-left:auto;margin-right:auto}
   .maroc-arch .eyebrow{max-width:min(100%,24rem);align-self:center}
+  .maroc-arch-actions{justify-content:center}
+  .maroc-arch-highlights{justify-content:center}
 }
 @media (max-width:1023px){
   .maroc-arch{
@@ -768,8 +772,8 @@ function pgHome(app) {
   app.innerHTML = `
   <section class="relative min-h-screen flex items-center overflow-hidden bg-white">
     <div class="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-28 pb-20 sm:py-20">
-      <div class="grid lg:grid-cols-[minmax(0,1.08fr)_minmax(19rem,.92fr)] gap-8 lg:gap-10 xl:gap-14 items-start lg:items-center">
-        <div class="maroc-arch w-full max-w-4xl mx-auto lg:mx-0">
+      <div class="flex flex-col items-center gap-8">
+        <div class="maroc-arch w-full mx-auto">
           <div class="maroc-arch-copy">
             <div class="eyebrow mb-6">Carnet de bord de la famille Potet</div>
             <h1 class="font-display text-4xl sm:text-5xl xl:text-[4.2rem] font-bold leading-[1.06] mb-6 text-stone-900">
@@ -791,7 +795,7 @@ function pgHome(app) {
           </div>
         </div>
 
-        <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative w-full max-w-xl lg:max-w-none mx-auto lg:sticky lg:top-28">
+        <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative w-full max-w-xl mx-auto">
           <div class="absolute inset-x-10 top-0 h-px bg-sky-100"></div>
           <div class="grid gap-4 sm:grid-cols-3 mb-6">
             <div class="metric-card rounded-[1.6rem] p-4">

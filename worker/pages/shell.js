@@ -129,10 +129,14 @@ body::before,body::after{display:none}
     justify-content:center;
     padding-top:clamp(5rem,7vw,7rem);
     padding-bottom:clamp(4rem,6vw,6rem);
+    text-align:center;
   }
   .maroc-arch-copy{width:min(100%,33rem)}
-  .maroc-arch-copy h1{max-width:10.5ch}
+  .maroc-arch-copy h1{max-width:10.5ch;margin-left:auto;margin-right:auto}
+  .maroc-arch-copy .hero-intro{margin-left:auto;margin-right:auto}
   .maroc-arch .eyebrow{max-width:min(100%,24rem);align-self:center}
+  .maroc-arch-actions{justify-content:center}
+  .maroc-arch-highlights{justify-content:center}
 }
 @media (max-width:1023px){
   .maroc-arch{
