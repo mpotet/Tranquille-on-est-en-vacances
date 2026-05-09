@@ -24,6 +24,7 @@ ${NAV('home')}
           <p class="text-base sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
             Chaque article raconte un voyage vécu par la famille Potet : itinéraire réel, activités avec les enfants et retours utiles.
           </p>
+          <p class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm italic text-stone-500 mb-8">"ça c'était bien avant le drame.."</p>
           <div class="flex flex-col sm:flex-row gap-3">
             <a href="/voyages" class="action-btn">Explorer nos voyages</a>
             <a href="/voyages" class="subtle-btn">Parcourir le carnet</a>
