@@ -14,7 +14,7 @@ ${NAV('home')}
 
 <main class="pt-16">
   <section id="hero" class="relative min-h-screen flex items-end sm:items-center overflow-hidden bg-white">
-    <div class="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 text-white pb-24 pt-28 sm:py-24">
+    <div class="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 text-stone-900 pb-24 pt-28 sm:py-24">
       <div class="grid lg:grid-cols-[1.08fr_0.92fr] gap-10 items-center">
         <div class="max-w-3xl">
           <div class="eyebrow mb-6">Bleu Majorelle · Esprit riad</div>
