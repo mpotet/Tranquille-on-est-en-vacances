@@ -77,6 +77,24 @@ body::before,body::after{display:none}
 .subtle-btn:hover{transform:translateY(-2px);border-color:var(--blue);background:rgba(2,71,254,.08);color:var(--blue);box-shadow:0 14px 28px rgba(2,71,254,.14)}
 .luxe-divider{height:1px;width:100%;background:rgba(2,71,254,.25)}
 .orb{display:none}
+.drame-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:.5rem;
+  border-radius:999px;
+  border:1px solid rgba(var(--orange-rgb),.38);
+  background:linear-gradient(135deg,rgba(var(--orange-rgb),.08),rgba(var(--orange-rgb),.04));
+  color:var(--orange);
+  font-size:.875rem;
+  font-style:italic;
+  font-weight:600;
+  padding:.55rem 1.1rem;
+  margin-bottom:2rem;
+  box-shadow:0 4px 14px rgba(var(--orange-rgb),.14),inset 0 1px 0 rgba(255,255,255,.7);
+  letter-spacing:.01em;
+  transition:transform .2s ease,box-shadow .2s ease;
+}
+.drame-badge:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(var(--orange-rgb),.2)}
 .maroc-arch{
   position:relative;
   isolation:isolate;
@@ -116,21 +134,21 @@ body::before,body::after{display:none}
   position:absolute;
   inset:.9rem;
   border-radius:24rem 24rem 1.45rem 1.45rem / 16.5rem 16.5rem 1.45rem 1.45rem;
-  border:1px solid rgba(2,71,254,.14);
-  background:linear-gradient(180deg,rgba(var(--orange-rgb),.08),rgba(var(--orange-rgb),0) 52%);
+  border:1px solid rgba(var(--orange-rgb),.2);
+  background:linear-gradient(180deg,rgba(var(--orange-rgb),.1),rgba(var(--orange-rgb),0) 48%);
   z-index:0;
   pointer-events:none;
 }
 .maroc-arch::after{
   content:'✦';
   position:absolute;
-  top:1.55rem;
+  top:1.4rem;
   left:50%;
   transform:translateX(-50%);
-  color:rgba(var(--orange-rgb),.48);
-  font-size:1.1rem;
+  color:rgba(var(--orange-rgb),.62);
+  font-size:1.35rem;
   line-height:1;
-  text-shadow:0 2px 8px rgba(var(--orange-rgb),.18);
+  text-shadow:0 2px 10px rgba(var(--orange-rgb),.28);
   z-index:0;
   pointer-events:none;
 }
@@ -779,21 +797,21 @@ function pgHome(app) {
           <div class="maroc-arch-copy">
             <div class="eyebrow mb-6">Carnet de bord de la famille Potet</div>
             <h1 class="font-display text-4xl sm:text-5xl xl:text-[4.2rem] font-bold leading-[1.06] mb-6 text-stone-900">
-              Nos <span class="gradient-text">voyages en famille</span>, sans filtre.
+              Nos <span class="gradient-text">voyages en famille</span>, étape par étape.
             </h1>
             <p class="hero-intro text-lg sm:text-xl text-stone-500 leading-relaxed mb-8">
-              Chaque article documente un vrai itinéraire : rythme avec les enfants, budget terrain, adresses testées et retours honnêtes.
+              Chaque article raconte un voyage vécu par la famille Potet : itinéraire réel, activités avec les enfants et retours utiles.
             </p>
-            <p class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-600 mb-8">Démo fidèle au rendu final : même ton, mêmes parcours, mêmes usages.</p>
+            <p class="drame-badge mb-8">🎭 "ça c'était bien avant le drame.."</p>
           </div>
           <div class="maroc-arch-actions flex flex-col sm:flex-row gap-3">
             <a href="#/voyages" onclick="go('/voyages')" class="action-btn">Explorer nos voyages</a>
             <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn">Parcourir le carnet</a>
           </div>
           <div class="maroc-arch-highlights flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Itinéraires réels</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Voyages en famille</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Conseils testés</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">✈️ Voyages vécus</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">👨‍👩‍👧‍👦 Avec les enfants</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">📸 Moments partagés</span>
           </div>
         </div>
 
@@ -848,8 +866,8 @@ function pgHome(app) {
     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-10">
         <div>
           <div class="eyebrow mb-4">Sélection maison</div>
-          <h2 class="font-display text-3xl sm:text-5xl font-bold text-stone-900">Derniers voyages publiés</h2>
-          <p class="text-slate-400 mt-3 text-sm sm:text-base max-w-2xl">Les récits les plus récents, structurés comme sur le site final : étapes, photos et retours concrets.</p>
+          <h2 class="font-display text-3xl sm:text-5xl font-bold text-stone-900">Nos derniers voyages</h2>
+          <p class="text-slate-400 mt-3 text-sm sm:text-base max-w-2xl">Les récits les plus récents de nos vacances, avec nos coups de cœur, nos galères et nos meilleures trouvailles.</p>
         </div>
       <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn w-fit">Voir tous les voyages</a>
     </div>
