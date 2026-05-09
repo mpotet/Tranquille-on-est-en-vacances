@@ -67,21 +67,24 @@ body::before,body::after{display:none}
 .orb{display:none}
 .maroc-arch{
   position:relative;
+  isolation:isolate;
   border-radius:999px 999px 1.8rem 1.8rem;
   border:1px solid var(--line-strong);
   background:
     radial-gradient(circle at 50% -18%, rgba(198,90,30,.22), transparent 56%),
     linear-gradient(180deg, rgba(2,71,254,.07), rgba(255,255,255,.96));
-  padding:2.2rem 2rem 1.7rem;
+  padding:2.45rem 2.15rem 1.9rem;
   box-shadow:var(--shadow);
 }
+.maroc-arch>*{position:relative;z-index:1}
 .maroc-arch::before{
   content:'';
   position:absolute;
-  inset:.55rem .55rem auto .55rem;
-  height:56%;
+  inset:.7rem .7rem auto .7rem;
+  height:48%;
   border-radius:999px 999px 1.25rem 1.25rem;
   border:1px solid rgba(2,71,254,.14);
+  z-index:0;
   pointer-events:none;
 }
 .prose-vacation h1,.prose-vacation h2,.prose-vacation h3{font-family:'Playfair Display',Georgia,serif;color:var(--ink);letter-spacing:-.03em}

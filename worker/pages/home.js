@@ -18,19 +18,19 @@ ${NAV('home')}
       <div class="grid lg:grid-cols-[1.08fr_0.92fr] gap-10 items-center">
         <div class="max-w-3xl maroc-arch">
           <div class="eyebrow mb-6">Bienvenue sous l'arche Majorelle</div>
-          <h1 class="font-display text-4xl sm:text-5xl lg:text-7xl font-bold leading-[0.98] mb-6 drop-shadow-lg">
-            Un carnet de voyage au style <span class="gradient-text">palace marocain moderne</span>.
+          <h1 class="font-display text-4xl sm:text-5xl lg:text-7xl font-bold leading-[1.04] mb-6 drop-shadow-lg">
+            Les aventures de la <span class="gradient-text">famille Potet</span>, racontées étape par étape.
           </h1>
           <p class="text-base sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
-            Bleu Majorelle en teinte principale, fond blanc lumineux et accents orange brûlé pour des récits élégants, clairs et chaleureux.
+            Entre valises, fous rires et découvertes, on partage ici nos itinéraires, nos bonnes adresses et nos souvenirs en famille.
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
             <a href="/voyages" class="action-btn">Explorer nos voyages</a>
             <a href="/voyages" class="subtle-btn">Découvrir les escales</a>
           </div>
           <div class="flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Esprit marocain</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Ligne contemporaine</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Carnets du jour</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Idées avec enfants</span>
             <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Souvenirs familiaux</span>
           </div>
         </div>
@@ -55,11 +55,11 @@ ${NAV('home')}
 
   <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
     <div class="flex items-end justify-between mb-10 gap-6">
-      <div>
-        <div class="eyebrow mb-4">Sélection maison</div>
-        <h2 class="font-display text-3xl sm:text-4xl font-bold text-stone-900">Derniers voyages</h2>
-        <p class="text-stone-500 mt-2 text-sm max-w-2xl">Les aventures les plus récentes dans une ambiance inspirée du Maroc, épurée et lumineuse.</p>
-      </div>
+        <div>
+          <div class="eyebrow mb-4">Sélection maison</div>
+          <h2 class="font-display text-3xl sm:text-4xl font-bold text-stone-900">Derniers voyages</h2>
+          <p class="text-stone-500 mt-2 text-sm max-w-2xl">Les récits les plus récents de nos vacances, avec nos coups de cœur, nos galères et nos meilleures trouvailles.</p>
+        </div>
       <a href="/voyages" class="hidden sm:flex subtle-btn">Voir toute la collection</a>
     </div>
     <div id="articles-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -77,7 +77,7 @@ ${NAV('home')}
           <div>
             <div class="eyebrow mb-4">Routes & collections</div>
             <h2 class="font-display text-3xl sm:text-4xl font-bold text-stone-900 mb-3">Nos destinations</h2>
-            <p class="text-stone-500 text-sm">Explorez le monde comme on franchit des arches marocaines : une ambiance, une destination, une histoire.</p>
+            <p class="text-stone-500 text-sm">Choisissez une destination et retrouvez nos itinéraires, nos photos et ce qu'on referait (ou non) en famille.</p>
           </div>
           <div id="destinations" class="flex flex-wrap gap-3">
             <div class="w-32 h-12 bg-white/60 rounded-2xl animate-pulse"></div>

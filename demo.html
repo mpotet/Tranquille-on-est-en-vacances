@@ -77,21 +77,24 @@ body::before,body::after{display:none}
 .orb{display:none}
 .maroc-arch{
   position:relative;
+  isolation:isolate;
   border-radius:999px 999px 1.8rem 1.8rem;
   border:1px solid var(--line-strong);
   background:
     radial-gradient(circle at 50% -18%, rgba(198,90,30,.22), transparent 56%),
     linear-gradient(180deg, rgba(2,71,254,.07), rgba(255,255,255,.96));
-  padding:2.2rem 2rem 1.7rem;
+  padding:2.45rem 2.15rem 1.9rem;
   box-shadow:var(--shadow);
 }
+.maroc-arch>*{position:relative;z-index:1}
 .maroc-arch::before{
   content:'';
   position:absolute;
-  inset:.55rem .55rem auto .55rem;
-  height:56%;
+  inset:.7rem .7rem auto .7rem;
+  height:48%;
   border-radius:999px 999px 1.25rem 1.25rem;
   border:1px solid rgba(2,71,254,.14);
+  z-index:0;
   pointer-events:none;
 }
 .prose-vacation h1,.prose-vacation h2,.prose-vacation h3{font-family:'Playfair Display',Georgia,serif;color:var(--ink);letter-spacing:-.03em}
@@ -699,19 +702,19 @@ function pgHome(app) {
       <div class="grid lg:grid-cols-[1.08fr_0.92fr] gap-10 items-center">
         <div class="max-w-3xl maroc-arch">
           <div class="eyebrow mb-6">Bienvenue sous l'arche Majorelle</div>
-          <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-[0.96] mb-6 text-stone-900">
-            Un carnet de voyage au style <span class="gradient-text">palace marocain moderne</span>.
+          <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.04] mb-6 text-stone-900">
+            Les aventures de la <span class="gradient-text">famille Potet</span>, racontées étape par étape.
           </h1>
           <p class="text-lg sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
-            Bleu Majorelle en teinte principale, fond blanc lumineux et accents orange brûlé pour des récits élégants, clairs et chaleureux.
+            Entre valises, fous rires et découvertes, on partage ici nos itinéraires, nos bonnes adresses et nos souvenirs en famille.
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
             <a href="#/voyages" onclick="go('/voyages')" class="action-btn">Explorer nos voyages</a>
             <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn">Découvrir les escales</a>
           </div>
           <div class="flex flex-wrap gap-3 mt-8 text-[0.7rem] uppercase tracking-[0.24em] text-slate-400 font-semibold">
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Esprit marocain</span>
-            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Ligne contemporaine</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Carnets du jour</span>
+            <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Idées avec enfants</span>
             <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">Souvenirs familiaux</span>
           </div>
         </div>
@@ -750,12 +753,12 @@ function pgHome(app) {
           <div class="luxe-divider mb-5"></div>
           <div class="grid sm:grid-cols-2 gap-4 text-sm">
             <div>
-              <p class="text-slate-400 uppercase tracking-[0.18em] text-xs mb-2">Direction artistique</p>
-              <p class="text-slate-200 leading-relaxed">Bleu Majorelle en dominante, blanc lumineux et touches orange brûlé pour un rendu net et élégant.</p>
+              <p class="text-slate-400 uppercase tracking-[0.18em] text-xs mb-2">Dans les valises</p>
+              <p class="text-slate-200 leading-relaxed">Nos étapes testées en famille, les adresses qui ont plu aux enfants et les trajets qui nous ont vraiment simplifié la vie.</p>
             </div>
             <div>
-              <p class="text-slate-400 uppercase tracking-[0.18em] text-xs mb-2">Ambiance</p>
-              <p class="text-slate-200 leading-relaxed">Une sensation de palace marocain contemporain, épuré et solaire, pensée pour mettre les souvenirs au centre.</p>
+              <p class="text-slate-400 uppercase tracking-[0.18em] text-xs mb-2">Moments marquants</p>
+              <p class="text-slate-200 leading-relaxed">Petites galères, gros fous rires et souvenirs qu'on veut garder pour plus tard, tout simplement.</p>
             </div>
           </div>
         </div>
@@ -768,7 +771,7 @@ function pgHome(app) {
         <div>
           <div class="eyebrow mb-4">Sélection maison</div>
           <h2 class="font-display text-3xl sm:text-5xl font-bold text-white">Nos derniers voyages</h2>
-          <p class="text-slate-400 mt-3 text-sm sm:text-base max-w-2xl">Les plus beaux récits de la collection, dans une ambiance inspirée du Maroc, moderne et lumineuse.</p>
+          <p class="text-slate-400 mt-3 text-sm sm:text-base max-w-2xl">Les récits les plus récents de nos vacances, avec nos coups de cœur, nos galères et nos meilleures trouvailles.</p>
         </div>
       <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn w-fit">Voir toute la collection</a>
     </div>
@@ -783,7 +786,7 @@ function pgHome(app) {
         <div>
           <div class="eyebrow mb-4">Routes & collections</div>
           <h2 class="font-display text-3xl sm:text-4xl font-bold text-white mb-3">Nos destinations</h2>
-          <p class="text-slate-400 max-w-md">Parcourez les récits comme on franchit des arches marocaines : une ambiance, une destination, une histoire.</p>
+          <p class="text-slate-400 max-w-md">Choisissez une destination et retrouvez nos itinéraires, nos photos et ce qu'on referait (ou non) en famille.</p>
         </div>
         <div class="flex flex-wrap gap-3">
           ${roots().map(f => `
