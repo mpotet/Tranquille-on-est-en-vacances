@@ -78,7 +78,7 @@ async function init(){
   const totalCount = (artData.total ?? artData.articles.length);
   const pluralSuffix = totalCount !== 1 ? 's' : '';
   const activeFolderLabel = activeF
-    ? ' — focus <strong class="text-orange-500">'+esc(activeF.icon||'')+' '+esc(activeF.name)+'</strong>'
+    ? ' — Focus <strong class="text-orange-500">'+esc(activeF.icon||'')+' '+esc(activeF.name)+'</strong>'
     : '';
   document.getElementById('subtitle').innerHTML =
     '<strong class="text-sky-700">'+totalCount+'</strong> itinéraire'+pluralSuffix+' documenté'+activeFolderLabel;

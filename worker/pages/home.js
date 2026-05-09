@@ -140,7 +140,7 @@ async function init(){
   statsEl.querySelector('div:nth-child(3) .gradient-text').textContent = totalPhotos || '—';
 
   document.getElementById('hero-selection').innerHTML = artData.articles.slice(0,3).map((a, idx)=>
-    '<a href="/voyage/'+a.slug+'" aria-label="Ouvrir le voyage '+esc(a.title)+' à '+esc(a.destination)+'" class="block rounded-[1.4rem] px-4 py-3 bg-white hover:bg-sky-50 transition-colors border border-stone-200">'+
+    '<a href="/voyage/'+a.slug+'" aria-label="'+esc('Ouvrir le voyage '+(a.title||'')+' à '+(a.destination||''))+'" class="block rounded-[1.4rem] px-4 py-3 bg-white hover:bg-sky-50 transition-colors border border-stone-200">'+
       '<div class="flex items-center justify-between gap-3">'+
         '<div><div class="text-stone-900 font-semibold">'+esc(a.title)+'</div><div class="text-stone-500 text-xs mt-1 uppercase tracking-[0.18em]">'+esc(a.destination)+'</div></div>'+
         '<span class="text-stone-500 text-sm">0'+(idx + 1)+'</span>'+
