@@ -78,46 +78,46 @@ body::before,body::after{display:none}
 .maroc-arch{
   position:relative;
   isolation:isolate;
-  overflow:visible;
-  border-radius:2.8rem 2.8rem 1.4rem 1.4rem;
-  border:2px solid var(--line-strong);
+  overflow:hidden;
+  border:2px solid rgba(198,90,30,.42);
+  border-radius:3.8rem 3.8rem 1.6rem 1.6rem / 7rem 7rem 1.6rem 1.6rem;
   background:
-    radial-gradient(ellipse 80% 30% at 50% 0%, rgba(198,90,30,.18), transparent 70%),
-    #fff;
-  padding:clamp(3.4rem,5vw,4.4rem) clamp(1.4rem,3vw,2.4rem) clamp(2rem,3vw,2.4rem);
-  box-shadow:var(--shadow);
+    radial-gradient(circle at 50% -22%, rgba(198,90,30,.2) 0 36%, transparent 56%),
+    linear-gradient(180deg, rgba(2,71,254,.04), rgba(255,255,255,.95) 28%, #fff 100%);
+  padding:clamp(3.6rem,5vw,4.8rem) clamp(1.4rem,3vw,2.4rem) clamp(2rem,3vw,2.5rem);
+  box-shadow:0 20px 46px rgba(2,71,254,.14),inset 0 1px 0 rgba(255,255,255,.85);
 }
 .maroc-arch>*{position:relative;z-index:1}
 .maroc-arch::before{
   content:'';
   position:absolute;
-  top:.5rem;left:.5rem;right:.5rem;
-  height:2.6rem;
-  border-radius:2.4rem 2.4rem 1rem 1rem / 2.6rem 2.6rem .8rem .8rem;
-  background:linear-gradient(180deg,rgba(198,90,30,.16),transparent);
-  border:1.5px solid rgba(198,90,30,.28);
-  border-bottom:none;
+  inset:.55rem;
+  border-radius:3.2rem 3.2rem 1.2rem 1.2rem / 6.2rem 6.2rem 1.2rem 1.2rem;
+  border:1px solid rgba(2,71,254,.16);
+  background:linear-gradient(180deg,rgba(198,90,30,.12),rgba(198,90,30,0) 45%);
   z-index:0;
   pointer-events:none;
 }
 .maroc-arch::after{
-  content:'';
+  content:'✦';
   position:absolute;
-  bottom:.9rem;left:2.2rem;right:2.2rem;
-  height:1px;
-  background:linear-gradient(90deg,transparent,rgba(198,90,30,.35),transparent);
+  top:1rem;left:50%;
+  transform:translateX(-50%);
+  color:rgba(198,90,30,.56);
+  font-size:1rem;
+  line-height:1;
+  text-shadow:0 2px 6px rgba(198,90,30,.2);
   z-index:0;
   pointer-events:none;
 }
 @media (max-width:640px){
   .maroc-arch{
-    border-radius:2.2rem 2.2rem 1.1rem 1.1rem;
-    padding:3rem 1.1rem 1.6rem;
+    border-radius:3rem 3rem 1.2rem 1.2rem / 5rem 5rem 1.2rem 1.2rem;
+    padding:3.1rem 1.1rem 1.7rem;
   }
   .maroc-arch::before{
-    top:.4rem;left:.4rem;right:.4rem;
-    height:2.2rem;
-    border-radius:1.9rem 1.9rem .7rem .7rem / 2.2rem 2.2rem .5rem .5rem;
+    inset:.42rem;
+    border-radius:2.5rem 2.5rem .9rem .9rem / 4.3rem 4.3rem .9rem .9rem;
   }
 }
 .prose-vacation h1,.prose-vacation h2,.prose-vacation h3{font-family:'Playfair Display',Georgia,serif;color:var(--ink);letter-spacing:-.03em}
@@ -730,6 +730,7 @@ function pgHome(app) {
           <p class="text-lg sm:text-xl text-stone-500 leading-relaxed mb-8 max-w-2xl">
             Chaque article raconte un voyage vécu par la famille Potet : itinéraire réel, activités avec les enfants et retours utiles.
           </p>
+          <p class="inline-flex items-center rounded-full border border-stone-200 bg-white px-4 py-2 text-sm italic text-stone-500 mb-8">"ça c'était bien avant le drame.."</p>
           <div class="flex flex-col sm:flex-row gap-3">
             <a href="#/voyages" onclick="go('/voyages')" class="action-btn">Explorer nos voyages</a>
             <a href="#/voyages" onclick="go('/voyages')" class="subtle-btn">Parcourir le carnet</a>
