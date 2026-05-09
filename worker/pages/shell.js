@@ -123,9 +123,16 @@ body::before,body::after{display:none}
   pointer-events:none;
 }
 @media (min-width:1024px){
+  .maroc-arch{
+    min-height:clamp(50rem,62vw,60rem);
+    align-items:center;
+    justify-content:center;
+    padding-top:clamp(5rem,7vw,7rem);
+    padding-bottom:clamp(4rem,6vw,6rem);
+  }
   .maroc-arch-copy{width:min(100%,33rem)}
   .maroc-arch-copy h1{max-width:10.5ch}
-  .maroc-arch .eyebrow{max-width:min(100%,24rem)}
+  .maroc-arch .eyebrow{max-width:min(100%,24rem);align-self:center}
 }
 @media (max-width:1023px){
   .maroc-arch{
