@@ -8,7 +8,7 @@ import { html } from '../utils.js';
 
 // ── Admin shared nav bar ──────────────────────────────────────
 const ADMIN_NAV = (subtitle = '') => `
-<nav class="fixed top-0 left-0 right-0 z-50 text-stone-800 shadow-sm border-b border-stone-200/80 backdrop-blur-md">
+<nav class="fixed top-0 left-0 right-0 z-50 bg-[rgba(255,249,233,0.84)] text-stone-800 shadow-sm border-b border-stone-200/80 backdrop-blur-md">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
     <div class="flex items-center gap-4">
       <a href="/" class="flex items-center gap-2 group">

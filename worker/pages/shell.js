@@ -45,9 +45,14 @@ tailwind.config = {
   --panel:#FBF3D9;
   --panel-strong:#FFF9EA;
   --panel-soft:rgba(251,243,217,.94);
+  --panel-nav:rgba(255,249,233,.86);
+  --panel-footer:rgba(251,243,217,.32);
   --line:rgba(21,32,75,.18);
   --line-strong:rgba(102,119,42,.56);
   --line-gold:rgba(241,212,75,.42);
+  --stone-100:rgba(var(--lemon-rgb),.12);
+  --stone-200:rgba(var(--lemon-rgb),.18);
+  --stone-300:rgba(var(--lemon-rgb),.24);
   --shadow:0 18px 46px rgba(3,16,95,.24);
   --shadow-soft:0 12px 30px rgba(6,26,155,.14);
   --shadow-strong:0 28px 68px rgba(3,16,95,.34);
@@ -214,13 +219,15 @@ body::after{
 .bg-cyan-500\/10,.bg-white\/5{background-color:rgba(var(--lemon-rgb),.14)!important}
 .bg-white\/10{background-color:rgba(var(--lemon-rgb),.2)!important}
 .bg-red-500,.hover\:bg-red-600:hover{background-color:rgba(var(--olive-rgb),.27)!important}
-.bg-stone-100,.hover\:bg-stone-200:hover,.hover\:bg-stone-100:hover,.hover\:bg-stone-50:hover,.bg-stone-200,.hover\:bg-stone-300:hover,.bg-stone-300{background-color:rgba(var(--lemon-rgb),.13)!important}
+.bg-stone-100,.hover\:bg-stone-100:hover,.hover\:bg-stone-50:hover{background-color:var(--stone-100)!important}
+.bg-stone-200,.hover\:bg-stone-200:hover{background-color:var(--stone-200)!important}
+.bg-stone-300,.hover\:bg-stone-300:hover{background-color:var(--stone-300)!important}
 input,textarea,select{background:#fffdf5!important;color:var(--ink)!important;border-color:var(--line)!important}
 input::placeholder,textarea::placeholder{color:var(--muted)}
 input:focus,textarea:focus,select:focus{border-color:var(--line-strong)!important;box-shadow:0 0 0 3px rgba(var(--lemon-rgb),.24)}
 #dropzone{background:rgba(var(--lemon-rgb),.13);border-color:var(--line)!important}
-#navbar{background:rgba(255,249,233,.86)!important;border-bottom:1px solid rgba(var(--lemon-rgb),.28)!important;box-shadow:0 10px 28px rgba(6,26,155,.18);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-#site-footer{background:transparent!important;border-top:0!important}
+#navbar{background:var(--panel-nav)!important;border-bottom:1px solid rgba(var(--lemon-rgb),.28)!important;box-shadow:0 10px 28px rgba(6,26,155,.18);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+#site-footer{background:linear-gradient(180deg,rgba(255,249,233,.08),var(--panel-footer))!important;border-top:1px solid rgba(var(--lemon-rgb),.16)!important}
 .bg-gradient-to-t,.bg-gradient-to-tr,.bg-gradient-to-r,.bg-gradient-to-br,.bg-gradient-to-b,.bg-gradient-to-bl,.bg-gradient-to-l,.bg-gradient-to-tl{background-image:none!important}
 .from-sky-500,.from-emerald-500,.from-sky-50,.from-stone-900,.via-white,.to-blue-600,.to-blue-700,.to-green-600,.to-orange-50,.to-stone-800{--tw-gradient-from:initial!important;--tw-gradient-stops:initial!important;--tw-gradient-to:initial!important}
 </style>
