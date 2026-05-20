@@ -8,21 +8,21 @@ import { html } from '../utils.js';
 
 // ── Admin shared nav bar ──────────────────────────────────────
 const ADMIN_NAV = (subtitle = '') => `
-<nav class="fixed top-0 left-0 right-0 z-50 bg-[rgba(17,1,38,0.78)] text-stone-800 shadow-sm border-b border-stone-200/80 backdrop-blur-md">
+<nav class="fixed top-0 left-0 right-0 z-50 text-stone-800 shadow-sm border-b border-stone-200/80 backdrop-blur-md">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
     <div class="flex items-center gap-4">
       <a href="/" class="flex items-center gap-2 group">
-        <span class="text-xl">🌴</span>
-        <span class="font-display font-bold text-sm text-stone-800 group-hover:text-sky-700 transition-colors">Blog Potet</span>
+        <span class="brand-mark text-sm">🌴</span>
+        <span class="brand-title font-display font-bold text-sm group-hover:text-sky-700 transition-colors">Blog Potet</span>
       </a>
       <span class="text-stone-400">/</span>
       <span class="text-stone-600 text-sm font-medium">Admin ${subtitle ? '/ ' + subtitle : ''}</span>
     </div>
     <div class="flex items-center gap-3">
-      <a href="/" class="text-stone-500 hover:text-sky-700 text-sm font-medium transition-colors hidden sm:block">Voir le blog →</a>
-      <a href="/admin/dashboard" class="text-stone-600 hover:text-sky-700 text-sm font-medium transition-colors">Tableau de bord</a>
+      <a href="/" class="ghost-btn hidden sm:inline-flex">Voir le blog</a>
+      <a href="/admin/dashboard" class="nav-link text-sm">Tableau de bord</a>
       <form method="POST" action="/admin/logout" class="inline">
-        <button type="submit" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-semibold px-3 py-1.5 rounded-xl text-xs transition-colors">Déconnexion</button>
+        <button type="submit" class="subtle-btn !px-4 !py-2 !text-xs">Déconnexion</button>
       </form>
     </div>
   </div>
@@ -43,7 +43,7 @@ export function loginPage(error = '') {
       <h1 class="font-display text-3xl font-bold text-stone-900">Espace Admin</h1>
       <p class="text-stone-500 mt-2 text-sm">Connexion réservée à la famille Potet</p>
     </div>
-    <div class="bg-white rounded-3xl shadow-xl p-8 border border-stone-100">
+    <div class="section-panel majorelle-frame rounded-3xl shadow-xl p-8 border border-stone-100">
       ${error ? `<div class="mb-5 bg-red-50 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium border border-red-100">❌ ${error}</div>` : ''}
       <form method="POST" action="/admin/login">
         <div class="mb-6">
@@ -79,7 +79,7 @@ ${ADMIN_NAV()}
 
     <!-- Sidebar -->
     <aside class="lg:col-span-1 space-y-5">
-      <div class="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+      <div class="section-panel majorelle-frame rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
         <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-100">
           <h2 class="font-bold text-stone-700 text-sm">📁 Dossiers</h2>
           <button onclick="openFolderModal(null)" class="text-sky-600 hover:text-sky-700 text-sm font-bold transition-colors">+ Nouveau</button>
@@ -111,7 +111,7 @@ ${ADMIN_NAV()}
       </div>
       <div id="articles-list" class="space-y-3">
         ${Array.from({length:4}).map(()=>`
-          <div class="bg-white rounded-2xl border border-stone-100 p-4 flex items-center gap-4">
+          <div class="section-panel rounded-2xl border border-stone-100 p-4 flex items-center gap-4">
             <div class="w-20 h-20 rounded-xl bg-stone-200 animate-pulse flex-shrink-0"></div>
             <div class="flex-1 space-y-2">
               <div class="h-4 bg-stone-200 rounded animate-pulse w-3/4"></div>
@@ -125,7 +125,7 @@ ${ADMIN_NAV()}
 
 <!-- Folder modal -->
 <div id="folder-modal" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" onclick="if(event.target===this)closeFolderModal()">
-  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+  <div class="section-panel majorelle-frame rounded-3xl shadow-2xl w-full max-w-sm p-6">
     <h3 class="font-display text-xl font-bold text-stone-900 mb-5">📁 Nouveau dossier</h3>
     <div class="space-y-4 mb-6">
       <div>
@@ -348,7 +348,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
       </div>
 
       <!-- Status -->
-      <div class="bg-white rounded-2xl border border-stone-100 p-5 shadow-sm">
+       <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
         <h3 class="font-bold text-stone-700 mb-4 text-sm">📊 Statut</h3>
         <div class="space-y-2">
           <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
@@ -363,7 +363,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
       </div>
 
       <!-- Meta -->
-      <div class="bg-white rounded-2xl border border-stone-100 p-5 shadow-sm">
+       <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
         <h3 class="font-bold text-stone-700 mb-4 text-sm">📋 Informations</h3>
         <div class="space-y-4">
           <div>
@@ -388,7 +388,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
       </div>
 
       <!-- Cover photo -->
-      <div class="bg-white rounded-2xl border border-stone-100 p-5 shadow-sm">
+       <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
         <h3 class="font-bold text-stone-700 mb-3 text-sm">🖼️ Photo de couverture</h3>
         <input type="text" id="e-cover" placeholder="URL de la photo de couverture..."
                class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-xs mb-3" oninput="previewCover(this.value)">
