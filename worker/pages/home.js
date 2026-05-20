@@ -27,6 +27,31 @@ ${NAV('home')}
             </p>
             <p class="drame-badge mb-8">🎭 "ça c'était bien avant le drame.."</p>
           </div>
+          <div class="majorelle-illustration" aria-hidden="true">
+            <svg viewBox="0 0 420 270" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="9" y="8" width="402" height="254" rx="34" fill="#0B239F"/>
+              <path d="M28 213L122 177L203 196L282 164L392 201V244H28V213Z" fill="#6D7F2B"/>
+              <path d="M40 223L131 186L213 205L299 173L380 202V243H40V223Z" fill="#87A037" opacity=".72"/>
+              <path d="M110 162L130 149L148 154L162 147L170 159L188 150L206 164L221 155L240 170L254 162L270 176L292 172L307 182L321 178L337 194L353 190" stroke="#F6DA18" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M84 161C93 136 118 119 144 119C167 119 188 131 202 150C211 145 223 142 234 142C256 142 276 154 286 173" stroke="#F6DA18" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M170 166C179 147 199 134 221 134C236 134 252 140 263 152" stroke="#F6DA18" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M207 104C215 87 234 76 254 76C269 76 283 83 292 95C302 91 313 89 325 89C345 89 363 99 373 115" stroke="#F6DA18" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+              <ellipse cx="196" cy="186" rx="77" ry="25" fill="#7A8F34"/>
+              <path d="M130 176C130 152 154 134 187 134C219 134 241 147 248 166C264 166 278 176 278 190C278 205 266 214 253 214H151C139 214 130 205 130 194V176Z" fill="#F6DA18"/>
+              <path d="M190 134C190 122 200 113 213 113C224 113 234 121 236 133C245 135 253 141 253 150C253 160 244 168 233 168H202C190 168 180 160 180 149C180 141 185 136 190 134Z" fill="#E5C80E"/>
+              <path d="M232 116C232 104 242 95 255 95C269 95 280 104 280 117V136H232V116Z" fill="#F6DA18"/>
+              <rect x="161" y="206" width="13" height="27" rx="5" fill="#E8CB11"/>
+              <rect x="218" y="206" width="13" height="27" rx="5" fill="#E8CB11"/>
+              <rect x="250" y="206" width="13" height="27" rx="5" fill="#E8CB11"/>
+              <circle cx="212" cy="142" r="2.5" fill="#0B239F"/>
+              <circle cx="144" cy="155" r="2.2" fill="#0B239F"/>
+              <circle cx="195" cy="154" r="2.2" fill="#0B239F"/>
+              <circle cx="223" cy="154" r="2.2" fill="#0B239F"/>
+              <circle cx="171" cy="156" r="2.2" fill="#0B239F"/>
+              <circle cx="248" cy="155" r="2.2" fill="#0B239F"/>
+              <path d="M205 147L210 150L216 147" stroke="#0B239F" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
           <div class="maroc-arch-actions flex flex-col sm:flex-row gap-3">
             <a href="/voyages" class="action-btn">Explorer nos voyages</a>
             <a href="/voyages" class="subtle-btn">Parcourir le carnet</a>
