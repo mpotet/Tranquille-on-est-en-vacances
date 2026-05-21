@@ -13,9 +13,9 @@ export function homePage() {
 ${NAV('home')}
 
 <main class="pt-16">
-  <section id="hero" class="relative min-h-screen flex items-center overflow-hidden bg-white">
+  <section id="hero" class="majorelle-hero relative min-h-screen flex items-center overflow-hidden bg-white">
     <div class="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 text-stone-900 pb-20 pt-28 sm:py-20">
-      <div class="flex flex-col items-center gap-8">
+      <div class="majorelle-stage flex flex-col items-center gap-8">
         <div class="maroc-arch w-full mx-auto">
           <div class="maroc-arch-copy">
             <div class="eyebrow mb-6">Carnet de bord de la famille Potet</div>
@@ -62,13 +62,13 @@ ${NAV('home')}
             <span class="px-4 py-2 rounded-full border border-white/10 bg-white/5">📸 Moments partagés</span>
           </div>
         </div>
-        <div class="glass-panel rounded-[2rem] p-6 sm:p-8 overflow-hidden relative w-full max-w-xl mx-auto">
+        <div class="glass-panel majorelle-showcase rounded-[2rem] p-6 sm:p-8 overflow-hidden relative w-full max-w-xl mx-auto">
           <div class="grid gap-4 sm:grid-cols-3 mb-6" id="stats">
-            <div class="bg-white rounded-[1.6rem] p-4 text-center"><div class="text-3xl font-black gradient-text">—</div><div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-[0.2em]">voyages</div></div>
-            <div class="bg-white rounded-[1.6rem] p-4 text-center"><div class="text-3xl font-black gradient-text">—</div><div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-[0.2em]">destinations</div></div>
-            <div class="bg-white rounded-[1.6rem] p-4 text-center"><div class="text-3xl font-black gradient-text">—</div><div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-[0.2em]">photos</div></div>
+            <div class="metric-card majorelle-stat text-center"><div class="text-3xl font-black gradient-text">—</div><div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-[0.2em]">voyages</div></div>
+            <div class="metric-card majorelle-stat text-center"><div class="text-3xl font-black gradient-text">—</div><div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-[0.2em]">destinations</div></div>
+            <div class="metric-card majorelle-stat text-center"><div class="text-3xl font-black gradient-text">—</div><div class="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-[0.2em]">photos</div></div>
           </div>
-          <div class="section-panel rounded-[1.75rem] p-5">
+          <div class="section-panel majorelle-frame rounded-[1.75rem] p-5">
             <p class="text-xs font-bold uppercase tracking-[0.22em] text-stone-500 mb-3">Dernières escales</p>
             <div id="hero-selection" class="space-y-3">
               <div class="h-16 rounded-[1.4rem] bg-white/5 border border-white/10 animate-pulse"></div>
@@ -111,7 +111,7 @@ ${NAV('home')}
 
   <section class="py-16">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="section-panel rounded-[2rem] p-8 sm:p-10">
+      <div class="section-panel majorelle-frame rounded-[2rem] p-8 sm:p-10">
         <div class="grid lg:grid-cols-[0.78fr_1.22fr] gap-8 items-start">
           <div>
             <div class="eyebrow mb-4">Destinations de voyage</div>
@@ -129,10 +129,12 @@ ${NAV('home')}
   </section>
 
   <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+    <div class="majorelle-quote">
     <blockquote class="font-display text-2xl sm:text-3xl text-stone-600 italic leading-relaxed">
       "Les voyages sont la seule chose qu'on achète qui nous rend plus riches."
     </blockquote>
     <p class="text-stone-400 mt-4 font-medium text-sm">— Devise de la famille Potet 🌍</p>
+    </div>
   </section>
 </main>
 
@@ -179,7 +181,7 @@ async function init(){
   statsEl.querySelector('div:nth-child(3) .gradient-text').textContent = totalPhotos || '—';
 
   document.getElementById('hero-selection').innerHTML = artData.articles.slice(0,3).map((a, idx)=>
-    '<a href="/voyage/'+a.slug+'" aria-label="'+esc('Consulter le voyage '+(a.title||'')+' à '+(a.destination||''))+'" class="block rounded-[1.4rem] px-4 py-3 bg-white hover:bg-sky-50 transition-colors border border-stone-200">'+
+    '<a href="/voyage/'+a.slug+'" aria-label="'+esc('Consulter le voyage '+(a.title||'')+' à '+(a.destination||''))+'" class="majorelle-list-button block rounded-[1.4rem] px-4 py-3 bg-white hover:bg-sky-50 transition-colors border border-stone-200">'+
       '<div class="flex items-center justify-between gap-3">'+
         '<div><div class="text-stone-900 font-semibold">'+esc(a.title)+'</div><div class="text-stone-500 text-xs mt-1 uppercase tracking-[0.18em]">'+esc(a.destination)+'</div></div>'+
         '<span class="text-stone-500 text-sm">0'+(idx + 1)+'</span>'+
@@ -189,7 +191,7 @@ async function init(){
 
   const roots = folderData.filter(f=>!f.parent_id);
   document.getElementById('destinations').innerHTML = roots.map(f=>
-    '<a href="/voyages?folder='+f.slug+'" class="flex items-center gap-2 bg-white rounded-2xl px-5 py-3 shadow-sm hover:shadow-md hover:scale-105 transition-all font-semibold text-stone-700 border border-stone-100">'+
+    '<a href="/voyages?folder='+f.slug+'" class="majorelle-chip flex items-center gap-2 bg-white rounded-2xl px-5 py-3 shadow-sm hover:shadow-md hover:scale-105 transition-all font-semibold text-stone-700 border border-stone-100">'+
       '<span class="text-2xl">'+f.icon+'</span><span>'+esc(f.name)+'</span>'+
     '</a>'
   ).join('');
