@@ -1,0 +1,50 @@
+# Tranquille, on est en vacances — Wrangler / Cloudflare Workers configuration
+# https://developers.cloudflare.com/workers/wrangler/configuration/
+
+name            = "tranquille-vacances"
+main            = "worker/index.js"
+compatibility_date = "2024-09-23"
+
+# ── Static assets served from the /public directory ──────────────────────────
+[assets]
+directory = "./public"
+
+# ── Environment variables (non-secret) ───────────────────────────────────────
+[vars]
+# Public base URL used to build photo URLs
+PUBLIC_URL = "https://tranquille-vacances.YOUR_SUBDOMAIN.workers.dev"
+
+# ── Cloudflare D1 (SQLite) ────────────────────────────────────────────────────
+# Create with: wrangler d1 create tranquille-vacances-db
+[[d1_databases]]
+binding      = "DB"
+database_name = "tranquille-vacances-db"
+database_id  = "YOUR_D1_DATABASE_ID"      # replace after `wrangler d1 create`
+
+# ── Cloudflare R2 (photo storage) ─────────────────────────────────────────────
+# Create with: wrangler r2 bucket create tranquille-vacances-photos
+[[r2_buckets]]
+binding     = "PHOTOS"
+bucket_name = "tranquille-vacances-photos"
+
+# ── Secrets (set via `wrangler secret put`) ───────────────────────────────────
+# ADMIN_PASSWORD  — plain-text password; the worker hashes it with HMAC-SHA256
+# SESSION_SECRET  — random 32-byte hex string used to sign session tokens
+#
+# wrangler secret put ADMIN_PASSWORD
+# wrangler secret put SESSION_SECRET
+#
+# ── Notification secrets (optional — enable push/email notifications) ─────────
+# Generate VAPID keys with: node scripts/generate-vapid.js
+#
+# wrangler secret put VAPID_PUBLIC_KEY    # base64url raw 65-byte P-256 public key
+# wrangler secret put VAPID_PRIVATE_KEY   # base64(JSON.stringify(privateKeyJwk))
+# wrangler secret put VAPID_SUBJECT       # mailto:your@email.com
+# wrangler secret put RESEND_API_KEY      # re_xxxx  (from resend.com)
+# wrangler secret put NOTIFY_FROM_EMAIL   # Blog Potet <noreply@yourdomain.com>
+
+# ── Production environment overrides ─────────────────────────────────────────
+[env.production]
+name = "tranquille-vacances"
+[env.production.vars]
+PUBLIC_URL = "https://vacances.potet.fr"   # your custom domain if any

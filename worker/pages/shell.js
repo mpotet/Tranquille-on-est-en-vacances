@@ -217,14 +217,6 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .prose-vacation a { color: var(--blue); text-decoration: underline; }
 .prose-vacation hr { margin: 2rem 0; border-color: var(--line); }
 
-/* ── Image grid rows (2 or 3 images side-by-side) ──────────── */
-.img-row { display:grid; gap:.5rem; margin:1.5rem 0; }
-.img-row-2 { grid-template-columns:1fr 1fr; }
-.img-row-3 { grid-template-columns:1fr 1fr 1fr; }
-.img-row > div { overflow:hidden; border-radius:.75rem; aspect-ratio:4/3; }
-.img-row > div > img { width:100%; height:100%; object-fit:cover; display:block; border-radius:.75rem; box-shadow:0 4px 16px rgba(26,43,60,.10); cursor:zoom-in; }
-@media(max-width:480px){ .img-row-2,.img-row-3 { grid-template-columns:1fr; } }
-
 /* ── Lightbox ───────────────────────────────────────────────── */
 .lightbox-bg { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 
@@ -392,24 +384,14 @@ async function initPushBtn() {
   }
 }
 async function subscribePush() {
-  try {
-    const config = await fetch('/api/push/config').then(r => r.json()).catch(() => ({}));
-    if (!config.vapidPublicKey) { showSubMsg('Notifications non configurées', false); return; }
-    const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(config.vapidPublicKey) });
-    const res = await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
-    if (!res.ok) { showSubMsg('Erreur lors de l\'inscription', false); return; }
-    showSubMsg('Notifications activées !', true);
-    const btn = document.getElementById('push-btn');
-    if (btn) { btn.innerHTML = '<i class="ph ph-bell-slash"></i> Désactiver les notifs'; btn.onclick = unsubscribePush; }
-  } catch (err) {
-    if (err.name === 'NotAllowedError') {
-      showSubMsg('Permission refusée par le navigateur', false);
-    } else {
-      showSubMsg('Erreur : ' + (err.message || err), false);
-    }
-    console.error('[Push] subscribe error', err);
-  }
+  const config = await fetch('/api/push/config').then(r => r.json()).catch(() => ({}));
+  if (!config.vapidPublicKey) { showSubMsg('Notifications non configurées', false); return; }
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(config.vapidPublicKey) });
+  await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
+  showSubMsg('Notifications activées !', true);
+  const btn = document.getElementById('push-btn');
+  if (btn) { btn.innerHTML = '<i class="ph ph-bell-slash"></i> Désactiver les notifs'; btn.onclick = unsubscribePush; }
 }
 async function unsubscribePush() {
   const reg = await navigator.serviceWorker.ready;
@@ -481,5 +463,5 @@ function lbNav(d){_lb.idx=(_lb.idx+d+_lb.photos.length)%_lb.photos.length;_updLb
 function _updLb(){const p=_lb.photos[_lb.idx];document.getElementById('lb-img').src=p.url;document.getElementById('lb-img').alt=p.caption||'';document.getElementById('lb-caption').textContent=p.caption||'';document.getElementById('lb-counter').textContent=(_lb.idx+1)+' / '+_lb.photos.length}
 document.addEventListener('keydown',e=>{if(document.getElementById('lightbox').classList.contains('hidden'))return;if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')lbNav(-1);if(e.key==='ArrowRight')lbNav(1)});
 function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:#dc3c3c;font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
-fetch('/api/folders').then(r=>r.json()).then(data=>{const roots=data.filter(f=>!f.parent_id);document.getElementById('footer-dest').innerHTML=roots.map(f=>\`<li><a href="/voyages?folder=\${f.slug}" style="color:var(--ink-muted)" class="hover:underline transition-colors">\${f.icon} \${f.name}</a></li>\`).join('')}).catch(()=>{});
+fetch('/api/folders').then(r=>r.json()).then(data=>{const roots=data.filter(f=>!f.parent_id);document.getElementById('footer-dest').innerHTML=roots.map(f=>`+"`"+`<li><a href="/voyages?folder=${f.slug}" style="color:var(--ink-muted)" class="hover:underline transition-colors">${f.icon} ${f.name}</a></li>`+"`"+`).join('')}).catch(()=>{});
 </script>`;

@@ -73,16 +73,15 @@ export async function listArticles(request, env, isAdmin) {
 // ──────────────────────────────────────────────────────────────
 // Get single article (with photos)
 // ──────────────────────────────────────────────────────────────
-export async function getArticle(env, slugOrId, isAdmin) {
-  const isNumericId = /^\d+$/.test(String(slugOrId));
+export async function getArticle(env, slug, isAdmin) {
   const article = await env.DB
     .prepare(`
       SELECT a.*, f.name AS folder_name, f.icon AS folder_icon, f.slug AS folder_slug
       FROM   articles a
       LEFT JOIN folders f ON f.id = a.folder_id
-      WHERE  ${isNumericId ? 'a.id = ?' : 'a.slug = ?'}
+      WHERE  a.slug = ?
     `)
-    .bind(isNumericId ? parseInt(slugOrId) : slugOrId)
+    .bind(slug)
     .first();
 
   if (!article) return notFound('Article not found');
@@ -138,7 +137,7 @@ export async function createArticle(request, env, ctx) {
 
   // Notify subscribers if publishing (and notify flag not explicitly false)
   if (status === 'published' && body.notify !== false && ctx) {
-    notifySubscribers(env, ctx, normalizeArticle(article), { isUpdate: false });
+    notifySubscribers(env, ctx, normalizeArticle(article));
   }
 
   return json(normalizeArticle(article), 201);
@@ -194,13 +193,7 @@ export async function updateArticle(request, env, id, ctx) {
 
   // Notify subscribers when saving a published article (and notify flag not explicitly false)
   if (newStatus === 'published' && body.notify !== false && ctx) {
-    const changes = [];
-    if ('title' in body && body.title !== article.title) changes.push(`Titre : ${body.title}`);
-    if ('destination' in body && body.destination !== article.destination) changes.push(`Destination : ${body.destination || '—'}`);
-    if (('start_date' in body || 'end_date' in body) && (body.start_date !== article.start_date || body.end_date !== article.end_date)) changes.push('Dates modifiées');
-    if ('content' in body && body.content !== article.content) changes.push('Contenu mis à jour');
-    if ('cover_url' in body && body.cover_url !== article.cover_url) changes.push('Photo de couverture modifiée');
-    notifySubscribers(env, ctx, normalizeArticle(updated), { isUpdate: true, changes });
+    notifySubscribers(env, ctx, normalizeArticle(updated));
   }
 
   return json(normalizeArticle(updated));
@@ -294,12 +287,30 @@ function normalizeTripFields(source) {
     return { error: 'end_date must be after or equal to start_date' };
   }
 
-  // writing_days is optional — keep existing if not provided, otherwise parse
   const rawWritingDays = parseWritingDays(source.writing_days);
-  const writingDays = rawWritingDays
-    .map(d => ({ date: (d?.date || '').trim(), summary: (d?.summary || '').trim() }))
-    .filter(d => d.date && d.summary);
+  if (!rawWritingDays.length) {
+    return { error: 'writing_days must contain at least one daily summary' };
+  }
 
+  const writingDays = [];
+  const seen = new Set();
+  for (const item of rawWritingDays) {
+    const date = (item?.date || '').trim();
+    const summary = (item?.summary || '').trim();
+    if (!date || !summary) {
+      return { error: 'each writing day must include date and summary' };
+    }
+    if (date < startDate || date > endDate) {
+      return { error: 'writing day dates must be between start_date and end_date' };
+    }
+    if (seen.has(date)) {
+      return { error: 'writing day dates must be unique' };
+    }
+    seen.add(date);
+    writingDays.push({ date, summary });
+  }
+
+  writingDays.sort((a, b) => a.date.localeCompare(b.date));
   return { startDate, endDate, writingDays };
 }
 

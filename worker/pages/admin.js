@@ -263,7 +263,7 @@ function renderArticles(arts, folders) {
 
 async function toggleStatus(id, current) {
   const res = await fetch(\`/api/articles/\${id}/status\`, {method:'PATCH'});
-  if (res.ok) { toast(current==='draft'?'Article publié !':'Mis en brouillon','ok'); await init(); }
+  if (res.ok) { toast(current==='draft'?'Article publié !':'Mis en brouillon','ok'); init(); }
   else toast('Erreur','err');
 }
 
@@ -381,7 +381,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
           <textarea id="e-content" rows="22" placeholder="# Titre\n\nÉcris ici en Markdown..."
                     class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 md-editor"></textarea>
           <div class="flex flex-wrap gap-1 mt-2">
-            ${[['**Gras**','G'],['*Ital.*','I'],['# H1','H1'],['## H2','H2'],['> Citation','❝'],['- Item','—'],['[lien](url)','lien'],['![](url) ![](url)','📷📷']].map(([s,l])=>`
+            ${[['**Gras**','G'],['*Ital.*','I'],['# H1','H1'],['## H2','H2'],['> Citation','❝'],['- Item','—'],['[lien](url)','lien']].map(([s,l])=>`
               <button type="button" onclick="insertMd('${s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}','e-content')" class="text-xs bg-stone-100 hover:bg-sky-100 text-stone-600 hover:text-sky-700 px-2.5 py-1.5 rounded-lg font-mono transition-colors">${l}</button>`).join('')}
           </div>
         </div>
@@ -390,9 +390,21 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
         </div>
       </div>
 
+      <!-- Writing days -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Jours de rédaction *</label>
+          <button type="button" onclick="generateWritingDays()" class="text-xs bg-sky-50 text-sky-700 hover:bg-sky-100 px-3 py-1.5 rounded-lg font-semibold transition-colors">Générer depuis les dates</button>
+        </div>
+        <p class="text-xs text-stone-500 mb-3">Un résumé par jour du voyage est obligatoire.</p>
+        <div id="writing-days" class="space-y-2"></div>
+        <button type="button" onclick="addWritingDay()" class="mt-3 text-xs bg-stone-100 text-stone-700 hover:bg-stone-200 px-3 py-1.5 rounded-lg font-semibold transition-colors">+ Ajouter un jour</button>
+      </div>
+
       <!-- Save buttons (mobile) -->
-      <div class="lg:hidden">
-        <button onclick="saveArticle()" class="w-full action-btn text-white font-bold py-3 rounded-2xl transition-all"><i class="ph ph-floppy-disk"></i> Sauvegarder</button>
+      <div class="flex gap-3 lg:hidden">
+        <button onclick="saveArticle(false)" class="flex-1 bg-stone-200 text-stone-800 font-bold py-3 rounded-2xl hover:bg-stone-300 transition-colors"><i class="ph ph-floppy-disk"></i> Brouillon</button>
+        <button onclick="saveArticle(true)" class="flex-1 action-btn text-white font-bold py-3 rounded-2xl transition-all"><i class="ph ph-rocket-launch"></i> Publier</button>
       </div>
     </div>
 
@@ -400,20 +412,24 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
     <aside class="lg:col-span-1 space-y-5">
 
       <!-- Save buttons (desktop) -->
-      <div class="hidden lg:block">
-        <button onclick="saveArticle()" class="w-full action-btn text-white font-bold py-3 rounded-2xl transition-all"><i class="ph ph-floppy-disk"></i> Sauvegarder</button>
+      <div class="hidden lg:flex flex-col gap-3">
+        <button onclick="saveArticle(true)" class="w-full action-btn text-white font-bold py-3 rounded-2xl transition-all"><i class="ph ph-rocket-launch"></i> Publier</button>
+        <button onclick="saveArticle(false)" class="w-full bg-stone-200 text-stone-800 font-bold py-2.5 rounded-2xl hover:bg-stone-300 transition-colors text-sm"><i class="ph ph-floppy-disk"></i> Sauvegarder en brouillon</button>
       </div>
 
       <!-- Status -->
-      <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
+       <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
         <h3 class="font-bold text-stone-700 mb-4 text-sm"><i class="ph ph-toggle-right"></i> Statut</h3>
-        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
-          <input type="checkbox" id="pub-status" class="w-4 h-4 accent-emerald-500" onchange="onStatusChange(this.checked)">
-          <div>
-            <div class="font-semibold text-stone-700 text-sm"><i class="ph-fill ph-check-circle" style="color:var(--palm)"></i> Publié</div>
-            <div class="text-xs text-stone-400">Visible par tous</div>
-          </div>
-        </label>
+        <div class="space-y-2">
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
+            <input type="radio" name="pub-status" value="draft" checked class="w-4 h-4 accent-amber-500" onchange="onStatusChange(this.value)">
+            <div><div class="font-semibold text-stone-700 text-sm"><i class="ph ph-pencil-line"></i> Brouillon</div><div class="text-xs text-stone-400">Admin uniquement</div></div>
+          </label>
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
+            <input type="radio" name="pub-status" value="published" class="w-4 h-4 accent-emerald-500" onchange="onStatusChange(this.value)">
+            <div><div class="font-semibold text-stone-700 text-sm"><i class="ph-fill ph-check-circle" style="color:var(--palm)"></i> Publié</div><div class="text-xs text-stone-400">Visible par tous</div></div>
+          </label>
+        </div>
       </div>
 
       <!-- Notify subscribers (shown only when status = published) -->
@@ -464,7 +480,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
       <div>
         <div class="flex items-center justify-between mb-2">
           <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Images dans le récit</label>
-          ${articleId !== null ? '<p class="text-xs text-sky-600 font-semibold"><i class="ph ph-image"></i> Les photos importées s\'insèrent automatiquement dans le texte</p>' : '<p class="text-xs text-stone-400">Les photos seront insérées dans le texte après sauvegarde</p>'}
+          ${articleId !== null ? '<p class="text-xs text-sky-600 font-semibold"><i class="ph ph-lightbulb"></i> Survolez une photo et cliquez <strong><i class="ph ph-paperclip"></i> Insérer</strong></p>' : '<p class="text-xs text-stone-400">Sauvegardez d\'abord, puis insérez les photos</p>'}
         </div>
         <div id="dropzone"
              class="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
@@ -494,6 +510,7 @@ ${TOAST}
 const ARTICLE_ID = ${JSON.stringify(articleId)};
 let existingPhotos = [];  // photos already on the server
 let newPhotos = [];       // FileReader previews for new uploads
+let writingDays = [];
 
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
@@ -507,6 +524,8 @@ async function init() {
   const today = new Date().toISOString().slice(0,10);
   document.getElementById('e-start-date').value = today;
   document.getElementById('e-end-date').value = today;
+  writingDays = [{ date: today, summary: '' }];
+  renderWritingDays();
 
   if (ARTICLE_ID) {
     const a = await fetch('/api/articles/' + ARTICLE_ID).then(r=>r.json()).catch(()=>null);
@@ -519,14 +538,15 @@ async function init() {
       document.getElementById('e-dest').value  = a.destination || '';
       document.getElementById('e-cover').value = a.cover_url || '';
       previewCover(a.cover_url);
-      const pubCheckbox = document.getElementById('pub-status');
-      pubCheckbox.checked = a.status === 'published';
-      onStatusChange(a.status === 'published'); // show/hide notify section
+      document.querySelector(\`input[name="pub-status"][value="\${a.status||'draft'}"]\`).checked = true;
+      onStatusChange(a.status || 'draft'); // show/hide notify section
       if (a.folder_id) {
         const opt = document.querySelector(\`#e-folder option[value="\${a.folder_id}"]\`);
         if (opt) opt.selected = true;
       }
       existingPhotos = a.photos || [];
+      writingDays = Array.isArray(a.writing_days) && a.writing_days.length ? a.writing_days : [{ date: (a.start_date || a.date || today), summary: '' }];
+      renderWritingDays();
       renderPhotoGrid();
     }
   }
@@ -552,28 +572,11 @@ function edTab(tab) {
     tw.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800';
     tp.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700';
   } else {
-    const pout=document.getElementById('preview-out');
-    pout.innerHTML=marked.parse(document.getElementById('e-content').value||'');
-    applyImgRowToPreview(pout);
+    document.getElementById('preview-out').innerHTML=marked.parse(document.getElementById('e-content').value||'');
     wp.classList.add('hidden');pp.classList.remove('hidden');
     tp.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800';
     tw.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700';
   }
-}
-function applyImgRowToPreview(container){
-  container.querySelectorAll('p').forEach(p=>{
-    const imgs=[...p.querySelectorAll('img')];
-    if(imgs.length<2) return;
-    for(const c of p.childNodes){
-      if(c.nodeType===3&&c.textContent.trim()) return;
-      if(c.nodeType===1&&c.tagName!=='IMG') return;
-    }
-    const n=Math.min(imgs.length,3);
-    const grid=document.createElement('div');
-    grid.className='img-row img-row-'+n;
-    imgs.forEach(img=>{const cell=document.createElement('div');cell.appendChild(img);grid.appendChild(cell);});
-    p.replaceWith(grid);
-  });
 }
 function insertMd(syntax) {
   const ta=document.getElementById('e-content'); if(!ta) return;
@@ -581,14 +584,64 @@ function insertMd(syntax) {
   ta.value=ta.value.slice(0,s)+syntax+ta.value.slice(e);
   ta.focus(); ta.setSelectionRange(s+syntax.length, s+syntax.length);
 }
-function insertPhotoInText(url, caption, showToast = true) {
+function insertPhotoInText(url, caption) {
   edTab('write');
   const ta=document.getElementById('e-content'); if(!ta) return;
-  const md=\`\n\n<figure>\n  <img src="\${url}" alt="\${caption}">\n  <figcaption>\${caption}</figcaption>\n</figure>\n\n\`;
+  const md=`\n\n<figure>\n  <img src="\${url}" alt="\${caption}">\n  <figcaption>\${caption}</figcaption>\n</figure>\n\n`;
   const s=ta.selectionStart;
   ta.value=ta.value.slice(0,s)+md+ta.value.slice(ta.selectionEnd);
   ta.focus(); ta.setSelectionRange(s+md.length, s+md.length);
-  if (showToast) toast('Photo insérée dans le texte','ok');
+  toast('Photo insérée dans le texte','ok');
+}
+
+// ── Writing days ────────────────────────────────────────────────
+function renderWritingDays() {
+  const host = document.getElementById('writing-days');
+  if (!host) return;
+  host.innerHTML = writingDays.map((d, i) => \`
+    <div class="bg-white border-2 border-stone-200 rounded-2xl p-3">
+      <div class="flex items-center gap-2 mb-2">
+        <input type="date" value="\${esc(d.date || '')}" onchange="updateWritingDay(\${i},'date',this.value)" class="flex-1 border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+        <button type="button" onclick="removeWritingDay(\${i})" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-bold px-3 py-2 rounded-xl transition-colors"><i class="ph ph-trash"></i></button>
+      </div>
+      <textarea rows="2" onchange="updateWritingDay(\${i},'summary',this.value)" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm" placeholder="Résumé du jour...">\${esc(d.summary || '')}</textarea>
+    </div>
+  \`).join('');
+}
+
+function addWritingDay() {
+  const start = document.getElementById('e-start-date').value || new Date().toISOString().slice(0,10);
+  writingDays.push({ date: start, summary: '' });
+  renderWritingDays();
+}
+
+function removeWritingDay(index) {
+  writingDays.splice(index, 1);
+  if (!writingDays.length) addWritingDay();
+  else renderWritingDays();
+}
+
+function updateWritingDay(index, field, value) {
+  writingDays[index] = writingDays[index] || { date: '', summary: '' };
+  writingDays[index][field] = value;
+}
+
+function generateWritingDays() {
+  const start = document.getElementById('e-start-date').value;
+  const end = document.getElementById('e-end-date').value;
+  if (!start || !end) { toast('Choisissez d’abord un début et une fin','err'); return; }
+  if (end < start) { toast('La fin doit être après le début','err'); return; }
+  const currentByDate = new Map(writingDays.map(d => [d.date, d.summary || '']));
+  const generated = [];
+  let cursor = new Date(start + 'T00:00:00');
+  const endDate = new Date(end + 'T00:00:00');
+  while (cursor <= endDate) {
+    const date = cursor.toISOString().slice(0,10);
+    generated.push({ date, summary: currentByDate.get(date) || '' });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  writingDays = generated;
+  renderWritingDays();
 }
 
 // ── Cover preview ─────────────────────────────────────────────
@@ -604,7 +657,7 @@ function renderPhotoGrid() {
     <div class="relative aspect-square overflow-hidden rounded-xl group">
       <img src="\${esc(p.url)}" alt="\${esc(p.caption||'')}" class="w-full h-full object-cover">
       <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
-        <button onclick="insertPhotoInText('\${esc(p.url)}','\${esc(p.caption||'photo')}')" class="bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-text-align-center"></i> Ré-insérer</button>
+        <button onclick="insertPhotoInText('\${esc(p.url)}','\${esc(p.caption||'photo')}')" class="bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-paperclip"></i> Insérer</button>
         <button onclick="delExistingPhoto(\${p.id}, \${i})" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-trash"></i> Supprimer</button>
       </div>
     </div>\`).join('');
@@ -612,7 +665,7 @@ function renderPhotoGrid() {
     <div class="relative aspect-square overflow-hidden rounded-xl group">
       <img src="\${p.dataUrl}" alt="\${esc(p.name)}" class="w-full h-full object-cover">
       <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
-        <span class="bg-stone-800/80 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-center leading-tight">Insérée après<br>sauvegarde</span>
+        <span class="bg-stone-800/80 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-center leading-tight">Sauvegardez<br>pour insérer</span>
         <button onclick="rmNewPhoto(\${i})" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-trash"></i> Supprimer</button>
       </div>
       <div class="absolute bottom-1 right-1 bg-orange-500 text-white text-xs rounded-full px-1.5 font-bold">Nouveau</div>
@@ -628,13 +681,7 @@ function handleFiles(files) {
     Array.from(files).forEach(f => fd.append('photo', f));
     fetch('/api/articles/'+ARTICLE_ID+'/photos', {method:'POST', body:fd})
       .then(r=>r.json())
-      .then(data=>{
-        const uploaded = data.uploaded || [];
-        existingPhotos.push(...uploaded);
-        renderPhotoGrid();
-        uploaded.forEach(p => insertPhotoInText(p.url, p.caption || 'photo', false));
-        toast(uploaded.length === 1 ? 'Photo insérée !' : `${uploaded.length} photos insérées !`,'ok');
-      })
+      .then(data=>{ existingPhotos.push(...(data.uploaded||[])); renderPhotoGrid(); toast('Photos ajoutées ! Survolez pour insérer.','ok'); })
       .catch(()=>toast('Erreur upload','err'));
   } else {
     // New article: queue locally, will be uploaded after save
@@ -658,10 +705,10 @@ async function delExistingPhoto(photoId, i) {
 }
 
 // ── Notify section visibility ────────────────────────────────
-function onStatusChange(isPublished) {
+function onStatusChange(value) {
   const notifySection = document.getElementById('notify-section');
   if (!notifySection) return;
-  if (isPublished) {
+  if (value === 'published') {
     notifySection.classList.remove('hidden');
   } else {
     notifySection.classList.add('hidden');
@@ -669,7 +716,7 @@ function onStatusChange(isPublished) {
 }
 
 // ── Save article ──────────────────────────────────────────────
-async function saveArticle() {
+async function saveArticle(publish) {
   const title = document.getElementById('e-title').value.trim();
   if (!title) { toast('Le titre est obligatoire','err'); return; }
   const startDate = document.getElementById('e-start-date').value;
@@ -677,7 +724,14 @@ async function saveArticle() {
   if (!startDate || !endDate) { toast('Le voyage doit avoir un début et une fin','err'); return; }
   if (endDate < startDate) { toast('La fin doit être après le début','err'); return; }
 
-  const status = document.getElementById('pub-status')?.checked ? 'published' : 'draft';
+  const normalizedDays = writingDays
+    .map(d => ({ date: (d.date || '').trim(), summary: (d.summary || '').trim() }))
+    .filter(d => d.date || d.summary);
+  if (!normalizedDays.length) { toast('Ajoutez au moins un jour de rédaction','err'); return; }
+  if (normalizedDays.some(d => !d.date || !d.summary)) { toast('Chaque jour doit avoir une date et un résumé','err'); return; }
+  if (normalizedDays.some(d => d.date < startDate || d.date > endDate)) { toast('Les jours doivent être entre début et fin','err'); return; }
+
+  const status = publish ? 'published' : (document.querySelector('input[name="pub-status"]:checked')?.value || 'draft');
 
   // Notify flag: true by default when publishing; admin can uncheck
   const notifyCheckbox = document.getElementById('e-notify');
@@ -690,6 +744,7 @@ async function saveArticle() {
     destination:       document.getElementById('e-dest').value.trim(),
     start_date:        startDate,
     end_date:          endDate,
+    writing_days:      normalizedDays,
     short_description: document.getElementById('e-desc').value.trim(),
     content:           document.getElementById('e-content').value,
     status,
@@ -709,29 +764,15 @@ async function saveArticle() {
 
   if (!res.ok) { toast('Erreur lors de la sauvegarde','err'); return; }
 
-  // Upload new photos and insert them in the content
+  // Upload new photos
   if (newPhotos.length && savedId) {
     const fd = new FormData();
     newPhotos.forEach(p => fd.append('photo', p.file));
-    const uploadRes = await fetch('/api/articles/'+savedId+'/photos', {method:'POST', body:fd}).catch(()=>null);
-    if (uploadRes?.ok) {
-      const uploadData = await uploadRes.json();
-      const uploaded = uploadData.uploaded || [];
-      if (uploaded.length) {
-        const photoTags = uploaded.map(p =>
-          `\n\n<figure>\n  <img src="${p.url}" alt="${p.caption || 'photo'}">\n  <figcaption>${p.caption || ''}</figcaption>\n</figure>`
-        ).join('\n');
-        const updatedContent = payload.content + photoTags;
-        await fetch('/api/articles/'+savedId, {
-          method: 'PUT',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ content: updatedContent, notify: false })
-        }).catch(()=>{});
-      }
-    }
+    await fetch('/api/articles/'+savedId+'/photos', {method:'POST', body:fd});
   }
 
-  toast('Sauvegardé !','ok');
+  toast((publish?'Publié !':'Sauvegardé !'),'ok');
+  // For new articles: redirect to editor so photos can be inserted in text
   if (!ARTICLE_ID && savedId) {
     setTimeout(()=>location.href='/admin/editor/'+savedId, 800);
   } else {

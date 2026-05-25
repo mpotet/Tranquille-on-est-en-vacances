@@ -2,9 +2,10 @@
   "name": "tranquille-vacances-backend",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "wrangler dev --local --ip 0.0.0.0",
-    "dev:network": "wrangler dev --local --ip 0.0.0.0 --local-protocol https",
+    "dev": "node dev.js",
+    "dev:wrangler": "wrangler dev --local --ip 0.0.0.0",
     "dev:remote": "wrangler dev",
     "tunnel": "npx cloudflared tunnel --url http://localhost:8787",
     "deploy": "wrangler deploy",
