@@ -1,0 +1,11 @@
+{
+  "name": "tranquille-vacances",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:back": "npm run dev --prefix backend",
+    "dev:front": "npm run dev --prefix frontend",
+    "deploy": "npm run deploy --prefix backend",
+    "deploy:prod": "npm run deploy:prod --prefix backend"
+  }
+}

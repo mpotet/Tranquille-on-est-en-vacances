@@ -12,7 +12,7 @@ const ADMIN_NAV = (subtitle = '') => `
   <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
     <div class="flex items-center gap-4">
       <a href="/" class="flex items-center gap-2 group">
-        <span class="brand-mark text-sm">🌴</span>
+        <span class="brand-mark"><i class="ph ph-tree-palm" style="font-size:1rem;color:var(--blue)"></i></span>
         <span class="brand-title font-display font-bold text-sm group-hover:text-sky-700 transition-colors">Blog Potet</span>
       </a>
       <span class="text-stone-400">/</span>
@@ -38,13 +38,13 @@ export function loginPage(error = '') {
   <div class="w-full max-w-md">
     <div class="text-center mb-8">
       <a href="/" class="inline-block">
-        <span class="text-6xl block mb-3">🔐</span>
+        <span class="block mb-3" style="font-size:3.5rem;color:var(--blue)"><i class="ph ph-lock-key"></i></span>
       </a>
       <h1 class="font-display text-3xl font-bold text-stone-900">Espace Admin</h1>
       <p class="text-stone-500 mt-2 text-sm">Connexion réservée à la famille Potet</p>
     </div>
     <div class="section-panel majorelle-frame rounded-3xl shadow-xl p-8 border border-stone-100">
-      ${error ? `<div class="mb-5 bg-red-50 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium border border-red-100">❌ ${error}</div>` : ''}
+      ${error ? `<div class="mb-5 bg-red-50 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium border border-red-100"><i class="ph-fill ph-x-circle"></i> ${error}</div>` : ''}
       <form method="POST" action="/admin/login">
         <div class="mb-6">
           <label class="block text-sm font-bold text-stone-700 mb-2" for="password">Mot de passe</label>
@@ -53,7 +53,7 @@ export function loginPage(error = '') {
         </div>
         <button type="submit"
                 class="w-full action-btn justify-center text-base">
-          Se connecter ✨
+          Se connecter <i class="ph ph-arrow-right"></i>
         </button>
       </form>
     </div>
@@ -81,7 +81,7 @@ ${ADMIN_NAV()}
     <aside class="lg:col-span-1 space-y-5">
       <div class="section-panel majorelle-frame rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
         <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-100">
-          <h2 class="font-bold text-stone-700 text-sm">📁 Dossiers</h2>
+          <h2 class="font-bold text-stone-700 text-sm"><i class="ph ph-folder"></i> Dossiers</h2>
           <button onclick="openFolderModal(null)" class="text-sky-600 hover:text-sky-700 text-sm font-bold transition-colors">+ Nouveau</button>
         </div>
         <div id="folder-tree" class="p-2 max-h-80 overflow-y-auto">
@@ -106,7 +106,7 @@ ${ADMIN_NAV()}
         <h2 class="font-display text-2xl font-bold text-stone-900">Tous les articles</h2>
          <a href="/admin/editor"
             class="action-btn-sm">
-          ✍️ Nouvel article
+          <i class="ph ph-pencil-line"></i> Nouvel article
         </a>
       </div>
       <div id="articles-list" class="space-y-3">
@@ -123,10 +123,52 @@ ${ADMIN_NAV()}
   </div>
 </div>
 
+<!-- Site settings panel -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 pb-10">
+  <details class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+    <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none select-none hover:bg-stone-50 transition-colors">
+      <div class="flex items-center gap-3">
+        <span class="text-xl"><i class="ph ph-gear" style="color:var(--blue)"></i></span>
+        <div>
+          <h2 class="font-bold text-stone-800 text-sm">Paramètres du site</h2>
+          <p class="text-xs text-stone-400">Image héro, titre, sous-titre, accroche</p>
+        </div>
+      </div>
+      <span class="text-stone-400 text-xs font-semibold">Cliquer pour modifier ▾</span>
+    </summary>
+    <div class="px-6 pb-6 border-t border-stone-100">
+      <div class="grid sm:grid-cols-2 gap-5 mt-5">
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-image"></i> URL de l'image héro</label>
+          <input type="url" id="s-hero-img" placeholder="https://..." class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm" oninput="previewHeroImg(this.value)">
+          <div id="s-hero-img-preview" class="hidden mt-2">
+            <img id="s-hero-img-el" src="" alt="" class="w-full h-28 object-cover rounded-xl">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-text-t"></i> Titre héro</label>
+          <input type="text" id="s-hero-title" placeholder="Nos voyages en famille…" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-chat-text"></i> Sous-titre héro</label>
+          <input type="text" id="s-hero-subtitle" placeholder="Étape par étape…" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-quotes"></i> Accroche du site (citation)</label>
+          <input type="text" id="s-tagline" placeholder="Le voyage en famille enrichit…" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+        </div>
+      </div>
+      <div class="mt-5 flex justify-end">
+        <button onclick="saveSettings()" class="action-btn-sm"><i class="ph ph-floppy-disk"></i> Sauvegarder les paramètres</button>
+      </div>
+    </div>
+  </details>
+</div>
+
 <!-- Folder modal -->
 <div id="folder-modal" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" onclick="if(event.target===this)closeFolderModal()">
   <div class="section-panel majorelle-frame rounded-3xl shadow-2xl w-full max-w-sm p-6">
-    <h3 class="font-display text-xl font-bold text-stone-900 mb-5">📁 Nouveau dossier</h3>
+    <h3 class="font-display text-xl font-bold text-stone-900 mb-5"><i class="ph ph-folder-plus"></i> Nouveau dossier</h3>
     <div class="space-y-4 mb-6">
       <div>
         <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Nom</label>
@@ -139,7 +181,7 @@ ${ADMIN_NAV()}
     </div>
     <div class="flex gap-3">
       <button onclick="closeFolderModal()" class="flex-1 bg-stone-100 text-stone-700 font-bold py-2.5 rounded-xl hover:bg-stone-200 transition-colors text-sm">Annuler</button>
-      <button onclick="submitFolder()" class="flex-1 action-btn-sm">Créer ✨</button>
+      <button onclick="submitFolder()" class="flex-1 action-btn-sm">Créer <i class="ph ph-check"></i></button>
     </div>
   </div>
 </div>
@@ -201,19 +243,19 @@ function renderArticles(arts, folders) {
       <div class="flex-1 min-w-0">
         <div class="flex items-start justify-between gap-2 mb-1">
           <h3 class="font-bold text-stone-900 text-sm sm:text-base truncate">\${esc(a.title)}</h3>
-          <span class="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 \${isPub?'badge-published':'badge-draft'}">\${isPub?'✅ Publié':'📝 Brouillon'}</span>
+          <span class="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 \${isPub?'badge-published':'badge-draft'}">\${isPub?'<i class=\\"ph-fill ph-check-circle\\"></i> Publié':'<i class=\\"ph ph-pencil-line\\"></i> Brouillon'}</span>
         </div>
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-400">
-          <span>📅 \${fmtDateRange(a)}</span>
-          <span>📍 \${esc(a.destination)}</span>
+          <span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span>
+          <span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span>
           \${a.folder_name ? \`<span>\${esc(a.folder_icon||'')} \${esc(a.folder_name)}</span>\` : ''}
         </div>
       </div>
       <div class="flex flex-col sm:flex-row items-center gap-1 flex-shrink-0">
-        <button onclick="toggleStatus(\${a.id}, '\${a.status}')" title="\${isPub?'Dépublier':'Publier'}" class="p-2 rounded-xl text-stone-400 hover:text-\${isPub?'amber':'emerald'}-600 hover:bg-\${isPub?'amber':'emerald'}-50 transition-all text-base">\${isPub?'🔒':'🚀'}</button>
-        <a href="/admin/editor/\${a.id}" class="p-2 rounded-xl text-stone-400 hover:text-sky-600 hover:bg-sky-50 transition-all text-base">✏️</a>
-        <a href="/voyage/\${a.slug}" class="p-2 rounded-xl text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all text-base">👁️</a>
-        <button onclick="delArticle(\${a.id})" class="p-2 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 text-base">🗑️</button>
+        <button onclick="toggleStatus(\${a.id}, '\${a.status}')" title="\${isPub?'Dépublier':'Publier'}" class="p-2 rounded-xl text-stone-400 hover:text-\${isPub?'amber':'emerald'}-600 hover:bg-\${isPub?'amber':'emerald'}-50 transition-all text-base">\${isPub?'<i class=\\"ph ph-lock-simple\\"></i>':'<i class=\\"ph ph-rocket-launch\\"></i>'}</button>
+        <a href="/admin/editor/\${a.id}" class="p-2 rounded-xl text-stone-400 hover:text-sky-600 hover:bg-sky-50 transition-all text-base"><i class="ph ph-pencil"></i></a>
+        <a href="/voyage/\${a.slug}" class="p-2 rounded-xl text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all text-base"><i class="ph ph-eye"></i></a>
+        <button onclick="delArticle(\${a.id})" class="p-2 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 text-base"><i class="ph ph-trash"></i></button>
       </div>
     </div>\`;
   }).join('');
@@ -221,7 +263,7 @@ function renderArticles(arts, folders) {
 
 async function toggleStatus(id, current) {
   const res = await fetch(\`/api/articles/\${id}/status\`, {method:'PATCH'});
-  if (res.ok) { toast(current==='draft'?'🚀 Article publié !':'📝 Mis en brouillon','ok'); init(); }
+  if (res.ok) { toast(current==='draft'?'Article publié !':'Mis en brouillon','ok'); await init(); }
   else toast('Erreur','err');
 }
 
@@ -254,6 +296,33 @@ async function delFolder(id) {
   if(res.ok){toast('Dossier supprimé','ok');init();}else toast('Erreur','err');
 }
 
+// ── Site settings ─────────────────────────────────────────────
+async function loadSettings() {
+  const s = await fetch('/api/settings').then(r=>r.json()).catch(()=>({}));
+  document.getElementById('s-hero-img').value     = s.hero_image_url || '';
+  document.getElementById('s-hero-title').value   = s.hero_title     || '';
+  document.getElementById('s-hero-subtitle').value= s.hero_subtitle  || '';
+  document.getElementById('s-tagline').value       = s.site_tagline   || '';
+  previewHeroImg(s.hero_image_url || '');
+}
+function previewHeroImg(url) {
+  const wrap = document.getElementById('s-hero-img-preview');
+  const img  = document.getElementById('s-hero-img-el');
+  if (url) { wrap.classList.remove('hidden'); img.src = url; }
+  else       wrap.classList.add('hidden');
+}
+async function saveSettings() {
+  const body = {
+    hero_image_url: document.getElementById('s-hero-img').value.trim(),
+    hero_title:     document.getElementById('s-hero-title').value.trim(),
+    hero_subtitle:  document.getElementById('s-hero-subtitle').value.trim(),
+    site_tagline:   document.getElementById('s-tagline').value.trim(),
+  };
+  const res = await fetch('/api/settings', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (res.ok) toast('Paramètres sauvegardés !','ok');
+  else        toast('Erreur','err');
+}
+
 // Update folder tree element after fetch
 const origInit = init;
 init = async function() {
@@ -264,6 +333,7 @@ init = async function() {
 };
 
 init();
+loadSettings();
 </script>
 </body>
 </html>`);
@@ -287,7 +357,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
       <!-- Title -->
       <div>
         <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide">Titre *</label>
-        <input type="text" id="e-title" placeholder="Ex: Notre été à Santorin 🌊"
+        <input type="text" id="e-title" placeholder="Ex: Notre été à Santorin"
                class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-bold text-lg text-stone-800">
       </div>
 
@@ -303,15 +373,15 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
         <div class="flex items-center justify-between mb-2">
           <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Contenu (Markdown)</label>
           <div class="flex items-center gap-1 bg-stone-100 rounded-xl p-1">
-            <button id="tab-write" onclick="edTab('write')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800">✏️ Écrire</button>
-            <button id="tab-prev" onclick="edTab('preview')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700">👁️ Aperçu</button>
+            <button id="tab-write" onclick="edTab('write')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800"><i class="ph ph-pencil"></i> Écrire</button>
+            <button id="tab-prev" onclick="edTab('preview')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700"><i class="ph ph-eye"></i> Aperçu</button>
           </div>
         </div>
         <div id="pane-write">
           <textarea id="e-content" rows="22" placeholder="# Titre\n\nÉcris ici en Markdown..."
                     class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 md-editor"></textarea>
           <div class="flex flex-wrap gap-1 mt-2">
-            ${[['**Gras**','G'],['*Ital.*','I'],['# H1','H1'],['## H2','H2'],['> Citation','❝'],['- Item','—'],['[lien](url)','🔗']].map(([s,l])=>`
+            ${[['**Gras**','G'],['*Ital.*','I'],['# H1','H1'],['## H2','H2'],['> Citation','❝'],['- Item','—'],['[lien](url)','lien'],['![](url) ![](url)','📷📷']].map(([s,l])=>`
               <button type="button" onclick="insertMd('${s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}','e-content')" class="text-xs bg-stone-100 hover:bg-sky-100 text-stone-600 hover:text-sky-700 px-2.5 py-1.5 rounded-lg font-mono transition-colors">${l}</button>`).join('')}
           </div>
         </div>
@@ -333,8 +403,8 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
 
       <!-- Save buttons (mobile) -->
       <div class="flex gap-3 lg:hidden">
-        <button onclick="saveArticle(false)" class="flex-1 bg-stone-200 text-stone-800 font-bold py-3 rounded-2xl hover:bg-stone-300 transition-colors">💾 Brouillon</button>
-        <button onclick="saveArticle(true)" class="flex-1 action-btn text-white font-bold py-3 rounded-2xl transition-all">🚀 Publier</button>
+        <button onclick="saveArticle(false)" class="flex-1 bg-stone-200 text-stone-800 font-bold py-3 rounded-2xl hover:bg-stone-300 transition-colors"><i class="ph ph-floppy-disk"></i> Brouillon</button>
+        <button onclick="saveArticle(true)" class="flex-1 action-btn text-white font-bold py-3 rounded-2xl transition-all"><i class="ph ph-rocket-launch"></i> Publier</button>
       </div>
     </div>
 
@@ -343,43 +413,54 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
 
       <!-- Save buttons (desktop) -->
       <div class="hidden lg:flex flex-col gap-3">
-        <button onclick="saveArticle(true)" class="w-full action-btn text-white font-bold py-3 rounded-2xl transition-all">🚀 Publier</button>
-        <button onclick="saveArticle(false)" class="w-full bg-stone-200 text-stone-800 font-bold py-2.5 rounded-2xl hover:bg-stone-300 transition-colors text-sm">💾 Sauvegarder en brouillon</button>
+        <button onclick="saveArticle(true)" class="w-full action-btn text-white font-bold py-3 rounded-2xl transition-all"><i class="ph ph-rocket-launch"></i> Publier</button>
+        <button onclick="saveArticle(false)" class="w-full bg-stone-200 text-stone-800 font-bold py-2.5 rounded-2xl hover:bg-stone-300 transition-colors text-sm"><i class="ph ph-floppy-disk"></i> Sauvegarder en brouillon</button>
       </div>
 
       <!-- Status -->
        <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
-        <h3 class="font-bold text-stone-700 mb-4 text-sm">📊 Statut</h3>
+        <h3 class="font-bold text-stone-700 mb-4 text-sm"><i class="ph ph-toggle-right"></i> Statut</h3>
         <div class="space-y-2">
           <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
-            <input type="radio" name="pub-status" value="draft" checked class="w-4 h-4 accent-amber-500">
-            <div><div class="font-semibold text-stone-700 text-sm">📝 Brouillon</div><div class="text-xs text-stone-400">Admin uniquement</div></div>
+            <input type="radio" name="pub-status" value="draft" checked class="w-4 h-4 accent-amber-500" onchange="onStatusChange(this.value)">
+            <div><div class="font-semibold text-stone-700 text-sm"><i class="ph ph-pencil-line"></i> Brouillon</div><div class="text-xs text-stone-400">Admin uniquement</div></div>
           </label>
           <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
-            <input type="radio" name="pub-status" value="published" class="w-4 h-4 accent-emerald-500">
-            <div><div class="font-semibold text-stone-700 text-sm">✅ Publié</div><div class="text-xs text-stone-400">Visible par tous</div></div>
+            <input type="radio" name="pub-status" value="published" class="w-4 h-4 accent-emerald-500" onchange="onStatusChange(this.value)">
+            <div><div class="font-semibold text-stone-700 text-sm"><i class="ph-fill ph-check-circle" style="color:var(--palm)"></i> Publié</div><div class="text-xs text-stone-400">Visible par tous</div></div>
           </label>
         </div>
       </div>
 
+      <!-- Notify subscribers (shown only when status = published) -->
+      <div id="notify-section" class="hidden section-panel rounded-2xl border p-4 shadow-sm" style="background:rgba(var(--palm-rgb),.06);border-color:rgba(var(--palm-rgb),.22)">
+        <label class="flex items-start gap-3 cursor-pointer select-none">
+          <input type="checkbox" id="e-notify" checked class="w-4 h-4 mt-0.5 flex-shrink-0 accent-emerald-600">
+          <div>
+            <div class="font-bold text-sm" style="color:var(--palm)"><i class="ph ph-bell-ringing"></i> Prévenir les abonnés</div>
+            <div class="text-xs mt-0.5" style="color:var(--ink-muted)">Envoie une notification push et un email à tous les abonnés.</div>
+          </div>
+        </label>
+      </div>
+
       <!-- Meta -->
        <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
-        <h3 class="font-bold text-stone-700 mb-4 text-sm">📋 Informations</h3>
+        <h3 class="font-bold text-stone-700 mb-4 text-sm"><i class="ph ph-info"></i> Informations</h3>
         <div class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5">📅 Début du voyage *</label>
+            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph ph-calendar-blank"></i> Début du voyage *</label>
             <input type="date" id="e-start-date" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
           </div>
           <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5">🏁 Fin du voyage *</label>
+            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph ph-calendar-check"></i> Fin du voyage *</label>
             <input type="date" id="e-end-date" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
           </div>
           <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5">📍 Destination</label>
+            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph ph-map-pin"></i> Destination</label>
             <input type="text" id="e-dest" placeholder="Ex: Paris, France" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
           </div>
           <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5">📁 Dossier</label>
+            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph ph-folder"></i> Dossier</label>
             <select id="e-folder" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
               <option value="">Aucun dossier</option>
             </select>
@@ -389,7 +470,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
 
       <!-- Cover photo -->
        <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
-        <h3 class="font-bold text-stone-700 mb-3 text-sm">🖼️ Photo de couverture</h3>
+        <h3 class="font-bold text-stone-700 mb-3 text-sm"><i class="ph ph-image"></i> Photo de couverture</h3>
         <input type="text" id="e-cover" placeholder="URL de la photo de couverture..."
                class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-xs mb-3" oninput="previewCover(this.value)">
         <div id="cover-wrap" class="hidden"><img id="cover-img" src="" alt="" class="w-full h-32 object-cover rounded-xl"></div>
@@ -399,7 +480,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
       <div>
         <div class="flex items-center justify-between mb-2">
           <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Images dans le récit</label>
-          ${articleId !== null ? '<p class="text-xs text-sky-600 font-semibold">💡 Survolez une photo et cliquez <strong>📎 Insérer</strong></p>' : '<p class="text-xs text-stone-400">Sauvegardez d\'abord, puis insérez les photos</p>'}
+          ${articleId !== null ? '<p class="text-xs text-sky-600 font-semibold"><i class="ph ph-lightbulb"></i> Survolez une photo et cliquez <strong><i class="ph ph-paperclip"></i> Insérer</strong></p>' : '<p class="text-xs text-stone-400">Sauvegardez d\'abord, puis insérez les photos</p>'}
         </div>
         <div id="dropzone"
              class="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
@@ -407,7 +488,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
              ondragover="event.preventDefault();this.classList.add('border-sky-400','bg-sky-50')"
              ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
              ondrop="handleDrop(event)">
-          <span class="text-4xl block mb-2">📸</span>
+          <i class="ph ph-camera" style="font-size:2.5rem;display:block;margin-bottom:.5rem;color:var(--blue)"></i>
           <p class="text-stone-600 font-semibold text-sm">Glissez vos photos ici ou cliquez</p>
           <p class="text-stone-400 text-xs mt-1">JPG, PNG, WebP · Max 10 MB</p>
           <input type="file" id="file-in" accept="image/*" multiple class="hidden" onchange="handleFiles(this.files)">
@@ -417,8 +498,8 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
 
       ${isEdit ? `
       <div class="bg-red-50 rounded-2xl border border-red-100 p-5">
-        <h3 class="font-bold text-red-700 mb-3 text-sm">⚠️ Zone danger</h3>
-        <button onclick="delArticle()" class="w-full bg-red-500 text-white font-bold py-2.5 rounded-xl hover:bg-red-600 transition-colors text-sm">🗑️ Supprimer l'article</button>
+        <h3 class="font-bold text-red-700 mb-3 text-sm"><i class="ph ph-warning"></i> Zone danger</h3>
+        <button onclick="delArticle()" class="w-full bg-red-500 text-white font-bold py-2.5 rounded-xl hover:bg-red-600 transition-colors text-sm"><i class="ph ph-trash"></i> Supprimer l'article</button>
       </div>` : ''}
     </aside>
   </div>
@@ -458,6 +539,7 @@ async function init() {
       document.getElementById('e-cover').value = a.cover_url || '';
       previewCover(a.cover_url);
       document.querySelector(\`input[name="pub-status"][value="\${a.status||'draft'}"]\`).checked = true;
+      onStatusChange(a.status || 'draft'); // show/hide notify section
       if (a.folder_id) {
         const opt = document.querySelector(\`#e-folder option[value="\${a.folder_id}"]\`);
         if (opt) opt.selected = true;
@@ -490,11 +572,28 @@ function edTab(tab) {
     tw.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800';
     tp.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700';
   } else {
-    document.getElementById('preview-out').innerHTML=marked.parse(document.getElementById('e-content').value||'');
+    const pout=document.getElementById('preview-out');
+    pout.innerHTML=marked.parse(document.getElementById('e-content').value||'');
+    applyImgRowToPreview(pout);
     wp.classList.add('hidden');pp.classList.remove('hidden');
     tp.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800';
     tw.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700';
   }
+}
+function applyImgRowToPreview(container){
+  container.querySelectorAll('p').forEach(p=>{
+    const imgs=[...p.querySelectorAll('img')];
+    if(imgs.length<2) return;
+    for(const c of p.childNodes){
+      if(c.nodeType===3&&c.textContent.trim()) return;
+      if(c.nodeType===1&&c.tagName!=='IMG') return;
+    }
+    const n=Math.min(imgs.length,3);
+    const grid=document.createElement('div');
+    grid.className='img-row img-row-'+n;
+    imgs.forEach(img=>{const cell=document.createElement('div');cell.appendChild(img);grid.appendChild(cell);});
+    p.replaceWith(grid);
+  });
 }
 function insertMd(syntax) {
   const ta=document.getElementById('e-content'); if(!ta) return;
@@ -505,11 +604,11 @@ function insertMd(syntax) {
 function insertPhotoInText(url, caption) {
   edTab('write');
   const ta=document.getElementById('e-content'); if(!ta) return;
-  const md=`\n\n<figure>\n  <img src="\${url}" alt="\${caption}">\n  <figcaption>\${caption}</figcaption>\n</figure>\n\n`;
+  const md=\`\n\n<figure>\n  <img src="\${url}" alt="\${caption}">\n  <figcaption>\${caption}</figcaption>\n</figure>\n\n\`;
   const s=ta.selectionStart;
   ta.value=ta.value.slice(0,s)+md+ta.value.slice(ta.selectionEnd);
   ta.focus(); ta.setSelectionRange(s+md.length, s+md.length);
-  toast('📎 Photo insérée dans le texte','ok');
+  toast('Photo insérée dans le texte','ok');
 }
 
 // ── Writing days ────────────────────────────────────────────────
@@ -520,7 +619,7 @@ function renderWritingDays() {
     <div class="bg-white border-2 border-stone-200 rounded-2xl p-3">
       <div class="flex items-center gap-2 mb-2">
         <input type="date" value="\${esc(d.date || '')}" onchange="updateWritingDay(\${i},'date',this.value)" class="flex-1 border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
-        <button type="button" onclick="removeWritingDay(\${i})" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-bold px-3 py-2 rounded-xl transition-colors">🗑️</button>
+        <button type="button" onclick="removeWritingDay(\${i})" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-bold px-3 py-2 rounded-xl transition-colors"><i class="ph ph-trash"></i></button>
       </div>
       <textarea rows="2" onchange="updateWritingDay(\${i},'summary',this.value)" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm" placeholder="Résumé du jour...">\${esc(d.summary || '')}</textarea>
     </div>
@@ -575,8 +674,8 @@ function renderPhotoGrid() {
     <div class="relative aspect-square overflow-hidden rounded-xl group">
       <img src="\${esc(p.url)}" alt="\${esc(p.caption||'')}" class="w-full h-full object-cover">
       <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
-        <button onclick="insertPhotoInText('\${esc(p.url)}','\${esc(p.caption||'photo')}')" class="bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">📎 Insérer</button>
-        <button onclick="delExistingPhoto(\${p.id}, \${i})" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">🗑️ Supprimer</button>
+        <button onclick="insertPhotoInText('\${esc(p.url)}','\${esc(p.caption||'photo')}')" class="bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-paperclip"></i> Insérer</button>
+        <button onclick="delExistingPhoto(\${p.id}, \${i})" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-trash"></i> Supprimer</button>
       </div>
     </div>\`).join('');
   const newPics = newPhotos.map((p,i)=>\`
@@ -584,7 +683,7 @@ function renderPhotoGrid() {
       <img src="\${p.dataUrl}" alt="\${esc(p.name)}" class="w-full h-full object-cover">
       <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
         <span class="bg-stone-800/80 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-center leading-tight">Sauvegardez<br>pour insérer</span>
-        <button onclick="rmNewPhoto(\${i})" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap">🗑️ Supprimer</button>
+        <button onclick="rmNewPhoto(\${i})" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-trash"></i> Supprimer</button>
       </div>
       <div class="absolute bottom-1 right-1 bg-orange-500 text-white text-xs rounded-full px-1.5 font-bold">Nouveau</div>
     </div>\`).join('');
@@ -594,12 +693,12 @@ function renderPhotoGrid() {
 function handleFiles(files) {
   if (ARTICLE_ID) {
     // Existing article: upload immediately so photos can be inserted in text right away
-    toast('📤 Upload en cours...','ok');
+    toast('Upload en cours...','ok');
     const fd = new FormData();
     Array.from(files).forEach(f => fd.append('photo', f));
     fetch('/api/articles/'+ARTICLE_ID+'/photos', {method:'POST', body:fd})
       .then(r=>r.json())
-      .then(data=>{ existingPhotos.push(...(data.uploaded||[])); renderPhotoGrid(); toast('✅ Photos ajoutées ! Survolez pour insérer.','ok'); })
+      .then(data=>{ existingPhotos.push(...(data.uploaded||[])); renderPhotoGrid(); toast('Photos ajoutées ! Survolez pour insérer.','ok'); })
       .catch(()=>toast('Erreur upload','err'));
   } else {
     // New article: queue locally, will be uploaded after save
@@ -622,6 +721,17 @@ async function delExistingPhoto(photoId, i) {
   else toast('Erreur','err');
 }
 
+// ── Notify section visibility ────────────────────────────────
+function onStatusChange(value) {
+  const notifySection = document.getElementById('notify-section');
+  if (!notifySection) return;
+  if (value === 'published') {
+    notifySection.classList.remove('hidden');
+  } else {
+    notifySection.classList.add('hidden');
+  }
+}
+
 // ── Save article ──────────────────────────────────────────────
 async function saveArticle(publish) {
   const title = document.getElementById('e-title').value.trim();
@@ -639,6 +749,13 @@ async function saveArticle(publish) {
   if (normalizedDays.some(d => d.date < startDate || d.date > endDate)) { toast('Les jours doivent être entre début et fin','err'); return; }
 
   const status = publish ? 'published' : (document.querySelector('input[name="pub-status"]:checked')?.value || 'draft');
+
+  // Notify flag: true by default when publishing; admin can uncheck
+  const notifyCheckbox = document.getElementById('e-notify');
+  const notify = status === 'published'
+    ? (notifyCheckbox ? notifyCheckbox.checked : true)
+    : false;
+
   const payload = {
     title,
     destination:       document.getElementById('e-dest').value.trim(),
@@ -648,6 +765,7 @@ async function saveArticle(publish) {
     short_description: document.getElementById('e-desc').value.trim(),
     content:           document.getElementById('e-content').value,
     status,
+    notify,
     folder_id:         parseInt(document.getElementById('e-folder').value) || null,
     cover_url:         document.getElementById('e-cover').value.trim() || null,
   };
@@ -670,7 +788,7 @@ async function saveArticle(publish) {
     await fetch('/api/articles/'+savedId+'/photos', {method:'POST', body:fd});
   }
 
-  toast((publish?'🚀 Publié !':'💾 Sauvegardé !'),'ok');
+  toast((publish?'Publié !':'Sauvegardé !'),'ok');
   // For new articles: redirect to editor so photos can be inserted in text
   if (!ARTICLE_ID && savedId) {
     setTimeout(()=>location.href='/admin/editor/'+savedId, 800);

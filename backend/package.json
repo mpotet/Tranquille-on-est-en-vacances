@@ -1,0 +1,21 @@
+{
+  "name": "tranquille-vacances-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev --local --ip 0.0.0.0",
+    "dev:network": "wrangler dev --local --ip 0.0.0.0 --local-protocol https",
+    "dev:remote": "wrangler dev",
+    "tunnel": "npx cloudflared tunnel --url http://localhost:8787",
+    "deploy": "wrangler deploy",
+    "deploy:prod": "wrangler deploy --env production",
+    "db:migrate": "wrangler d1 execute tranquille-vacances-db --local --file=schema.sql",
+    "db:migrate:remote": "wrangler d1 execute tranquille-vacances-db --file=schema.sql",
+    "db:studio": "wrangler d1 studio tranquille-vacances-db --local",
+    "vapid:generate": "node scripts/generate-vapid.js",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4.94.0"
+  }
+}

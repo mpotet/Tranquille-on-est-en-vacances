@@ -11,6 +11,7 @@
  */
 
 import { json, notFound, badRequest } from '../utils.js';
+import { notifySubscribers } from '../notifications.js';
 
 // ──────────────────────────────────────────────────────────────
 // List
@@ -72,15 +73,16 @@ export async function listArticles(request, env, isAdmin) {
 // ──────────────────────────────────────────────────────────────
 // Get single article (with photos)
 // ──────────────────────────────────────────────────────────────
-export async function getArticle(env, slug, isAdmin) {
+export async function getArticle(env, slugOrId, isAdmin) {
+  const isNumericId = /^\d+$/.test(String(slugOrId));
   const article = await env.DB
     .prepare(`
       SELECT a.*, f.name AS folder_name, f.icon AS folder_icon, f.slug AS folder_slug
       FROM   articles a
       LEFT JOIN folders f ON f.id = a.folder_id
-      WHERE  a.slug = ?
+      WHERE  ${isNumericId ? 'a.id = ?' : 'a.slug = ?'}
     `)
-    .bind(slug)
+    .bind(isNumericId ? parseInt(slugOrId) : slugOrId)
     .first();
 
   if (!article) return notFound('Article not found');
@@ -97,13 +99,14 @@ export async function getArticle(env, slug, isAdmin) {
 // ──────────────────────────────────────────────────────────────
 // Create
 // ──────────────────────────────────────────────────────────────
-export async function createArticle(request, env) {
+export async function createArticle(request, env, ctx) {
   const body = await request.json().catch(() => null);
   if (!body?.title) return badRequest('title is required');
   const { startDate, endDate, writingDays, error } = normalizeTripFields(body);
   if (error) return badRequest(error);
 
-  const slug = await uniqueSlug(env, toSlug(body.title));
+  const status = body.status === 'published' ? 'published' : 'draft';
+  const slug   = await uniqueSlug(env, toSlug(body.title));
 
   const result = await env.DB
     .prepare(`
@@ -121,7 +124,7 @@ export async function createArticle(request, env) {
       JSON.stringify(writingDays),
       body.short_description   || '',
       body.content             || '',
-      body.status === 'published' ? 'published' : 'draft',
+      status,
       body.folder_id           || null,
       body.cover_url           || null,
       body.cover_r2_key        || null,
@@ -133,13 +136,18 @@ export async function createArticle(request, env) {
     .bind(result.meta.last_row_id)
     .first();
 
+  // Notify subscribers if publishing (and notify flag not explicitly false)
+  if (status === 'published' && body.notify !== false && ctx) {
+    notifySubscribers(env, ctx, normalizeArticle(article));
+  }
+
   return json(normalizeArticle(article), 201);
 }
 
 // ──────────────────────────────────────────────────────────────
 // Update
 // ──────────────────────────────────────────────────────────────
-export async function updateArticle(request, env, id) {
+export async function updateArticle(request, env, id, ctx) {
   const article = await env.DB.prepare('SELECT * FROM articles WHERE id = ?').bind(id).first();
   if (!article) return notFound('Article not found');
 
@@ -153,6 +161,10 @@ export async function updateArticle(request, env, id) {
   };
   const { startDate, endDate, writingDays, error } = normalizeTripFields(merged);
   if (error) return badRequest(error);
+
+  const newStatus = body.status && ['published','draft'].includes(body.status)
+    ? body.status
+    : article.status;
 
   await env.DB
     .prepare(`
@@ -170,7 +182,7 @@ export async function updateArticle(request, env, id) {
       JSON.stringify(writingDays),
       body.short_description ?? article.short_description,
       body.content           ?? article.content,
-      body.status && ['published','draft'].includes(body.status) ? body.status : article.status,
+      newStatus,
       'folder_id' in body ? (body.folder_id || null) : article.folder_id,
       body.cover_url         ?? article.cover_url,
       body.cover_r2_key      ?? article.cover_r2_key,
@@ -179,14 +191,20 @@ export async function updateArticle(request, env, id) {
     .run();
 
   const updated = await env.DB.prepare('SELECT * FROM articles WHERE id = ?').bind(id).first();
+
+  // Notify subscribers when saving a published article (and notify flag not explicitly false)
+  if (newStatus === 'published' && body.notify !== false && ctx) {
+    notifySubscribers(env, ctx, normalizeArticle(updated));
+  }
+
   return json(normalizeArticle(updated));
 }
 
 // ──────────────────────────────────────────────────────────────
 // Toggle status (publish / unpublish)
 // ──────────────────────────────────────────────────────────────
-export async function patchArticleStatus(env, id) {
-  const article = await env.DB.prepare('SELECT id, status FROM articles WHERE id = ?').bind(id).first();
+export async function patchArticleStatus(env, id, ctx) {
+  const article = await env.DB.prepare('SELECT * FROM articles WHERE id = ?').bind(id).first();
   if (!article) return notFound('Article not found');
 
   const newStatus = article.status === 'published' ? 'draft' : 'published';
@@ -194,6 +212,11 @@ export async function patchArticleStatus(env, id) {
     .prepare('UPDATE articles SET status=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
     .bind(newStatus, id)
     .run();
+
+  // Notify when publishing via the quick toggle (always notify — no checkbox here)
+  if (newStatus === 'published' && ctx) {
+    notifySubscribers(env, ctx, normalizeArticle({ ...article, status: newStatus }));
+  }
 
   return json({ id, status: newStatus });
 }

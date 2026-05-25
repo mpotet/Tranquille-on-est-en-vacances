@@ -33,6 +33,15 @@ bucket_name = "tranquille-vacances-photos"
 #
 # wrangler secret put ADMIN_PASSWORD
 # wrangler secret put SESSION_SECRET
+#
+# ── Notification secrets (optional — enable push/email notifications) ─────────
+# Generate VAPID keys with: node scripts/generate-vapid.js
+#
+# wrangler secret put VAPID_PUBLIC_KEY    # base64url raw 65-byte P-256 public key
+# wrangler secret put VAPID_PRIVATE_KEY   # base64(JSON.stringify(privateKeyJwk))
+# wrangler secret put VAPID_SUBJECT       # mailto:your@email.com
+# wrangler secret put RESEND_API_KEY      # re_xxxx  (from resend.com)
+# wrangler secret put NOTIFY_FROM_EMAIL   # Blog Potet <noreply@yourdomain.com>
 
 # ── Production environment overrides ─────────────────────────────────────────
 [env.production]

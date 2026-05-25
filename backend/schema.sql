@@ -49,12 +49,42 @@ CREATE TABLE IF NOT EXISTS photos (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Editable site-wide settings (hero image, texts, etc.)
+CREATE TABLE IF NOT EXISTS site_settings (
+  key        TEXT     PRIMARY KEY,
+  value      TEXT     NOT NULL DEFAULT '',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for common query patterns
 CREATE INDEX IF NOT EXISTS idx_articles_status     ON articles(status);
 CREATE INDEX IF NOT EXISTS idx_articles_folder     ON articles(folder_id);
 CREATE INDEX IF NOT EXISTS idx_articles_date       ON articles(date DESC);
 CREATE INDEX IF NOT EXISTS idx_photos_article      ON photos(article_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_folders_parent      ON folders(parent_id);
+
+-- ── Push notification subscriptions (Web Push API) ──────────────────────────
+-- Endpoint + ECDH keys sent by the browser when user accepts notifications
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id          INTEGER  PRIMARY KEY AUTOINCREMENT,
+  endpoint    TEXT     NOT NULL UNIQUE,
+  p256dh      TEXT     NOT NULL,   -- browser public key (base64url)
+  auth        TEXT     NOT NULL,   -- auth secret (base64url)
+  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_push_endpoint ON push_subscriptions(endpoint);
+
+-- ── Email newsletter subscriptions ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS email_subscriptions (
+  id          INTEGER  PRIMARY KEY AUTOINCREMENT,
+  email       TEXT     NOT NULL UNIQUE,
+  token       TEXT     NOT NULL UNIQUE,  -- random token used in unsubscribe link
+  active      INTEGER  NOT NULL DEFAULT 1,
+  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_active ON email_subscriptions(active);
 
 -- =========================================================
 -- Seed data — remove or adapt before deploying to production
@@ -70,3 +100,11 @@ INSERT OR IGNORE INTO folders (id, name, slug, icon, parent_id) VALUES
   (7, 'Mexique',   'mexique',   '🇲🇽', 5),
   (8, 'Asie',      'asie',      '🌏',  NULL),
   (9, 'Japon',     'japon',     '🇯🇵', 8);
+
+-- Default site settings
+INSERT OR IGNORE INTO site_settings (key, value) VALUES
+  ('hero_image_url',  ''),
+  ('hero_title',      ''),
+  ('hero_subtitle',   ''),
+  ('site_tagline',    'Le voyage en famille enrichit les souvenirs et élargit le cœur.');
+
