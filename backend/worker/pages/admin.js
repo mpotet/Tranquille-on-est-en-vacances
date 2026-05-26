@@ -398,18 +398,18 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
         </div>
         <div class="rounded-2xl border-2 border-stone-200 focus-within:border-sky-400 transition-colors overflow-hidden">
           <div id="editor-toolbar" class="flex flex-wrap items-center gap-0.5 p-1.5 bg-stone-50 border-b border-stone-200">
-            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmt('bold')" title="Gras"><i class="ph-fill ph-text-b"></i></button>
-            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmt('italic')" title="Italique"><i class="ph ph-text-italic"></i></button>
-            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmt('underline')" title="Souligné"><i class="ph ph-text-underline"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmt('bold')" title="Gras"><i class="ph-fill ph-text-b"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmt('italic')" title="Italique"><i class="ph ph-text-italic"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmt('underline')" title="Souligné"><i class="ph ph-text-underline"></i></button>
             <span class="toolbar-sep"></span>
-            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmtBlock('H2')" title="Titre"><i class="ph ph-text-h-two"></i></button>
-            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmtBlock('H3')" title="Sous-titre"><i class="ph ph-text-h-three"></i></button>
-            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmtBlock('P')" title="Texte normal"><i class="ph ph-paragraph"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmtBlock('H2')" title="Titre"><i class="ph ph-text-h-two"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmtBlock('H3')" title="Sous-titre"><i class="ph ph-text-h-three"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmtBlock('P')" title="Texte normal"><i class="ph ph-paragraph"></i></button>
             <span class="toolbar-sep"></span>
-            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmt('insertUnorderedList')" title="Liste à puces"><i class="ph ph-list-bullets"></i></button>
-            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmtBlock('BLOCKQUOTE')" title="Citation"><i class="ph ph-quotes"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmt('insertUnorderedList')" title="Liste à puces"><i class="ph ph-list-bullets"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmtBlock('BLOCKQUOTE')" title="Citation"><i class="ph ph-quotes"></i></button>
             <span class="toolbar-sep"></span>
-            <button type="button" class="toolbar-btn" style="color:var(--blue)" onmousedown="event.preventDefault();openInsertImg()" title="Insérer une image"><i class="ph ph-image"></i></button>
+            <button type="button" class="toolbar-btn" style="color:var(--blue)" onclick="openInsertImg()" title="Insérer une image"><i class="ph ph-image"></i></button>
           </div>
           <div id="e-content" contenteditable="true" spellcheck="true"
                class="prose-vacation min-h-[360px] max-w-none p-5 focus:outline-none"
@@ -759,11 +759,15 @@ function restoreSelection() {
   const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(_savedRange);
 }
 function fmt(cmd) {
-  document.getElementById('e-content').focus();
+  const ed = document.getElementById('e-content');
+  ed.focus();
+  restoreSelection();
   document.execCommand(cmd, false, null);
 }
 function fmtBlock(tag) {
-  document.getElementById('e-content').focus();
+  const ed = document.getElementById('e-content');
+  ed.focus();
+  restoreSelection();
   document.execCommand('formatBlock', false, '<' + tag + '>');
 }
 function insertPhotoInText(url, caption, showToast=true, size='full') {
@@ -790,7 +794,6 @@ function insertPhotoInText(url, caption, showToast=true, size='full') {
   if (showToast) toast('Photo insérée !','ok');
 }
 function openInsertImg() {
-  saveSelection();
   const gallery = document.getElementById('iim-gallery');
   const empty = document.getElementById('iim-empty');
   if (!existingPhotos.length) {

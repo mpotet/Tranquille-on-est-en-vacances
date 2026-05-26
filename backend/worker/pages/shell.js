@@ -412,6 +412,12 @@ export const FOOTER = `
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
+// ── Warm /admin/editor in cache for offline creation ─────────
+if (navigator.onLine && window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin/editor') {
+  navigator.serviceWorker.ready
+    .then(() => fetch('/admin/editor').catch(() => {}))
+    .catch(() => {});
+}
 function urlB64ToUint8(b) {
   const p = '='.repeat((4 - b.length % 4) % 4);
   const s = atob((b + p).replace(/-/g, '+').replace(/_/g, '/'));

@@ -4,7 +4,7 @@
  * Les assets statiques sont pré-cachés à l'installation.
  */
 
-const CACHE = 'tranquille-v2';
+const CACHE = 'tranquille-v3';
 
 const PRECACHE = [
   '/manifest.json',
@@ -52,8 +52,13 @@ async function networkFirstCache(req) {
   } catch (_) {
     const cached = await cache.match(req);
     if (cached) return cached;
-    // Fallback HTML pour les pages non encore mises en cache
+    // For admin HTML navigations, try falling back to the editor shell
     if (req.headers.get('accept')?.includes('text/html')) {
+      const url = new URL(req.url);
+      if (url.pathname.startsWith('/admin')) {
+        const editorShell = await cache.match('/admin/editor');
+        if (editorShell) return editorShell;
+      }
       return new Response(offlineFallbackHtml(), {
         status: 200,
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
