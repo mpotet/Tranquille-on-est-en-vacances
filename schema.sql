@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS articles (
   short_description TEXT     NOT NULL DEFAULT '',
   content           TEXT     NOT NULL DEFAULT '',
   -- Only 'published' articles are visible to the public
-  status            TEXT     NOT NULL DEFAULT 'draft'
-                    CHECK (status IN ('published', 'draft')),
+  status            TEXT     NOT NULL DEFAULT 'archived'
+                    CHECK (status IN ('published', 'archived', 'draft')),
   folder_id         INTEGER  REFERENCES folders(id) ON DELETE SET NULL,
   cover_r2_key      TEXT,    -- R2 object key for the cover photo
   cover_url         TEXT,    -- Public URL of the cover photo

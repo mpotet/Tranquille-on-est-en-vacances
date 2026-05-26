@@ -428,7 +428,7 @@ async function subscribePush() {
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(config.vapidPublicKey) });
     const res = await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
-    if (!res.ok) { showSubMsg('Erreur lors de l\'inscription', false); return; }
+    if (!res.ok) { showSubMsg('Erreur lors de l\\'inscription', false); return; }
     showSubMsg('Notifications activées !', true);
     const btn = document.getElementById('push-btn');
     if (btn) { btn.innerHTML = '<i class="ph ph-bell-slash"></i> Désactiver les notifications'; btn.onclick = unsubscribePush; }

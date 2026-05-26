@@ -170,7 +170,7 @@ async function init(){
   // Grille articles
   document.getElementById('articles-grid').innerHTML = artData.articles.length
     ? artData.articles.map(articleCard).join('')
-    : '<div class="col-span-3 text-center py-16" style="color:var(--ink-light)">Aucun voyage publié pour l\'instant.</div>';
+    : '<div class="col-span-3 text-center py-16" style="color:var(--ink-light)">Aucun voyage publié pour l\\'instant.</div>';
 
   // Escales
   document.getElementById('escales').innerHTML = artData.articles.slice(0,3).map((a,i)=>

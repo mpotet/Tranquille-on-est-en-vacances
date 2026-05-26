@@ -243,8 +243,8 @@ function renderFolderTree(folders, parentId, depth=0) {
           <span>\${f.icon}</span><span>\${esc(f.name)}</span>
         </a>
         <div class="flex items-center gap-1 ml-2">
-          <button onclick="openFolderModal(\${f.id})" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-1.5 text-xs font-bold touch-manipulation rounded-lg hover:bg-sky-50" title="Sous-dossier">+</button>
-          <button onclick="delFolder(\${f.id})" class="text-stone-400 hover:text-red-500 active:text-red-600 p-1.5 text-xs font-bold touch-manipulation rounded-lg hover:bg-red-50" title="Supprimer">×</button>
+          <button onclick="openFolderModal(${f.id})" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-1.5 text-base touch-manipulation rounded-lg hover:bg-sky-50 transition-colors" title="Ajouter un sous-dossier"><i class="ph ph-folder-plus"></i></button>
+          <button onclick="delFolder(${f.id})" class="text-stone-400 hover:text-red-500 active:text-red-600 p-1.5 text-base touch-manipulation rounded-lg hover:bg-red-50 transition-colors" title="Supprimer ce dossier"><i class="ph ph-trash"></i></button>
         </div>
       </div>
       \${renderFolderTree(folders, f.id, depth+1)}
@@ -299,6 +299,8 @@ async function delArticle(id) {
 function openFolderModal(parentId) {
   _folderParentId = parentId;
   document.getElementById('fm-name').value=''; document.getElementById('fm-icon').value='';
+  const h=document.querySelector('#folder-modal h3');
+  if(h) h.innerHTML=(parentId?'<i class="ph ph-folder-plus"></i> Nouveau sous-dossier':'<i class="ph ph-folder-plus"></i> Nouveau dossier');
   document.getElementById('folder-modal').classList.remove('hidden');
   setTimeout(()=>document.getElementById('fm-name').focus(),50);
 }
@@ -428,26 +430,29 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
           <button type="button" id="btn-archived" onclick="setStatus('archived')"
             class="flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full" style="border-color:#e7e5e4;background:#fff">
             <i class="ph ph-archive text-xl flex-shrink-0" style="color:#a8a29e"></i>
-            <div>
+            <div class="flex-1">
               <div class="font-semibold text-sm status-btn-title" style="color:#57534e">Archivé</div>
               <div class="text-xs text-stone-400">Non visible par les lecteurs</div>
             </div>
+            <i class="ph-fill ph-check-circle status-check flex-shrink-0" style="font-size:1.1rem;display:none"></i>
           </button>
           <button type="button" id="btn-published" onclick="setStatus('published')"
             class="flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full" style="border-color:#e7e5e4;background:#fff">
             <i class="ph-fill ph-check-circle text-xl flex-shrink-0" style="color:#a8a29e"></i>
-            <div>
+            <div class="flex-1">
               <div class="font-semibold text-sm status-btn-title" style="color:#57534e">Publié</div>
               <div class="text-xs text-stone-400">Visible par tous</div>
             </div>
+            <i class="ph-fill ph-check-circle status-check flex-shrink-0" style="font-size:1.1rem;display:none"></i>
           </button>
           <button type="button" id="btn-publish_when_online" onclick="setStatus('publish_when_online')"
             class="flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full" style="border-color:#e7e5e4;background:#fff">
             <i class="ph ph-wifi-high text-xl flex-shrink-0" style="color:#a8a29e"></i>
-            <div>
+            <div class="flex-1">
               <div class="font-semibold text-sm status-btn-title" style="color:#57534e">Publier dès connexion</div>
               <div class="text-xs text-stone-400">Publie auto quand internet rétabli</div>
             </div>
+            <i class="ph-fill ph-check-circle status-check flex-shrink-0" style="font-size:1.1rem;display:none"></i>
           </button>
         </div>
         <input type="hidden" id="pub-status" value="archived">
@@ -492,9 +497,23 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
       <!-- Cover photo -->
        <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
         <h3 class="font-bold text-stone-700 mb-3 text-sm"><i class="ph ph-image"></i> Photo de couverture</h3>
-        <input type="text" id="e-cover" placeholder="URL de la photo de couverture..."
-               class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-xs mb-3" oninput="previewCover(this.value)">
-        <div id="cover-wrap" class="hidden"><img id="cover-img" src="" alt="" class="w-full h-32 object-cover rounded-xl"></div>
+        <input type="hidden" id="e-cover" value="">
+        <div id="cover-wrap" class="hidden relative mb-2 group cursor-pointer" onclick="document.getElementById('cover-file-in').click()">
+          <img id="cover-img" src="" alt="" class="w-full h-32 object-cover rounded-xl">
+          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all rounded-xl flex items-center justify-center pointer-events-none">
+            <span class="text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-3 py-1.5 rounded-full"><i class="ph ph-camera"></i> Changer</span>
+          </div>
+        </div>
+        <div id="cover-dz" class="border-2 border-dashed border-stone-300 rounded-xl p-5 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
+             onclick="document.getElementById('cover-file-in').click()"
+             ondragover="event.preventDefault();this.classList.add('border-sky-400','bg-sky-50')"
+             ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
+             ondrop="handleCoverDrop(event)">
+          <i class="ph ph-image-square" style="font-size:2rem;display:block;margin-bottom:.35rem;color:var(--blue)"></i>
+          <p class="text-stone-600 font-semibold text-xs">Choisir une photo</p>
+          <p class="text-stone-400 text-xs mt-0.5">JPG, PNG, WebP</p>
+        </div>
+        <input type="file" id="cover-file-in" accept="image/*" class="hidden" onchange="handleCoverFile(this.files[0]);this.value=''">
       </div>
 
       <!-- Photo upload -->
@@ -539,6 +558,7 @@ ${TOAST}
 const ARTICLE_ID = ${JSON.stringify(articleId)};
 let existingPhotos = [];
 let newPhotos = [];
+let newCoverFile = null;
 
 function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:#dc3c3c;font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
@@ -589,7 +609,7 @@ function _scheduleAutoSave() {
   _autoSaveTimer = setTimeout(saveDraftLocal, 8000);
 }
 function _attachAutoSave() {
-  ['e-title','e-desc','e-content','e-start-date','e-end-date','e-dest','e-cover'].forEach(id => {
+  ['e-title','e-desc','e-content','e-start-date','e-end-date','e-dest'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', _scheduleAutoSave);
   });
 }
@@ -672,7 +692,7 @@ async function init() {
       existingPhotos = a.photos || [];
       renderPhotoGrid();
     } else if (a && !a.title) {
-      toast('Impossible de charger l\'article','err');
+      toast('Impossible de charger l\\'article','err');
     }
   }
 
@@ -752,7 +772,31 @@ function insertPhotoInText(url, caption, showToast = true) {
 // ── Cover preview ─────────────────────────────────────────────
 function previewCover(url) {
   const w=document.getElementById('cover-wrap'), img=document.getElementById('cover-img');
-  if(url){w.classList.remove('hidden');img.src=url;}else w.classList.add('hidden');
+  const dz=document.getElementById('cover-dz');
+  if(url){w.classList.remove('hidden');img.src=url;if(dz)dz.classList.add('hidden');}
+  else{w.classList.add('hidden');if(dz)dz.classList.remove('hidden');}
+}
+function handleCoverDrop(e) {
+  e.preventDefault(); document.getElementById('cover-dz').classList.remove('border-sky-400','bg-sky-50');
+  const f=e.dataTransfer.files[0]; if(f) handleCoverFile(f);
+}
+async function handleCoverFile(file) {
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{ previewCover(ev.target.result); };
+  reader.readAsDataURL(file);
+  if(ARTICLE_ID) {
+    const fd=new FormData(); fd.append('cover',file);
+    const res=await fetch('/api/articles/'+ARTICLE_ID+'/cover',{method:'POST',body:fd}).catch(()=>null);
+    if(res?.ok){
+      const data=await res.json();
+      document.getElementById('e-cover').value=data.url;
+      previewCover(data.url);
+      toast('Couverture mise à jour !','ok');
+    } else toast('Erreur upload couverture','err');
+  } else {
+    newCoverFile=file;
+  }
 }
 
 // ── Photo handling ────────────────────────────────────────────
@@ -834,6 +878,8 @@ function setStatus(val) {
     const title = btn.querySelector('.status-btn-title');
     if (icon) icon.style.color = active ? c.icon : '#a8a29e';
     if (title) title.style.color = active ? c.text : '#57534e';
+    const check = btn.querySelector('.status-check');
+    if (check) { check.style.display = active ? 'block' : 'none'; check.style.color = active ? c.icon : '#a8a29e'; }
   });
   const notifySection = document.getElementById('notify-section');
   if (notifySection) notifySection.classList.toggle('hidden', val !== 'published');
@@ -863,7 +909,7 @@ async function saveArticle() {
   // ── Offline : sauvegarde locale ───────────────────────────
   if (!navigator.onLine) {
     saveDraftLocal();
-    toast('Sauvegardé sur l\'appareil 📴', 'ok');
+    toast('Sauvegardé sur l\\'appareil 📴', 'ok');
     const lbl = document.getElementById('sticky-status-lbl');
     if (lbl) lbl.textContent = '📴 Sauvegardé';
     return;
@@ -921,8 +967,8 @@ async function saveArticle() {
       const uploaded = uploadData.uploaded || [];
       if (uploaded.length) {
         const photoTags = uploaded.map(p =>
-          '\n\n<figure>\n  <img src="' + p.url + '" alt="' + (p.caption || 'photo') + '">\n  <figcaption>' + (p.caption || '') + '</figcaption>\n</figure>'
-        ).join('\n');
+          '\\n\\n<figure>\\n  <img src="' + p.url + '" alt="' + (p.caption || 'photo') + '">\\n  <figcaption>' + (p.caption || '') + '</figcaption>\\n</figure>'
+        ).join('\\n');
         const updatedContent = payload.content + photoTags;
         await fetch('/api/articles/'+savedId, {
           method: 'PUT',
@@ -933,6 +979,12 @@ async function saveArticle() {
     }
   }
 
+  // Upload cover photo (new article)
+  if(newCoverFile && savedId) {
+    const fd=new FormData(); fd.append('cover',newCoverFile);
+    const cr=await fetch('/api/articles/'+savedId+'/cover',{method:'POST',body:fd}).catch(()=>null);
+    if(cr?.ok) newCoverFile=null;
+  }
   toast('Sauvegardé !','ok');
   clearDraftLocal(); // effacer le brouillon local après synchro serveur
   if (apiStatus === 'published' && savedSlug) {
