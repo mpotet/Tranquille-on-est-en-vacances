@@ -243,8 +243,8 @@ function renderFolderTree(folders, parentId, depth=0) {
           <span>\${f.icon}</span><span>\${esc(f.name)}</span>
         </a>
         <div class="flex items-center gap-1 ml-2">
-          <button onclick="openFolderModal(${f.id})" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-1.5 text-base touch-manipulation rounded-lg hover:bg-sky-50 transition-colors" title="Ajouter un sous-dossier"><i class="ph ph-folder-plus"></i></button>
-          <button onclick="delFolder(${f.id})" class="text-stone-400 hover:text-red-500 active:text-red-600 p-1.5 text-base touch-manipulation rounded-lg hover:bg-red-50 transition-colors" title="Supprimer ce dossier"><i class="ph ph-trash"></i></button>
+          <button onclick="openFolderModal(\${f.id})" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-1.5 text-base touch-manipulation rounded-lg hover:bg-sky-50 transition-colors" title="Ajouter un sous-dossier"><i class="ph ph-folder-plus"></i></button>
+          <button onclick="delFolder(\${f.id})" class="text-stone-400 hover:text-red-500 active:text-red-600 p-1.5 text-base touch-manipulation rounded-lg hover:bg-red-50 transition-colors" title="Supprimer ce dossier"><i class="ph ph-trash"></i></button>
         </div>
       </div>
       \${renderFolderTree(folders, f.id, depth+1)}
@@ -391,25 +391,30 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
                   class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 resize-none text-sm"></textarea>
       </div>
 
-      <!-- Markdown editor -->
+      <!-- Rich text editor -->
       <div>
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Contenu (Markdown)</label>
-          <div class="flex items-center gap-1 bg-stone-100 rounded-xl p-1">
-            <button id="tab-write" onclick="edTab('write')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800"><i class="ph ph-pencil"></i> Écrire</button>
-            <button id="tab-prev" onclick="edTab('preview')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700"><i class="ph ph-eye"></i> Aperçu</button>
-          </div>
+        <div class="mb-2">
+          <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Contenu</label>
         </div>
-        <div id="pane-write">
-          <textarea id="e-content" rows="22" placeholder="# Titre\n\nÉcris ici en Markdown..."
-                    class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 md-editor"></textarea>
-          <div class="flex flex-wrap gap-1.5 mt-2">
-            ${[['**Gras**','G'],['*Ital.*','I'],['# H1','H1'],['## H2','H2'],['> Citation','❝'],['- Item','—'],['[lien](url)','lien'],['![](url) ![](url)','📷📷']].map(([s,l])=>`
-              <button type="button" onclick="insertMd('${s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}','e-content')" class="text-sm sm:text-xs bg-stone-100 hover:bg-sky-100 active:bg-sky-200 text-stone-600 hover:text-sky-700 px-3 py-2 sm:px-2.5 sm:py-1.5 rounded-lg font-mono transition-colors touch-manipulation">${l}</button>`).join('')}
+        <div class="rounded-2xl border-2 border-stone-200 focus-within:border-sky-400 transition-colors overflow-hidden">
+          <div id="editor-toolbar" class="flex flex-wrap items-center gap-0.5 p-1.5 bg-stone-50 border-b border-stone-200">
+            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmt('bold')" title="Gras"><i class="ph-fill ph-text-b"></i></button>
+            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmt('italic')" title="Italique"><i class="ph ph-text-italic"></i></button>
+            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmt('underline')" title="Souligné"><i class="ph ph-text-underline"></i></button>
+            <span class="toolbar-sep"></span>
+            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmtBlock('H2')" title="Titre"><i class="ph ph-text-h-two"></i></button>
+            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmtBlock('H3')" title="Sous-titre"><i class="ph ph-text-h-three"></i></button>
+            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmtBlock('P')" title="Texte normal"><i class="ph ph-paragraph"></i></button>
+            <span class="toolbar-sep"></span>
+            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmt('insertUnorderedList')" title="Liste à puces"><i class="ph ph-list-bullets"></i></button>
+            <button type="button" class="toolbar-btn" onmousedown="event.preventDefault();fmtBlock('BLOCKQUOTE')" title="Citation"><i class="ph ph-quotes"></i></button>
+            <span class="toolbar-sep"></span>
+            <button type="button" class="toolbar-btn" style="color:var(--blue)" onmousedown="event.preventDefault();openInsertImg()" title="Insérer une image"><i class="ph ph-image"></i></button>
           </div>
-        </div>
-        <div id="pane-preview" class="hidden">
-          <div id="preview-out" class="prose-vacation border-2 border-stone-200 rounded-2xl px-6 py-4 bg-white min-h-[400px] text-stone-800"></div>
+          <div id="e-content" contenteditable="true" spellcheck="true"
+               class="prose-vacation min-h-[360px] max-w-none p-5 focus:outline-none"
+               data-placeholder="Commencez à écrire votre récit..."
+               style="color:var(--ink)"></div>
         </div>
       </div>
 
@@ -553,6 +558,28 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
   </button>
 </div>
 
+<!-- Insert image modal -->
+<div id="insert-img-modal" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onclick="if(event.target===this)closeInsertImg()">
+  <div class="section-panel majorelle-frame rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-lg max-h-[85vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b border-stone-100">
+      <h3 class="font-display text-lg font-bold text-stone-900"><i class="ph ph-image"></i> Insérer une image</h3>
+      <button onclick="closeInsertImg()" class="text-stone-400 hover:text-stone-600 p-1.5 rounded-lg hover:bg-stone-100 transition-colors"><i class="ph ph-x text-lg"></i></button>
+    </div>
+    <div class="px-5 pt-4 pb-2">
+      <div class="flex gap-2">
+        <button type="button" id="iim-btn-full" onclick="setImgSize('full')" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-sky-400 bg-sky-50 text-sky-700 text-sm font-bold transition-all"><i class="ph ph-arrows-horizontal"></i> Pleine largeur</button>
+        <button type="button" id="iim-btn-half" onclick="setImgSize('half')" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-stone-200 bg-white text-stone-600 text-sm font-bold transition-all"><i class="ph ph-square-half"></i> Demi-largeur</button>
+      </div>
+      <input type="hidden" id="iim-size" value="full">
+    </div>
+    <div class="flex-1 overflow-y-auto px-5 pb-5">
+      <p class="text-xs font-bold text-stone-500 uppercase tracking-wide mb-3 mt-2">Photos disponibles</p>
+      <div id="iim-gallery" class="grid grid-cols-3 gap-2"></div>
+      <p id="iim-empty" class="hidden text-stone-400 text-sm text-center py-8">Aucune photo — importez des photos via la galerie ci-dessous.</p>
+    </div>
+  </div>
+</div>
+
 ${TOAST}
 <script>
 const ARTICLE_ID = ${JSON.stringify(articleId)};
@@ -573,8 +600,7 @@ function _draftPayload() {
     start_date:        document.getElementById('e-start-date')?.value || '',
     end_date:          document.getElementById('e-end-date')?.value || '',
     short_description: document.getElementById('e-desc')?.value.trim() || '',
-    content:           document.getElementById('e-content')?.value || '',
-    status:            document.getElementById('pub-status')?.value || 'archived',
+    content:           document.getElementById('e-content')?.innerHTML || '',            document.getElementById('pub-status')?.value || 'archived',
     folder_id:         parseInt(document.getElementById('e-folder')?.value) || null,
     cover_url:         document.getElementById('e-cover')?.value.trim() || null,
   };
@@ -594,7 +620,7 @@ function clearDraftLocal() { localStorage.removeItem(DRAFT_KEY); }
 function fillFromDraft(d) {
   if (d.title)             document.getElementById('e-title').value = d.title;
   if (d.short_description) document.getElementById('e-desc').value = d.short_description;
-  if (d.content !== undefined) document.getElementById('e-content').value = d.content;
+  if (d.content !== undefined) document.getElementById('e-content').innerHTML = d.content;
   if (d.start_date)        document.getElementById('e-start-date').value = d.start_date;
   if (d.end_date)          document.getElementById('e-end-date').value = d.end_date;
   if (d.destination)       document.getElementById('e-dest').value = d.destination;
@@ -678,7 +704,8 @@ async function init() {
     if (a && a.title) {
       document.getElementById('e-title').value = a.title || '';
       document.getElementById('e-desc').value  = a.short_description || '';
-      document.getElementById('e-content').value = a.content || '';
+      const rawContent = a.content || '';
+      document.getElementById('e-content').innerHTML = rawContent.trim().startsWith('<') ? rawContent : (rawContent ? marked.parse(rawContent) : '');
       document.getElementById('e-start-date').value  = a.start_date || a.date || today;
       document.getElementById('e-end-date').value  = a.end_date || a.date || today;
       document.getElementById('e-dest').value  = a.destination || '';
@@ -721,52 +748,74 @@ function populateFolderSelect(folders, parentId, depth) {
   });
 }
 
-// ── Editor tabs ───────────────────────────────────────────────
-function edTab(tab) {
-  const wp=document.getElementById('pane-write'), pp=document.getElementById('pane-preview');
-  const tw=document.getElementById('tab-write'), tp=document.getElementById('tab-prev');
-  if(tab==='write'){
-    wp.classList.remove('hidden');pp.classList.add('hidden');
-    tw.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800';
-    tp.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700';
-  } else {
-    const pout=document.getElementById('preview-out');
-    pout.innerHTML=marked.parse(document.getElementById('e-content').value||'');
-    applyImgRowToPreview(pout);
-    wp.classList.add('hidden');pp.classList.remove('hidden');
-    tp.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white shadow-sm text-stone-800';
-    tw.className='px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-500 hover:text-stone-700';
+// ── WYSIWYG rich text editor ──────────────────────────────────
+let _savedRange = null;
+function saveSelection() {
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) _savedRange = sel.getRangeAt(0).cloneRange();
+}
+function restoreSelection() {
+  if (!_savedRange) return;
+  const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(_savedRange);
+}
+function fmt(cmd) {
+  document.getElementById('e-content').focus();
+  document.execCommand(cmd, false, null);
+}
+function fmtBlock(tag) {
+  document.getElementById('e-content').focus();
+  document.execCommand('formatBlock', false, '<' + tag + '>');
+}
+function insertPhotoInText(url, caption, showToast=true, size='full') {
+  const figure = document.createElement('figure');
+  figure.className = 'img-' + size;
+  const img = document.createElement('img'); img.src = url; img.alt = caption || '';
+  figure.appendChild(img);
+  if (caption && caption !== 'photo') {
+    const cap = document.createElement('figcaption'); cap.textContent = caption; figure.appendChild(cap);
   }
-}
-function applyImgRowToPreview(container){
-  container.querySelectorAll('p').forEach(p=>{
-    const imgs=[...p.querySelectorAll('img')];
-    if(imgs.length<2) return;
-    for(const c of p.childNodes){
-      if(c.nodeType===3&&c.textContent.trim()) return;
-      if(c.nodeType===1&&c.tagName!=='IMG') return;
+  const editor = document.getElementById('e-content');
+  if (size === 'half') {
+    const last = editor.lastElementChild;
+    if (last && last.classList.contains('img-pair') && last.querySelectorAll('figure').length < 2) {
+      last.appendChild(figure);
+    } else {
+      const row = document.createElement('div'); row.className = 'img-pair';
+      row.appendChild(figure); editor.appendChild(row);
     }
-    const n=Math.min(imgs.length,3);
-    const grid=document.createElement('div');
-    grid.className='img-row img-row-'+n;
-    imgs.forEach(img=>{const cell=document.createElement('div');cell.appendChild(img);grid.appendChild(cell);});
-    p.replaceWith(grid);
-  });
+  } else {
+    editor.appendChild(figure);
+    const p = document.createElement('p'); p.innerHTML = '<br>'; editor.appendChild(p);
+  }
+  if (showToast) toast('Photo insérée !','ok');
 }
-function insertMd(syntax) {
-  const ta=document.getElementById('e-content'); if(!ta) return;
-  const s=ta.selectionStart, e=ta.selectionEnd;
-  ta.value=ta.value.slice(0,s)+syntax+ta.value.slice(e);
-  ta.focus(); ta.setSelectionRange(s+syntax.length, s+syntax.length);
+function openInsertImg() {
+  saveSelection();
+  const gallery = document.getElementById('iim-gallery');
+  const empty = document.getElementById('iim-empty');
+  if (!existingPhotos.length) {
+    gallery.innerHTML = ''; empty.classList.remove('hidden');
+  } else {
+    empty.classList.add('hidden');
+    gallery.innerHTML = existingPhotos.map(p =>
+      \`<div class="aspect-square overflow-hidden rounded-xl cursor-pointer ring-2 ring-transparent hover:ring-sky-400 transition-all" data-url="\${esc(p.url)}" data-caption="\${esc(p.caption||'')}" onclick="pickImg(this.dataset.url,this.dataset.caption)"><img src="\${esc(p.url)}" alt="\${esc(p.caption||'')}" class="w-full h-full object-cover"></div>\`
+    ).join('');
+  }
+  setImgSize('full');
+  document.getElementById('insert-img-modal').classList.remove('hidden');
 }
-function insertPhotoInText(url, caption, showToast = true) {
-  edTab('write');
-  const ta=document.getElementById('e-content'); if(!ta) return;
-  const md=\`\n\n<figure>\n  <img src="\${url}" alt="\${caption}">\n  <figcaption>\${caption}</figcaption>\n</figure>\n\n\`;
-  const s=ta.selectionStart;
-  ta.value=ta.value.slice(0,s)+md+ta.value.slice(ta.selectionEnd);
-  ta.focus(); ta.setSelectionRange(s+md.length, s+md.length);
-  if (showToast) toast('Photo insérée dans le texte','ok');
+function closeInsertImg() { document.getElementById('insert-img-modal').classList.add('hidden'); }
+function setImgSize(size) {
+  document.getElementById('iim-size').value = size;
+  const on = 'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-sky-400 bg-sky-50 text-sky-700 text-sm font-bold transition-all';
+  const off = 'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-stone-200 bg-white text-stone-600 text-sm font-bold transition-all';
+  document.getElementById('iim-btn-full').className = size === 'full' ? on : off;
+  document.getElementById('iim-btn-half').className = size === 'half' ? on : off;
+}
+function pickImg(url, caption) {
+  const size = document.getElementById('iim-size').value || 'full';
+  closeInsertImg();
+  insertPhotoInText(url, caption, false, size);
 }
 
 // ── Cover preview ─────────────────────────────────────────────
@@ -937,7 +986,7 @@ async function saveArticle() {
     start_date:        startDate,
     end_date:          endDate,
     short_description: document.getElementById('e-desc').value.trim(),
-    content:           document.getElementById('e-content').value,
+    content:           document.getElementById('e-content').innerHTML,
     status:            apiStatus,
     notify,
     folder_id:         parseInt(document.getElementById('e-folder').value) || null,
@@ -957,7 +1006,7 @@ async function saveArticle() {
 
   if (!res.ok) { toast('Erreur lors de la sauvegarde','err'); return; }
 
-  // Upload new photos and insert them in the content
+  // Upload new photos and append them to the editor content
   if (newPhotos.length && savedId) {
     const fd = new FormData();
     newPhotos.forEach(p => fd.append('photo', p.file));
@@ -966,14 +1015,18 @@ async function saveArticle() {
       const uploadData = await uploadRes.json();
       const uploaded = uploadData.uploaded || [];
       if (uploaded.length) {
-        const photoTags = uploaded.map(p =>
-          '\\n\\n<figure>\\n  <img src="' + p.url + '" alt="' + (p.caption || 'photo') + '">\\n  <figcaption>' + (p.caption || '') + '</figcaption>\\n</figure>'
-        ).join('\\n');
-        const updatedContent = payload.content + photoTags;
+        const editor = document.getElementById('e-content');
+        uploaded.forEach(p => {
+          const fig = document.createElement('figure'); fig.className = 'img-full';
+          const im = document.createElement('img'); im.src = p.url; im.alt = p.caption || '';
+          fig.appendChild(im);
+          if (p.caption && p.caption !== 'photo') { const c = document.createElement('figcaption'); c.textContent = p.caption; fig.appendChild(c); }
+          editor.appendChild(fig);
+        });
         await fetch('/api/articles/'+savedId, {
           method: 'PUT',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ content: updatedContent, notify: false })
+          body: JSON.stringify({ content: editor.innerHTML, notify: false })
         }).catch(()=>{});
       }
     }
@@ -1003,6 +1056,28 @@ async function delArticle() {
   if (r.ok) { location.href='/admin/dashboard'; }
   else toast('Erreur','err');
 }
+
+// Save cursor position when editor loses focus (for insert-at-cursor)
+document.getElementById('e-content')?.addEventListener('blur', saveSelection);
+
+// ── Float toolbar above mobile keyboard ───────────────────────
+(function() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const toolbar = document.getElementById('editor-toolbar');
+  if (!toolbar) return;
+  function updateToolbar() {
+    const isMobile = window.innerWidth < 1024;
+    const keyboardH = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    if (isMobile && keyboardH > 150) {
+      toolbar.style.cssText = 'position:fixed;bottom:'+keyboardH+'px;left:0;right:0;z-index:50;border-radius:0;border-top:1px solid #e7e5e4;border-bottom:none;box-shadow:0 -2px 8px rgba(0,0,0,.08);background:#fafaf9;padding:.35rem .75rem';
+    } else {
+      toolbar.style.cssText = '';
+    }
+  }
+  vv.addEventListener('resize', updateToolbar);
+  vv.addEventListener('scroll', updateToolbar);
+})();
 
 init();
 </script>

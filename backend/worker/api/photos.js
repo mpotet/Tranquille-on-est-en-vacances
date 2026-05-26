@@ -126,6 +126,44 @@ export async function patchPhoto(request, env, photoId) {
 }
 
 // ──────────────────────────────────────────────────────────────
+// Upload / replace cover photo for an article
+// ──────────────────────────────────────────────────────────────
+export async function uploadCover(request, env, articleId) {
+  const article = await env.DB
+    .prepare('SELECT id, cover_r2_key FROM articles WHERE id = ?')
+    .bind(articleId)
+    .first();
+  if (!article) return notFound('Article not found');
+
+  const contentType = request.headers.get('Content-Type') || '';
+  if (!contentType.includes('multipart/form-data')) return badRequest('Expected multipart/form-data');
+
+  const formData = await request.formData();
+  const file = formData.get('cover');
+  if (!file || !(file instanceof File)) return badRequest('No cover file');
+
+  // Delete old cover from R2 if exists
+  if (article.cover_r2_key) {
+    await env.PHOTOS.delete(article.cover_r2_key).catch(() => {});
+  }
+
+  const ext   = file.type.includes('webp') ? 'webp' : file.type.includes('png') ? 'png' : 'jpg';
+  const uuid  = crypto.randomUUID();
+  const year  = new Date().getFullYear();
+  const r2Key = `covers/${year}/${articleId}/${uuid}.${ext}`;
+
+  await env.PHOTOS.put(r2Key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } });
+
+  const publicUrl = `${env.PUBLIC_URL}/r2/${r2Key}`;
+  await env.DB
+    .prepare('UPDATE articles SET cover_url=?, cover_r2_key=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
+    .bind(publicUrl, r2Key, articleId)
+    .run();
+
+  return json({ url: publicUrl, r2_key: r2Key });
+}
+
+// ──────────────────────────────────────────────────────────────
 // Serve an R2 object (proxied through the Worker)
 // ──────────────────────────────────────────────────────────────
 export async function serveR2Object(env, r2Key) {

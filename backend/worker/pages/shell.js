@@ -225,6 +225,17 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .img-row > div { overflow:hidden; border-radius:.75rem; aspect-ratio:4/3; }
 .img-row > div > img { width:100%; height:100%; object-fit:cover; display:block; border-radius:.75rem; box-shadow:0 4px 16px rgba(26,43,60,.10); cursor:zoom-in; }
 @media(max-width:480px){ .img-row-2,.img-row-3 { grid-template-columns:1fr; } }
+/* ── Half-width image pairs (WYSIWYG & public) ───────────────── */
+.img-pair { display:flex; gap:.75rem; margin:1.5rem 0; }
+.img-pair figure { flex:1; min-width:0; margin:0 !important; }
+.img-pair figure img { width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:.75rem; }
+@media(max-width:640px){ .img-pair { flex-direction:column; } }
+/* ── Rich text editor toolbar ────────────────────────────────── */
+.toolbar-btn { display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:.5rem; font-size:1rem; cursor:pointer; background:transparent; border:none; color:#57534e; transition:background .12s,color .12s; }
+.toolbar-btn:hover { background:#e7e5e4; color:#1c1917; }
+.toolbar-btn:active { background:#d6d3d1; }
+.toolbar-sep { display:inline-block; width:1px; height:1.1rem; background:#d6d3d1; margin:0 .2rem; vertical-align:middle; }
+#e-content[data-placeholder]:empty:before { content:attr(data-placeholder); color:#a8a29e; pointer-events:none; display:block; }
 
 /* ── Lightbox ───────────────────────────────────────────────── */
 .lightbox-bg { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }

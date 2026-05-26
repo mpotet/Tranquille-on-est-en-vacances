@@ -15,7 +15,7 @@ import { matchPath, json, notFound, unauthorized, redirect, html } from './utils
 // API handlers
 import { listFolders, createFolder, updateFolder, deleteFolder } from './api/folders.js';
 import { listArticles, getArticle, createArticle, updateArticle, patchArticleStatus, deleteArticle } from './api/articles.js';
-import { uploadPhotos, deletePhoto, patchPhoto, serveR2Object } from './api/photos.js';
+import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, serveR2Object } from './api/photos.js';
 import { getSettings, updateSettings } from './api/settings.js';
 import {
   getPushConfig, pushSubscribe, pushUnsubscribe,
@@ -186,7 +186,8 @@ async function init(){
 
 function renderVoyageContent(content,photos){
   const wrapper=document.createElement('div');
-  wrapper.innerHTML=marked.parse(content||'');
+  const trimmed=(content||'').trim();
+  wrapper.innerHTML=trimmed.startsWith('<') ? trimmed : marked.parse(content||'');
   const photoIndexByUrl=new Map((photos||[]).map((p,i)=>[p.url,i]));
 
   // Multi-image paragraphs → grid
@@ -355,6 +356,10 @@ export default {
       const photoUploadMatch = matchPath('/api/articles/:id/photos', path);
       if (photoUploadMatch && method === 'POST') {
         return authed ? uploadPhotos(request, env, parseInt(photoUploadMatch.id)) : unauthorized();
+      }
+      const coverUploadMatch = matchPath('/api/articles/:id/cover', path);
+      if (coverUploadMatch && method === 'POST') {
+        return authed ? uploadCover(request, env, parseInt(coverUploadMatch.id)) : unauthorized();
       }
 
       // Photos
