@@ -1,33 +1,110 @@
 /**
- * public/sw.js — Service Worker pour les notifications push PWA
+ * public/sw.js — Service Worker : cache offline + notifications push
+ * Stratégie : network-first avec fallback cache pour toutes les requêtes GET.
+ * Les assets statiques sont pré-cachés à l'installation.
  */
 
-const CACHE_NAME = 'tranquille-v1';
+const CACHE = 'tranquille-v2';
 
-// Installation : mise en cache des ressources statiques essentielles
+const PRECACHE = [
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/icon.svg',
+];
+
+// ── Installation : pré-cache des assets statiques ─────────────
 self.addEventListener('install', event => {
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE)
+      .then(c => c.addAll(PRECACHE))
+      .then(() => self.skipWaiting())
+  );
 });
 
+// ── Activation : suppression des anciens caches ───────────────
 self.addEventListener('activate', event => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(
+        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+      ))
+      .then(() => clients.claim())
+  );
 });
 
-// Réception d'une notification push
+// ── Fetch : network-first, fallback cache ─────────────────────
+self.addEventListener('fetch', event => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  if (!req.url.startsWith('http')) return;
+  event.respondWith(networkFirstCache(req));
+});
+
+async function networkFirstCache(req) {
+  const cache = await caches.open(CACHE);
+  try {
+    const resp = await fetch(req);
+    if (resp && resp.status < 400) {
+      cache.put(req, resp.clone()); // mise en cache async
+    }
+    return resp;
+  } catch (_) {
+    const cached = await cache.match(req);
+    if (cached) return cached;
+    // Fallback HTML pour les pages non encore mises en cache
+    if (req.headers.get('accept')?.includes('text/html')) {
+      return new Response(offlineFallbackHtml(), {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      });
+    }
+    return new Response('', { status: 503 });
+  }
+}
+
+function offlineFallbackHtml() {
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Hors connexion — Tranquille</title>
+  <style>
+    body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;
+         min-height:100svh;margin:0;background:#FFFDF9;color:#1A2B3C;padding:1rem}
+    .card{text-align:center;max-width:340px}
+    .ico{font-size:4rem;margin-bottom:1rem}
+    h1{font-size:1.4rem;font-weight:700;margin:0 0 .5rem}
+    p{color:#5A6A7A;font-size:.9rem;margin:0 0 1.5rem;line-height:1.6}
+    button{background:#0057B8;color:#fff;border:none;padding:.75rem 2rem;
+           border-radius:999px;font-size:1rem;font-weight:700;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="ico">📡</div>
+    <h1>Hors connexion</h1>
+    <p>Cette page n'a pas encore été mise en cache.<br>Reconnectez-vous pour continuer.</p>
+    <button onclick="location.reload()">Réessayer</button>
+  </div>
+</body>
+</html>`;
+}
+
+// ── Push notifications ────────────────────────────────────────
 self.addEventListener('push', event => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch {}
 
   const options = {
-    body:    data.body    || 'Un nouveau récit de voyage vient d\'être publié !',
-    icon:    data.icon    || '/icon.svg',
-    badge:   '/icon.svg',
-    tag:     data.tag     || 'tranquille-notif',
+    body:     data.body    || 'Un nouveau récit de voyage vient d\'être publié !',
+    icon:     data.icon    || '/icon-192.png',
+    badge:    data.badge   || '/icon-192.png',
+    tag:      data.tag     || 'tranquille-notif',
     renotify: true,
-    data:    { url: data.url || '/' },
-    actions: [
-      { action: 'read', title: 'Lire le récit →' },
-    ],
+    data:     { url: data.url || '/' },
+    actions:  [{ action: 'read', title: 'Lire le récit →' }],
   };
 
   event.waitUntil(
@@ -38,17 +115,16 @@ self.addEventListener('push', event => {
   );
 });
 
-// Clic sur la notification
+// ── Clic sur notification ─────────────────────────────────────
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   const url = (event.notification.data && event.notification.data.url) || '/';
-
   event.waitUntil(
     clients
       .matchAll({ type: 'window', includeUncontrolled: true })
-      .then(clientList => {
-        for (const client of clientList) {
-          if (client.url === url && 'focus' in client) return client.focus();
+      .then(list => {
+        for (const c of list) {
+          if (c.url === url && 'focus' in c) return c.focus();
         }
         if (clients.openWindow) return clients.openWindow(url);
       })

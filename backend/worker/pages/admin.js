@@ -26,7 +26,27 @@ const ADMIN_NAV = (subtitle = '') => `
       </form>
     </div>
   </div>
-</nav>`;
+</nav>
+<!-- Barre état connexion (masquée par défaut, affichée par JS) -->
+<div id="offline-bar" class="hidden fixed top-14 inset-x-0 z-40 items-center justify-center gap-2 py-2 px-4 text-sm font-semibold shadow-md pointer-events-none" aria-live="polite"></div>
+<script>
+(function(){
+  const bar = document.getElementById('offline-bar');
+  function update() {
+    if (!bar) return;
+    if (!navigator.onLine) {
+      bar.className = 'flex fixed top-14 inset-x-0 z-40 items-center justify-center gap-2 py-2 px-4 text-sm font-semibold shadow-md bg-amber-400 text-amber-950';
+      bar.innerHTML = '<i class="ph ph-wifi-x"></i><span>Hors connexion — les sauvegardes restent sur cet appareil</span>';
+    } else {
+      bar.className = 'hidden fixed top-14 inset-x-0 z-40 items-center justify-center gap-2 py-2 px-4 text-sm font-semibold shadow-md';
+      bar.innerHTML = '';
+    }
+  }
+  window.addEventListener('offline', update);
+  window.addEventListener('online',  update);
+  update();
+})();
+</script>`;
 
 // ── Login page ────────────────────────────────────────────────
 export function loginPage(error = '') {
@@ -95,7 +115,7 @@ ${ADMIN_NAV()}
         </div>
         <div class="bg-amber-50 rounded-2xl p-4 text-center border border-amber-100">
           <div id="stat-draft" class="text-2xl font-black text-amber-600">—</div>
-          <div class="text-xs font-bold text-amber-700 mt-1">Brouillons</div>
+          <div class="text-xs font-bold text-amber-700 mt-1">Archivés</div>
         </div>
       </div>
     </aside>
@@ -190,6 +210,7 @@ ${TOAST}
 <script>
 let _folderParentId = null;
 
+function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:#dc3c3c;font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
 function fmtDateRange(a){
@@ -208,7 +229,7 @@ async function init() {
 
   renderFolderTree(folders, null);
   document.getElementById('stat-pub').textContent = artData.articles.filter(a=>a.status==='published').length;
-  document.getElementById('stat-draft').textContent = artData.articles.filter(a=>a.status==='draft').length;
+  document.getElementById('stat-draft').textContent = artData.articles.filter(a=>a.status==='draft'||a.status==='archived').length;
   renderArticles(artData.articles, folders);
 }
 
@@ -221,9 +242,9 @@ function renderFolderTree(folders, parentId, depth=0) {
         <a href="/voyages?folder=\${f.slug}" class="flex items-center gap-2 flex-1 text-sm font-semibold text-stone-700 hover:text-sky-600 transition-colors">
           <span>\${f.icon}</span><span>\${esc(f.name)}</span>
         </a>
-        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-          <button onclick="openFolderModal(\${f.id})" class="text-stone-400 hover:text-sky-600 p-1 text-xs font-bold" title="Sous-dossier">+</button>
-          <button onclick="delFolder(\${f.id})" class="text-stone-400 hover:text-red-500 p-1 text-xs font-bold" title="Supprimer">×</button>
+        <div class="flex items-center gap-1 ml-2">
+          <button onclick="openFolderModal(\${f.id})" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-1.5 text-xs font-bold touch-manipulation rounded-lg hover:bg-sky-50" title="Sous-dossier">+</button>
+          <button onclick="delFolder(\${f.id})" class="text-stone-400 hover:text-red-500 active:text-red-600 p-1.5 text-xs font-bold touch-manipulation rounded-lg hover:bg-red-50" title="Supprimer">×</button>
         </div>
       </div>
       \${renderFolderTree(folders, f.id, depth+1)}
@@ -243,7 +264,7 @@ function renderArticles(arts, folders) {
       <div class="flex-1 min-w-0">
         <div class="flex items-start justify-between gap-2 mb-1">
           <h3 class="font-bold text-stone-900 text-sm sm:text-base truncate">\${esc(a.title)}</h3>
-          <span class="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 \${isPub?'badge-published':'badge-draft'}">\${isPub?'<i class=\\"ph-fill ph-check-circle\\"></i> Publié':'<i class=\\"ph ph-pencil-line\\"></i> Brouillon'}</span>
+          <span class="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 \${isPub?'badge-published':'badge-draft'}">\${isPub?'<i class=\\"ph-fill ph-check-circle\\"></i> Publié':'<i class=\\"ph ph-archive\\"></i> Archivé'}</span>
         </div>
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-400">
           <span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span>
@@ -255,7 +276,7 @@ function renderArticles(arts, folders) {
         <button onclick="toggleStatus(\${a.id}, '\${a.status}')" title="\${isPub?'Dépublier':'Publier'}" class="p-2 rounded-xl text-stone-400 hover:text-\${isPub?'amber':'emerald'}-600 hover:bg-\${isPub?'amber':'emerald'}-50 transition-all text-base">\${isPub?'<i class=\\"ph ph-lock-simple\\"></i>':'<i class=\\"ph ph-rocket-launch\\"></i>'}</button>
         <a href="/admin/editor/\${a.id}" class="p-2 rounded-xl text-stone-400 hover:text-sky-600 hover:bg-sky-50 transition-all text-base"><i class="ph ph-pencil"></i></a>
         <a href="/voyage/\${a.slug}" class="p-2 rounded-xl text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all text-base"><i class="ph ph-eye"></i></a>
-        <button onclick="delArticle(\${a.id})" class="p-2 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 text-base"><i class="ph ph-trash"></i></button>
+        <button onclick="delArticle(\${a.id})" class="p-2.5 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-all text-base touch-manipulation"><i class="ph ph-trash"></i></button>
       </div>
     </div>\`;
   }).join('');
@@ -263,7 +284,7 @@ function renderArticles(arts, folders) {
 
 async function toggleStatus(id, current) {
   const res = await fetch(\`/api/articles/\${id}/status\`, {method:'PATCH'});
-  if (res.ok) { toast(current==='draft'?'Article publié !':'Mis en brouillon','ok'); await init(); }
+  if (res.ok) { toast(current==='published'?'Archivé':'Article publié !','ok'); await init(); }
   else toast('Erreur','err');
 }
 
@@ -345,14 +366,14 @@ export function editorPage(articleId = null) {
   return html(`<!DOCTYPE html>
 <html lang="fr">
 <head>${HEAD(isEdit ? 'Admin — Modifier article' : 'Admin — Nouvel article')}</head>
-<body class="bg-stone-50 font-sans text-stone-900 antialiased pt-14">
+<body class="bg-stone-50 font-sans text-stone-900 antialiased pt-14 pb-20 lg:pb-0">
 ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-8">
+  <div class="flex flex-col lg:grid lg:grid-cols-3 lg:items-start gap-5 lg:gap-8">
 
-    <!-- Editor main -->
-    <div class="lg:col-span-2 space-y-5">
+    <!-- Editor main: second on mobile (after sidebar), cols 1-2 on desktop -->
+    <div class="order-2 lg:col-start-1 lg:col-span-2 lg:row-start-1 space-y-5">
 
       <!-- Title -->
       <div>
@@ -380,9 +401,9 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
         <div id="pane-write">
           <textarea id="e-content" rows="22" placeholder="# Titre\n\nÉcris ici en Markdown..."
                     class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 md-editor"></textarea>
-          <div class="flex flex-wrap gap-1 mt-2">
+          <div class="flex flex-wrap gap-1.5 mt-2">
             ${[['**Gras**','G'],['*Ital.*','I'],['# H1','H1'],['## H2','H2'],['> Citation','❝'],['- Item','—'],['[lien](url)','lien'],['![](url) ![](url)','📷📷']].map(([s,l])=>`
-              <button type="button" onclick="insertMd('${s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}','e-content')" class="text-xs bg-stone-100 hover:bg-sky-100 text-stone-600 hover:text-sky-700 px-2.5 py-1.5 rounded-lg font-mono transition-colors">${l}</button>`).join('')}
+              <button type="button" onclick="insertMd('${s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}','e-content')" class="text-sm sm:text-xs bg-stone-100 hover:bg-sky-100 active:bg-sky-200 text-stone-600 hover:text-sky-700 px-3 py-2 sm:px-2.5 sm:py-1.5 rounded-lg font-mono transition-colors touch-manipulation">${l}</button>`).join('')}
           </div>
         </div>
         <div id="pane-preview" class="hidden">
@@ -390,36 +411,52 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
         </div>
       </div>
 
-      <!-- Save buttons (mobile) -->
-      <div class="lg:hidden">
-        <button onclick="saveArticle()" class="w-full action-btn text-white font-bold py-3 rounded-2xl transition-all"><i class="ph ph-floppy-disk"></i> Sauvegarder</button>
-      </div>
     </div>
 
-    <!-- Sidebar -->
-    <aside class="lg:col-span-1 space-y-5">
+    <!-- Sidebar: first on mobile, col-3 on desktop -->
+    <aside class="order-1 lg:col-start-3 lg:row-start-1 space-y-4">
 
-      <!-- Save buttons (desktop) -->
+      <!-- Save button (desktop only — mobile uses sticky bottom bar) -->
       <div class="hidden lg:block">
         <button onclick="saveArticle()" class="w-full action-btn text-white font-bold py-3 rounded-2xl transition-all"><i class="ph ph-floppy-disk"></i> Sauvegarder</button>
       </div>
 
       <!-- Status -->
       <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
-        <h3 class="font-bold text-stone-700 mb-4 text-sm"><i class="ph ph-toggle-right"></i> Statut</h3>
-        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
-          <input type="checkbox" id="pub-status" class="w-4 h-4 accent-emerald-500" onchange="onStatusChange(this.checked)">
-          <div>
-            <div class="font-semibold text-stone-700 text-sm"><i class="ph-fill ph-check-circle" style="color:var(--palm)"></i> Publié</div>
-            <div class="text-xs text-stone-400">Visible par tous</div>
-          </div>
-        </label>
+        <h3 class="font-bold text-stone-700 mb-3 text-sm"><i class="ph ph-toggle-right"></i> Statut</h3>
+        <div class="flex flex-col gap-2">
+          <button type="button" id="btn-archived" onclick="setStatus('archived')"
+            class="flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full" style="border-color:#e7e5e4;background:#fff">
+            <i class="ph ph-archive text-xl flex-shrink-0" style="color:#a8a29e"></i>
+            <div>
+              <div class="font-semibold text-sm status-btn-title" style="color:#57534e">Archivé</div>
+              <div class="text-xs text-stone-400">Non visible par les lecteurs</div>
+            </div>
+          </button>
+          <button type="button" id="btn-published" onclick="setStatus('published')"
+            class="flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full" style="border-color:#e7e5e4;background:#fff">
+            <i class="ph-fill ph-check-circle text-xl flex-shrink-0" style="color:#a8a29e"></i>
+            <div>
+              <div class="font-semibold text-sm status-btn-title" style="color:#57534e">Publié</div>
+              <div class="text-xs text-stone-400">Visible par tous</div>
+            </div>
+          </button>
+          <button type="button" id="btn-publish_when_online" onclick="setStatus('publish_when_online')"
+            class="flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full" style="border-color:#e7e5e4;background:#fff">
+            <i class="ph ph-wifi-high text-xl flex-shrink-0" style="color:#a8a29e"></i>
+            <div>
+              <div class="font-semibold text-sm status-btn-title" style="color:#57534e">Publier dès connexion</div>
+              <div class="text-xs text-stone-400">Publie auto quand internet rétabli</div>
+            </div>
+          </button>
+        </div>
+        <input type="hidden" id="pub-status" value="archived">
       </div>
 
       <!-- Notify subscribers (shown only when status = published) -->
       <div id="notify-section" class="hidden section-panel rounded-2xl border p-4 shadow-sm" style="background:rgba(var(--palm-rgb),.06);border-color:rgba(var(--palm-rgb),.22)">
         <label class="flex items-start gap-3 cursor-pointer select-none">
-          <input type="checkbox" id="e-notify" checked class="w-4 h-4 mt-0.5 flex-shrink-0 accent-emerald-600">
+          <input type="checkbox" id="e-notify" checked class="w-5 h-5 mt-0.5 flex-shrink-0 accent-emerald-600">
           <div>
             <div class="font-bold text-sm" style="color:var(--palm)"><i class="ph ph-bell-ringing"></i> Prévenir les abonnés</div>
             <div class="text-xs mt-0.5" style="color:var(--ink-muted)">Envoie une notification push et un email à tous les abonnés.</div>
@@ -473,7 +510,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
              ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
              ondrop="handleDrop(event)">
           <i class="ph ph-camera" style="font-size:2.5rem;display:block;margin-bottom:.5rem;color:var(--blue)"></i>
-          <p class="text-stone-600 font-semibold text-sm">Glissez vos photos ici ou cliquez</p>
+          <p class="text-stone-600 font-semibold text-sm">Appuyez pour choisir des photos</p>
           <p class="text-stone-400 text-xs mt-1">JPG, PNG, WebP · Max 10 MB</p>
           <input type="file" id="file-in" accept="image/*" multiple class="hidden" onchange="handleFiles(this.files)">
         </div>
@@ -489,13 +526,120 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
   </div>
 </div>
 
+<!-- Sticky save bar (mobile only) -->
+<div class="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-white/95 backdrop-blur-sm border-t border-stone-200 px-4 py-3 flex items-center gap-3 shadow-xl" style="padding-bottom:max(12px,env(safe-area-inset-bottom))">
+  <span id="sticky-status-lbl" class="flex-1 text-sm font-semibold text-stone-600 truncate">Archivé</span>
+  <button onclick="saveArticle()" class="action-btn py-2.5 px-5 text-sm font-bold flex-shrink-0 whitespace-nowrap touch-manipulation">
+    <i class="ph ph-floppy-disk"></i> Sauvegarder
+  </button>
+</div>
+
 ${TOAST}
 <script>
 const ARTICLE_ID = ${JSON.stringify(articleId)};
-let existingPhotos = [];  // photos already on the server
-let newPhotos = [];       // FileReader previews for new uploads
+let existingPhotos = [];
+let newPhotos = [];
 
+function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:#dc3c3c;font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// ── Offline draft management ───────────────────────────────────
+const DRAFT_KEY = 'admin_draft_' + (ARTICLE_ID != null ? ARTICLE_ID : 'new');
+
+function _draftPayload() {
+  return {
+    title:             document.getElementById('e-title')?.value.trim() || '',
+    destination:       document.getElementById('e-dest')?.value.trim() || '',
+    start_date:        document.getElementById('e-start-date')?.value || '',
+    end_date:          document.getElementById('e-end-date')?.value || '',
+    short_description: document.getElementById('e-desc')?.value.trim() || '',
+    content:           document.getElementById('e-content')?.value || '',
+    status:            document.getElementById('pub-status')?.value || 'archived',
+    folder_id:         parseInt(document.getElementById('e-folder')?.value) || null,
+    cover_url:         document.getElementById('e-cover')?.value.trim() || null,
+  };
+}
+function saveDraftLocal() {
+  try {
+    const p = _draftPayload();
+    if (!p.title) return;
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...p, _ts: Date.now() }));
+  } catch(e) {}
+}
+function loadDraftLocal() {
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch { return null; }
+}
+function clearDraftLocal() { localStorage.removeItem(DRAFT_KEY); }
+
+function fillFromDraft(d) {
+  if (d.title)             document.getElementById('e-title').value = d.title;
+  if (d.short_description) document.getElementById('e-desc').value = d.short_description;
+  if (d.content !== undefined) document.getElementById('e-content').value = d.content;
+  if (d.start_date)        document.getElementById('e-start-date').value = d.start_date;
+  if (d.end_date)          document.getElementById('e-end-date').value = d.end_date;
+  if (d.destination)       document.getElementById('e-dest').value = d.destination;
+  if (d.cover_url)         { document.getElementById('e-cover').value = d.cover_url; previewCover(d.cover_url); }
+  setStatus(d.status || 'archived');
+}
+
+// ── Autosave (debounce 8s) ─────────────────────────────────────
+let _autoSaveTimer;
+function _scheduleAutoSave() {
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(saveDraftLocal, 8000);
+}
+function _attachAutoSave() {
+  ['e-title','e-desc','e-content','e-start-date','e-end-date','e-dest','e-cover'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', _scheduleAutoSave);
+  });
+}
+
+// ── Draft restore notification bar ────────────────────────────
+let _pendingDraft = null;
+function _showDraftBar(draft) {
+  if (document.getElementById('draft-bar')) return;
+  const d = new Date(draft._ts).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  const bar = document.createElement('div');
+  bar.id = 'draft-bar';
+  bar.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:39;display:flex;align-items:center;gap:.75rem;background:#EFF6FF;border-bottom:1px solid #BFDBFE;padding:.6rem 1rem;font-size:.85rem;font-weight:500;color:#1E40AF;box-shadow:0 1px 4px rgba(0,0,0,.06)';
+  bar.innerHTML = \`<i class="ph ph-cloud-slash" style="font-size:1.1rem;flex-shrink:0"></i>
+    <span style="flex:1">Brouillon local du \${d} non synchronisé</span>
+    <button onclick="_applyDraft()" style="background:#3B82F6;color:#fff;border:none;padding:.3rem .8rem;border-radius:.5rem;font-weight:700;font-size:.78rem;cursor:pointer">Restaurer</button>
+    <button onclick="_dismissDraft()" style="color:#3B82F6;border:none;background:none;padding:.3rem .5rem;font-size:.78rem;cursor:pointer;font-weight:600">Ignorer</button>\`;
+  document.body.appendChild(bar);
+}
+function _applyDraft() {
+  if (_pendingDraft) { fillFromDraft(_pendingDraft); _pendingDraft = null; }
+  document.getElementById('draft-bar')?.remove();
+  toast('Brouillon restauré ✓', 'ok');
+}
+function _dismissDraft() {
+  clearDraftLocal();
+  _pendingDraft = null;
+  document.getElementById('draft-bar')?.remove();
+}
+
+// ── Online/offline handlers (éditeur) ─────────────────────────
+window.addEventListener('offline', () => {
+  enforceOfflineStatus();
+});
+window.addEventListener('online', async () => {
+  enforceOfflineStatus();
+  if (getStatus() === 'publish_when_online') {
+    setStatus('published');
+    await saveArticle();
+    return;
+  }
+  const draft = loadDraftLocal();
+  if (draft && draft.title) {
+    const bar = document.getElementById('offline-bar');
+    if (bar) {
+      bar.className = 'flex fixed top-14 inset-x-0 z-40 items-center justify-center gap-2 py-2 px-4 text-sm font-semibold shadow-md bg-emerald-50 text-emerald-900';
+      bar.style.pointerEvents = 'auto';
+      bar.innerHTML = '<i class="ph ph-wifi-high" style="color:#16A34A"></i><span>Connexion rétablie — brouillon en attente</span><button onclick="saveArticle()" style="margin-left:.5rem;background:#16A34A;color:#fff;border:none;padding:.3rem .8rem;border-radius:.5rem;font-weight:700;font-size:.78rem;cursor:pointer">Synchroniser</button>';
+    }
+  }
+});
 
 // ── Init ──────────────────────────────────────────────────────
 async function init() {
@@ -507,10 +651,11 @@ async function init() {
   const today = new Date().toISOString().slice(0,10);
   document.getElementById('e-start-date').value = today;
   document.getElementById('e-end-date').value = today;
+  setStatus('archived'); // initialise le sélecteur visuel
 
   if (ARTICLE_ID) {
     const a = await fetch('/api/articles/' + ARTICLE_ID).then(r=>r.json()).catch(()=>null);
-    if (a) {
+    if (a && a.title) {
       document.getElementById('e-title').value = a.title || '';
       document.getElementById('e-desc').value  = a.short_description || '';
       document.getElementById('e-content').value = a.content || '';
@@ -519,15 +664,28 @@ async function init() {
       document.getElementById('e-dest').value  = a.destination || '';
       document.getElementById('e-cover').value = a.cover_url || '';
       previewCover(a.cover_url);
-      const pubCheckbox = document.getElementById('pub-status');
-      pubCheckbox.checked = a.status === 'published';
-      onStatusChange(a.status === 'published'); // show/hide notify section
+      setStatus(a.status || 'archived');
       if (a.folder_id) {
         const opt = document.querySelector(\`#e-folder option[value="\${a.folder_id}"]\`);
         if (opt) opt.selected = true;
       }
       existingPhotos = a.photos || [];
       renderPhotoGrid();
+    } else if (a && !a.title) {
+      toast('Impossible de charger l\'article','err');
+    }
+  }
+
+  _attachAutoSave();
+  enforceOfflineStatus();
+  // Vérifier si un brouillon hors-ligne est en attente
+  const draft = loadDraftLocal();
+  if (draft && draft.title) {
+    if (!ARTICLE_ID) {
+      fillFromDraft(draft); // Nouvel article : restauration silencieuse
+    } else {
+      _pendingDraft = draft;
+      _showDraftBar(draft); // Article existant : proposer la restauration
     }
   }
 }
@@ -633,7 +791,7 @@ function handleFiles(files) {
         existingPhotos.push(...uploaded);
         renderPhotoGrid();
         uploaded.forEach(p => insertPhotoInText(p.url, p.caption || 'photo', false));
-        toast(uploaded.length === 1 ? 'Photo insérée !' : `${uploaded.length} photos insérées !`,'ok');
+        toast(uploaded.length === 1 ? 'Photo insérée !' : uploaded.length + ' photos insérées !','ok');
       })
       .catch(()=>toast('Erreur upload','err'));
   } else {
@@ -657,19 +815,60 @@ async function delExistingPhoto(photoId, i) {
   else toast('Erreur','err');
 }
 
-// ── Notify section visibility ────────────────────────────────
-function onStatusChange(isPublished) {
+// ── Status selector ───────────────────────────────────────────
+function setStatus(val) {
+  document.getElementById('pub-status').value = val;
+  const styles = {
+    archived:            { border:'#d6d3d1', bg:'#fafaf9', icon:'#a8a29e', text:'#57534e' },
+    published:           { border:'#6ee7b7', bg:'#f0fdf4', icon:'var(--palm)', text:'var(--palm)' },
+    publish_when_online: { border:'#fcd34d', bg:'#fffbeb', icon:'#d97706', text:'#b45309' },
+  };
+  ['archived','published','publish_when_online'].forEach(s => {
+    const btn = document.getElementById('btn-' + s);
+    if (!btn) return;
+    const active = s === val;
+    const c = styles[s];
+    btn.style.borderColor = active ? c.border : '#e7e5e4';
+    btn.style.backgroundColor = active ? c.bg : '#fff';
+    const icon = btn.querySelector('i');
+    const title = btn.querySelector('.status-btn-title');
+    if (icon) icon.style.color = active ? c.icon : '#a8a29e';
+    if (title) title.style.color = active ? c.text : '#57534e';
+  });
   const notifySection = document.getElementById('notify-section');
-  if (!notifySection) return;
-  if (isPublished) {
-    notifySection.classList.remove('hidden');
-  } else {
-    notifySection.classList.add('hidden');
+  if (notifySection) notifySection.classList.toggle('hidden', val !== 'published');
+  const lbl = document.getElementById('sticky-status-lbl');
+  if (lbl) {
+    const labels = { archived:'Archivé', published:'✓ Publié', publish_when_online:'⏳ Publier dès connexion' };
+    lbl.textContent = labels[val] || val;
   }
+}
+function getStatus() {
+  return document.getElementById('pub-status')?.value || 'archived';
+}
+function enforceOfflineStatus() {
+  const online = navigator.onLine;
+  const pubBtn = document.getElementById('btn-published');
+  if (pubBtn) {
+    pubBtn.disabled = !online;
+    pubBtn.style.opacity = online ? '1' : '0.4';
+    pubBtn.style.cursor = online ? '' : 'not-allowed';
+    pubBtn.title = online ? '' : 'Impossible de publier hors connexion';
+  }
+  if (!online && getStatus() === 'published') setStatus('archived');
 }
 
 // ── Save article ──────────────────────────────────────────────
 async function saveArticle() {
+  // ── Offline : sauvegarde locale ───────────────────────────
+  if (!navigator.onLine) {
+    saveDraftLocal();
+    toast('Sauvegardé sur l\'appareil 📴', 'ok');
+    const lbl = document.getElementById('sticky-status-lbl');
+    if (lbl) lbl.textContent = '📴 Sauvegardé';
+    return;
+  }
+
   const title = document.getElementById('e-title').value.trim();
   if (!title) { toast('Le titre est obligatoire','err'); return; }
   const startDate = document.getElementById('e-start-date').value;
@@ -677,11 +876,12 @@ async function saveArticle() {
   if (!startDate || !endDate) { toast('Le voyage doit avoir un début et une fin','err'); return; }
   if (endDate < startDate) { toast('La fin doit être après le début','err'); return; }
 
-  const status = document.getElementById('pub-status')?.checked ? 'published' : 'draft';
+  const status = getStatus();
+  const apiStatus = status === 'publish_when_online' ? 'published' : status;
 
   // Notify flag: true by default when publishing; admin can uncheck
   const notifyCheckbox = document.getElementById('e-notify');
-  const notify = status === 'published'
+  const notify = apiStatus === 'published'
     ? (notifyCheckbox ? notifyCheckbox.checked : true)
     : false;
 
@@ -692,19 +892,21 @@ async function saveArticle() {
     end_date:          endDate,
     short_description: document.getElementById('e-desc').value.trim(),
     content:           document.getElementById('e-content').value,
-    status,
+    status:            apiStatus,
     notify,
     folder_id:         parseInt(document.getElementById('e-folder').value) || null,
     cover_url:         document.getElementById('e-cover').value.trim() || null,
   };
 
   let savedId = ARTICLE_ID;
+  let savedSlug = null;
   let res;
   if (ARTICLE_ID) {
     res = await fetch('/api/articles/'+ARTICLE_ID, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    if (res.ok) { const data=await res.json().catch(()=>({})); savedSlug=data.slug||null; }
   } else {
     res = await fetch('/api/articles', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-    if (res.ok) { const data=await res.json(); savedId=data.id; }
+    if (res.ok) { const data=await res.json(); savedId=data.id; savedSlug=data.slug||null; }
   }
 
   if (!res.ok) { toast('Erreur lors de la sauvegarde','err'); return; }
@@ -719,7 +921,7 @@ async function saveArticle() {
       const uploaded = uploadData.uploaded || [];
       if (uploaded.length) {
         const photoTags = uploaded.map(p =>
-          `\n\n<figure>\n  <img src="${p.url}" alt="${p.caption || 'photo'}">\n  <figcaption>${p.caption || ''}</figcaption>\n</figure>`
+          '\n\n<figure>\n  <img src="' + p.url + '" alt="' + (p.caption || 'photo') + '">\n  <figcaption>' + (p.caption || '') + '</figcaption>\n</figure>'
         ).join('\n');
         const updatedContent = payload.content + photoTags;
         await fetch('/api/articles/'+savedId, {
@@ -732,11 +934,15 @@ async function saveArticle() {
   }
 
   toast('Sauvegardé !','ok');
-  if (!ARTICLE_ID && savedId) {
+  clearDraftLocal(); // effacer le brouillon local après synchro serveur
+  if (apiStatus === 'published' && savedSlug) {
+    // Publié → afficher l'article pour confirmer
+    setTimeout(()=>location.href='/voyage/'+savedSlug, 1000);
+  } else if (!ARTICLE_ID && savedId) {
+    // Nouvel article archivé → éditeur avec ID
     setTimeout(()=>location.href='/admin/editor/'+savedId, 800);
-  } else {
-    setTimeout(()=>location.href='/admin/dashboard', 800);
   }
+  // Sinon (mise à jour) : on reste dans l'éditeur
 }
 
 async function delArticle() {

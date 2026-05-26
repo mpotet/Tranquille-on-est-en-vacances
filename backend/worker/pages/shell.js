@@ -8,9 +8,10 @@ export const HEAD = (title = 'Tranquille, on est en vacances', description = "Le
 <meta name="description" content="${description}">
 <meta name="theme-color" content="#0057B8">
 <title>${title}</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230057B8'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='20' font-family='serif' fill='white'>T</text></svg>">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -292,7 +293,7 @@ export const NAV = (active = '') => `
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-16">
       <a href="/" class="flex items-center gap-3 group" aria-label="Tranquille, on est en vacances — Accueil">
-        <span class="brand-mark" aria-hidden="true"><i class="ph ph-tree-palm" style="font-size:1.15rem;color:var(--blue)"></i></span>
+        <img src="/icon.svg" width="38" height="38" alt="" aria-hidden="true" style="border-radius:.75rem;flex-shrink:0;box-shadow:0 2px 8px rgba(0,87,184,.20)">
         <div class="leading-none">
           <span class="brand-title font-display font-bold text-base block">Tranquille,</span>
           <span class="brand-subtitle text-[0.68rem] font-semibold tracking-[0.20em] uppercase block mt-0.5">on est en vacances</span>
@@ -328,7 +329,7 @@ export const FOOTER = `
     <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
       <div>
         <div class="flex items-center gap-3 mb-4">
-          <span class="brand-mark" aria-hidden="true"><i class="ph ph-tree-palm" style="font-size:1.15rem;color:var(--blue)"></i></span>
+          <img src="/icon.svg" width="38" height="38" alt="" aria-hidden="true" style="border-radius:.75rem;flex-shrink:0">
           <div class="leading-none">
             <div class="brand-title font-display font-bold text-base">Tranquille,</div>
             <div class="brand-subtitle text-[0.68rem] font-semibold uppercase tracking-[0.20em] mt-0.5">on est en vacances</div>
@@ -352,7 +353,7 @@ export const FOOTER = `
       <h3 class="font-bold mb-2 text-xs uppercase tracking-[0.18em]" style="color:var(--ink)"><i class="ph ph-bell"></i> Suivre le blog</h3>
       <p class="text-xs mb-3" style="color:var(--ink-muted)">Soyez notifié(e) à chaque nouveau récit de voyage.</p>
       <div class="flex flex-wrap gap-2 mb-2">
-        <button id="push-btn" class="hidden text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors" style="background:rgba(var(--blue-rgb),.10);color:var(--blue);border:1px solid rgba(var(--blue-rgb),.2)"><i class="ph ph-device-mobile"></i> Activer les notifs</button>
+        <button id="push-btn" class="hidden text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors" style="background:rgba(var(--blue-rgb),.10);color:var(--blue);border:1px solid rgba(var(--blue-rgb),.2)"><i class="ph ph-bell"></i> Activer les notifications</button>
       </div>
       <div class="flex gap-2">
         <input type="email" id="email-sub-in" placeholder="votre@email.com" class="flex-1 min-w-0 border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-sky-400" style="background:rgba(255,255,255,.7)">
@@ -366,6 +367,35 @@ export const FOOTER = `
     </div>
   </div>
 </footer>
+
+<!-- ── Notification prompt modal (PWA first-visit) ───────── -->
+<div id="notif-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(26,43,60,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;box-sizing:border-box" onclick="if(event.target===this)notifModalDismiss()">
+  <div style="background:#FFFDF9;border-radius:1.5rem 1.5rem 0 0;padding:2rem 1.5rem 2.5rem;max-width:480px;width:100%;box-shadow:0 -8px 40px rgba(26,43,60,.18)">
+    <div style="width:3rem;height:.22rem;background:rgba(26,43,60,.14);border-radius:999px;margin:0 auto 1.75rem"></div>
+    <div style="width:3.5rem;height:3.5rem;border-radius:999px;background:#EBF2FD;border:2px solid rgba(0,87,184,.14);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem"><i class="ph ph-bell" style="font-size:1.5rem;color:#0057B8"></i></div>
+    <h2 style="font-family:'Playfair Display',Georgia,serif;font-size:1.25rem;font-weight:700;text-align:center;color:#1A2B3C;margin:0 0 .6rem">Suivre le blog ?</h2>
+    <p style="text-align:center;color:#5A6A7A;font-size:.87rem;line-height:1.65;margin:0 0 1.75rem">Recevez une notification dès qu'un nouveau récit de voyage est publié.</p>
+    <button onclick="notifModalAccept()" style="display:block;width:100%;background:#0057B8;color:#fff;font-family:Montserrat,sans-serif;font-weight:700;font-size:.92rem;border:none;border-radius:999px;padding:.9rem;cursor:pointer;margin-bottom:.75rem;box-shadow:0 6px 22px rgba(0,87,184,.28)"><i class="ph ph-bell"></i> Activer les notifications</button>
+    <button onclick="notifModalDismiss()" style="display:block;width:100%;background:none;color:#5A6A7A;font-family:Montserrat,sans-serif;font-weight:600;font-size:.87rem;border:none;padding:.6rem;cursor:pointer">Plus tard</button>
+  </div>
+</div>
+
+<!-- ── Email subscription modal (web first-visit) ─────────── -->
+<div id="email-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(26,43,60,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;box-sizing:border-box" onclick="if(event.target===this)emailModalDismiss()">
+  <div style="background:#FFFDF9;border-radius:1.5rem 1.5rem 0 0;padding:2rem 1.5rem 2.5rem;max-width:480px;width:100%;box-shadow:0 -8px 40px rgba(26,43,60,.18)">
+    <div style="width:3rem;height:.22rem;background:rgba(26,43,60,.14);border-radius:999px;margin:0 auto 1.75rem"></div>
+    <div style="width:3.5rem;height:3.5rem;border-radius:999px;background:#E6F4F1;border:2px solid rgba(46,125,107,.16);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem"><i class="ph ph-envelope" style="font-size:1.5rem;color:#2E7D6B"></i></div>
+    <h2 style="font-family:'Playfair Display',Georgia,serif;font-size:1.25rem;font-weight:700;text-align:center;color:#1A2B3C;margin:0 0 .6rem">Suivre le blog</h2>
+    <p style="text-align:center;color:#5A6A7A;font-size:.87rem;line-height:1.65;margin:0 0 1.25rem">Recevez un email à chaque nouveau récit de voyage de la famille Potet.</p>
+    <div style="display:flex;gap:.5rem;margin-bottom:.6rem">
+      <input type="email" id="email-modal-in" placeholder="votre@email.com" style="flex:1;min-width:0;border:1.5px solid rgba(0,87,184,.18);border-radius:.75rem;padding:.75rem .9rem;font-size:.87rem;color:#1A2B3C;background:#fff;outline:none;font-family:Montserrat,sans-serif">
+      <button onclick="emailModalSubscribe()" style="background:#2E7D6B;color:#fff;font-family:Montserrat,sans-serif;font-weight:700;font-size:.82rem;border:none;border-radius:.75rem;padding:.75rem 1rem;cursor:pointer;white-space:nowrap;flex-shrink:0">S'abonner</button>
+    </div>
+    <p id="email-modal-msg" style="display:none;font-size:.8rem;font-weight:600;text-align:center;margin:0 0 .5rem"></p>
+    <button onclick="emailModalDismiss()" style="display:block;width:100%;background:none;color:#5A6A7A;font-family:Montserrat,sans-serif;font-weight:600;font-size:.85rem;border:none;padding:.6rem;cursor:pointer">Non merci</button>
+  </div>
+</div>
+
 <script>
 // ── Service Worker + Push notifications ──────────────────────
 if ('serviceWorker' in navigator) {
@@ -385,7 +415,7 @@ async function initPushBtn() {
   btn.classList.remove('hidden');
   const existing = await reg.pushManager.getSubscription();
   if (existing) {
-    btn.innerHTML = '<i class="ph ph-bell-slash"></i> Désactiver les notifs';
+    btn.innerHTML = '<i class="ph ph-bell-slash"></i> Désactiver les notifications';
     btn.onclick = unsubscribePush;
   } else {
     btn.onclick = subscribePush;
@@ -401,7 +431,7 @@ async function subscribePush() {
     if (!res.ok) { showSubMsg('Erreur lors de l\'inscription', false); return; }
     showSubMsg('Notifications activées !', true);
     const btn = document.getElementById('push-btn');
-    if (btn) { btn.innerHTML = '<i class="ph ph-bell-slash"></i> Désactiver les notifs'; btn.onclick = unsubscribePush; }
+    if (btn) { btn.innerHTML = '<i class="ph ph-bell-slash"></i> Désactiver les notifications'; btn.onclick = unsubscribePush; }
   } catch (err) {
     if (err.name === 'NotAllowedError') {
       showSubMsg('Permission refusée par le navigateur', false);
@@ -420,7 +450,7 @@ async function unsubscribePush() {
   }
   showSubMsg('Notifications désactivées', true);
   const btn = document.getElementById('push-btn');
-  if (btn) { btn.innerHTML = '<i class="ph ph-device-mobile"></i> Activer les notifs'; btn.onclick = subscribePush; }
+  if (btn) { btn.innerHTML = '<i class="ph ph-bell"></i> Activer les notifications'; btn.onclick = subscribePush; }
 }
 async function subscribeEmail() {
   const email = (document.getElementById('email-sub-in')?.value || '').trim();
@@ -437,8 +467,64 @@ function showSubMsg(msg, ok) {
   el.classList.remove('hidden');
   setTimeout(() => el.classList.add('hidden'), 4000);
 }
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPushBtn);
-else initPushBtn();
+// ── First-visit notification prompts ─────────────────────────
+async function initNotifPrompt() {
+  if (location.pathname.startsWith('/admin')) return;
+  const isPwa = window.matchMedia('(display-mode: standalone)').matches;
+  if (isPwa) {
+    if (!('PushManager' in window)) return;
+    if (localStorage.getItem('notif-prompt-seen')) return;
+    const reg = await navigator.serviceWorker.ready.catch(() => null);
+    if (!reg) return;
+    const existing = await reg.pushManager.getSubscription().catch(() => null);
+    if (existing) { localStorage.setItem('notif-prompt-seen', '1'); return; }
+    setTimeout(showPushModal, 1800);
+  } else {
+    if (localStorage.getItem('email-prompt-seen')) return;
+    setTimeout(showEmailModal, 4000);
+  }
+}
+function showPushModal() {
+  const m = document.getElementById('notif-modal');
+  if (m) m.style.display = 'flex';
+}
+async function notifModalAccept() {
+  localStorage.setItem('notif-prompt-seen', '1');
+  document.getElementById('notif-modal').style.display = 'none';
+  await subscribePush();
+}
+function notifModalDismiss() {
+  localStorage.setItem('notif-prompt-seen', 'skip');
+  document.getElementById('notif-modal').style.display = 'none';
+}
+function showEmailModal() {
+  const m = document.getElementById('email-modal');
+  if (m) m.style.display = 'flex';
+}
+async function emailModalSubscribe() {
+  const email = (document.getElementById('email-modal-in')?.value || '').trim();
+  const msg = document.getElementById('email-modal-msg');
+  if (!email) {
+    if (msg) { msg.style.display='block'; msg.style.color='#dc3c3c'; msg.textContent='Entrez votre adresse email'; }
+    return;
+  }
+  const res = await fetch('/api/email/subscribe', {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email })
+  }).catch(() => null);
+  if (res?.ok) {
+    localStorage.setItem('email-prompt-seen', '1');
+    if (msg) { msg.style.display='block'; msg.style.color='#2E7D6B'; msg.textContent='Abonnement confirmé ! ✓'; }
+    setTimeout(() => { document.getElementById('email-modal').style.display = 'none'; }, 1800);
+  } else {
+    if (msg) { msg.style.display='block'; msg.style.color='#dc3c3c'; msg.textContent='Erreur, réessayez'; }
+  }
+}
+function emailModalDismiss() {
+  localStorage.setItem('email-prompt-seen', 'skip');
+  document.getElementById('email-modal').style.display = 'none';
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { initPushBtn(); initNotifPrompt(); });
+else { initPushBtn(); initNotifPrompt(); }
 </script>`;
 
 export const TOAST = `

@@ -105,7 +105,7 @@ export async function createArticle(request, env, ctx) {
   const { startDate, endDate, writingDays, error } = normalizeTripFields(body);
   if (error) return badRequest(error);
 
-  const status = body.status === 'published' ? 'published' : 'draft';
+  const status = body.status === 'published' ? 'published' : 'archived';
   const slug   = await uniqueSlug(env, toSlug(body.title));
 
   const result = await env.DB
@@ -162,8 +162,8 @@ export async function updateArticle(request, env, id, ctx) {
   const { startDate, endDate, writingDays, error } = normalizeTripFields(merged);
   if (error) return badRequest(error);
 
-  const newStatus = body.status && ['published','draft'].includes(body.status)
-    ? body.status
+  const newStatus = body.status && ['published','archived','draft'].includes(body.status)
+    ? (body.status === 'draft' ? 'archived' : body.status)
     : article.status;
 
   await env.DB
@@ -213,7 +213,7 @@ export async function patchArticleStatus(env, id, ctx) {
   const article = await env.DB.prepare('SELECT * FROM articles WHERE id = ?').bind(id).first();
   if (!article) return notFound('Article not found');
 
-  const newStatus = article.status === 'published' ? 'draft' : 'published';
+  const newStatus = article.status === 'published' ? 'archived' : 'published';
   await env.DB
     .prepare('UPDATE articles SET status=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
     .bind(newStatus, id)

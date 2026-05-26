@@ -1,6 +1,6 @@
 {
   "name": "Tranquille, on est en vacances",
-  "short_name": "Tranquille",
+  "short_name": "Blog Tranquille",
   "description": "Le carnet de voyage de la famille Potet",
   "start_url": "/",
   "display": "standalone",
