@@ -1,5 +1,5 @@
 /**
- * auth.js — Authentication helpers for the Cloudflare Worker
+ * auth.js - Authentication helpers for the Cloudflare Worker
  *
  * Strategy:
  *  - Admin logs in with ADMIN_PASSWORD (stored as a Worker secret)

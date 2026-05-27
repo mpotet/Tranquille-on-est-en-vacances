@@ -24,7 +24,7 @@ const privJwk = await subtle.exportKey('jwk', pair.privateKey);
 const VAPID_PUBLIC_KEY  = pubRaw.toString('base64url');
 const VAPID_PRIVATE_KEY = Buffer.from(JSON.stringify(privJwk)).toString('base64');
 
-console.log('\n=== VAPID Keys generated — run these commands ===\n');
+console.log('\n=== VAPID Keys generated - run these commands ===\n');
 console.log(`wrangler secret put VAPID_PUBLIC_KEY`);
 console.log(`# Value: ${VAPID_PUBLIC_KEY}\n`);
 console.log(`wrangler secret put VAPID_PRIVATE_KEY`);

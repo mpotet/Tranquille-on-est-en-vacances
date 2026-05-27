@@ -1,15 +1,15 @@
 /**
- * worker/notifications.js — Dispatch push + email notifications when an article
+ * worker/notifications.js - Dispatch push + email notifications when an article
  * is published or updated.
  *
  * Required env bindings / secrets:
- *   DB                — Cloudflare D1
- *   VAPID_PUBLIC_KEY  — base64url raw P-256 public key
- *   VAPID_PRIVATE_KEY — base64(JSON.stringify(jwk))
- *   VAPID_SUBJECT     — "mailto:..."
- *   RESEND_API_KEY    — Resend.com API key
- *   NOTIFY_FROM_EMAIL — e.g. "Blog Potet <noreply@yourdomain.com>"
- *   PUBLIC_URL        — public base URL e.g. "https://vacances.potet.fr"
+ *   DB                - Cloudflare D1
+ *   VAPID_PUBLIC_KEY  - base64url raw P-256 public key
+ *   VAPID_PRIVATE_KEY - base64(JSON.stringify(jwk))
+ *   VAPID_SUBJECT     - "mailto:..."
+ *   RESEND_API_KEY    - Resend.com API key
+ *   NOTIFY_FROM_EMAIL - e.g. "Blog Potet <noreply@yourdomain.com>"
+ *   PUBLIC_URL        - public base URL e.g. "https://vacances.potet.fr"
  */
 
 import { sendWebPush } from './vapid.js';
@@ -94,8 +94,8 @@ function buildEmailHtml(article, articleUrl, unsubUrl, isUpdate = false, changes
  * Uses ctx.waitUntil so the calling route can return its response immediately.
  *
  * @param {object} env
- * @param {object} ctx   — Cloudflare Workers ExecutionContext
- * @param {object} article — normalised article object (slug, title, etc.)
+ * @param {object} ctx   - Cloudflare Workers ExecutionContext
+ * @param {object} article - normalised article object (slug, title, etc.)
  */
 export function notifySubscribers(env, ctx, article, { isUpdate = false, changes = [] } = {}) {
   ctx.waitUntil(_doNotify(env, article, isUpdate, changes));
@@ -165,7 +165,7 @@ async function _doNotify(env, article, isUpdate, changes) {
       console.error('[Push] notifications échouées:', err);
     }
   } else {
-    console.warn('[Push] VAPID_PUBLIC_KEY ou VAPID_PRIVATE_KEY manquants — push ignoré');
+    console.warn('[Push] VAPID_PUBLIC_KEY ou VAPID_PRIVATE_KEY manquants - push ignoré');
   }
 
   // ── Email notifications ───────────────────────────────────────────────────
@@ -214,6 +214,6 @@ async function _doNotify(env, article, isUpdate, changes) {
       console.error('[Email] notifications failed:', err);
     }
   } else {
-    console.warn('[Email] RESEND_API_KEY manquant — email ignoré');
+    console.warn('[Email] RESEND_API_KEY manquant - email ignoré');
   }
 }

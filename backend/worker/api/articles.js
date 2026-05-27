@@ -1,5 +1,5 @@
 /**
- * api/articles.js — CRUD endpoints for travel articles
+ * api/articles.js - CRUD endpoints for travel articles
  *
  * Routes:
  *   GET    /api/articles                → list articles (querystring: status, folder, page, limit)
@@ -196,7 +196,7 @@ export async function updateArticle(request, env, id, ctx) {
   if (newStatus === 'published' && body.notify !== false && ctx) {
     const changes = [];
     if ('title' in body && body.title !== article.title) changes.push(`Titre : ${body.title}`);
-    if ('destination' in body && body.destination !== article.destination) changes.push(`Destination : ${body.destination || '—'}`);
+    if ('destination' in body && body.destination !== article.destination) changes.push(`Destination : ${body.destination || '-'}`);
     if (('start_date' in body || 'end_date' in body) && (body.start_date !== article.start_date || body.end_date !== article.end_date)) changes.push('Dates modifiées');
     if ('content' in body && body.content !== article.content) changes.push('Contenu mis à jour');
     if ('cover_url' in body && body.cover_url !== article.cover_url) changes.push('Photo de couverture modifiée');
@@ -219,7 +219,7 @@ export async function patchArticleStatus(env, id, ctx) {
     .bind(newStatus, id)
     .run();
 
-  // Notify when publishing via the quick toggle (always notify — no checkbox here)
+  // Notify when publishing via the quick toggle (always notify - no checkbox here)
   if (newStatus === 'published' && ctx) {
     notifySubscribers(env, ctx, normalizeArticle({ ...article, status: newStatus }));
   }
@@ -294,7 +294,7 @@ function normalizeTripFields(source) {
     return { error: 'end_date must be after or equal to start_date' };
   }
 
-  // writing_days is optional — keep existing if not provided, otherwise parse
+  // writing_days is optional - keep existing if not provided, otherwise parse
   const rawWritingDays = parseWritingDays(source.writing_days);
   const writingDays = rawWritingDays
     .map(d => ({ date: (d?.date || '').trim(), summary: (d?.summary || '').trim() }))

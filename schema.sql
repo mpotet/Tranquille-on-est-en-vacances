@@ -1,5 +1,5 @@
 -- =========================================================
--- Tranquille, on est en vacances — Cloudflare D1 Schema
+-- Tranquille, on est en vacances - Cloudflare D1 Schema
 -- Run with: wrangler d1 execute tranquille-vacances-db --file=schema.sql
 -- =========================================================
 
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS email_subscriptions (
 CREATE INDEX IF NOT EXISTS idx_email_active ON email_subscriptions(active);
 
 -- =========================================================
--- Seed data — remove or adapt before deploying to production
+-- Seed data - remove or adapt before deploying to production
 -- =========================================================
 
 INSERT OR IGNORE INTO folders (id, name, slug, icon, parent_id) VALUES

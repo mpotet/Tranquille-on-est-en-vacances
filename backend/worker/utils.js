@@ -1,5 +1,5 @@
 /**
- * utils.js — Shared response helpers for the Cloudflare Worker
+ * utils.js - Shared response helpers for the Cloudflare Worker
  */
 
 /** JSON response helper */

@@ -1,5 +1,5 @@
 /**
- * worker/api/subscriptions.js — Push & email subscription endpoints
+ * worker/api/subscriptions.js - Push & email subscription endpoints
  *
  * Routes (all public except GET /api/push/subscribers which is admin-only):
  *   GET    /api/push/config          → VAPID public key for browser
@@ -98,7 +98,7 @@ export async function emailUnsubscribe(request, env) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Désabonnement — Tranquille, on est en vacances</title>
+  <title>Désabonnement - Tranquille, on est en vacances</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:ui-sans-serif,system-ui,sans-serif;background:#FFFDF9;color:#1A2B3C;

@@ -1,5 +1,5 @@
 /**
- * api/folders.js — CRUD endpoints for the folder hierarchy
+ * api/folders.js - CRUD endpoints for the folder hierarchy
  *
  * Routes (all under /api/folders):
  *   GET    /api/folders          → list all folders (nested tree)
@@ -11,7 +11,7 @@
 import { json, notFound, badRequest } from '../utils.js';
 
 // ──────────────────────────────────────────────────────────────
-// List — returns a flat array; client builds the tree
+// List - returns a flat array; client builds the tree
 // ──────────────────────────────────────────────────────────────
 export async function listFolders(env) {
   const { results } = await env.DB.prepare(

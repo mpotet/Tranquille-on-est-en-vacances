@@ -1,5 +1,5 @@
 /**
- * public/sw.js — Service Worker : cache offline + notifications push
+ * public/sw.js - Service Worker : cache offline + notifications push
  * Stratégie : network-first avec fallback cache pour toutes les requêtes GET.
  * Les assets statiques sont pré-cachés à l'installation.
  */
@@ -44,7 +44,7 @@ self.addEventListener('fetch', event => {
   if (req.method !== 'GET') return;
   if (!req.url.startsWith('http')) return;
   const url = new URL(req.url);
-  // API calls and admin pages must always go straight to the network — never serve from cache
+  // API calls and admin pages must always go straight to the network - never serve from cache
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/admin')) return;
   event.respondWith(networkFirstCache(req));
 });
@@ -86,7 +86,7 @@ function offlineFallbackHtml() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Hors connexion — Tranquille</title>
+  <title>Hors connexion - Tranquille</title>
   <style>
     body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;
          min-height:100svh;margin:0;background:#FFFDF9;color:#1A2B3C;padding:1rem}

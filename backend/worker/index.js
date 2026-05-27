@@ -1,5 +1,5 @@
 /**
- * worker/index.js — Main Cloudflare Worker entry point
+ * worker/index.js - Main Cloudflare Worker entry point
  *
  * Routing:
  *   Public HTML pages   →  /, /voyages, /voyage/:slug
@@ -15,7 +15,7 @@ import { matchPath, json, notFound, unauthorized, redirect, html } from './utils
 // API handlers
 import { listFolders, createFolder, updateFolder, deleteFolder } from './api/folders.js';
 import { listArticles, getArticle, createArticle, updateArticle, patchArticleStatus, deleteArticle } from './api/articles.js';
-import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, serveR2Object } from './api/photos.js';
+import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, serveR2Object } from './api/photos.js';
 import { getSettings, updateSettings } from './api/settings.js';
 import {
   getPushConfig, pushSubscribe, pushUnsubscribe,
@@ -31,10 +31,10 @@ import { loginPage, dashboardPage, editorPage } from './pages/admin.js';
 // ──────────────────────────────────────────────────────────────
 import { HEAD, NAV, FOOTER, TOAST, LIGHTBOX } from './pages/shell.js';
 
-function voyagesPage() {
+function voyagesPage(authed=false) {
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD('Voyages — Tranquille, on est en vacances')}</head>
+<head>${HEAD('Voyages - Tranquille, on est en vacances')}</head>
 <body class="font-sans antialiased" style="background:var(--cream)">
 ${NAV('voyages')}
 <main class="pt-16">
@@ -48,6 +48,8 @@ ${NAV('voyages')}
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
     <div id="filters" class="flex flex-wrap gap-2" role="navigation" aria-label="Filtrer par destination"></div>
   </div>
+  <!-- Fil d'ariane -->
+  <div id="breadcrumb" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-2 hidden"></div>
   <!-- Grille -->
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
     <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -58,6 +60,7 @@ ${NAV('voyages')}
 ${FOOTER}
 ${TOAST}
 <script>
+const IS_ADMIN=${JSON.stringify(authed)};
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
@@ -66,10 +69,22 @@ function fmtDateRange(a){
   if(!s) return 'Dates non définies';
   return s===e ? fmtDate(s) : fmtDate(s)+' → '+fmtDate(e);
 }
-function card(a){return \`<article class="voyage-card cursor-pointer group" onclick="location.href='/voyage/\${a.slug}'" role="link" tabindex="0" onkeydown="if(event.key==='Enter')location.href='/voyage/\${a.slug}'" aria-label="\${esc('Lire : '+(a.title||''))}">
+function escAttr(s){return esc(s).replace(/'/g,'&#39;')}
+function statusMeta(status){
+  if(status==='published') return {label:'Publie',icon:'ph-fill ph-check-circle',bg:'rgba(18,145,102,.92)',color:'#fff'};
+  if(status==='publish_when_online') return {label:'En attente',icon:'ph ph-clock-countdown',bg:'rgba(217,119,6,.92)',color:'#fff'};
+  return {label:'Archive',icon:'ph ph-archive',bg:'rgba(87,83,78,.9)',color:'#fff'};
+}
+function card(a){
+  const eb=IS_ADMIN?'<a href="/admin/editor/'+a.id+'" onclick="event.stopPropagation()" style="position:absolute;top:.75rem;right:.75rem;z-index:5;display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border-radius:999px;font-size:.73rem;font-weight:700;background:rgba(0,87,184,.92);color:#fff;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.25)"><i class="ph ph-pencil-simple"></i> Modifier</a>':'';
+  const sm=statusMeta(a.status);
+  const sb=IS_ADMIN?'<span style="position:absolute;left:.75rem;bottom:.75rem;z-index:5;display:inline-flex;align-items:center;gap:.35rem;padding:.35rem .65rem;border-radius:999px;font-size:.72rem;font-weight:700;background:'+sm.bg+';color:'+sm.color+';box-shadow:0 2px 8px rgba(0,0,0,.22)"><i class="'+sm.icon+'"></i> '+sm.label+'</span>':'';
+  return \`<article class="voyage-card cursor-pointer group" style="position:relative" onclick="location.href='/voyage/\${a.slug}'" role="link" tabindex="0" onkeydown="if(event.key==='Enter')location.href='/voyage/\${a.slug}'" aria-label="\${esc('Lire : '+(a.title||''))}">
+  \${eb}
   <div class="relative overflow-hidden" style="height:15rem;border-radius:1.5rem 1.5rem 0 0">
     <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" onerror="this.src='https://picsum.photos/seed/\${a.id}x/800/600'">
     \${a.folder_name?'<div class="absolute top-3 left-3"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm" style="background:rgba(255,253,249,.92);color:var(--palm);border:1px solid rgba(255,255,255,.6)">'+flagImg(a.folder_icon||'')+' '+esc(a.folder_name)+'</span></div>':''}
+    \${sb}
   </div>
   <div class="p-5">
     <div class="flex flex-col gap-1 text-xs font-medium mb-2.5" style="color:var(--ink-light)"><span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span><span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span></div>
@@ -79,6 +94,52 @@ function card(a){return \`<article class="voyage-card cursor-pointer group" oncl
   </div>
 </article>\`;}
 
+function folderCard(f){return \`<article class="voyage-card cursor-pointer group" onclick="location.href='/voyages?folder=\${f.slug}'" role="link" tabindex="0" onkeydown="if(event.key==='Enter')location.href='/voyages?folder=\${f.slug}'">
+  <div class="relative overflow-hidden flex items-center justify-center" style="height:15rem;border-radius:1.5rem 1.5rem 0 0;background:linear-gradient(135deg,rgba(0,87,184,.12),rgba(255,199,138,.18))">
+    <div class="text-center px-6">
+      <div class="mx-auto mb-4 flex items-center justify-center rounded-full" style="width:4.75rem;height:4.75rem;background:rgba(255,255,255,.72);box-shadow:0 8px 20px rgba(0,0,0,.08)">\${flagImg(f.icon||'📁')}</div>
+      <div class="text-xs font-black uppercase tracking-[.18em]" style="color:var(--blue)">Sous-dossier</div>
+    </div>
+  </div>
+  <div class="p-5">
+    <h3 class="font-display font-bold text-lg leading-snug mb-2" style="color:var(--ink)">\${esc(f.name)}</h3>
+    <p class="text-sm leading-relaxed mb-4" style="color:var(--ink-muted)">Ouvrir ce sous-dossier et voir ses voyages.</p>
+    <span class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--blue)">Ouvrir le sous-dossier <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></span>
+  </div>
+</article>\`;}
+
+function renderAdminFolderActions(activeFolder){
+  if(!IS_ADMIN||!activeFolder) return '';
+  const parentHint=activeFolder.parent_id
+    ? 'Ce sous-dossier recevra les nouveaux voyages et sous-dossiers.'
+    : 'Créez directement un voyage ou un sous-dossier dans cette destination.';
+  return '<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-2">'+
+    '<div class="rounded-[1.6rem] px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style="background:rgba(0,87,184,.08);border:1px solid rgba(0,87,184,.16)">'+
+      '<div>'+
+        '<div class="text-xs font-black uppercase tracking-[.18em]" style="color:var(--blue)">Mode admin</div>'+
+        '<div class="font-display text-xl font-bold mt-1" style="color:var(--ink)">'+flagImg(activeFolder.icon||'')+' '+esc(activeFolder.name)+'</div>'+
+        '<p class="text-sm mt-1" style="color:var(--ink-muted)">'+parentHint+'</p>'+
+      '</div>'+
+      '<div class="flex flex-wrap gap-2">'+
+        '<a href="/admin/editor?folder='+encodeURIComponent(activeFolder.slug)+'" class="action-btn-sm"><i class="ph ph-pencil-line"></i> Nouveau voyage</a>'+
+        '<button type="button" class="subtle-btn" onclick="openPublicFolderModal('+activeFolder.id+',\\''+escAttr(activeFolder.name)+'\\')"><i class="ph ph-folder-plus"></i> Nouveau sous-dossier</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+async function openPublicFolderModal(parentId,parentName){
+  const name=window.prompt('Nom du sous-dossier dans '+parentName+' :');
+  if(name===null) return;
+  const trimmed=name.trim();
+  if(!trimmed){toast('Nom requis','err');return;}
+  const res=await fetch('/api/folders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:trimmed,icon:'📁',parent_id:parentId})});
+  const data=await res.json().catch(()=>null);
+  if(!res.ok){toast(data?.error||'Erreur de création','err');return;}
+  toast('Sous-dossier créé !','ok');
+  location.href='/voyages?folder='+encodeURIComponent(data.slug||'');
+}
+
 async function init(){
   const params=new URLSearchParams(location.search);
   const folder=params.get('folder');
@@ -87,10 +148,36 @@ async function init(){
     fetch('/api/articles'+(folder?'?folder='+encodeURIComponent(folder):'')).then(r=>r.json()).catch(()=>({articles:[],total:0})),
   ]);
   const activeF=folder?folders.find(f=>f.slug===folder):null;
+  const parentF=activeF?.parent_id?folders.find(f=>f.id===activeF.parent_id):null;
   const totalCount=(artData.total??artData.articles.length);
   const plural=totalCount!==1?'s':'';
-  const destLabel=activeF?' — <strong style="color:var(--palm)">'+flagImg(activeF.icon||'')+' '+esc(activeF.name)+'</strong>':'';
+  const rootF=parentF||activeF;
+  const destLabel=rootF?' - <strong style="color:var(--palm)">'+flagImg(rootF.icon||'')+' '+esc(rootF.name)+(parentF?' / '+flagImg(activeF.icon||'')+' '+esc(activeF.name):'')+'</strong>':'';
   document.getElementById('subtitle').innerHTML='<strong style="color:var(--blue)">'+totalCount+'</strong> itinéraire'+plural+' documenté'+destLabel;
+  // Fil d'ariane
+  const bc=document.getElementById('breadcrumb');
+  if(bc){
+    if(activeF){
+      const sep='<span class="mx-1 opacity-40"><i class="ph ph-caret-right"></i></span>';
+      let crumbs='<a href="/voyages" style="color:var(--ink-muted);text-decoration:none;white-space:nowrap" class="hover:underline">Tous les voyages</a>';
+      if(parentF){
+        crumbs+=sep+'<a href="/voyages?folder='+parentF.slug+'" style="color:var(--ink-muted);text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap" class="hover:underline">'+flagImg(parentF.icon||'')+' '+esc(parentF.name)+'</a>';
+        crumbs+=sep+'<span style="color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap">'+flagImg(activeF.icon||'')+' '+esc(activeF.name)+'</span>';
+      }else{
+        crumbs+=sep+'<span style="color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap">'+flagImg(activeF.icon||'')+' '+esc(activeF.name)+'</span>';
+      }
+      bc.innerHTML='<nav class="flex items-center flex-wrap gap-0.5 text-sm py-1" style="color:var(--ink-muted)">'+crumbs+'</nav>';
+      bc.classList.remove('hidden');
+    }else{
+      bc.classList.add('hidden');
+    }
+  }
+  const currentAdminBox=renderAdminFolderActions(activeF);
+  if(currentAdminBox){
+    const current=document.getElementById('folder-admin-box');
+    if(current) current.remove();
+    document.getElementById('filters').insertAdjacentHTML('beforebegin','<div id="folder-admin-box">'+currentAdminBox+'</div>');
+  }
 
   const roots=folders.filter(f=>!f.parent_id);
   const kids=pid=>folders.filter(f=>f.parent_id===pid);
@@ -103,12 +190,14 @@ async function init(){
   };
   let btns='<a href="/voyages" class="'+pill(!folder,false)+'"><i class="ph ph-globe-hemisphere-west"></i> Tous</a>';
   roots.forEach(f=>{
-    btns+='<a href="/voyages?folder='+f.slug+'" class="'+pill(folder===f.slug,false)+'">'+flagImg(f.icon)+' '+esc(f.name)+'</a>';
-    kids(f.id).forEach(c=>{btns+='<a href="/voyages?folder='+c.slug+'" class="'+pill(folder===c.slug,true)+' text-xs pl-5">\u21b3 '+flagImg(c.icon)+' '+esc(c.name)+'</a>';});
+    const isActive=folder===f.slug||(parentF&&parentF.id===f.id);
+    btns+='<a href="/voyages?folder='+f.slug+'" class="'+pill(isActive,false)+'">'+flagImg(f.icon)+' '+esc(f.name)+'</a>';
   });
   document.getElementById('filters').innerHTML=btns;
-  document.getElementById('grid').innerHTML=artData.articles.length
-    ?artData.articles.map(card).join('')
+  const childFolders=activeF ? kids(activeF.id) : [];
+  const gridItems=[...childFolders.map(folderCard),...artData.articles.map(card)];
+  document.getElementById('grid').innerHTML=gridItems.length
+    ?gridItems.join('')
     :'<div class="col-span-3 text-center py-20" style="color:var(--ink-light)"><i class="ph ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1rem;color:var(--ink-light)"></i><p class="text-xl font-semibold mb-1" style="color:var(--ink)">Pas encore de voyage ici</p></div>';
 }
 init();
@@ -116,10 +205,10 @@ init();
 </body></html>`);
 }
 
-function voyagePage(slug) {
+function voyagePage(slug, authed=false) {
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD('Chargement... — Tranquille, on est en vacances')}</head>
+<head>${HEAD('Chargement... - Tranquille, on est en vacances')}</head>
 <body class="font-sans antialiased" style="background:var(--cream)">
 ${NAV()}
 <main id="main" class="pt-16">
@@ -133,6 +222,7 @@ ${TOAST}
 ${LIGHTBOX}
 <script>
 const SLUG = ${JSON.stringify(slug)};
+const IS_ADMIN = ${JSON.stringify(authed)};
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
@@ -155,7 +245,7 @@ async function init(){
     document.getElementById('main').innerHTML=\`<div class="max-w-2xl mx-auto px-4 py-32 text-center"><i class="ph ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1.5rem;color:var(--ink-light)"></i><h1 class="font-display text-3xl font-bold mb-4" style="color:var(--ink)">Voyage introuvable</h1><p class="mb-8" style="color:var(--ink-muted)">Ce voyage n'existe pas ou n'est pas encore publié.</p><a href="/voyages" class="action-btn">← Retour aux voyages</a></div>\`;
     return;
   }
-  document.title=esc(a.title)+' — Tranquille, on est en vacances';
+  document.title=esc(a.title)+' - Tranquille, on est en vacances';
   const photos=a.photos||[];
   const inlineImgs=extractInlineImages(a.content||'');
   const photoUrlSet=new Set(photos.map(p=>p.url));
@@ -195,6 +285,7 @@ async function init(){
       <button onclick="share()" class="subtle-btn"><i class="ph ph-share-network"></i> Partager</button>
     </div>
   </div>\`;
+  if(IS_ADMIN){const fab=document.createElement('a');fab.href='/admin/editor/'+a.id;fab.setAttribute('style','position:fixed;bottom:5rem;right:1.5rem;z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:#0057B8;color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,87,184,.4)');fab.innerHTML='<i class="ph ph-pencil-simple" style="font-size:1.1rem"></i> Modifier';document.body.appendChild(fab);}
 }
 
 function renderVoyageContent(content,photos){
@@ -345,6 +436,9 @@ export default {
         if (method === 'GET') return getSettings(env);
         if (method === 'PUT') return authed ? updateSettings(request, env) : unauthorized();
       }
+      if (path === '/api/settings/hero-image' && method === 'POST') {
+        return authed ? uploadHeroImage(request, env) : unauthorized();
+      }
 
       // Folders
       if (path === '/api/folders') {
@@ -413,13 +507,14 @@ export default {
     if (path === '/unsubscribe') return emailUnsubscribe(request, env);
 
     // ── Public HTML pages ─────────────────────────────────────
-    if (path === '/' || path === '') return homePage();
-    if (path === '/voyages')         return voyagesPage();
+    const publicAuthed = await isAuthenticated(request, env.SESSION_SECRET);
+    if (path === '/' || path === '') return homePage(publicAuthed);
+    if (path === '/voyages')         return voyagesPage(publicAuthed);
     const voyageMatch = matchPath('/voyage/:slug', path);
-    if (voyageMatch) return voyagePage(voyageMatch.slug);
+    if (voyageMatch) return voyagePage(voyageMatch.slug, publicAuthed);
 
     // 404
-    return html(`<!DOCTYPE html><html lang="fr"><head><title>404 — Page introuvable</title></head>
+    return html(`<!DOCTYPE html><html lang="fr"><head><title>404 - Page introuvable</title></head>
 <body style="font-family:sans-serif;text-align:center;padding:4rem">
   <h1 style="font-size:3rem"><i class="ph ph-map-trifold"></i></h1>
   <h2>Page introuvable</h2>

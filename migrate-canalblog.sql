@@ -9,7 +9,7 @@
 -- Pré-requis : schema.sql doit déjà avoir été appliqué.
 -- Ce fichier utilise INSERT OR IGNORE pour être idempotent.
 -- Les photos originales (stockées sur storage.canalblog.com)
--- ne sont pas migrées ici — à traiter séparément via R2.
+-- ne sont pas migrées ici - à traiter séparément via R2.
 -- =========================================================
 
 
@@ -244,7 +244,7 @@ Source : https://cetipar.canalblog.com/pages/maroc-octobre-2019/37718054.html',
 
 -- ── 12 ───────────────────────────────────────────────────────
 -- Source : https://cetipar.canalblog.com/pages/maroc-juillet-2020/37992769.html
--- Voyage annulé — conservé en draft à titre d''archive.
+-- Voyage annulé - conservé en draft à titre d''archive.
 (
   'Maroc Juillet 2020 – Annulé Covid',
   'maroc-juillet-2020',
@@ -254,7 +254,7 @@ Source : https://cetipar.canalblog.com/pages/maroc-octobre-2019/37718054.html',
   '2020-07-31',
   '[]',
   'Voyage annulé en raison du Covid-19. L''itinéraire prévu partait de Marrakech pour rejoindre Tanger en plein été (~40 °C).',
-  'Voyage estival prévu au Maroc en juillet 2020 — une nouveauté pour la famille habituée au printemps et à l''automne. L''itinéraire prévu : une grande boucle de Marrakech jusqu''à Tanger en pleine chaleur, environ 40 °C. En raison de la pandémie de Covid-19, le voyage a finalement été annulé. Comme le résume sobrement l''auteur : "Voyage annulé : Merci le covid 19 !"
+  'Voyage estival prévu au Maroc en juillet 2020 - une nouveauté pour la famille habituée au printemps et à l''automne. L''itinéraire prévu : une grande boucle de Marrakech jusqu''à Tanger en pleine chaleur, environ 40 °C. En raison de la pandémie de Covid-19, le voyage a finalement été annulé. Comme le résume sobrement l''auteur : "Voyage annulé : Merci le covid 19 !"
 
 Source : https://cetipar.canalblog.com/pages/maroc-juillet-2020/37992769.html',
   'draft',
@@ -272,7 +272,7 @@ Source : https://cetipar.canalblog.com/pages/maroc-juillet-2020/37992769.html',
   '2021-10-02',
   '[]',
   'Ascension du Toubkal (4 167 m) en 6 jours de trek, puis road trip vers Essaouira, Taghazout et la Vallée du Paradis.',
-  'Voyage en deux temps, quinze jours total. Première partie : six jours de trek pour gravir le Toubkal (4 167 m), plus haut sommet du Maroc, avec bivouacs à haute altitude, rencontre de guides berbères et muletiers, et épreuves physiques liées à l''altitude. Deuxième partie : road trip depuis Marrakech — désert d''Agafay et ses paysages minéraux, médina d''Essaouira battue par le vent, village de surf de Taghazout sur l''Atlantique, et Vallée du Paradis pour clore le voyage. Le récit documente un Maroc post-Covid qui reprend progressivement son souffle, les conditions de sécheresse, la cuisine traditionnelle (tajines, harira) et les hébergements variés (refuges de montagne, riads, camps désertiques).
+  'Voyage en deux temps, quinze jours total. Première partie : six jours de trek pour gravir le Toubkal (4 167 m), plus haut sommet du Maroc, avec bivouacs à haute altitude, rencontre de guides berbères et muletiers, et épreuves physiques liées à l''altitude. Deuxième partie : road trip depuis Marrakech - désert d''Agafay et ses paysages minéraux, médina d''Essaouira battue par le vent, village de surf de Taghazout sur l''Atlantique, et Vallée du Paradis pour clore le voyage. Le récit documente un Maroc post-Covid qui reprend progressivement son souffle, les conditions de sécheresse, la cuisine traditionnelle (tajines, harira) et les hébergements variés (refuges de montagne, riads, camps désertiques).
 
 Source : https://cetipar.canalblog.com/pages/maroc-septembre-2021/39128198.html',
   'published',
@@ -326,7 +326,7 @@ Source : https://cetipar.canalblog.com/pages/maroc-2022/39630854.html',
   '2023-05-12',
   '[]',
   'Trek de 7 jours dans les gorges de Taghia avec bivouac à 2 650 m, passerelle suspendue vertigineuse, villages nomades et désert de Merzouga.',
-  'Voyage en deux parties. Première étape : chutes d''Ouzoud avec le guide Saïd et l''histoire méconnue du "village mexicain". Puis Taghia, massif rocheux isolé du Haut Atlas, pour un trek de sept jours : bivouac à 2 650 m d''altitude, franchissement de la fameuse passerelle suspendue dangereuse, canyoning avec plusieurs rappels, nuits chez des familles nomades berbères dans des habitations troglodytes. Traversée des gorges du Dadès et du Todra avec conduite de nuit à éviter absolument ("Il NE FAUT JAMAIS CONDUIRE DE NUIT" — véhicules sans feux et troupeaux sur la route). Désert de Merzouga avec assistance à un oiseau blessé et souk de Rissani pour clore le voyage.
+  'Voyage en deux parties. Première étape : chutes d''Ouzoud avec le guide Saïd et l''histoire méconnue du "village mexicain". Puis Taghia, massif rocheux isolé du Haut Atlas, pour un trek de sept jours : bivouac à 2 650 m d''altitude, franchissement de la fameuse passerelle suspendue dangereuse, canyoning avec plusieurs rappels, nuits chez des familles nomades berbères dans des habitations troglodytes. Traversée des gorges du Dadès et du Todra avec conduite de nuit à éviter absolument ("Il NE FAUT JAMAIS CONDUIRE DE NUIT" - véhicules sans feux et troupeaux sur la route). Désert de Merzouga avec assistance à un oiseau blessé et souk de Rissani pour clore le voyage.
 
 Source : https://cetipar.canalblog.com/pages/maroc-2023/39892185.html',
   'published',
@@ -398,7 +398,7 @@ Source : https://cetipar.canalblog.com/2024/10/oman-2024.html',
   '2025-05-10',
   '[]',
   'Ksour troglodytes du sud tunisien, décors de Star Wars à Matmata, puis quatre jours de trek à dos de chameau dans le Sahara.',
-  'Premier voyage en Tunisie pour Séverine et Maxim. Arrivée à Monastir, puis cap sur le sud. Les premiers jours sont consacrés aux ksour (forteresses berbères) et villages troglodytes : Medenine, Chenini, Guermessa — structures millénaires servant de greniers collectifs à cellules étroites. Trek de 13 km culminant dans le canyon "Efni" utilisé pour le tournage des scènes de course de pods dans Star Wars. Visite de l''hôtel de Matmata où ont été filmées les scènes de la ferme de Lars (Luke Skywalker). Les quatre derniers jours : trek à dos de chameau dans le grand Sahara avec les guides Ibrahim et Ridha, environ 40 km parcourus, nuits à la belle étoile. Rencontre de la faune désertique et hébergements troglodytes authentiques tout au long du séjour.
+  'Premier voyage en Tunisie pour Séverine et Maxim. Arrivée à Monastir, puis cap sur le sud. Les premiers jours sont consacrés aux ksour (forteresses berbères) et villages troglodytes : Medenine, Chenini, Guermessa - structures millénaires servant de greniers collectifs à cellules étroites. Trek de 13 km culminant dans le canyon "Efni" utilisé pour le tournage des scènes de course de pods dans Star Wars. Visite de l''hôtel de Matmata où ont été filmées les scènes de la ferme de Lars (Luke Skywalker). Les quatre derniers jours : trek à dos de chameau dans le grand Sahara avec les guides Ibrahim et Ridha, environ 40 km parcourus, nuits à la belle étoile. Rencontre de la faune désertique et hébergements troglodytes authentiques tout au long du séjour.
 
 Source : https://cetipar.canalblog.com/2025/04/tunisie-2025.html',
   'published',
@@ -434,7 +434,7 @@ Source : https://cetipar.canalblog.com/2025/09/maroc-2025.html',
   '2026-02-06',
   '2026-02-15',
   '[]',
-  'Départ pour la Mauritanie annulé à CDG faute de visa — improvisation réussie avec un vol Transavia pour Agadir et canyoning de l''Ifni.',
+  'Départ pour la Mauritanie annulé à CDG faute de visa - improvisation réussie avec un vol Transavia pour Agadir et canyoning de l''Ifni.',
   'La grande aventure mauritanienne tourne court dès l''aéroport Charles-de-Gaulle : la compagnie ASL confirme que les passagers ne peuvent pas embarquer sans visa, malgré les assurances préalables de l''opérateur. Après un moment de déception et de négociation, la famille improvise et réserve un vol Transavia pour Agadir le jour même. Le Maroc, encore lui, réserve un accueil chaleureux. Au programme improvisé : randonnées dans la Vallée du Paradis et ses cascades, canyoning dans le canyon de l''Ifni avec les guides professionnels Jimmy, Ahmed et Yassine, exploration des souks de Tafraout et d''Agadir, visite de la Kasbah Tizourgane et des rochers peints de Tafraout. Un voyage de secours qui devient inoubliable.
 
 Source : https://cetipar.canalblog.com/2026/01/mauritanie-fevrier-2026.html',
@@ -470,7 +470,7 @@ Source : https://cetipar.canalblog.com/2025/10/maroc-2026.html',
 --    11    └── Maroc        (16 articles publiés + 1 draft)
 --    12    └── Egypte       (1 article)
 --    13    └── Tunisie      (1 article)
---    14    └── Mauritanie   (aucun article — voyage redirigé vers Maroc)
+--    14    └── Mauritanie   (aucun article - voyage redirigé vers Maroc)
 --    15  Moyen-Orient
 --    16    └── Oman         (3 articles)
 --    17    └── Jordanie     (1 article)
@@ -480,7 +480,7 @@ Source : https://cetipar.canalblog.com/2025/10/maroc-2026.html',
 --    - 22 en status 'published'
 --    - 1  en status 'draft'  (maroc-juillet-2020, annulé Covid)
 --
---  Photos non migrées — URLs d''origine sur storage.canalblog.com
+--  Photos non migrées - URLs d''origine sur storage.canalblog.com
 --  présentes dans le champ 'content' de chaque article.
 --  Utiliser cover_url / cover_r2_key après upload vers R2.
 -- ─────────────────────────────────────────────────────────────

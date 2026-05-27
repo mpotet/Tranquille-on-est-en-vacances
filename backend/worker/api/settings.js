@@ -1,13 +1,17 @@
 /**
- * worker/api/settings.js — Site-wide settings CRUD
+ * worker/api/settings.js - Site-wide settings CRUD
  *
- * GET  /api/settings  — public, returns all settings as { key: value }
- * PUT  /api/settings  — admin only, updates allowed keys
+ * GET  /api/settings  - public, returns all settings as { key: value }
+ * PUT  /api/settings  - admin only, updates allowed keys
  */
 
 import { json } from '../utils.js';
 
-const ALLOWED_KEYS = ['hero_image_url', 'hero_title', 'hero_subtitle', 'site_tagline'];
+const ALLOWED_KEYS = [
+  'hero_image_url', 'hero_image_r2_key',
+  'hero_title', 'hero_subtitle', 'site_tagline',
+  'hero_eyebrow', 'hero_badge', 'hero_cta_primary', 'hero_cta_secondary',
+];
 
 export async function getSettings(env) {
   const { results } = await env.DB.prepare(

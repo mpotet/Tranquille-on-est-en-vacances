@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Génère des icones PNG 192×192 et 512×512 pour le manifest PWA.
- * Aucune dépendance externe — PNG pur Node.js.
+ * Aucune dépendance externe - PNG pur Node.js.
  */
 import { deflateSync } from 'node:zlib';
 import { writeFileSync } from 'node:fs';
@@ -58,7 +58,7 @@ function makePNG(size) {
     }
   }
 
-  // Add a simple "P" letter in white at center (optional — skip for pure color square)
+  // Add a simple "P" letter in white at center (optional - skip for pure color square)
   // Just use solid gradient for simplicity
 
   const compressed = deflateSync(raw, { level: 6 });

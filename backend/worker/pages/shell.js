@@ -1,5 +1,5 @@
 /**
- * pages/shell.js — Shared HTML shell (head + nav + footer) injected into every page.
+ * pages/shell.js - Shared HTML shell (head + nav + footer) injected into every page.
  */
 
 export const HEAD = (title = 'Tranquille, on est en vacances', description = "Le carnet de bord des voyages de la famille Potet") => `
@@ -299,7 +299,7 @@ export const NAV = (active = '') => `
 <nav id="navbar" class="fixed top-0 left-0 right-0 z-50">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-16">
-      <a href="/" class="flex items-center gap-3 group" aria-label="Tranquille, on est en vacances — Accueil">
+      <a href="/" class="flex items-center gap-3 group" aria-label="Tranquille, on est en vacances - Accueil">
         <img src="/icon-192.png" width="38" height="38" alt="" aria-hidden="true" style="border-radius:.75rem;flex-shrink:0;box-shadow:0 2px 8px rgba(0,87,184,.20)">
         <div class="leading-none">
           <span class="brand-title font-display font-bold text-base block">Tranquille,</span>
@@ -342,7 +342,7 @@ export const FOOTER = `
             <div class="brand-subtitle text-[0.68rem] font-semibold uppercase tracking-[0.20em] mt-0.5">on est en vacances</div>
           </div>
         </div>
-        <p class="text-sm leading-relaxed" style="color:var(--ink-muted)">Le carnet de voyage de la famille Potet — des souvenirs partagés avec ceux qu'on aime.</p>
+        <p class="text-sm leading-relaxed" style="color:var(--ink-muted)">Le carnet de voyage de la famille Potet - des souvenirs partagés avec ceux qu'on aime.</p>
       </div>
       <div>
         <h3 class="font-bold mb-4 text-xs uppercase tracking-[0.18em]" style="color:var(--ink)">Explorer</h3>
@@ -408,9 +408,13 @@ export const FOOTER = `
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
+function getServiceWorkerReady() {
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker?.ready) return Promise.resolve(null);
+  return navigator.serviceWorker.ready.catch(() => null);
+}
 // ── Warm /admin/editor in cache for offline creation ─────────
 if (navigator.onLine && window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin/editor') {
-  navigator.serviceWorker.ready
+  getServiceWorkerReady()
     .then(() => fetch('/admin/editor').catch(() => {}))
     .catch(() => {});
 }
@@ -420,10 +424,10 @@ function urlB64ToUint8(b) {
   return Uint8Array.from(s, c => c.charCodeAt(0));
 }
 async function initPushBtn() {
-  if (!('PushManager' in window)) return;
+  if (!('PushManager' in window) || !('serviceWorker' in navigator)) return;
   const btn = document.getElementById('push-btn');
   if (!btn) return;
-  const reg = await navigator.serviceWorker.ready.catch(() => null);
+  const reg = await getServiceWorkerReady();
   if (!reg) return;
   btn.classList.remove('hidden');
   const existing = await reg.pushManager.getSubscription();
@@ -436,12 +440,14 @@ async function initPushBtn() {
 }
 async function subscribePush() {
   try {
+    if (!('serviceWorker' in navigator)) { showSubMsg('Notifications non disponibles ici', false); return; }
     const config = await fetch('/api/push/config').then(r => r.json()).catch(() => ({}));
     if (!config.vapidPublicKey) { showSubMsg('Notifications non configurées', false); return; }
-    const reg = await navigator.serviceWorker.ready;
+    const reg = await getServiceWorkerReady();
+    if (!reg) { showSubMsg('Service worker indisponible', false); return; }
     const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(config.vapidPublicKey) });
     const res = await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
-    if (!res.ok) { showSubMsg('Erreur lors de l\\'inscription', false); return; }
+    if (!res.ok) { showSubMsg("Erreur lors de l'inscription", false); return; }
     showSubMsg('Notifications activées !', true);
     const btn = document.getElementById('push-btn');
     if (btn) { btn.innerHTML = '<i class="ph ph-bell-slash"></i> Désactiver les notifications'; btn.onclick = unsubscribePush; }
@@ -455,7 +461,8 @@ async function subscribePush() {
   }
 }
 async function unsubscribePush() {
-  const reg = await navigator.serviceWorker.ready;
+  const reg = await getServiceWorkerReady();
+  if (!reg) return;
   const sub = await reg.pushManager.getSubscription();
   if (sub) {
     await fetch('/api/push/unsubscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) });
@@ -487,7 +494,7 @@ async function initNotifPrompt() {
   if (isPwa) {
     if (!('PushManager' in window)) return;
     if (localStorage.getItem('notif-prompt-seen')) return;
-    const reg = await navigator.serviceWorker.ready.catch(() => null);
+    const reg = await getServiceWorkerReady();
     if (!reg) return;
     const existing = await reg.pushManager.getSubscription().catch(() => null);
     if (existing) { localStorage.setItem('notif-prompt-seen', '1'); return; }

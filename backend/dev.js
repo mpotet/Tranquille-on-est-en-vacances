@@ -1,5 +1,5 @@
 /**
- * dev.js — Lance wrangler dev + cloudflared tunnel en parallèle
+ * dev.js - Lance wrangler dev + cloudflared tunnel en parallèle
  * Usage: npm run dev
  */
 import { spawn } from 'node:child_process';

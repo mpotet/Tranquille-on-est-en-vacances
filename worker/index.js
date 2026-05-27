@@ -1,5 +1,5 @@
 /**
- * worker/index.js — Main Cloudflare Worker entry point
+ * worker/index.js - Main Cloudflare Worker entry point
  *
  * Routing:
  *   Public HTML pages   →  /, /voyages, /voyage/:slug
@@ -34,7 +34,7 @@ import { HEAD, NAV, FOOTER, TOAST, LIGHTBOX } from './pages/shell.js';
 function voyagesPage() {
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD('Voyages — Tranquille, on est en vacances')}</head>
+<head>${HEAD('Voyages - Tranquille, on est en vacances')}</head>
 <body class="font-sans antialiased" style="background:var(--cream)">
 ${NAV('voyages')}
 <main class="pt-16">
@@ -78,6 +78,19 @@ function card(a){return \`<article class="voyage-card cursor-pointer group" oncl
   </div>
 </article>\`;}
 
+function folderCard(f){return \`<article class="voyage-card cursor-pointer group" onclick="location.href='/voyages?folder=\${f.slug}'" role="link" tabindex="0" onkeydown="if(event.key==='Enter')location.href='/voyages?folder=\${f.slug}'">
+  <div class="relative overflow-hidden flex items-center justify-center" style="height:15rem;border-radius:1.5rem 1.5rem 0 0;background:linear-gradient(135deg,rgba(0,87,184,.12),rgba(255,199,138,.18))">
+    <div class="text-center px-6">
+      <div style="width:4.75rem;height:4.75rem;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.72);border-radius:50%;box-shadow:0 8px 20px rgba(0,0,0,.08);font-size:2rem;margin:0 auto 1rem">\${esc(f.icon||'📁')}</div>
+      <div class="text-xs font-black uppercase tracking-[.18em]" style="color:var(--blue)">Sous-dossier</div>
+    </div>
+  </div>
+  <div class="p-5">
+    <h3 class="font-display font-bold text-lg leading-snug mb-2" style="color:var(--ink)">\${esc(f.name)}</h3>
+    <p class="text-sm leading-relaxed mb-4" style="color:var(--ink-muted)">Ouvrir ce sous-dossier et voir ses voyages.</p>
+    <span class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--blue)">Ouvrir →</span>
+  </div>
+</article>\`;}
 async function init(){
   const params=new URLSearchParams(location.search);
   const folder=params.get('folder');
@@ -88,7 +101,7 @@ async function init(){
   const activeF=folder?folders.find(f=>f.slug===folder):null;
   const totalCount=(artData.total??artData.articles.length);
   const plural=totalCount!==1?'s':'';
-  const destLabel=activeF?' — <strong style="color:var(--palm)">'+esc(activeF.icon||'')+' '+esc(activeF.name)+'</strong>':'';
+  const destLabel=activeF?' - <strong style="color:var(--palm)">'+esc(activeF.icon||'')+' '+esc(activeF.name)+'</strong>':'';
   document.getElementById('subtitle').innerHTML='<strong style="color:var(--blue)">'+totalCount+'</strong> itinéraire'+plural+' documenté'+destLabel;
 
   const roots=folders.filter(f=>!f.parent_id);
@@ -103,11 +116,12 @@ async function init(){
   let btns='<a href="/voyages" class="'+pill(!folder,false)+'"><i class="ph ph-globe-hemisphere-west"></i> Tous</a>';
   roots.forEach(f=>{
     btns+='<a href="/voyages?folder='+f.slug+'" class="'+pill(folder===f.slug,false)+'">'+esc(f.icon)+' '+esc(f.name)+'</a>';
-    kids(f.id).forEach(c=>{btns+='<a href="/voyages?folder='+c.slug+'" class="'+pill(folder===c.slug,true)+' text-xs pl-5">↳ '+esc(c.icon)+' '+esc(c.name)+'</a>';});
   });
   document.getElementById('filters').innerHTML=btns;
-  document.getElementById('grid').innerHTML=artData.articles.length
-    ?artData.articles.map(card).join('')
+  const childFolders=activeF ? kids(activeF.id) : [];
+  const gridItems=[...childFolders.map(folderCard),...artData.articles.map(card)];
+  document.getElementById('grid').innerHTML=gridItems.length
+    ?gridItems.join('')
     :'<div class="col-span-3 text-center py-20" style="color:var(--ink-light)"><i class="ph ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1rem;color:var(--ink-light)"></i><p class="text-xl font-semibold mb-1" style="color:var(--ink)">Pas encore de voyage ici</p></div>';
 }
 init();
@@ -118,7 +132,7 @@ init();
 function voyagePage(slug) {
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD('Chargement... — Tranquille, on est en vacances')}</head>
+<head>${HEAD('Chargement... - Tranquille, on est en vacances')}</head>
 <body class="font-sans antialiased" style="background:var(--cream)">
 ${NAV()}
 <main id="main" class="pt-16">
@@ -146,7 +160,7 @@ async function init(){
     document.getElementById('main').innerHTML=\`<div class="max-w-2xl mx-auto px-4 py-32 text-center"><i class="ph ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1.5rem;color:var(--ink-light)"></i><h1 class="font-display text-3xl font-bold mb-4" style="color:var(--ink)">Voyage introuvable</h1><p class="mb-8" style="color:var(--ink-muted)">Ce voyage n'existe pas ou n'est pas encore publié.</p><a href="/voyages" class="action-btn">← Retour aux voyages</a></div>\`;
     return;
   }
-  document.title=esc(a.title)+' — Tranquille, on est en vacances';
+  document.title=esc(a.title)+' - Tranquille, on est en vacances';
   const photos=a.photos||[];
   const renderedContent=renderVoyageContent(a.content||'',photos);
   document.getElementById('main').innerHTML=\`
@@ -351,7 +365,7 @@ export default {
     if (voyageMatch) return voyagePage(voyageMatch.slug);
 
     // 404
-    return html(`<!DOCTYPE html><html lang="fr"><head><title>404 — Page introuvable</title></head>
+    return html(`<!DOCTYPE html><html lang="fr"><head><title>404 - Page introuvable</title></head>
 <body style="font-family:sans-serif;text-align:center;padding:4rem">
   <h1 style="font-size:3rem"><i class="ph ph-map-trifold"></i></h1>
   <h2>Page introuvable</h2>

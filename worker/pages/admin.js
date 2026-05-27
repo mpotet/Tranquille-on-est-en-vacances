@@ -1,5 +1,5 @@
 /**
- * pages/admin.js — Admin interface HTML templates
+ * pages/admin.js - Admin interface HTML templates
  * Served only to authenticated users (checked in index.js before calling these).
  */
 
@@ -32,7 +32,7 @@ const ADMIN_NAV = (subtitle = '') => `
 export function loginPage(error = '') {
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD('Admin — Connexion')}</head>
+<head>${HEAD('Admin - Connexion')}</head>
 <body class="bg-stone-50 min-h-screen font-sans antialiased">
 <div class="min-h-screen flex items-center justify-center px-4 py-12">
   <div class="w-full max-w-md">
@@ -70,7 +70,7 @@ export function loginPage(error = '') {
 export function dashboardPage() {
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD('Admin — Tableau de bord')}</head>
+<head>${HEAD('Admin - Tableau de bord')}</head>
 <body class="bg-stone-50 font-sans text-stone-900 antialiased pt-14">
 ${ADMIN_NAV()}
 
@@ -90,11 +90,11 @@ ${ADMIN_NAV()}
       </div>
       <div class="grid grid-cols-2 gap-3" id="stats-grid">
         <div class="bg-emerald-50 rounded-2xl p-4 text-center border border-emerald-100">
-          <div id="stat-pub" class="text-2xl font-black text-emerald-600">—</div>
+          <div id="stat-pub" class="text-2xl font-black text-emerald-600">-</div>
           <div class="text-xs font-bold text-emerald-700 mt-1">Publiés</div>
         </div>
         <div class="bg-amber-50 rounded-2xl p-4 text-center border border-amber-100">
-          <div id="stat-draft" class="text-2xl font-black text-amber-600">—</div>
+          <div id="stat-draft" class="text-2xl font-black text-amber-600">-</div>
           <div class="text-xs font-bold text-amber-700 mt-1">Brouillons</div>
         </div>
       </div>
@@ -344,7 +344,7 @@ export function editorPage(articleId = null) {
   const isEdit = articleId !== null;
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD(isEdit ? 'Admin — Modifier article' : 'Admin — Nouvel article')}</head>
+<head>${HEAD(isEdit ? 'Admin - Modifier article' : 'Admin - Nouvel article')}</head>
 <body class="bg-stone-50 font-sans text-stone-900 antialiased pt-14">
 ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
 
@@ -381,7 +381,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
           <textarea id="e-content" rows="22" placeholder="# Titre\n\nÉcris ici en Markdown..."
                     class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 md-editor"></textarea>
           <div class="flex flex-wrap gap-1 mt-2">
-            ${[['**Gras**','G'],['*Ital.*','I'],['# H1','H1'],['## H2','H2'],['> Citation','❝'],['- Item','—'],['[lien](url)','lien']].map(([s,l])=>`
+            ${[['**Gras**','G'],['*Ital.*','I'],['# H1','H1'],['## H2','H2'],['> Citation','❝'],['- Item','-'],['[lien](url)','lien']].map(([s,l])=>`
               <button type="button" onclick="insertMd('${s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}','e-content')" class="text-xs bg-stone-100 hover:bg-sky-100 text-stone-600 hover:text-sky-700 px-2.5 py-1.5 rounded-lg font-mono transition-colors">${l}</button>`).join('')}
           </div>
         </div>

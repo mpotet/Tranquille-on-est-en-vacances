@@ -1,5 +1,5 @@
 /**
- * pages/shell.js — Shared HTML shell (head + nav + footer) injected into every page.
+ * pages/shell.js - Shared HTML shell (head + nav + footer) injected into every page.
  */
 
 export const HEAD = (title = 'Tranquille, on est en vacances', description = "Le carnet de bord des voyages de la famille Potet") => `
@@ -283,7 +283,7 @@ export const NAV = (active = '') => `
 <nav id="navbar" class="fixed top-0 left-0 right-0 z-50">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-16">
-      <a href="/" class="flex items-center gap-3 group" aria-label="Tranquille, on est en vacances — Accueil">
+      <a href="/" class="flex items-center gap-3 group" aria-label="Tranquille, on est en vacances - Accueil">
         <span class="brand-mark" aria-hidden="true"><i class="ph ph-tree-palm" style="font-size:1.15rem;color:var(--blue)"></i></span>
         <div class="leading-none">
           <span class="brand-title font-display font-bold text-base block">Tranquille,</span>
@@ -326,7 +326,7 @@ export const FOOTER = `
             <div class="brand-subtitle text-[0.68rem] font-semibold uppercase tracking-[0.20em] mt-0.5">on est en vacances</div>
           </div>
         </div>
-        <p class="text-sm leading-relaxed" style="color:var(--ink-muted)">Le carnet de voyage de la famille Potet — des souvenirs partagés avec ceux qu'on aime.</p>
+        <p class="text-sm leading-relaxed" style="color:var(--ink-muted)">Le carnet de voyage de la famille Potet - des souvenirs partagés avec ceux qu'on aime.</p>
       </div>
       <div>
         <h3 class="font-bold mb-4 text-xs uppercase tracking-[0.18em]" style="color:var(--ink)">Explorer</h3>

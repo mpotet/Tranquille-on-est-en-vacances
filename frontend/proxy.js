@@ -1,7 +1,7 @@
 /**
  * frontend/proxy.js
  * Proxifie localhost:3000 → backend Worker sur localhost:8787
- * Aucune dépendance — Node.js built-ins uniquement.
+ * Aucune dépendance - Node.js built-ins uniquement.
  *
  * Usage: npm run dev  (depuis frontend/)
  * Prérequis: cd ../backend && npm run dev  (Worker sur :8787)

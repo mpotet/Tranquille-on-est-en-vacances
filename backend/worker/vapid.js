@@ -1,13 +1,13 @@
 /**
- * worker/vapid.js — Web Push (RFC 8030/8291/8188) + VAPID (RFC 8292)
+ * worker/vapid.js - Web Push (RFC 8030/8291/8188) + VAPID (RFC 8292)
  *
- * Fully implemented with SubtleCrypto — no external dependencies.
+ * Fully implemented with SubtleCrypto - no external dependencies.
  * Compatible with Cloudflare Workers runtime.
  *
  * Required env secrets (set via `wrangler secret put`):
- *   VAPID_PUBLIC_KEY  — base64url of the raw 65-byte P-256 public key
- *   VAPID_PRIVATE_KEY — base64 of JSON.stringify(privateKeyJwk)
- *   VAPID_SUBJECT     — "mailto:your@email.com"
+ *   VAPID_PUBLIC_KEY  - base64url of the raw 65-byte P-256 public key
+ *   VAPID_PRIVATE_KEY - base64 of JSON.stringify(privateKeyJwk)
+ *   VAPID_SUBJECT     - "mailto:your@email.com"
  */
 
 const te = new TextEncoder();
@@ -49,7 +49,7 @@ async function hkdfExtract(salt, ikm) {
 }
 
 async function hkdfExpand(prk, info, length) {
-  // T(1) = HMAC-SHA-256(PRK, info || 0x01)  — single-block expand (length ≤ 32)
+  // T(1) = HMAC-SHA-256(PRK, info || 0x01)  - single-block expand (length ≤ 32)
   const input = new Uint8Array(info.length + 1);
   input.set(info);
   input[info.length] = 0x01;
@@ -60,10 +60,10 @@ async function hkdfExpand(prk, info, length) {
 // ── RFC 8291 §3 key derivation ────────────────────────────────────────────────
 
 async function deriveContentKeys(authSecret, receiverPub, senderPub, ecdhZ, salt) {
-  // Step 1 — PRK_key = HKDF-Extract(auth_secret, ECDH_Z)
+  // Step 1 - PRK_key = HKDF-Extract(auth_secret, ECDH_Z)
   const prkKey = await hkdfExtract(authSecret, ecdhZ);
 
-  // Step 2 — IKM = HKDF-Expand(PRK_key, "WebPush: info\0" || receiver_pub || sender_pub, 32)
+  // Step 2 - IKM = HKDF-Expand(PRK_key, "WebPush: info\0" || receiver_pub || sender_pub, 32)
   const keyInfoPrefix = te.encode('WebPush: info\x00');
   const keyInfo = new Uint8Array(keyInfoPrefix.length + receiverPub.length + senderPub.length);
   keyInfo.set(keyInfoPrefix, 0);
@@ -71,13 +71,13 @@ async function deriveContentKeys(authSecret, receiverPub, senderPub, ecdhZ, salt
   keyInfo.set(senderPub, keyInfoPrefix.length + receiverPub.length);
   const ikm = await hkdfExpand(prkKey, keyInfo, 32);
 
-  // Step 3 — PRK = HKDF-Extract(salt, IKM)
+  // Step 3 - PRK = HKDF-Extract(salt, IKM)
   const prk = await hkdfExtract(salt, ikm);
 
-  // Step 4 — CEK = HKDF-Expand(PRK, "Content-Encoding: aes128gcm\0", 16)
+  // Step 4 - CEK = HKDF-Expand(PRK, "Content-Encoding: aes128gcm\0", 16)
   const cek = await hkdfExpand(prk, te.encode('Content-Encoding: aes128gcm\x00'), 16);
 
-  // Step 5 — NONCE = HKDF-Expand(PRK, "Content-Encoding: nonce\0", 12)
+  // Step 5 - NONCE = HKDF-Expand(PRK, "Content-Encoding: nonce\0", 12)
   const nonce = await hkdfExpand(prk, te.encode('Content-Encoding: nonce\x00'), 12);
 
   return { cek, nonce };
@@ -115,8 +115,8 @@ async function vapidJwt(privateKeyJwk, audience, subject) {
  * Send an encrypted Web Push message to a single subscription.
  *
  * @param {{ endpoint:string, p256dh:string, auth:string }} sub
- * @param {string}  payloadStr  — JSON string (must be < 4078 bytes)
- * @param {object}  env         — CF Workers env (needs VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT)
+ * @param {string}  payloadStr  - JSON string (must be < 4078 bytes)
+ * @param {object}  env         - CF Workers env (needs VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT)
  * @returns {Promise<Response|undefined>}
  */
 export async function sendWebPush(sub, payloadStr, env) {

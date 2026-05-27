@@ -1,5 +1,5 @@
 /**
- * pages/admin.js — Admin interface HTML templates
+ * pages/admin.js - Admin interface HTML templates
  * Served only to authenticated users (checked in index.js before calling these).
  */
 
@@ -36,7 +36,7 @@ const ADMIN_NAV = (subtitle = '') => `
     if (!bar) return;
     if (!navigator.onLine) {
       bar.className = 'flex fixed top-14 inset-x-0 z-40 items-center justify-center gap-2 py-2 px-4 text-sm font-semibold shadow-md bg-amber-400 text-amber-950';
-      bar.innerHTML = '<i class="ph ph-wifi-x"></i><span>Hors connexion — les sauvegardes restent sur cet appareil</span>';
+      bar.innerHTML = '<i class="ph ph-wifi-x"></i><span>Hors connexion - les sauvegardes restent sur cet appareil</span>';
     } else {
       bar.className = 'hidden fixed top-14 inset-x-0 z-40 items-center justify-center gap-2 py-2 px-4 text-sm font-semibold shadow-md';
       bar.innerHTML = '';
@@ -52,7 +52,7 @@ const ADMIN_NAV = (subtitle = '') => `
 export function loginPage(error = '') {
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD('Admin — Connexion')}</head>
+<head>${HEAD('Admin - Connexion')}</head>
 <body class="bg-stone-50 min-h-screen font-sans antialiased">
 <div class="min-h-screen flex items-center justify-center px-4 py-12">
   <div class="w-full max-w-md">
@@ -90,7 +90,7 @@ export function loginPage(error = '') {
 export function dashboardPage() {
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD('Admin — Tableau de bord')}</head>
+<head>${HEAD('Admin - Tableau de bord')}</head>
 <body class="bg-stone-50 font-sans text-stone-900 antialiased pt-14">
 ${ADMIN_NAV()}
 
@@ -110,11 +110,11 @@ ${ADMIN_NAV()}
       </div>
       <div class="grid grid-cols-2 gap-3" id="stats-grid">
         <div class="bg-emerald-50 rounded-2xl p-4 text-center border border-emerald-100">
-          <div id="stat-pub" class="text-2xl font-black text-emerald-600">—</div>
+          <div id="stat-pub" class="text-2xl font-black text-emerald-600">-</div>
           <div class="text-xs font-bold text-emerald-700 mt-1">Publiés</div>
         </div>
         <div class="bg-amber-50 rounded-2xl p-4 text-center border border-amber-100">
-          <div id="stat-draft" class="text-2xl font-black text-amber-600">—</div>
+          <div id="stat-draft" class="text-2xl font-black text-amber-600">-</div>
           <div class="text-xs font-bold text-amber-700 mt-1">Archivés</div>
         </div>
       </div>
@@ -159,8 +159,15 @@ ${ADMIN_NAV()}
     <div class="px-6 pb-6 border-t border-stone-100">
       <div class="grid sm:grid-cols-2 gap-5 mt-5">
         <div class="sm:col-span-2">
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-image"></i> URL de l'image héro</label>
-          <input type="url" id="s-hero-img" placeholder="https://..." class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm" oninput="previewHeroImg(this.value)">
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-image"></i> Image héro</label>
+          <div class="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50 p-4">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+              <input type="file" id="s-hero-img-file" accept="image/*" class="hidden" onchange="uploadHeroImageFromSettings(this.files)">
+              <button type="button" onclick="document.getElementById('s-hero-img-file').click()" class="action-btn-sm"><i class="ph ph-upload-simple"></i> Importer une image</button>
+              <p class="text-xs text-stone-500 font-medium">L'image est stockée dans le bucket photos puis utilisée sur la page d'accueil.</p>
+            </div>
+            <input type="hidden" id="s-hero-img">
+          </div>
           <div id="s-hero-img-preview" class="hidden mt-2">
             <img id="s-hero-img-el" src="" alt="" class="w-full h-28 object-cover rounded-xl">
           </div>
@@ -392,6 +399,22 @@ function previewHeroImg(url) {
   if (url) { wrap.classList.remove('hidden'); img.src = url; }
   else       wrap.classList.add('hidden');
 }
+async function uploadHeroImageFromSettings(files) {
+  const file = files && files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('image', file);
+  toast("Upload de l'image héro...", 'info');
+  const res = await fetch('/api/settings/hero-image', { method:'POST', body: fd }).catch(()=>null);
+  const data = await res?.json().catch(()=>null);
+  if (!res?.ok || !data?.url) {
+    toast(data?.error || 'Erreur upload image héro', 'err');
+    return;
+  }
+  document.getElementById('s-hero-img').value = data.url;
+  previewHeroImg(data.url);
+  toast('Image héro importée !', 'ok');
+}
 async function saveSettings() {
   const body = {
     hero_image_url: document.getElementById('s-hero-img').value.trim(),
@@ -416,7 +439,7 @@ export function editorPage(articleId = null) {
   const isEdit = articleId !== null;
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD(isEdit ? 'Admin — Modifier article' : 'Admin — Nouvel article')}<style>#e-content .img-pair{outline:2px dashed rgba(99,179,237,.35);outline-offset:3px;border-radius:.75rem}#e-content .img-pair figure{max-width:49%;min-width:0}</style></head>
+<head>${HEAD(isEdit ? 'Admin - Modifier article' : 'Admin - Nouvel article')}<style>#e-content .img-pair{outline:2px dashed rgba(99,179,237,.35);outline-offset:3px;border-radius:.75rem}#e-content .img-pair figure{max-width:49%;min-width:0}#e-content figure{position:relative}#e-content .img-delete,#e-content .img-split,#e-content .img-expand{position:absolute;top:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;font-weight:700;opacity:0;transition:opacity .15s;z-index:10;padding:0}#e-content .img-delete{right:6px}#e-content .img-split{right:38px;font-size:.7rem}#e-content .img-expand{left:6px;font-size:.7rem}#e-content figure:hover .img-delete,#e-content figure:hover .img-split,#e-content figure:hover .img-expand{opacity:1}#e-content .img-pair-add{flex:1;min-width:0;max-width:49%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;border:2px dashed rgba(99,179,237,.5);border-radius:.75rem;cursor:pointer;color:rgba(56,139,202,.8);font-size:.8rem;font-weight:600;padding:1.5rem .5rem;transition:all .15s;background:rgba(99,179,237,.04)}#e-content .img-pair-add:hover{border-color:#63b3ed;background:rgba(99,179,237,.12);color:#2b6cb0}#e-content .img-pair-add i{font-size:1.6rem}</style></head>
 <body class="bg-stone-50 font-sans text-stone-900 antialiased pt-14 pb-20 lg:pb-0">
 ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
 
@@ -472,7 +495,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
     <!-- Sidebar: first on mobile, col-3 on desktop -->
     <aside class="order-1 lg:col-start-3 lg:row-start-1 space-y-4">
 
-      <!-- Save button (desktop only — mobile uses sticky bottom bar) -->
+      <!-- Save button (desktop only - mobile uses sticky bottom bar) -->
       <div class="hidden lg:block">
         <button onclick="saveArticle()" class="w-full action-btn text-white font-bold py-3 rounded-2xl transition-all"><i class="ph ph-floppy-disk"></i> Sauvegarder</button>
       </div>
@@ -629,7 +652,19 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
     <div class="flex-1 overflow-y-auto px-5 pb-5">
       <p class="text-xs font-bold text-stone-500 uppercase tracking-wide mb-3 mt-2">Photos disponibles</p>
       <div id="iim-gallery" class="grid grid-cols-3 gap-2"></div>
-      <p id="iim-empty" class="hidden text-stone-400 text-sm text-center py-8">Aucune photo — importez des photos via la galerie ci-dessous.</p>
+      <p id="iim-empty" class="hidden text-stone-400 text-sm text-center py-6">Aucune photo dans la galerie.</p>
+      <div class="mt-4 pt-4 border-t border-stone-100">
+        <p class="text-xs font-bold text-stone-500 uppercase tracking-wide mb-2">Importer une nouvelle photo</p>
+        <div class="border-2 border-dashed border-stone-300 rounded-xl p-4 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
+             onclick="document.getElementById('iim-file-in').click()"
+             ondragover="event.preventDefault();this.classList.add('border-sky-400','bg-sky-50')"
+             ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
+             ondrop="_iimDrop(event)">
+          <i class="ph ph-upload-simple text-xl mb-1 block" style="color:var(--blue)"></i>
+          <span class="text-stone-600 font-semibold text-sm">Choisir ou déposer une photo</span>
+          <input type="file" id="iim-file-in" accept="image/*" class="hidden" onchange="_iimUpload(this.files);this.value=''">
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -824,7 +859,7 @@ window.addEventListener('online', async () => {
   }
   const draft = loadDraftLocal();
   if (draft && draft.title && draft._ts > (Date.now() - 3600000)) {
-    toast('Connexion rétablie — pensez à sauvegarder', 'info');
+    toast('Connexion rétablie - pensez à sauvegarder', 'info');
   }
 });
 
@@ -833,6 +868,16 @@ async function init() {
   // Load folders for the selector
   const folders = await fetch('/api/folders').then(r=>r.json()).catch(()=>[]);
   populateFolderSelect(folders, null, 0);
+
+  const createParams = new URLSearchParams(location.search);
+  const requestedFolder = createParams.get('folder');
+  if (!ARTICLE_ID && requestedFolder) {
+    const match = folders.find(f => String(f.id) === requestedFolder || f.slug === requestedFolder);
+    if (match) {
+      const opt = document.querySelector('#e-folder option[value="' + match.id + '"]');
+      if (opt) opt.selected = true;
+    }
+  }
 
   // Set default dates
   const today = new Date().toISOString().slice(0,10);
@@ -846,7 +891,7 @@ async function init() {
       document.getElementById('e-title').value = a.title || '';
       document.getElementById('e-desc').value  = a.short_description || '';
       const rawContent = a.content || '';
-      document.getElementById('e-content').innerHTML = rawContent.trim().startsWith('<') ? rawContent : (rawContent ? (typeof marked !== 'undefined' ? marked.parse(rawContent) : '<p>' + rawContent.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>') + '</p>') : '');
+      document.getElementById('e-content').innerHTML = rawContent.trim().startsWith('<') ? rawContent : (rawContent ? (typeof marked !== 'undefined' ? marked.parse(rawContent) : '<p>' + rawContent.replace(/\\n\\n/g,'</p><p>').replace(/\\n/g,'<br>') + '</p>') : '');
       document.getElementById('e-start-date').value  = a.start_date || a.date || today;
       document.getElementById('e-end-date').value  = a.end_date || a.date || today;
       document.getElementById('e-dest').value  = a.destination || '';
@@ -912,35 +957,42 @@ function fmtBlock(tag) {
   document.execCommand('formatBlock', false, '<' + tag + '>');
 }
 function insertPhotoInText(url, caption, showToast=true, size='full') {
-  const figure = document.createElement('figure');
-  figure.className = 'img-' + size;
-  const img = document.createElement('img'); img.src = url; img.alt = caption || '';
-  figure.appendChild(img);
-  if (caption && caption !== 'photo') {
-    const cap = document.createElement('figcaption'); cap.textContent = caption; figure.appendChild(cap);
-  }
+  const figure = _makeImgFigure(url, caption, size);
   const editor = document.getElementById('e-content');
   if (size === 'half') {
-    const last = editor.lastElementChild;
-    if (last && last.classList.contains('img-pair') && last.querySelectorAll('figure').length < 2) {
-      last.appendChild(figure);
+    // Look for an incomplete img-pair near the cursor first, then at end
+    let row = null;
+    if (_savedRange && editor.contains(_savedRange.commonAncestorContainer)) {
+      let anchor = _savedRange.commonAncestorContainer;
+      if (anchor.nodeType === Node.TEXT_NODE) anchor = anchor.parentNode;
+      while (anchor && anchor.parentNode !== editor) anchor = anchor.parentNode;
+      if (anchor?.classList?.contains('img-pair') && anchor.querySelectorAll('figure').length < 2) row = anchor;
+    }
+    if (!row) {
+      const last = editor.lastElementChild;
+      if (last && last.classList.contains('img-pair') && last.querySelectorAll('figure').length < 2) row = last;
+    }
+    if (row) {
+      row.querySelectorAll('.img-pair-add').forEach(el => el.remove());
+      row.appendChild(figure);
+      _refreshImgPairSlot(row);
     } else {
-      const row = document.createElement('div'); row.className = 'img-pair';
-      row.appendChild(figure); editor.appendChild(row);
+      row = document.createElement('div'); row.className = 'img-pair';
+      row.appendChild(figure);
+      _insertBlockAtCursor(row, editor);
+      _refreshImgPairSlot(row);
     }
   } else {
-    editor.appendChild(figure);
-    const p = document.createElement('p'); p.innerHTML = '<br>'; editor.appendChild(p);
+    _insertBlockAtCursor(figure, editor);
+    const p = document.createElement('p'); p.innerHTML = '<br>';
+    figure.after(p);
   }
   if (showToast) toast('Photo insérée !','ok');
 }
 
 // ── Insert at cursor range (drag / paste) ─────────────────────
 function insertPhotoAtRange(url, caption, range) {
-  const figure = document.createElement('figure');
-  figure.className = 'img-full';
-  const img = document.createElement('img'); img.src = url; img.alt = caption || '';
-  figure.appendChild(img);
+  const figure = _makeImgFigure(url, caption, 'full');
   const editor = document.getElementById('e-content');
   if (range && range.commonAncestorContainer && editor.contains(range.commonAncestorContainer)) {
     range.deleteContents();
@@ -953,9 +1005,94 @@ function insertPhotoAtRange(url, caption, range) {
     const p = document.createElement('p'); p.innerHTML = '<br>'; editor.appendChild(p);
   }
 }
+
+// ── Image figure helpers ──────────────────────────────────────
+function _makeImgFigure(url, caption, size) {
+  const figure = document.createElement('figure');
+  figure.className = 'img-' + size;
+  figure.setAttribute('contenteditable', 'false');
+  const img = document.createElement('img'); img.src = url; img.alt = caption || '';
+  figure.appendChild(img);
+  // Never render caption/filename in the editor
+  const del = document.createElement('button');
+  del.type = 'button'; del.className = 'img-delete'; del.title = 'Supprimer'; del.textContent = '\u00d7';
+  del.onclick = function(e) { e.stopPropagation(); _deleteImgFigure(figure); };
+  figure.appendChild(del);
+  if (size === 'full') {
+    const split = document.createElement('button');
+    split.type = 'button'; split.className = 'img-split'; split.title = 'Mettre en demi-largeur';
+    split.innerHTML = '<i class="ph ph-columns"></i>';
+    split.onclick = function(e) { e.stopPropagation(); _splitToHalf(figure); };
+    figure.appendChild(split);
+  }
+  return figure;
+}
+function _splitToHalf(figure) {
+  const editor = document.getElementById('e-content');
+  const parent = figure.parentElement;
+  if (parent !== editor) return; // only split top-level full figures
+  figure.className = 'img-half';
+  figure.querySelectorAll('.img-split').forEach(b => b.remove());
+  const row = document.createElement('div'); row.className = 'img-pair';
+  parent.insertBefore(row, figure);
+  row.appendChild(figure);
+  _refreshImgPairSlot(row);
+}
+function _deleteImgFigure(figure) {
+  const row = figure.parentElement;
+  figure.remove();
+  if (row && row.classList.contains('img-pair')) {
+    if (!row.querySelector('figure')) { row.remove(); }
+    else { _refreshImgPairSlot(row); }
+  }
+}
+function _refreshImgPairSlot(row) {
+  row.querySelectorAll('.img-pair-add').forEach(el => el.remove());
+  row.querySelectorAll('.img-expand').forEach(b => b.remove());
+  const figures = row.querySelectorAll('figure');
+  if (figures.length < 2) {
+    const slot = document.createElement('div');
+    slot.className = 'img-pair-add';
+    slot.setAttribute('contenteditable', 'false');
+    slot.innerHTML = '<i class="ph ph-plus-circle"></i><span>Ajouter</span>';
+    slot.onclick = function() { openInsertImg(row); };
+    row.appendChild(slot);
+    // Expand-to-full button on the lone figure
+    figures.forEach(fig => {
+      const exp = document.createElement('button');
+      exp.type = 'button'; exp.className = 'img-expand'; exp.title = 'Repasser en pleine largeur';
+      exp.innerHTML = '<i class="ph ph-arrows-out-simple"></i>';
+      exp.onclick = function(e) { e.stopPropagation(); _expandToFull(fig); };
+      fig.appendChild(exp);
+    });
+  }
+}
+function _expandToFull(figure) {
+  const row = figure.parentElement;
+  if (!row || !row.classList.contains('img-pair')) return;
+  figure.className = 'img-full';
+  figure.querySelectorAll('.img-expand').forEach(b => b.remove());
+  // Restore the split button for full-width figures
+  const split = document.createElement('button');
+  split.type = 'button'; split.className = 'img-split'; split.title = 'Mettre en demi-largeur';
+  split.innerHTML = '<i class="ph ph-columns"></i>';
+  split.onclick = function(e) { e.stopPropagation(); _splitToHalf(figure); };
+  figure.appendChild(split);
+  row.parentNode.insertBefore(figure, row);
+  row.remove();
+}
+function _insertBlockAtCursor(node, editor) {
+  if (_savedRange && editor.contains(_savedRange.commonAncestorContainer)) {
+    let anchor = _savedRange.commonAncestorContainer;
+    if (anchor.nodeType === Node.TEXT_NODE) anchor = anchor.parentNode;
+    while (anchor && anchor.parentNode && anchor.parentNode !== editor) anchor = anchor.parentNode;
+    if (anchor && anchor.parentNode === editor) { anchor.after(node); return; }
+  }
+  editor.appendChild(node);
+}
 async function uploadAndInsertAtRange(file, range) {
   if (!navigator.onLine) {
-    // Offline: insert data: URI preview — will sync automatically on reconnect
+    // Offline: insert data: URI preview - will sync automatically on reconnect
     const reader = new FileReader();
     reader.onload = ev => {
       insertPhotoAtRange(ev.target.result, '', range);
@@ -977,7 +1114,9 @@ async function uploadAndInsertAtRange(file, range) {
     if (p) { existingPhotos.push(p); renderPhotoGrid(); insertPhotoAtRange(p.url, p.caption || '', range); toast('Image insérée !', 'ok'); }
   } else toast('Erreur upload', 'err');
 }
-function openInsertImg() {
+let _pairAddTarget = null;
+function openInsertImg(pairRow) {
+  _pairAddTarget = pairRow || null;
   const gallery = document.getElementById('iim-gallery');
   const empty = document.getElementById('iim-empty');
   const allPhotos = [
@@ -992,7 +1131,7 @@ function openInsertImg() {
       \`<div class="aspect-square overflow-hidden rounded-xl cursor-pointer ring-2 ring-transparent hover:ring-sky-400 transition-all" data-url="\${esc(p.url)}" data-caption="\${esc(p.caption)}" onclick="pickImg(this.dataset.url,this.dataset.caption)"><img src="\${esc(p.url)}" alt="\${esc(p.caption)}" class="w-full h-full object-cover"></div>\`
     ).join('');
   }
-  setImgSize('full');
+  setImgSize(_pairAddTarget ? 'half' : 'full');
   document.getElementById('insert-img-modal').classList.remove('hidden');
 }
 function closeInsertImg() { document.getElementById('insert-img-modal').classList.add('hidden'); }
@@ -1005,8 +1144,64 @@ function setImgSize(size) {
 }
 function pickImg(url, caption) {
   const size = document.getElementById('iim-size').value || 'full';
+  const targetRow = _pairAddTarget;
   closeInsertImg();
-  insertPhotoInText(url, caption, false, size);
+  _pairAddTarget = null;
+  if (targetRow && targetRow.isConnected) {
+    const figure = _makeImgFigure(url, caption, 'half');
+    targetRow.querySelectorAll('.img-pair-add').forEach(el => el.remove());
+    targetRow.appendChild(figure);
+    _refreshImgPairSlot(targetRow);
+  } else {
+    insertPhotoInText(url, caption, false, size);
+  }
+}
+function _iimDrop(e) {
+  e.preventDefault(); e.currentTarget.classList.remove('border-sky-400','bg-sky-50');
+  _iimUpload(e.dataTransfer.files);
+}
+async function _iimUpload(files) {
+  if (!files?.length) return;
+  const size = document.getElementById('iim-size').value || 'full';
+  const targetRow = _pairAddTarget;
+  closeInsertImg();
+  _pairAddTarget = null;
+  for (const file of Array.from(files)) {
+    await _uploadAndInsertIim(file, size, targetRow);
+  }
+}
+async function _uploadAndInsertIim(file, size, targetRow) {
+  if (!navigator.onLine) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const url = ev.target.result;
+      if (targetRow && targetRow.isConnected) {
+        const figure = _makeImgFigure(url, '', 'half');
+        targetRow.querySelectorAll('.img-pair-add').forEach(el => el.remove());
+        targetRow.appendChild(figure); _refreshImgPairSlot(targetRow);
+      } else { insertPhotoInText(url, '', false, size); }
+      saveDraftLocal(); updateSyncInfo();
+      toast('Image insérée (sync quand connecté)', 'info');
+    };
+    reader.readAsDataURL(file); return;
+  }
+  toast('Upload...', 'info');
+  const ok = await ensureArticleId(); if (!ok) return;
+  const fd = new FormData(); fd.append('photo', file);
+  const res = await fetch('/api/articles/' + ARTICLE_ID + '/photos', {method:'POST', body:fd}).catch(() => null);
+  if (res?.ok) {
+    const data = await res.json();
+    const p = data.uploaded?.[0];
+    if (p) {
+      existingPhotos.push(p); renderPhotoGrid();
+      if (targetRow && targetRow.isConnected) {
+        const figure = _makeImgFigure(p.url, p.caption || '', 'half');
+        targetRow.querySelectorAll('.img-pair-add').forEach(el => el.remove());
+        targetRow.appendChild(figure); _refreshImgPairSlot(targetRow);
+      } else { insertPhotoInText(p.url, p.caption || '', false, size); }
+      toast('Image insérée !', 'ok');
+    }
+  } else toast('Erreur upload', 'err');
 }
 
 // ── Cover preview ─────────────────────────────────────────────
@@ -1064,7 +1259,7 @@ function renderPhotoGrid() {
 
 function handleFiles(files) {
   if (!navigator.onLine) {
-    // Offline: insert data: URI previews — will sync automatically on reconnect
+    // Offline: insert data: URI previews - will sync automatically on reconnect
     Array.from(files).forEach(f => {
       const r = new FileReader();
       r.onload = e => { insertPhotoInText(e.target.result, f.name || '', false); };
@@ -1128,7 +1323,7 @@ function setStatus(val) {
     if (check) { check.style.display = active ? 'block' : 'none'; check.style.color = active ? c.icon : '#a8a29e'; }
   });
   const notifySection = document.getElementById('notify-section');
-  if (notifySection) notifySection.classList.toggle('hidden', val !== 'published');
+  if (notifySection) notifySection.classList.toggle('hidden', val !== 'published' && val !== 'publish_when_online');
   const lbl = document.getElementById('sticky-status-lbl');
   if (lbl) {
     const labels = { archived:'Archivé', published:'✓ Publié', publish_when_online:'⏳ Publier dès connexion' };
@@ -1146,6 +1341,13 @@ function enforceOfflineStatus() {
     pubBtn.style.opacity = online ? '1' : '0.4';
     pubBtn.style.cursor = online ? '' : 'not-allowed';
     pubBtn.title = online ? '' : 'Impossible de publier hors connexion';
+  }
+  const pendingBtn = document.getElementById('btn-publish_when_online');
+  if (pendingBtn) {
+    pendingBtn.disabled = online;
+    pendingBtn.style.opacity = online ? '0.4' : '1';
+    pendingBtn.style.cursor = online ? 'not-allowed' : '';
+    pendingBtn.title = online ? 'Vous êtes en ligne - publiez directement' : '';
   }
   if (!online && getStatus() === 'published') setStatus('archived');
   updateSyncInfo();

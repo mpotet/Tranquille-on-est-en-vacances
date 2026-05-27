@@ -1,5 +1,5 @@
 /**
- * api/articles.js — CRUD endpoints for travel articles
+ * api/articles.js - CRUD endpoints for travel articles
  *
  * Routes:
  *   GET    /api/articles                → list articles (querystring: status, folder, page, limit)
@@ -212,7 +212,7 @@ export async function patchArticleStatus(env, id, ctx) {
     .bind(newStatus, id)
     .run();
 
-  // Notify when publishing via the quick toggle (always notify — no checkbox here)
+  // Notify when publishing via the quick toggle (always notify - no checkbox here)
   if (newStatus === 'published' && ctx) {
     notifySubscribers(env, ctx, normalizeArticle({ ...article, status: newStatus }));
   }

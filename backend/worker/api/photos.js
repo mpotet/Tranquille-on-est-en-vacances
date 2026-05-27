@@ -1,5 +1,5 @@
 /**
- * api/photos.js — Photo upload / delete endpoints
+ * api/photos.js - Photo upload / delete endpoints
  *
  * Routes:
  *   POST   /api/articles/:id/photos   → upload one or more photos to R2  [admin]
@@ -8,7 +8,7 @@
  *
  * Upload flow:
  *   1. Client sends a multipart/form-data POST with one or more "photo" fields.
- *   2. Worker converts each image to WebP via Canvas API (client-side) — or
+ *   2. Worker converts each image to WebP via Canvas API (client-side) - or
  *      receives already-optimised WebP if the client supports it.
  *   3. Worker stores the raw bytes in R2 under keys like
  *      "photos/<year>/<articleId>/<uuid>.webp".
@@ -159,6 +159,37 @@ export async function uploadCover(request, env, articleId) {
     .prepare('UPDATE articles SET cover_url=?, cover_r2_key=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
     .bind(publicUrl, r2Key, articleId)
     .run();
+
+  return json({ url: publicUrl, r2_key: r2Key });
+}
+
+export async function uploadHeroImage(request, env) {
+  const contentType = request.headers.get('Content-Type') || '';
+  if (!contentType.includes('multipart/form-data')) return badRequest('Expected multipart/form-data');
+
+  const formData = await request.formData();
+  const file = formData.get('image');
+  if (!file || !(file instanceof File)) return badRequest('No hero image file');
+
+  const current = await env.DB.prepare('SELECT key, value FROM site_settings WHERE key IN (?, ?)')
+    .bind('hero_image_url', 'hero_image_r2_key')
+    .all();
+  const currentSettings = Object.fromEntries((current.results || []).map(r => [r.key, r.value]));
+  if (currentSettings.hero_image_r2_key) {
+    await env.PHOTOS.delete(currentSettings.hero_image_r2_key).catch(() => {});
+  }
+
+  const ext = file.type.includes('webp') ? 'webp' : file.type.includes('png') ? 'png' : 'jpg';
+  const uuid = crypto.randomUUID();
+  const year = new Date().getFullYear();
+  const r2Key = `hero/${year}/${uuid}.${ext}`;
+
+  await env.PHOTOS.put(r2Key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } });
+  const publicUrl = `${env.PUBLIC_URL}/r2/${r2Key}`;
+
+  const stmt = env.DB.prepare("INSERT OR REPLACE INTO site_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))");
+  await stmt.bind('hero_image_url', publicUrl).run();
+  await stmt.bind('hero_image_r2_key', r2Key).run();
 
   return json({ url: publicUrl, r2_key: r2Key });
 }

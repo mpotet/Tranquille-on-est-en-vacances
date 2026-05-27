@@ -1,6 +1,6 @@
 # 🌴 Tranquille, on est en vacances
 
-> Le blog de voyage de la famille Potet — léger, moderne, et entièrement gratuit sur le tier Cloudflare.
+> Le blog de voyage de la famille Potet - léger, moderne, et entièrement gratuit sur le tier Cloudflare.
 
 ---
 
@@ -8,7 +8,7 @@
 
 ```
 .
-├── demo.html                  # Démo statique single-file — testez l'UI sans serveur
+├── demo.html                  # Démo statique single-file - testez l'UI sans serveur
 ├── index.html                 # Point d'entrée GitHub Pages (redirige vers demo.html)
 ├── schema.sql                 # Schéma de la base de données Cloudflare D1
 ├── wrangler.toml              # Configuration Cloudflare Workers
@@ -67,7 +67,7 @@ npm install -g wrangler
 wrangler login
 ```
 
-### Étape 1 — Créer la base D1
+### Étape 1 - Créer la base D1
 
 ```bash
 wrangler d1 create tranquille-vacances-db
@@ -80,13 +80,13 @@ Copiez le `database_id` affiché et remplacez `YOUR_D1_DATABASE_ID` dans `wrangl
 wrangler d1 execute tranquille-vacances-db --file=schema.sql
 ```
 
-### Étape 2 — Créer le bucket R2 pour les photos
+### Étape 2 - Créer le bucket R2 pour les photos
 
 ```bash
 wrangler r2 bucket create tranquille-vacances-photos
 ```
 
-### Étape 3 — Configurer les secrets
+### Étape 3 - Configurer les secrets
 
 ```bash
 # Mot de passe admin du blog
@@ -101,7 +101,7 @@ Exemple pour générer un `SESSION_SECRET` :
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-### Étape 4 — Mettre à jour wrangler.toml
+### Étape 4 - Mettre à jour wrangler.toml
 
 ```toml
 [vars]
@@ -117,7 +117,7 @@ binding     = "PHOTOS"
 bucket_name = "tranquille-vacances-photos"
 ```
 
-### Étape 5 — Déployer
+### Étape 5 - Déployer
 
 ```bash
 wrangler deploy
@@ -239,4 +239,4 @@ wrangler dev --remote
 
 ## 📝 Licence
 
-Projet personnel — famille Potet. ✨
+Projet personnel - famille Potet. ✨

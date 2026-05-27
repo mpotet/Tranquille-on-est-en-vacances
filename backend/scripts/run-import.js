@@ -1,5 +1,5 @@
 /**
- * run-import.js — Execute canalblog-import.sql statement by statement
+ * run-import.js - Execute canalblog-import.sql statement by statement
  * Bypasses SQLITE_TOOBIG by splitting on article boundaries.
  *
  * Run: node scripts/run-import.js
@@ -93,4 +93,4 @@ for (let i = 0; i < statements.length; i++) {
   }
 }
 
-console.log(`\n✅ Done — ${ok} succeeded, ${fail} failed`);
+console.log(`\n✅ Done - ${ok} succeeded, ${fail} failed`);
