@@ -846,7 +846,7 @@ async function init() {
       document.getElementById('e-title').value = a.title || '';
       document.getElementById('e-desc').value  = a.short_description || '';
       const rawContent = a.content || '';
-      document.getElementById('e-content').innerHTML = rawContent.trim().startsWith('<') ? rawContent : (rawContent ? marked.parse(rawContent) : '');
+      document.getElementById('e-content').innerHTML = rawContent.trim().startsWith('<') ? rawContent : (rawContent ? (typeof marked !== 'undefined' ? marked.parse(rawContent) : '<p>' + rawContent.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>') + '</p>') : '');
       document.getElementById('e-start-date').value  = a.start_date || a.date || today;
       document.getElementById('e-end-date').value  = a.end_date || a.date || today;
       document.getElementById('e-dest').value  = a.destination || '';
@@ -1319,7 +1319,7 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   vv.addEventListener('scroll', updateToolbar);
 })();
 
-init();
+init().catch(err => console.error('[editor] init() failed:', err));
 </script>
 </body>
 </html>`);

@@ -51,7 +51,11 @@ async function networkFirstCache(req) {
   try {
     const resp = await fetch(req);
     if (resp && resp.status < 400) {
-      cache.put(req, resp.clone()); // mise en cache async
+      // Don't cache responses that explicitly opt out (e.g. API JSON responses)
+      const cc = resp.headers.get('cache-control') || '';
+      if (!cc.includes('no-store')) {
+        cache.put(req, resp.clone()); // mise en cache async
+      }
     }
     return resp;
   } catch (_) {
