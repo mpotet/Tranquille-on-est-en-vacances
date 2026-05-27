@@ -8,7 +8,6 @@ export const HEAD = (title = 'Tranquille, on est en vacances', description = "Le
 <meta name="description" content="${description}">
 <meta name="theme-color" content="#0057B8">
 <title>${title}</title>
-<link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon-192.png">
@@ -301,7 +300,7 @@ export const NAV = (active = '') => `
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-16">
       <a href="/" class="flex items-center gap-3 group" aria-label="Tranquille, on est en vacances — Accueil">
-        <img src="/icon.svg" width="38" height="38" alt="" aria-hidden="true" style="border-radius:.75rem;flex-shrink:0;box-shadow:0 2px 8px rgba(0,87,184,.20)">
+        <img src="/icon-192.png" width="38" height="38" alt="" aria-hidden="true" style="border-radius:.75rem;flex-shrink:0;box-shadow:0 2px 8px rgba(0,87,184,.20)">
         <div class="leading-none">
           <span class="brand-title font-display font-bold text-base block">Tranquille,</span>
           <span class="brand-subtitle text-[0.68rem] font-semibold tracking-[0.20em] uppercase block mt-0.5">on est en vacances</span>
@@ -337,7 +336,7 @@ export const FOOTER = `
     <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
       <div>
         <div class="flex items-center gap-3 mb-4">
-          <img src="/icon.svg" width="38" height="38" alt="" aria-hidden="true" style="border-radius:.75rem;flex-shrink:0">
+          <img src="/icon-192.png" width="38" height="38" alt="" aria-hidden="true" style="border-radius:.75rem;flex-shrink:0">
           <div class="leading-none">
             <div class="brand-title font-display font-bold text-base">Tranquille,</div>
             <div class="brand-subtitle text-[0.68rem] font-semibold uppercase tracking-[0.20em] mt-0.5">on est en vacances</div>
@@ -539,6 +538,9 @@ function emailModalDismiss() {
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { initPushBtn(); initNotifPrompt(); });
 else { initPushBtn(); initNotifPrompt(); }
+// ── Footer destinations ───────────────────────────────────────
+function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
+fetch('/api/folders').then(r=>r.json()).then(data=>{const roots=data.filter(f=>!f.parent_id);const el=document.getElementById('footer-dest');if(el)el.innerHTML=roots.length?roots.map(f=>\`<li><a href="/voyages?folder=\${f.slug}" style="color:var(--ink-muted)" class="hover:underline transition-colors flex items-center gap-1.5">\${flagImg(f.icon)}<span>\${f.name}</span></a></li>\`).join(''):'';}).catch(()=>{const el=document.getElementById('footer-dest');if(el)el.innerHTML='';});
 </script>`;
 
 export const TOAST = `
@@ -577,9 +579,12 @@ export const LIGHTBOX = `
 const _lb={photos:[],idx:0};
 function openLightbox(photos,idx){_lb.photos=photos;_lb.idx=idx;_updLb();document.getElementById('lightbox').classList.remove('hidden');document.body.style.overflow='hidden'}
 function closeLightbox(){document.getElementById('lightbox').classList.add('hidden');document.body.style.overflow=''}
-function lbNav(d){_lb.idx=(_lb.idx+d+_lb.photos.length)%_lb.photos.length;_updLb()}
-function _updLb(){const p=_lb.photos[_lb.idx];document.getElementById('lb-img').src=p.url;document.getElementById('lb-img').alt=p.caption||'';document.getElementById('lb-caption').textContent=p.caption||'';document.getElementById('lb-counter').textContent=(_lb.idx+1)+' / '+_lb.photos.length}
+function lbNav(d){if(_lb.photos.length<=1)return;_lb.idx=(_lb.idx+d+_lb.photos.length)%_lb.photos.length;_updLb()}
+function _updLb(){const p=_lb.photos[_lb.idx];const img=document.getElementById('lb-img');img.src=p.url;img.alt=p.caption||'';document.getElementById('lb-caption').textContent=p.caption||'';const nav=_lb.photos.length>1;document.getElementById('lb-counter').textContent=nav?(_lb.idx+1)+' / '+_lb.photos.length:'';document.querySelectorAll('#lightbox button[aria-label="Photo précédente"],#lightbox button[aria-label="Photo suivante"]').forEach(b=>b.style.display=nav?'':'none');}
 document.addEventListener('keydown',e=>{if(document.getElementById('lightbox').classList.contains('hidden'))return;if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')lbNav(-1);if(e.key==='ArrowRight')lbNav(1)});
+// Touch swipe support for lightbox
+let _lbTx=null;
+document.getElementById('lightbox').addEventListener('touchstart',e=>{_lbTx=e.touches[0].clientX;},{passive:true});
+document.getElementById('lightbox').addEventListener('touchend',e=>{if(_lbTx===null)return;const dx=e.changedTouches[0].clientX-_lbTx;_lbTx=null;if(Math.abs(dx)>50)lbNav(dx<0?1:-1);},{passive:true});
 function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:#dc3c3c;font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
-fetch('/api/folders').then(r=>r.json()).then(data=>{const roots=data.filter(f=>!f.parent_id);document.getElementById('footer-dest').innerHTML=roots.map(f=>\`<li><a href="/voyages?folder=\${f.slug}" style="color:var(--ink-muted)" class="hover:underline transition-colors">\${f.icon} \${f.name}</a></li>\`).join('')}).catch(()=>{});
 </script>`;

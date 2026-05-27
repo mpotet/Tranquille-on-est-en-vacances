@@ -17,6 +17,7 @@
     "tail": "wrangler tail"
   },
   "devDependencies": {
+    "sharp": "^0.34.5",
     "wrangler": "^4.94.0"
   }
 }

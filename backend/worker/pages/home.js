@@ -27,7 +27,7 @@ ${NAV('home')}
         <p id="hero-subtitle" class="text-base sm:text-xl text-white/80 leading-relaxed mb-3 font-medium mx-auto" style="max-width:42ch">
           Chaque article raconte un voyage vécu par la famille Potet : itinéraire réel, activités avec les enfants et retours utiles.
         </p>
-        <p class="drame-badge mb-8 mx-auto" style="border-color:rgba(255,199,138,.44);background:rgba(255,199,138,.16);color:rgba(255,255,255,.92);display:inline-block">"ça c'était bien avant le drame.."</p>
+        <p class="drame-badge mb-8 mx-auto" style="border-color:rgba(255,199,138,.44);background:rgba(255,199,138,.16);color:rgba(255,255,255,.92);display:inline-block">"Mais ça c'était bien avant le drame..."</p>
         <div class="flex flex-col sm:flex-row gap-3 justify-center">
           <a href="/voyages" style="display:inline-flex;align-items:center;justify-content:center;gap:.55rem;padding:.85rem 1.75rem;border-radius:999px;background:var(--apricot);color:var(--ink);font-weight:700;font-size:.92rem;border:2px solid var(--apricot);box-shadow:0 6px 22px rgba(255,199,138,.40);transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''"><i class="ph ph-airplane-takeoff"></i> Explorer nos voyages</a>
           <a href="/voyages" style="display:inline-flex;align-items:center;justify-content:center;gap:.55rem;padding:.82rem 1.6rem;border-radius:999px;background:rgba(255,255,255,.15);color:#fff;font-weight:700;font-size:.92rem;border:2px solid rgba(255,255,255,.45);backdrop-filter:blur(6px);transition:transform .2s,background .2s" onmouseover="this.style.background='rgba(255,255,255,.25)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,.15)';this.style.transform=''">Parcourir le carnet</a>
@@ -38,18 +38,14 @@ ${NAV('home')}
 
   <!-- ── Stats rapides ──────────────────────────────────────── -->
   <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
-    <div class="panel rounded-2xl px-6 py-5 grid grid-cols-3" style="divide-x:1px solid var(--line)">
+    <div class="panel rounded-2xl px-6 py-5 grid grid-cols-2" style="divide-x:1px solid var(--line)">
       <div class="text-center px-4" style="border-right:1px solid var(--line)">
         <div id="stat-voyages" class="font-display text-3xl font-black" style="color:var(--blue)">—</div>
         <div class="text-xs font-semibold uppercase tracking-[.18em] mt-1" style="color:var(--ink-light)">Voyages</div>
       </div>
-      <div class="text-center px-4" style="border-right:1px solid var(--line)">
+      <div class="text-center px-4">
         <div id="stat-dest" class="font-display text-3xl font-black" style="color:var(--blue)">—</div>
         <div class="text-xs font-semibold uppercase tracking-[.18em] mt-1" style="color:var(--ink-light)">Destinations</div>
-      </div>
-      <div class="text-center px-4">
-        <div id="stat-photos" class="font-display text-3xl font-black" style="color:var(--blue)">—</div>
-        <div class="text-xs font-semibold uppercase tracking-[.18em] mt-1" style="color:var(--ink-light)">Photos</div>
       </div>
     </div>
   </section>
@@ -107,7 +103,7 @@ ${NAV('home')}
   <section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
     <div class="quote-block">
       <blockquote id="site-tagline" class="font-display text-2xl sm:text-3xl italic leading-relaxed" style="color:var(--ink)">
-        "Les voyages sont la seule chose qu'on achète qui nous rend plus riches."
+        "Mais ça c'était bien avant le drame..."
       </blockquote>
       <p class="mt-4 font-medium text-sm" style="color:var(--ink-muted)">— Devise de la famille Potet <i class="ph ph-globe-hemisphere-west" style="color:var(--blue)"></i></p>
     </div>
@@ -121,6 +117,7 @@ ${LIGHTBOX}
 
 <script>
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
 function fmtDateRange(a){
   const s=a.start_date||a.date,e=a.end_date||a.date;
@@ -132,11 +129,11 @@ function articleCard(a){
   return \`<article class="voyage-card cursor-pointer group" onclick="location.href='/voyage/\${a.slug}'" role="link" tabindex="0" onkeydown="if(event.key==='Enter')location.href='/voyage/\${a.slug}'" aria-label="\${esc('Lire le voyage : '+(a.title||'')+(a.destination?' — '+a.destination:''))}">
     <div class="relative overflow-hidden" style="height:15rem;border-radius:1.5rem 1.5rem 0 0">
       <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" onerror="this.src='https://picsum.photos/seed/\${a.id}x/800/600'">
-      \${a.folder_name?'<div class="absolute top-3 left-3"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm" style="background:rgba(255,253,249,.92);color:var(--palm);border:1px solid rgba(255,255,255,.6)">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</span></div>':''}
+      \${a.folder_name?'<div class="absolute top-3 left-3"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm" style="background:rgba(255,253,249,.92);color:var(--palm);border:1px solid rgba(255,255,255,.6)">'+flagImg(a.folder_icon||'')+' '+esc(a.folder_name)+'</span></div>':''}
     </div>
     <div class="p-5">
-      <div class="flex items-center gap-2 text-xs font-medium mb-2.5" style="color:var(--ink-light)">
-        <span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span><span aria-hidden="true">·</span><span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span>
+      <div class="flex flex-col gap-1 text-xs font-medium mb-2.5" style="color:var(--ink-light)">
+        <span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span><span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span>
       </div>
       <h3 class="font-display font-bold text-lg leading-snug mb-2 line-clamp-2" style="color:var(--ink)">\${esc(a.title)}</h3>
       <p class="text-sm leading-relaxed line-clamp-2 mb-4" style="color:var(--ink-muted)">\${esc(a.short_description)}</p>
@@ -162,10 +159,8 @@ async function init(){
   if(settings.site_tagline)   document.getElementById('site-tagline').textContent = '"'+settings.site_tagline+'"';
 
   // Stats
-  const totalPhotos = artData.articles.reduce((s,a)=>s+(a.photos_count||0),0);
   document.getElementById('stat-voyages').textContent = artData.total ?? artData.articles.length;
   document.getElementById('stat-dest').textContent    = folderData.length || '—';
-  document.getElementById('stat-photos').textContent  = totalPhotos || '—';
 
   // Grille articles
   document.getElementById('articles-grid').innerHTML = artData.articles.length
@@ -193,7 +188,7 @@ async function init(){
     '<a href="/voyages?folder='+f.slug+'"\
        class="flex items-center gap-2.5 rounded-2xl px-5 py-3 bg-white transition-all font-semibold hover:-translate-y-0.5"\
        style="border:1px solid var(--line);box-shadow:var(--card-shadow);color:var(--ink)">'+
-      '<span class="text-xl" aria-hidden="true">'+f.icon+'</span>'+
+      flagImg(f.icon)+
       '<span>'+esc(f.name)+'</span>'+
     '</a>'
   ).join('');

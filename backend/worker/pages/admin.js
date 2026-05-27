@@ -195,8 +195,49 @@ ${ADMIN_NAV()}
         <input type="text" id="fm-name" placeholder="Ex: Asie du Sud-Est" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm font-medium">
       </div>
       <div>
-        <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Emoji</label>
-        <input type="text" id="fm-icon" placeholder="🌏" maxlength="2" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+        <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Pays / Icône</label>
+        <select id="fm-icon" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm bg-white">
+          <option value="📁">📁 Dossier générique</option>
+          <option value="🌏">🌏 Monde</option>
+          <option value="🇫🇷">🇫🇷 France</option>
+          <option value="🇪🇸">🇪🇸 Espagne</option>
+          <option value="🇮🇹">🇮🇹 Italie</option>
+          <option value="🇵🇹">🇵🇹 Portugal</option>
+          <option value="🇬🇷">🇬🇷 Grèce</option>
+          <option value="🇹🇷">🇹🇷 Turquie</option>
+          <option value="🇲🇦">🇲🇦 Maroc</option>
+          <option value="🇹🇳">🇹🇳 Tunisie</option>
+          <option value="🇩🇿">🇩🇿 Algérie</option>
+          <option value="🇲🇷">🇲🇷 Mauritanie</option>
+          <option value="🇸🇳">🇸🇳 Sénégal</option>
+          <option value="🇪🇬">🇪🇬 Égypte</option>
+          <option value="🇯🇴">🇯🇴 Jordanie</option>
+          <option value="🇸🇦">🇸🇦 Arabie saoudite</option>
+          <option value="🇦🇪">🇦🇪 Émirats arabes unis</option>
+          <option value="🇴🇲">🇴🇲 Oman</option>
+          <option value="🇮🇳">🇮🇳 Inde</option>
+          <option value="🇹🇭">🇹🇭 Thaïlande</option>
+          <option value="🇻🇳">🇻🇳 Vietnam</option>
+          <option value="🇮🇩">🇮🇩 Indonésie</option>
+          <option value="🇯🇵">🇯🇵 Japon</option>
+          <option value="🇨🇳">🇨🇳 Chine</option>
+          <option value="🇲🇻">🇲🇻 Maldives</option>
+          <option value="🇿🇦">🇿🇦 Afrique du Sud</option>
+          <option value="🇰🇪">🇰🇪 Kenya</option>
+          <option value="🇺🇸">🇺🇸 États-Unis</option>
+          <option value="🇨🇦">🇨🇦 Canada</option>
+          <option value="🇲🇽">🇲🇽 Mexique</option>
+          <option value="🇧🇷">🇧🇷 Brésil</option>
+          <option value="🇦🇷">🇦🇷 Argentine</option>
+          <option value="🇦🇺">🇦🇺 Australie</option>
+          <option value="🇳🇿">🇳🇿 Nouvelle-Zélande</option>
+          <option value="🇮🇸">🇮🇸 Islande</option>
+          <option value="🇳🇴">🇳🇴 Norvège</option>
+          <option value="🇩🇪">🇩🇪 Allemagne</option>
+          <option value="🇨🇭">🇨🇭 Suisse</option>
+          <option value="🇧🇪">🇧🇪 Belgique</option>
+          <option value="🇳🇱">🇳🇱 Pays-Bas</option>
+        </select>
       </div>
     </div>
     <div class="flex gap-3">
@@ -212,6 +253,8 @@ let _folderParentId = null;
 
 function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:#dc3c3c;font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function stripDataUris(html){return(html||'').replace(/\bsrc="data:[^"]*"/g,'src=""').replace(/\bsrc='data:[^']*'/g,"src=''");}
+function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
 function fmtDateRange(a){
   const start = a.start_date || a.date;
@@ -255,7 +298,7 @@ function renderFolderTree(folders, parentId, depth=0) {
     <div style="padding-left:\${depth*14}px">
       <div class="flex items-center justify-between px-3 py-2 rounded-xl group hover:bg-sky-50 transition-colors">
         <a href="/voyages?folder=\${f.slug}" class="flex items-center gap-2 flex-1 text-sm font-semibold text-stone-700 hover:text-sky-600 transition-colors">
-          <span>\${f.icon}</span><span>\${esc(f.name)}</span>
+          <span class="flex-shrink-0">\${flagImg(f.icon)}</span><span>\${esc(f.name)}</span>
         </a>
         <div class="flex items-center gap-1 ml-2">
           <button onclick="openFolderModal(\${f.id})" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-1.5 text-base touch-manipulation rounded-lg hover:bg-sky-50 transition-colors" title="Ajouter un sous-dossier"><i class="ph ph-folder-plus"></i></button>
@@ -373,7 +416,7 @@ export function editorPage(articleId = null) {
   const isEdit = articleId !== null;
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD(isEdit ? 'Admin — Modifier article' : 'Admin — Nouvel article')}</head>
+<head>${HEAD(isEdit ? 'Admin — Modifier article' : 'Admin — Nouvel article')}<style>#e-content .img-pair{outline:2px dashed rgba(99,179,237,.35);outline-offset:3px;border-radius:.75rem}#e-content .img-pair figure{max-width:49%;min-width:0}</style></head>
 <body class="bg-stone-50 font-sans text-stone-900 antialiased pt-14 pb-20 lg:pb-0">
 ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
 
@@ -467,6 +510,11 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
           </button>
         </div>
         <input type="hidden" id="pub-status" value="archived">
+        <div id="sync-info" class="mt-3 pt-3 border-t border-stone-100 space-y-1 text-xs" style="color:var(--ink-muted)">
+          <div class="flex items-center gap-1.5"><span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#a3e635;flex-shrink:0;display:inline-block"></span><span id="sync-online-lbl">En ligne</span></div>
+          <div id="sync-saved-row" class="hidden flex items-center gap-1.5"><i class="ph ph-floppy-disk"></i> <span id="sync-saved-lbl"></span></div>
+          <div id="sync-pub-row" class="hidden flex items-center gap-1.5"><i class="ph ph-check-circle" style="color:var(--palm)"></i> <span id="sync-pub-lbl"></span></div>
+        </div>
       </div>
 
       <!-- Notify subscribers (shown only when status = published) -->
@@ -531,7 +579,7 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
       <div>
         <div class="flex items-center justify-between mb-2">
           <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Images dans le récit</label>
-          ${articleId !== null ? '<p class="text-xs text-sky-600 font-semibold"><i class="ph ph-image"></i> Les photos importées s\'insèrent automatiquement dans le texte</p>' : '<p class="text-xs text-stone-400">Les photos seront insérées dans le texte après sauvegarde</p>'}
+          <p class="text-xs text-sky-600 font-semibold"><i class="ph ph-image"></i> Les photos s'insèrent automatiquement dans le texte</p>
         </div>
         <div id="dropzone"
              class="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
@@ -588,16 +636,20 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
 
 ${TOAST}
 <script>
-const ARTICLE_ID = ${JSON.stringify(articleId)};
+let ARTICLE_ID = ${JSON.stringify(articleId)};
 let existingPhotos = [];
 let newPhotos = [];
 let newCoverFile = null;
+let _lastSaved = null;
+let _lastPublished = null;
 
 function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:#dc3c3c;font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function stripDataUris(html){return(html||'').replace(/\bsrc="data:[^"]*"/g,'src=""').replace(/\bsrc='data:[^']*'/g,"src=''");}
+function dataUrlToFile(dataUrl,name){const arr=dataUrl.split(','),mime=arr[0].match(/:(.*?);/)[1],bstr=atob(arr[1]);let n=bstr.length;const u8=new Uint8Array(n);while(n--)u8[n]=bstr.charCodeAt(n);return new File([u8],name||'photo.jpg',{type:mime});}
 
 // ── Offline draft management ───────────────────────────────────
-const DRAFT_KEY = 'admin_draft_' + (ARTICLE_ID != null ? ARTICLE_ID : 'new');
+let DRAFT_KEY = 'admin_draft_' + (ARTICLE_ID != null ? ARTICLE_ID : 'new');
 
 function _draftPayload() {
   return {
@@ -606,18 +658,22 @@ function _draftPayload() {
     start_date:        document.getElementById('e-start-date')?.value || '',
     end_date:          document.getElementById('e-end-date')?.value || '',
     short_description: document.getElementById('e-desc')?.value.trim() || '',
-    content:           document.getElementById('e-content')?.innerHTML || '',
+    content:           navigator.onLine ? stripDataUris(document.getElementById('e-content')?.innerHTML || '') : (document.getElementById('e-content')?.innerHTML || ''),
     status:            document.getElementById('pub-status')?.value || 'archived',
     folder_id:         parseInt(document.getElementById('e-folder')?.value) || null,
     cover_url:         document.getElementById('e-cover')?.value.trim() || null,
   };
 }
 function saveDraftLocal() {
+  const p = _draftPayload();
+  if (!p.title) return;
   try {
-    const p = _draftPayload();
-    if (!p.title) return;
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...p, _ts: Date.now() }));
-  } catch(e) {}
+  } catch(e) {
+    // Storage quota (likely large inline images): strip them and retry
+    try { const p2 = _draftPayload(); p2.content = stripDataUris(p2.content); localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...p2, _ts: Date.now() })); } catch(e2) {}
+  }
+  updateSyncInfo();
 }
 function loadDraftLocal() {
   try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch { return null; }
@@ -672,25 +728,103 @@ function _dismissDraft() {
   document.getElementById('draft-bar')?.remove();
 }
 
+// ── Auto-create draft if article has no ID yet ────────────────
+async function ensureArticleId() {
+  if (ARTICLE_ID) return true;
+  const title = document.getElementById('e-title')?.value.trim();
+  if (!title) { toast('Ajoutez d\'abord un titre à l\'article', 'err'); return false; }
+  const res = await fetch('/api/articles', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      title, status: 'archived',
+      start_date: document.getElementById('e-start-date')?.value || new Date().toISOString().slice(0,10),
+      end_date: document.getElementById('e-end-date')?.value || new Date().toISOString().slice(0,10),
+      content: stripDataUris(document.getElementById('e-content')?.innerHTML || ''),
+    })
+  }).catch(() => null);
+  if (!res?.ok) { toast('Erreur lors de la création du brouillon', 'err'); return false; }
+  const data = await res.json();
+  ARTICLE_ID = data.id;
+  DRAFT_KEY = 'admin_draft_' + ARTICLE_ID;
+  history.replaceState(null, '', '/admin/editor/' + ARTICLE_ID);
+  toast('Brouillon créé automatiquement', 'ok');
+  return true;
+}
+
+// ── Sync status display ───────────────────────────────────────
+function updateSyncInfo() {
+  const online = navigator.onLine;
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-online-lbl');
+  const hasPending = !!document.getElementById('e-content')?.querySelector('img[src^="data:"]');
+  if (dot) dot.style.background = online ? (hasPending ? '#fbbf24' : '#a3e635') : '#f87171';
+  if (lbl) lbl.textContent = online ? (hasPending ? 'En ligne \u00b7 images en attente' : 'En ligne') : 'Hors ligne';
+  if (_lastSaved) {
+    const row = document.getElementById('sync-saved-row');
+    const sl = document.getElementById('sync-saved-lbl');
+    if (row) row.classList.remove('hidden');
+    if (sl) sl.textContent = 'Sauvegardé ' + _fmtRelTime(_lastSaved);
+  }
+  if (_lastPublished) {
+    const row = document.getElementById('sync-pub-row');
+    const pl = document.getElementById('sync-pub-lbl');
+    if (row) row.classList.remove('hidden');
+    if (pl) pl.textContent = 'Publié ' + _fmtRelTime(_lastPublished);
+  }
+}
+function _fmtRelTime(ts) {
+  const d = Date.now() - ts;
+  if (d < 60000) return 'à l\'instant';
+  if (d < 3600000) return 'il y a ' + Math.round(d / 60000) + ' min';
+  return new Date(ts).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+}
+
+// ── Upload data: URI images queued while offline ──────────────
+async function _processOfflineImgs() {
+  const editor = document.getElementById('e-content');
+  if (!editor) return;
+  const pending = [...editor.querySelectorAll('img[src^="data:"]')];
+  if (!pending.length) return;
+  const ok = await ensureArticleId();
+  if (!ok) return;
+  toast('Synchronisation des images...', 'info');
+  let failed = 0;
+  for (const img of pending) {
+    const dataUrl = img.getAttribute('src');
+    const file = dataUrlToFile(dataUrl, 'photo.jpg');
+    const fd = new FormData(); fd.append('photo', file);
+    const res = await fetch('/api/articles/' + ARTICLE_ID + '/photos', {method:'POST', body:fd}).catch(() => null);
+    if (res?.ok) {
+      const d = await res.json();
+      const p = d.uploaded?.[0];
+      if (p) { img.src = p.url; existingPhotos.push(p); }
+      else failed++;
+    } else failed++;
+  }
+  renderPhotoGrid();
+  updateSyncInfo();
+  if (!failed) toast('Images synchronisées !', 'ok');
+  else toast(failed + ' image(s) non synchronisée(s)', 'err');
+}
+
 // ── Online/offline handlers (éditeur) ─────────────────────────
 window.addEventListener('offline', () => {
   enforceOfflineStatus();
+  updateSyncInfo();
 });
 window.addEventListener('online', async () => {
   enforceOfflineStatus();
+  updateSyncInfo();
+  // Upload any data: URI images added while offline
+  await _processOfflineImgs();
   if (getStatus() === 'publish_when_online') {
     setStatus('published');
     await saveArticle();
     return;
   }
   const draft = loadDraftLocal();
-  if (draft && draft.title) {
-    const bar = document.getElementById('offline-bar');
-    if (bar) {
-      bar.className = 'flex fixed top-14 inset-x-0 z-40 items-center justify-center gap-2 py-2 px-4 text-sm font-semibold shadow-md bg-emerald-50 text-emerald-900';
-      bar.style.pointerEvents = 'auto';
-      bar.innerHTML = '<i class="ph ph-wifi-high" style="color:#16A34A"></i><span>Connexion rétablie — brouillon en attente</span><button onclick="saveArticle()" style="margin-left:.5rem;background:#16A34A;color:#fff;border:none;padding:.3rem .8rem;border-radius:.5rem;font-weight:700;font-size:.78rem;cursor:pointer">Synchroniser</button>';
-    }
+  if (draft && draft.title && draft._ts > (Date.now() - 3600000)) {
+    toast('Connexion rétablie — pensez à sauvegarder', 'info');
   }
 });
 
@@ -820,25 +954,28 @@ function insertPhotoAtRange(url, caption, range) {
   }
 }
 async function uploadAndInsertAtRange(file, range) {
-  if (ARTICLE_ID) {
-    toast('Upload...', 'info');
-    const fd = new FormData(); fd.append('photo', file);
-    const res = await fetch('/api/articles/' + ARTICLE_ID + '/photos', {method:'POST', body:fd}).catch(() => null);
-    if (res?.ok) {
-      const data = await res.json();
-      const p = data.uploaded?.[0];
-      if (p) { existingPhotos.push(p); renderPhotoGrid(); insertPhotoAtRange(p.url, p.caption || '', range); toast('Image insérée !', 'ok'); }
-    } else toast('Erreur upload', 'err');
-  } else {
+  if (!navigator.onLine) {
+    // Offline: insert data: URI preview — will sync automatically on reconnect
     const reader = new FileReader();
     reader.onload = ev => {
-      const dataUrl = ev.target.result;
-      newPhotos.push({dataUrl, name: file.name, file, inline: true});
-      renderPhotoGrid();
-      insertPhotoAtRange(dataUrl, '', range);
+      insertPhotoAtRange(ev.target.result, '', range);
+      saveDraftLocal();
+      updateSyncInfo();
+      toast('Image insérée (sync quand connecté)', 'info');
     };
     reader.readAsDataURL(file);
+    return;
   }
+  toast('Upload...', 'info');
+  const ok = await ensureArticleId();
+  if (!ok) return;
+  const fd = new FormData(); fd.append('photo', file);
+  const res = await fetch('/api/articles/' + ARTICLE_ID + '/photos', {method:'POST', body:fd}).catch(() => null);
+  if (res?.ok) {
+    const data = await res.json();
+    const p = data.uploaded?.[0];
+    if (p) { existingPhotos.push(p); renderPhotoGrid(); insertPhotoAtRange(p.url, p.caption || '', range); toast('Image insérée !', 'ok'); }
+  } else toast('Erreur upload', 'err');
 }
 function openInsertImg() {
   const gallery = document.getElementById('iim-gallery');
@@ -926,9 +1063,22 @@ function renderPhotoGrid() {
 }
 
 function handleFiles(files) {
-  if (ARTICLE_ID) {
-    // Existing article: upload immediately so photos can be inserted in text right away
-    toast('Upload en cours...','ok');
+  if (!navigator.onLine) {
+    // Offline: insert data: URI previews — will sync automatically on reconnect
+    Array.from(files).forEach(f => {
+      const r = new FileReader();
+      r.onload = e => { insertPhotoInText(e.target.result, f.name || '', false); };
+      r.readAsDataURL(f);
+    });
+    setTimeout(() => { saveDraftLocal(); updateSyncInfo(); }, 300);
+    toast('Photos en attente (sync quand connecté)', 'info');
+    return;
+  }
+  // Online: upload immediately (auto-create draft if needed)
+  (async () => {
+    const ok = await ensureArticleId();
+    if (!ok) return;
+    toast('Upload en cours...', 'ok');
     const fd = new FormData();
     Array.from(files).forEach(f => fd.append('photo', f));
     fetch('/api/articles/'+ARTICLE_ID+'/photos', {method:'POST', body:fd})
@@ -941,14 +1091,7 @@ function handleFiles(files) {
         toast(uploaded.length === 1 ? 'Photo insérée !' : uploaded.length + ' photos insérées !','ok');
       })
       .catch(()=>toast('Erreur upload','err'));
-  } else {
-    // New article: queue locally, will be uploaded after save
-    Array.from(files).forEach(f => {
-      const r=new FileReader();
-      r.onload=e=>{ newPhotos.push({dataUrl:e.target.result, name:f.name, file:f}); renderPhotoGrid(); };
-      r.readAsDataURL(f);
-    });
-  }
+  })();
 }
 function handleDrop(e) {
   e.preventDefault(); document.getElementById('dropzone').classList.remove('border-sky-400','bg-sky-50');
@@ -1005,6 +1148,7 @@ function enforceOfflineStatus() {
     pubBtn.title = online ? '' : 'Impossible de publier hors connexion';
   }
   if (!online && getStatus() === 'published') setStatus('archived');
+  updateSyncInfo();
 }
 
 // ── Save article ──────────────────────────────────────────────
@@ -1012,6 +1156,7 @@ async function saveArticle() {
   // ── Offline : sauvegarde locale ───────────────────────────
   if (!navigator.onLine) {
     saveDraftLocal();
+    updateSyncInfo();
     toast('Sauvegardé sur l\\'appareil 📴', 'ok');
     const lbl = document.getElementById('sticky-status-lbl');
     if (lbl) lbl.textContent = '📴 Sauvegardé';
@@ -1040,13 +1185,14 @@ async function saveArticle() {
     start_date:        startDate,
     end_date:          endDate,
     short_description: document.getElementById('e-desc').value.trim(),
-    content:           document.getElementById('e-content').innerHTML,
+    content:           stripDataUris(document.getElementById('e-content').innerHTML),
     status:            apiStatus,
     notify,
     folder_id:         parseInt(document.getElementById('e-folder').value) || null,
     cover_url:         document.getElementById('e-cover').value.trim() || null,
   };
 
+  const wasNew = !ARTICLE_ID;
   let savedId = ARTICLE_ID;
   let savedSlug = null;
   let res;
@@ -1055,7 +1201,7 @@ async function saveArticle() {
     if (res.ok) { const data=await res.json().catch(()=>({})); savedSlug=data.slug||null; }
   } else {
     res = await fetch('/api/articles', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-    if (res.ok) { const data=await res.json(); savedId=data.id; savedSlug=data.slug||null; }
+    if (res.ok) { const data=await res.json(); savedId=data.id; ARTICLE_ID=savedId; DRAFT_KEY='admin_draft_'+ARTICLE_ID; savedSlug=data.slug||null; }
   }
 
   if (!res.ok) { toast('Erreur lors de la sauvegarde','err'); return; }
@@ -1100,14 +1246,18 @@ async function saveArticle() {
     const cr=await fetch('/api/articles/'+savedId+'/cover',{method:'POST',body:fd}).catch(()=>null);
     if(cr?.ok) newCoverFile=null;
   }
+  _lastSaved = Date.now();
+  _lastSaved = Date.now();
+  if (apiStatus === 'published') _lastPublished = Date.now();
+  updateSyncInfo();
   toast('Sauvegardé !','ok');
   clearDraftLocal(); // effacer le brouillon local après synchro serveur
   if (apiStatus === 'published' && savedSlug) {
     // Publié → afficher l'article pour confirmer
     setTimeout(()=>location.href='/voyage/'+savedSlug, 1000);
-  } else if (!ARTICLE_ID && savedId) {
-    // Nouvel article archivé → éditeur avec ID
-    setTimeout(()=>location.href='/admin/editor/'+savedId, 800);
+  } else if (wasNew && savedId) {
+    // Nouvel article archivé → éditeur avec ID (si pas déjà redirigé via ensureArticleId)
+    history.replaceState(null, '', '/admin/editor/' + savedId);
   }
   // Sinon (mise à jour) : on reste dans l'éditeur
 }

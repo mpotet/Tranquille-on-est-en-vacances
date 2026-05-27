@@ -4,13 +4,12 @@
  * Les assets statiques sont pré-cachés à l'installation.
  */
 
-const CACHE = 'tranquille-v4';
+const CACHE = 'tranquille-v5';
 
 const PRECACHE = [
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
-  '/icon.svg',
 ];
 
 // ── Installation : pré-cache des assets statiques ─────────────

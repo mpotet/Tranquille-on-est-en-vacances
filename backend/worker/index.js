@@ -59,6 +59,7 @@ ${FOOTER}
 ${TOAST}
 <script>
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
 function fmtDateRange(a){
   const s=a.start_date||a.date, e=a.end_date||a.date;
@@ -68,10 +69,10 @@ function fmtDateRange(a){
 function card(a){return \`<article class="voyage-card cursor-pointer group" onclick="location.href='/voyage/\${a.slug}'" role="link" tabindex="0" onkeydown="if(event.key==='Enter')location.href='/voyage/\${a.slug}'" aria-label="\${esc('Lire : '+(a.title||''))}">
   <div class="relative overflow-hidden" style="height:15rem;border-radius:1.5rem 1.5rem 0 0">
     <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" onerror="this.src='https://picsum.photos/seed/\${a.id}x/800/600'">
-    \${a.folder_name?'<div class="absolute top-3 left-3"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm" style="background:rgba(255,253,249,.92);color:var(--palm);border:1px solid rgba(255,255,255,.6)">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</span></div>':''}
+    \${a.folder_name?'<div class="absolute top-3 left-3"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm" style="background:rgba(255,253,249,.92);color:var(--palm);border:1px solid rgba(255,255,255,.6)">'+flagImg(a.folder_icon||'')+' '+esc(a.folder_name)+'</span></div>':''}
   </div>
   <div class="p-5">
-    <div class="flex items-center gap-2 text-xs font-medium mb-2.5" style="color:var(--ink-light)"><span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span><span aria-hidden="true">·</span><span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span></div>
+    <div class="flex flex-col gap-1 text-xs font-medium mb-2.5" style="color:var(--ink-light)"><span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span><span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span></div>
     <h3 class="font-display font-bold text-lg leading-snug mb-2 line-clamp-2" style="color:var(--ink)">\${esc(a.title)}</h3>
     <p class="text-sm leading-relaxed line-clamp-2 mb-4" style="color:var(--ink-muted)">\${esc(a.short_description)}</p>
     <span class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--blue)">Lire la suite <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></span>
@@ -88,7 +89,7 @@ async function init(){
   const activeF=folder?folders.find(f=>f.slug===folder):null;
   const totalCount=(artData.total??artData.articles.length);
   const plural=totalCount!==1?'s':'';
-  const destLabel=activeF?' — <strong style="color:var(--palm)">'+esc(activeF.icon||'')+' '+esc(activeF.name)+'</strong>':'';
+  const destLabel=activeF?' — <strong style="color:var(--palm)">'+flagImg(activeF.icon||'')+' '+esc(activeF.name)+'</strong>':'';
   document.getElementById('subtitle').innerHTML='<strong style="color:var(--blue)">'+totalCount+'</strong> itinéraire'+plural+' documenté'+destLabel;
 
   const roots=folders.filter(f=>!f.parent_id);
@@ -102,8 +103,8 @@ async function init(){
   };
   let btns='<a href="/voyages" class="'+pill(!folder,false)+'"><i class="ph ph-globe-hemisphere-west"></i> Tous</a>';
   roots.forEach(f=>{
-    btns+='<a href="/voyages?folder='+f.slug+'" class="'+pill(folder===f.slug,false)+'">'+esc(f.icon)+' '+esc(f.name)+'</a>';
-    kids(f.id).forEach(c=>{btns+='<a href="/voyages?folder='+c.slug+'" class="'+pill(folder===c.slug,true)+' text-xs pl-5">↳ '+esc(c.icon)+' '+esc(c.name)+'</a>';});
+    btns+='<a href="/voyages?folder='+f.slug+'" class="'+pill(folder===f.slug,false)+'">'+flagImg(f.icon)+' '+esc(f.name)+'</a>';
+    kids(f.id).forEach(c=>{btns+='<a href="/voyages?folder='+c.slug+'" class="'+pill(folder===c.slug,true)+' text-xs pl-5">\u21b3 '+flagImg(c.icon)+' '+esc(c.name)+'</a>';});
   });
   document.getElementById('filters').innerHTML=btns;
   document.getElementById('grid').innerHTML=artData.articles.length
@@ -133,11 +134,19 @@ ${LIGHTBOX}
 <script>
 const SLUG = ${JSON.stringify(slug)};
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
 function fmtDateRange(a){
   const s=a.start_date||a.date, e=a.end_date||a.date;
   if(!s) return 'Dates non définies';
   return s===e ? fmtDate(s) : fmtDate(s)+' → '+fmtDate(e);
+}
+
+function extractInlineImages(content){
+  const d=document.createElement('div');
+  const t=(content||'').trim();
+  d.innerHTML=t.startsWith('<')?t:marked.parse(content||'');
+  return[...d.querySelectorAll('img')].map(img=>({url:img.getAttribute('src')||'',caption:(img.getAttribute('alt')||'').trim()})).filter(p=>p.url);
 }
 
 async function init(){
@@ -148,14 +157,18 @@ async function init(){
   }
   document.title=esc(a.title)+' — Tranquille, on est en vacances';
   const photos=a.photos||[];
-  const renderedContent=renderVoyageContent(a.content||'',photos);
+  const inlineImgs=extractInlineImages(a.content||'');
+  const photoUrlSet=new Set(photos.map(p=>p.url));
+  const allPhotos=[...photos,...inlineImgs.filter(img=>!photoUrlSet.has(img.url))];
+  window.photos=allPhotos;
+  const renderedContent=renderVoyageContent(a.content||'',allPhotos);
   document.getElementById('main').innerHTML=\`
-  <div class="hero-photo" style="height:clamp(44vh,62vw,70vh)">
-    <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="hero-photo-img" onerror="this.style.display='none'">
-    <div class="hero-photo-overlay"></div>
-    <div class="hero-photo-content absolute bottom-0 left-0 right-0 pb-10 px-4 sm:px-6 lg:px-8">
+  <div class="hero-photo relative overflow-hidden" style="background:#0a121e;min-height:clamp(40vh,55vw,80vh);max-height:90vh">
+    <img src="\${esc(a.cover_url||'')}" alt="" aria-hidden="true" class="hero-photo-img" style="filter:blur(28px);transform:scale(1.12);opacity:.45" onerror="this.style.display='none'">
+    <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain" onerror="this.style.display='none'">
+    <div class="absolute bottom-0 left-0 right-0 pb-10 px-4 sm:px-6 lg:px-8" style="background:linear-gradient(to top,rgba(10,18,30,.75) 0%,transparent 100%)">
       <div class="max-w-4xl mx-auto">
-        \${a.folder_name?'<div class="mb-3"><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full text-white" style="background:rgba(255,255,255,.18);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.30)">'+esc(a.folder_icon||'')+' '+esc(a.folder_name)+'</span></div>':''}
+        \${a.folder_name?'<div class="mb-3"><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full text-white" style="background:rgba(255,255,255,.18);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.30)">'+flagImg(a.folder_icon||'')+' '+esc(a.folder_name)+'</span></div>':''}
         <h1 class="font-display text-3xl sm:text-5xl font-bold text-white drop-shadow-lg leading-tight">\${esc(a.title)}</h1>
       </div>
     </div>
@@ -166,7 +179,7 @@ async function init(){
     </a>
     <div class="panel rounded-[2rem] p-6 sm:p-8 mb-6">
       <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-medium" style="color:var(--ink-muted)">
-        <span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span><span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span><span><i class="ph ph-camera"></i> \${photos.length} photo\${photos.length!==1?'s':''}</span>
+        <span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span><span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span><span><i class="ph ph-camera"></i> \${allPhotos.length} photo\${allPhotos.length!==1?'s':''}</span>
       </div>
     </div>
     <div class="panel rounded-[2rem] p-6 sm:p-8 mb-10" style="border-left:4px solid rgba(var(--blue-rgb),.22)">
@@ -174,7 +187,7 @@ async function init(){
     </div>
     <div class="prose-vacation text-base sm:text-lg leading-relaxed mb-12" style="color:var(--ink)">\${renderedContent}</div>
     \${renderWritingDays(a.writing_days||[])}
-    \${photos.length ? renderGallery(photos) : ''}
+    \${allPhotos.length ? renderGallery(allPhotos) : ''}
     <div class="pt-8 flex items-center justify-between" style="border-top:1px solid var(--line)">
       <a href="/voyages" class="inline-flex items-center gap-2 font-semibold text-sm hover:underline" style="color:var(--blue)">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Tous les voyages
@@ -182,7 +195,6 @@ async function init(){
       <button onclick="share()" class="subtle-btn"><i class="ph ph-share-network"></i> Partager</button>
     </div>
   </div>\`;
-  window.photos=photos;
 }
 
 function renderVoyageContent(content,photos){
@@ -206,8 +218,13 @@ function renderVoyageContent(content,photos){
     imgs.forEach(img=>{
       const cell=document.createElement('div');
       img.loading='lazy';
-      const idx=photoIndexByUrl.get(img.getAttribute('src')||'');
-      if(typeof idx==='number'){img.classList.add('cursor-zoom-in');img.setAttribute('onclick','openLightbox(window.photos,'+idx+')');}
+      const src=img.getAttribute('src')||'';
+      const idx=photoIndexByUrl.get(src);
+      if(typeof idx==='number'){
+        img.classList.add('cursor-zoom-in');img.setAttribute('onclick','openLightbox(window.photos,'+idx+')');
+      } else {
+        img.classList.add('cursor-zoom-in');img.setAttribute('onclick','openLightbox([{url:this.src,caption:this.alt}],0)');
+      }
       cell.appendChild(img);
       grid.appendChild(cell);
     });
@@ -225,8 +242,13 @@ function renderVoyageContent(content,photos){
       const alt=(img.getAttribute('alt')||'').trim();
       if(alt){const cap=document.createElement('figcaption');cap.textContent=alt;figure.appendChild(cap);}
     }
-    const idx=photoIndexByUrl.get(img.getAttribute('src')||'');
-    if(typeof idx==='number'){img.classList.add('cursor-zoom-in');img.setAttribute('onclick','openLightbox(window.photos,'+idx+')');}
+    const src=img.getAttribute('src')||'';
+    const idx=photoIndexByUrl.get(src);
+    if(typeof idx==='number'){
+      img.classList.add('cursor-zoom-in');img.setAttribute('onclick','openLightbox(window.photos,'+idx+')');
+    } else {
+      img.classList.add('cursor-zoom-in');img.setAttribute('onclick','openLightbox([{url:this.src,caption:this.alt}],0)');
+    }
   });
   return wrapper.innerHTML;
 }
