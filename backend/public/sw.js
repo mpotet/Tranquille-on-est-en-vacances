@@ -4,7 +4,7 @@
  * Les assets statiques sont pré-cachés à l'installation.
  */
 
-const CACHE = 'tranquille-v5';
+const CACHE = 'tranquille-v6';
 
 const PRECACHE = [
   '/manifest.json',
@@ -43,6 +43,9 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
   if (!req.url.startsWith('http')) return;
+  const url = new URL(req.url);
+  // API calls and admin pages must always go straight to the network — never serve from cache
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/admin')) return;
   event.respondWith(networkFirstCache(req));
 });
 

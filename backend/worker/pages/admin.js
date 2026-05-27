@@ -732,7 +732,7 @@ function _dismissDraft() {
 async function ensureArticleId() {
   if (ARTICLE_ID) return true;
   const title = document.getElementById('e-title')?.value.trim();
-  if (!title) { toast('Ajoutez d\'abord un titre à l\'article', 'err'); return false; }
+  if (!title) { toast("Ajoutez d'abord un titre à l'article", 'err'); return false; }
   const res = await fetch('/api/articles', {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
@@ -774,7 +774,7 @@ function updateSyncInfo() {
 }
 function _fmtRelTime(ts) {
   const d = Date.now() - ts;
-  if (d < 60000) return 'à l\'instant';
+  if (d < 60000) return "à l'instant";
   if (d < 3600000) return 'il y a ' + Math.round(d / 60000) + ' min';
   return new Date(ts).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
 }
