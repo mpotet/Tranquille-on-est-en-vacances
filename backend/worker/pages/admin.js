@@ -227,10 +227,25 @@ async function init() {
     fetch('/api/articles?limit=100').then(r=>r.json()).catch(()=>({articles:[]})),
   ]);
 
-  renderFolderTree(folders, null);
+  document.getElementById('folder-tree').innerHTML = renderFolderTree(folders, null);
   document.getElementById('stat-pub').textContent = artData.articles.filter(a=>a.status==='published').length;
   document.getElementById('stat-draft').textContent = artData.articles.filter(a=>a.status==='draft'||a.status==='archived').length;
   renderArticles(artData.articles, folders);
+
+  // Pré-chargement en cache de l'éditeur pour tous les articles < 1 an (édition hors-ligne)
+  if (navigator.onLine) {
+    // Cache le shell de création d'article (nouvel article hors-ligne)
+    fetch('/admin/editor').catch(() => {});
+    const oneYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000;
+    artData.articles
+      .filter(a => { const d = new Date(a.end_date || a.start_date || a.date).getTime(); return !isNaN(d) && d > oneYearAgo; })
+      .forEach((a, i) => {
+        setTimeout(() => {
+          fetch('/admin/editor/' + a.id).catch(() => {});
+          fetch('/api/articles/' + a.id).catch(() => {});
+        }, i * 400);
+      });
+  }
 }
 
 function renderFolderTree(folders, parentId, depth=0) {
@@ -345,15 +360,6 @@ async function saveSettings() {
   if (res.ok) toast('Paramètres sauvegardés !','ok');
   else        toast('Erreur','err');
 }
-
-// Update folder tree element after fetch
-const origInit = init;
-init = async function() {
-  await origInit();
-  // Re-render folder tree
-  const folders = await fetch('/api/folders').then(r=>r.json()).catch(()=>[]);
-  document.getElementById('folder-tree').innerHTML = renderFolderTree(folders, null);
-};
 
 init();
 loadSettings();
@@ -600,7 +606,8 @@ function _draftPayload() {
     start_date:        document.getElementById('e-start-date')?.value || '',
     end_date:          document.getElementById('e-end-date')?.value || '',
     short_description: document.getElementById('e-desc')?.value.trim() || '',
-    content:           document.getElementById('e-content')?.innerHTML || '',            document.getElementById('pub-status')?.value || 'archived',
+    content:           document.getElementById('e-content')?.innerHTML || '',
+    status:            document.getElementById('pub-status')?.value || 'archived',
     folder_id:         parseInt(document.getElementById('e-folder')?.value) || null,
     cover_url:         document.getElementById('e-cover')?.value.trim() || null,
   };
@@ -793,15 +800,59 @@ function insertPhotoInText(url, caption, showToast=true, size='full') {
   }
   if (showToast) toast('Photo insérée !','ok');
 }
+
+// ── Insert at cursor range (drag / paste) ─────────────────────
+function insertPhotoAtRange(url, caption, range) {
+  const figure = document.createElement('figure');
+  figure.className = 'img-full';
+  const img = document.createElement('img'); img.src = url; img.alt = caption || '';
+  figure.appendChild(img);
+  const editor = document.getElementById('e-content');
+  if (range && range.commonAncestorContainer && editor.contains(range.commonAncestorContainer)) {
+    range.deleteContents();
+    range.insertNode(figure);
+    const sel = window.getSelection(); sel.removeAllRanges();
+    const r2 = document.createRange(); r2.setStartAfter(figure); r2.collapse(true);
+    sel.addRange(r2);
+  } else {
+    editor.appendChild(figure);
+    const p = document.createElement('p'); p.innerHTML = '<br>'; editor.appendChild(p);
+  }
+}
+async function uploadAndInsertAtRange(file, range) {
+  if (ARTICLE_ID) {
+    toast('Upload...', 'info');
+    const fd = new FormData(); fd.append('photo', file);
+    const res = await fetch('/api/articles/' + ARTICLE_ID + '/photos', {method:'POST', body:fd}).catch(() => null);
+    if (res?.ok) {
+      const data = await res.json();
+      const p = data.uploaded?.[0];
+      if (p) { existingPhotos.push(p); renderPhotoGrid(); insertPhotoAtRange(p.url, p.caption || '', range); toast('Image insérée !', 'ok'); }
+    } else toast('Erreur upload', 'err');
+  } else {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const dataUrl = ev.target.result;
+      newPhotos.push({dataUrl, name: file.name, file, inline: true});
+      renderPhotoGrid();
+      insertPhotoAtRange(dataUrl, '', range);
+    };
+    reader.readAsDataURL(file);
+  }
+}
 function openInsertImg() {
   const gallery = document.getElementById('iim-gallery');
   const empty = document.getElementById('iim-empty');
-  if (!existingPhotos.length) {
+  const allPhotos = [
+    ...existingPhotos.map(p => ({url: p.url, caption: p.caption || ''})),
+    ...newPhotos.map(p => ({url: p.dataUrl, caption: p.name || ''})),
+  ];
+  if (!allPhotos.length) {
     gallery.innerHTML = ''; empty.classList.remove('hidden');
   } else {
     empty.classList.add('hidden');
-    gallery.innerHTML = existingPhotos.map(p =>
-      \`<div class="aspect-square overflow-hidden rounded-xl cursor-pointer ring-2 ring-transparent hover:ring-sky-400 transition-all" data-url="\${esc(p.url)}" data-caption="\${esc(p.caption||'')}" onclick="pickImg(this.dataset.url,this.dataset.caption)"><img src="\${esc(p.url)}" alt="\${esc(p.caption||'')}" class="w-full h-full object-cover"></div>\`
+    gallery.innerHTML = allPhotos.map(p =>
+      \`<div class="aspect-square overflow-hidden rounded-xl cursor-pointer ring-2 ring-transparent hover:ring-sky-400 transition-all" data-url="\${esc(p.url)}" data-caption="\${esc(p.caption)}" onclick="pickImg(this.dataset.url,this.dataset.caption)"><img src="\${esc(p.url)}" alt="\${esc(p.caption)}" class="w-full h-full object-cover"></div>\`
     ).join('');
   }
   setImgSize('full');
@@ -1019,12 +1070,20 @@ async function saveArticle() {
       const uploaded = uploadData.uploaded || [];
       if (uploaded.length) {
         const editor = document.getElementById('e-content');
-        uploaded.forEach(p => {
-          const fig = document.createElement('figure'); fig.className = 'img-full';
-          const im = document.createElement('img'); im.src = p.url; im.alt = p.caption || '';
-          fig.appendChild(im);
-          if (p.caption && p.caption !== 'photo') { const c = document.createElement('figcaption'); c.textContent = p.caption; fig.appendChild(c); }
-          editor.appendChild(fig);
+        uploaded.forEach((p, i) => {
+          const src = newPhotos[i]?.dataUrl;
+          if (newPhotos[i]?.inline && src) {
+            // Replace the data-URL placeholder already in the text with the real R2 URL
+            editor.querySelectorAll('img').forEach(img => {
+              if (img.getAttribute('src') === src) img.src = p.url;
+            });
+          } else {
+            const fig = document.createElement('figure'); fig.className = 'img-full';
+            const im = document.createElement('img'); im.src = p.url; im.alt = p.caption || '';
+            fig.appendChild(im);
+            if (p.caption && p.caption !== 'photo') { const c = document.createElement('figcaption'); c.textContent = p.caption; fig.appendChild(c); }
+            editor.appendChild(fig);
+          }
         });
         await fetch('/api/articles/'+savedId, {
           method: 'PUT',
@@ -1062,6 +1121,34 @@ async function delArticle() {
 
 // Save cursor position when editor loses focus (for insert-at-cursor)
 document.getElementById('e-content')?.addEventListener('blur', saveSelection);
+
+// Drag image files directly into the editor
+document.getElementById('e-content')?.addEventListener('dragover', e => {
+  if ([...e.dataTransfer.types].includes('Files')) e.preventDefault();
+});
+document.getElementById('e-content')?.addEventListener('drop', async e => {
+  const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+  if (!files.length) return;
+  e.preventDefault();
+  let range = null;
+  if (document.caretRangeFromPoint) {
+    range = document.caretRangeFromPoint(e.clientX, e.clientY);
+  } else if (document.caretPositionFromPoint) {
+    const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+    if (pos) { range = document.createRange(); range.setStart(pos.offsetNode, pos.offset); range.collapse(true); }
+  }
+  for (const file of files) { await uploadAndInsertAtRange(file, range); range = null; }
+});
+// Paste image from clipboard into the editor
+document.getElementById('e-content')?.addEventListener('paste', async e => {
+  const items = [...e.clipboardData.items].filter(i => i.type.startsWith('image/'));
+  if (!items.length) return;
+  e.preventDefault();
+  let range = null;
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) range = sel.getRangeAt(0).cloneRange();
+  for (const item of items) { const file = item.getAsFile(); if (file) await uploadAndInsertAtRange(file, range); }
+});
 
 // ── Float toolbar above mobile keyboard ───────────────────────
 (function() {

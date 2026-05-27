@@ -4,7 +4,7 @@
  * Les assets statiques sont pré-cachés à l'installation.
  */
 
-const CACHE = 'tranquille-v3';
+const CACHE = 'tranquille-v4';
 
 const PRECACHE = [
   '/manifest.json',
@@ -17,8 +17,14 @@ const PRECACHE = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE)
-      .then(c => c.addAll(PRECACHE))
-      .then(() => self.skipWaiting())
+      .then(async c => {
+        await c.addAll(PRECACHE);
+        // Tente de pré-cacher l'éditeur si l'utilisateur est déjà authentifié
+        await fetch('/admin/editor', { credentials: 'include' })
+          .then(r => { if (r.ok && !r.redirected) return c.put('/admin/editor', r); })
+          .catch(() => {});
+        self.skipWaiting();
+      })
   );
 });
 

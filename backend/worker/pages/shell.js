@@ -240,9 +240,6 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 /* ── Lightbox ───────────────────────────────────────────────── */
 .lightbox-bg { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 
-/* ── Markdown editor ────────────────────────────────────────── */
-.md-editor { font-family: 'Courier New', monospace; font-size: .88rem; line-height: 1.65; resize: vertical; }
-
 /* ── Animations ─────────────────────────────────────────────── */
 .page-in { animation: fadeUp .4s ease-out; }
 @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }

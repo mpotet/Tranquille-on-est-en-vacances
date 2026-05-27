@@ -174,6 +174,7 @@ async function init(){
     </div>
     <div class="prose-vacation text-base sm:text-lg leading-relaxed mb-12" style="color:var(--ink)">\${renderedContent}</div>
     \${renderWritingDays(a.writing_days||[])}
+    \${photos.length ? renderGallery(photos) : ''}
     <div class="pt-8 flex items-center justify-between" style="border-top:1px solid var(--line)">
       <a href="/voyages" class="inline-flex items-center gap-2 font-semibold text-sm hover:underline" style="color:var(--blue)">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Tous les voyages
@@ -215,7 +216,7 @@ function renderVoyageContent(content,photos){
 
   // Single images → figure
   wrapper.querySelectorAll('img').forEach(img=>{
-    if(img.closest('.img-row')) return;
+    if(img.closest('.img-row')||img.closest('.img-pair')) return;
     img.className=\`\${img.className||''} rounded-2xl my-6 shadow-md\`.trim();
     img.loading='lazy';
     if(!img.closest('figure')){
@@ -228,6 +229,19 @@ function renderVoyageContent(content,photos){
     if(typeof idx==='number'){img.classList.add('cursor-zoom-in');img.setAttribute('onclick','openLightbox(window.photos,'+idx+')');}
   });
   return wrapper.innerHTML;
+}
+
+function renderGallery(photos){
+  if(!photos.length) return '';
+  const items=photos.map((p,i)=>\`
+    <div class="break-inside-avoid mb-3">
+      <img src="\${esc(p.url)}" alt="\${esc(p.caption||'')}" class="w-full rounded-2xl cursor-zoom-in shadow-sm hover:shadow-md transition-all" onclick="openLightbox(window.photos,\${i})" loading="lazy">
+      \${p.caption?'<p class="text-xs mt-1.5 px-1" style="color:var(--ink-muted)">'+esc(p.caption)+'</p>':''}
+    </div>\`).join('');
+  return \`<section class="mb-12">
+    <h2 class="font-display text-2xl sm:text-3xl font-bold mb-6" style="color:var(--ink)"><i class="ph ph-images"></i> Galerie du voyage</h2>
+    <div class="columns-2 sm:columns-3 gap-3">\${items}</div>
+  </section>\`;
 }
 
 function renderWritingDays(days){
