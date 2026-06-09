@@ -68,23 +68,33 @@ function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric'
 function fmtDateRange(a){
   const s=a.start_date||a.date, e=a.end_date||a.date;
   if(!s) return 'Dates non définies';
-  return s===e ? fmtDate(s) : fmtDate(s)+' → '+fmtDate(e);
+  return s===e ? fmtDate(s) : fmtDate(s)+' – '+fmtDate(e);
 }
 function escAttr(s){return esc(s).replace(/'/g,'&#39;')}
 function safeAttr(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function safeText(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function renderPopularityBars(views, minViews, maxViews) {
+  const range = maxViews - minViews || 1;
+  const count = Math.max(1, Math.ceil((views - minViews) / range * 5));
+  let dots = '';
+  for (let i = 0; i < 5; i++) {
+    dots += '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + (i < count ? 'var(--blue)' : 'rgba(0,0,0,.10)') + '"></span>';
+  }
+  return '<div style="display:flex;align-items:center;gap:3px">' + dots + '<span style="font-size:.68rem;margin-left:4px;color:var(--ink-light);line-height:1">' + views + '</span></div>';
+}
 function statusMeta(status){
   if(status==='published') return {label:'Publie',icon:'ph-fill ph-check-circle',bg:'rgba(18,145,102,.92)',color:'#fff'};
   if(status==='publish_when_online') return {label:'En attente',icon:'ph ph-clock-countdown',bg:'rgba(217,119,6,.92)',color:'#fff'};
   return {label:'Archive',icon:'ph ph-archive',bg:'rgba(87,83,78,.9)',color:'#fff'};
 }
-function card(a){
+function card(a, minViews=0, maxViews=0){
   const slug = safeAttr(a.slug || '');
   const title = safeText(a.title || '');
   const cover = safeAttr(a.cover_url || '');
   const dest = safeText(a.destination || '');
   const desc = safeText(a.short_description || '');
   const ariaLabel = safeText('Lire : ' + (a.title || ''));
+  const popBars = renderPopularityBars(a.view_count || 0, minViews, maxViews);
 
   let eb='';
   if(IS_ADMIN){
@@ -115,7 +125,10 @@ function card(a){
       '<div class="flex flex-col gap-1 text-xs font-medium mb-2.5" style="color:var(--ink-light)"><span><i class="ph ph-calendar-blank"></i> ' + fmtDateRange(a) + '</span><span><i class="ph ph-map-pin"></i> ' + dest + '</span></div>' +
       '<h3 class="font-display font-bold text-lg leading-snug mb-2 line-clamp-2" style="color:var(--ink)">' + title + '</h3>' +
       '<p class="text-sm leading-relaxed line-clamp-2 mb-4" style="color:var(--ink-muted)">' + desc + '</p>' +
-      '<span class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--blue)">Lire la suite <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></span>' +
+      '<div class="flex items-center justify-between">' +
+        '<span class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--blue)">Lire la suite <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></span>' +
+        popBars +
+      '</div>' +
     '</div>' +
   '</article>';
 }
@@ -244,8 +257,11 @@ async function init(){
     btns+='<a href="/voyages?folder='+fSlug+'" class="'+pill(isActive,false)+'">'+flagImg(f.icon)+' '+fName+'</a>';
   });
   document.getElementById('filters').innerHTML=btns;
+  const allViews = artData.articles.map(a => a.view_count || 0);
+  const minV = Math.min(...allViews, 0);
+  const maxV = Math.max(...allViews, 0);
   const childFolders=activeF ? kids(activeF.id) : [];
-  const gridItems=[...childFolders.map(folderCard),...artData.articles.map(card)];
+  const gridItems=[...childFolders.map(folderCard),...artData.articles.map(a=>card(a,minV,maxV))];
   document.getElementById('grid').innerHTML=gridItems.length
     ?gridItems.join('')
     :'<div class="col\\-span-3 text-center py-20" style="color:var(--ink-light)"><i class="ph ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1rem;color:var(--ink-light)"></i><p class="text-xl font-semibold mb-1" style="color:var(--ink)">Pas encore de voyage ici</p></div>';
@@ -327,15 +343,27 @@ function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric'
 function fmtDateRange(a){
   const s=a.start_date||a.date, e=a.end_date||a.date;
   if(!s) return 'Dates non définies';
-  return s===e ? fmtDate(s) : fmtDate(s)+' → '+fmtDate(e);
+  return s===e ? fmtDate(s) : fmtDate(s)+' – '+fmtDate(e);
 }
 function safeAttr(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function safeText(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
+function popularityBars(views) {
+  const v = views || 0;
+  const count = v === 0 ? 0 : v < 20 ? 1 : v < 100 ? 2 : v < 300 ? 3 : v < 800 ? 4 : 5;
+  let dots = '';
+  for (let i = 0; i < 5; i++) {
+    dots += '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + (i < count ? 'var(--blue)' : 'rgba(0,0,0,.10)') + '"></span>';
+  }
+  return '<span style="display:inline-flex;align-items:center;gap:3px">' + dots + '</span>';
+}
+
+function fixMd(s){return(s||'').replace(/\\*\\* +/g,'**').replace(/ +\\*\\*/g,'**').replace(/!\\[\\]\\(\\s*\\)/g,'').replace(/!\\[\\]\\s*$/gm,'').trim();}
+function stripMdText(s){if(!s)return'';const d=document.createElement('div');d.innerHTML=marked.parse(fixMd(s));return d.textContent.replace(/\\s+/g,' ').trim();}
 function extractInlineImages(content){
   const d=document.createElement('div');
   const t=(content||'').trim();
-  d.innerHTML=t.startsWith('<')?t:marked.parse(content||'');
+  d.innerHTML=t.startsWith('<')?t:marked.parse(fixMd(content));
   return[...d.querySelectorAll('img')].map(img=>({url:img.getAttribute('src')||'',caption:(img.getAttribute('alt')||'').trim()})).filter(p=>p.url);
 }
 
@@ -345,7 +373,11 @@ async function init(){
     document.getElementById('main').innerHTML=\`<div class="max-w-2xl mx-auto px-4 py-32 text-center"><i class="ph ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1.5rem;color:var(--ink-light)"></i><h1 class="font-display text-3xl font-bold mb-4" style="color:var(--ink)">Voyage introuvable</h1><p class="mb-8" style="color:var(--ink-muted)">Ce voyage n'existe pas ou n'est pas encore publié.</p><a href="/voyages" class="action-btn">← Retour aux voyages</a></div>\`;
     return;
   }
-  fetch('/api/articles/'+a.id+'/view',{method:'POST'}).catch(()=>{});
+  const _vk = 'viewed_' + a.id;
+  if (!sessionStorage.getItem(_vk)) {
+    sessionStorage.setItem(_vk, '1');
+    fetch('/api/articles/'+a.id+'/view',{method:'POST'}).catch(()=>{});
+  }
   document.title=esc(a.title)+' - Tranquille, on est en vacances';
   const photos=a.photos||[];
   const inlineImgs=extractInlineImages(a.content||'');
@@ -369,12 +401,15 @@ async function init(){
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Retour aux voyages
     </a>
     <div class="panel rounded-[2rem] p-6 sm:p-8 mb-6">
-      <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-medium" style="color:var(--ink-muted)">
-        <span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span><span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span><span><i class="ph ph-camera"></i> \${allPhotos.length} photo\${allPhotos.length!==1?'s':''}</span>
+      <div class="flex flex-wrap gap-2">
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph ph-calendar-blank" style="color:var(--blue);flex-shrink:0"></i>\${fmtDateRange(a)}</span>
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph ph-map-pin" style="color:var(--blue);flex-shrink:0"></i>\${esc(a.destination)}</span>
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph ph-camera" style="color:var(--blue);flex-shrink:0"></i>\${allPhotos.length} photo\${allPhotos.length!==1?'s':''}</span>
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph ph-eye" style="color:var(--blue);flex-shrink:0"></i>\${a.view_count||0} lecture\${(a.view_count||0)!==1?'s':''}&ensp;\${popularityBars(a.view_count||0)}</span>
       </div>
     </div>
     <div class="panel rounded-[2rem] p-6 sm:p-8 mb-10" style="border-left:4px solid rgba(var(--blue-rgb),.22)">
-      <p class="text-base sm:text-lg leading-relaxed font-medium italic" style="color:var(--ink-muted)">"\${esc(a.short_description)}"</p>
+      <p class="text-base sm:text-lg leading-relaxed font-medium italic" style="color:var(--ink-muted)">"\${stripMdText(a.short_description)}"</p>
     </div>
     <div class="prose-vacation text-base sm:text-lg leading-relaxed mb-12" style="color:var(--ink)">\${renderedContent}</div>
     \${renderWritingDays(a.writing_days||[])}
@@ -388,13 +423,19 @@ async function init(){
   </div>\`;
   if(IS_ADMIN){const fab=document.createElement('a');fab.href='/admin/editor/'+a.id;fab.setAttribute('style','position:fixed;bottom:5rem;right:1.5rem;z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:#0057B8;color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,87,184,.4)');fab.innerHTML='<i class="ph ph-pencil-simple" style="font-size:1.1rem"></i> Modifier';document.body.appendChild(fab);}
 
-  // Event delegation for gallery images
+  // Event delegation for all clickable images and share button
   setTimeout(()=>{
     document.getElementById('main').addEventListener('click',(e)=>{
-      const img=e.target.closest('img[data-gallery-index]');
-      if(img){
-        const idx=parseInt(img.dataset.galleryIndex);
-        openLightbox(window.photos,idx);
+      const img = e.target.closest('img[data-gallery-index], img[data-photo-index], img[data-photo-url]');
+      if (img) {
+        if (img.dataset.galleryIndex !== undefined) {
+          openLightbox(window.photos, parseInt(img.dataset.galleryIndex));
+        } else if (img.dataset.photoIndex !== undefined) {
+          openLightbox(window.photos, parseInt(img.dataset.photoIndex));
+        } else if (img.dataset.photoUrl) {
+          openLightbox([{url: img.dataset.photoUrl, caption: img.dataset.photoCaption||''}], 0);
+        }
+        return;
       }
     });
     const shareBtn=document.querySelector('button[data-share-btn]');
@@ -405,7 +446,7 @@ async function init(){
 function renderVoyageContent(content,photos){
   const wrapper=document.createElement('div');
   const trimmed=(content||'').trim();
-  wrapper.innerHTML=trimmed.startsWith('<') ? trimmed : marked.parse(content||'');
+  wrapper.innerHTML=trimmed.startsWith('<') ? trimmed : marked.parse(fixMd(content));
   const photoIndexByUrl=new Map((photos||[]).map((p,i)=>[p.url,i]));
 
   // Multi-image paragraphs → grid
@@ -462,17 +503,7 @@ function renderVoyageContent(content,photos){
     }
   });
 
-  // Add event delegation for image clicks
-  wrapper.addEventListener('click', (e) => {
-    const img = e.target.closest('img.cursor-zoom-in');
-    if (!img) return;
-    if (img.dataset.photoIndex !== undefined) {
-      openLightbox(window.photos, parseInt(img.dataset.photoIndex));
-    } else if (img.dataset.photoUrl) {
-      openLightbox([{url: img.dataset.photoUrl, caption: img.dataset.photoCaption}], 0);
-    }
-  });
-
+  // Event delegation added in init() setTimeout below
   return wrapper.innerHTML;
 }
 

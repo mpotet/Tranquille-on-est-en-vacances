@@ -41,7 +41,7 @@ function slugify(str) {
 }
 
 function sq(str) {
-  const s = (str || '').substring(0, 80_000);
+  const s = (str || '').substring(0, 500_000);
   return s.replace(/'/g, "''");
 }
 

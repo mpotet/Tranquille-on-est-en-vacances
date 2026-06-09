@@ -268,7 +268,7 @@ function fmtDateRange(a){
   const start = a.start_date || a.date;
   const end = a.end_date || a.date;
   if (!start) return 'Dates non définies';
-  return start === end ? fmtDate(start) : fmtDate(start) + ' → ' + fmtDate(end);
+  return start === end ? fmtDate(start) : fmtDate(start) + ' – ' + fmtDate(end);
 }
 
 // ── Load dashboard data ───────────────────────────────────────
@@ -309,8 +309,8 @@ function renderFolderTree(folders, parentId, depth=0) {
           <span class="flex-shrink-0">\${flagImg(f.icon)}</span><span>\${esc(f.name)}</span>
         </a>
         <div class="flex items-center gap-1 ml-2">
-          <button onclick="openFolderModal(\${f.id})" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-1.5 text-base touch-manipulation rounded-lg hover:bg-sky-50 transition-colors" title="Ajouter un sous-dossier"><i class="ph ph-folder-plus"></i></button>
-          <button onclick="delFolder(\${f.id})" class="text-stone-400 hover:text-red-500 active:text-red-600 p-1.5 text-base touch-manipulation rounded-lg hover:bg-red-50 transition-colors" title="Supprimer ce dossier"><i class="ph ph-trash"></i></button>
+          <button data-action="open-folder-modal" data-id="\${f.id}" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-1.5 text-base touch-manipulation rounded-lg hover:bg-sky-50 transition-colors" title="Ajouter un sous-dossier"><i class="ph ph-folder-plus"></i></button>
+          <button data-action="del-folder" data-id="\${f.id}" class="text-stone-400 hover:text-red-500 active:text-red-600 p-1.5 text-base touch-manipulation rounded-lg hover:bg-red-50 transition-colors" title="Supprimer ce dossier"><i class="ph ph-trash"></i></button>
         </div>
       </div>
       \${renderFolderTree(folders, f.id, depth+1)}
@@ -326,7 +326,7 @@ function renderArticles(arts, folders) {
     const isPub = a.status === 'published';
     return \`
     <div class="bg-white rounded-2xl border border-stone-100 p-4 flex items-center gap-4 hover:shadow-md transition-shadow group">
-      <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover flex-shrink-0" onerror="this.src='https://picsum.photos/seed/\${a.id}z/200/200'">
+      <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover flex-shrink-0" data-fallback="https://picsum.photos/seed/\${a.id}z/200/200">
       <div class="flex-1 min-w-0">
         <div class="flex items-start justify-between gap-2 mb-1">
           <h3 class="font-bold text-stone-900 text-sm sm:text-base truncate">\${esc(a.title)}</h3>
@@ -339,10 +339,10 @@ function renderArticles(arts, folders) {
         </div>
       </div>
       <div class="flex flex-col sm:flex-row items-center gap-1 flex-shrink-0">
-        <button onclick="toggleStatus(\${a.id}, '\${a.status}')" title="\${isPub?'Dépublier':'Publier'}" class="p-2 rounded-xl text-stone-400 hover:text-\${isPub?'amber':'emerald'}-600 hover:bg-\${isPub?'amber':'emerald'}-50 transition-all text-base">\${isPub?'<i class=\\"ph ph-lock-simple\\"></i>':'<i class=\\"ph ph-rocket-launch\\"></i>'}</button>
+        <button data-action="toggle-status" data-id="\${a.id}" data-status="\${a.status}" title="\${isPub?'D&#233;publier':'Publier'}" class="p-2 rounded-xl text-stone-400 hover:text-\${isPub?'amber':'emerald'}-600 hover:bg-\${isPub?'amber':'emerald'}-50 transition-all text-base">\${isPub?'<i class=\\"ph ph-lock-simple\\"></i>':'<i class=\\"ph ph-rocket-launch\\"></i>'}</button>
         <a href="/admin/editor/\${a.id}" class="p-2 rounded-xl text-stone-400 hover:text-sky-600 hover:bg-sky-50 transition-all text-base"><i class="ph ph-pencil"></i></a>
         <a href="/voyage/\${a.slug}" class="p-2 rounded-xl text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all text-base"><i class="ph ph-eye"></i></a>
-        <button onclick="delArticle(\${a.id})" class="p-2.5 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-all text-base touch-manipulation"><i class="ph ph-trash"></i></button>
+        <button data-action="del-article" data-id="\${a.id}" class="p-2.5 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-all text-base touch-manipulation"><i class="ph ph-trash"></i></button>
       </div>
     </div>\`;
   }).join('');
@@ -448,6 +448,25 @@ async function saveSettings() {
   else        toast('Erreur','err');
 }
 
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const id = parseInt(btn.dataset.id);
+  switch (btn.dataset.action) {
+    case 'open-folder-modal': openFolderModal(id); break;
+    case 'del-folder': delFolder(id); break;
+    case 'toggle-status': toggleStatus(id, btn.dataset.status); break;
+    case 'del-article': delArticle(id); break;
+  }
+});
+document.addEventListener('error', e => {
+  const img = e.target;
+  if (img.tagName === 'IMG' && img.dataset.fallback) {
+    const fb = img.dataset.fallback;
+    img.removeAttribute('data-fallback');
+    img.src = fb;
+  }
+}, true);
 init();
 loadSettings();
 </script>
@@ -1149,7 +1168,7 @@ function openInsertImg(pairRow) {
   } else {
     empty.classList.add('hidden');
     gallery.innerHTML = allPhotos.map(p =>
-      \`<div class="aspect-square overflow-hidden rounded-xl cursor-pointer ring-2 ring-transparent hover:ring-sky-400 transition-all" data-url="\${esc(p.url)}" data-caption="\${esc(p.caption)}" onclick="pickImg(this.dataset.url,this.dataset.caption)"><img src="\${esc(p.url)}" alt="\${esc(p.caption)}" class="w-full h-full object-cover"></div>\`
+      \`<div class="aspect-square overflow-hidden rounded-xl cursor-pointer ring-2 ring-transparent hover:ring-sky-400 transition-all" data-url="\${esc(p.url)}" data-caption="\${esc(p.caption)}"><img src="\${esc(p.url)}" alt="\${esc(p.caption)}" class="w-full h-full object-cover"></div>\`
     ).join('');
   }
   setImgSize(_pairAddTarget ? 'half' : 'full');
@@ -1262,8 +1281,8 @@ function renderPhotoGrid() {
     <div class="relative aspect-square overflow-hidden rounded-xl group">
       <img src="\${esc(p.url)}" alt="\${esc(p.caption||'')}" class="w-full h-full object-cover">
       <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
-        <button onclick="insertPhotoInText('\${esc(p.url)}','\${esc(p.caption||'photo')}')" class="bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-text-align-center"></i> Ré-insérer</button>
-        <button onclick="delExistingPhoto(\${p.id}, \${i})" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-trash"></i> Supprimer</button>
+        <button data-action="insert-photo" data-url="\${esc(p.url)}" data-caption="\${esc(p.caption||'photo')}" class="bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-text-align-center"></i> Ré-insérer</button>
+        <button data-action="del-existing-photo" data-id="\${p.id}" data-index="\${i}" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-trash"></i> Supprimer</button>
       </div>
     </div>\`).join('');
   const newPics = newPhotos.map((p,i)=>\`
@@ -1271,7 +1290,7 @@ function renderPhotoGrid() {
       <img src="\${p.dataUrl}" alt="\${esc(p.name)}" class="w-full h-full object-cover">
       <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
         <span class="bg-stone-800/80 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-center leading-tight">Insérée après<br>sauvegarde</span>
-        <button onclick="rmNewPhoto(\${i})" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-trash"></i> Supprimer</button>
+        <button data-action="rm-new-photo" data-index="\${i}" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-trash"></i> Supprimer</button>
       </div>
       <div class="absolute bottom-1 right-1 bg-orange-500 text-white text-xs rounded-full px-1.5 font-bold">Nouveau</div>
     </div>\`).join('');
@@ -1542,6 +1561,25 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   vv.addEventListener('scroll', updateToolbar);
 })();
 
+document.addEventListener('click', e => {
+  const imgDiv = e.target.closest('#iim-gallery [data-url]');
+  if (imgDiv) { pickImg(imgDiv.dataset.url, imgDiv.dataset.caption); return; }
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  switch (btn.dataset.action) {
+    case 'insert-photo': insertPhotoInText(btn.dataset.url, btn.dataset.caption); break;
+    case 'del-existing-photo': delExistingPhoto(parseInt(btn.dataset.id), parseInt(btn.dataset.index)); break;
+    case 'rm-new-photo': rmNewPhoto(parseInt(btn.dataset.index)); break;
+  }
+});
+document.addEventListener('error', e => {
+  const img = e.target;
+  if (img.tagName === 'IMG' && img.dataset.fallback) {
+    const fb = img.dataset.fallback;
+    img.removeAttribute('data-fallback');
+    img.src = fb;
+  }
+}, true);
 init().catch(err => console.error('[editor] init() failed:', err));
 </script>
 </body>

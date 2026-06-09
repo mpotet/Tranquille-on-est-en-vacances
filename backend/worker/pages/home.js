@@ -127,14 +127,17 @@ function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric'
 function fmtDateRange(a){
   const s=a.start_date||a.date,e=a.end_date||a.date;
   if(!s) return 'Dates non définies';
-  return s===e ? fmtDate(s) : fmtDate(s)+' → '+fmtDate(e);
+  return s===e ? fmtDate(s) : fmtDate(s)+' – '+fmtDate(e);
 }
 
 function renderPopularityBars(views, minViews, maxViews) {
   const range = maxViews - minViews || 1;
-  const barCount = Math.max(1, Math.ceil((views - minViews) / range * 5));
-  const bars = '★★★★★'.slice(0, barCount) + '☆☆☆☆☆'.slice(0, 5 - barCount);
-  return '<div class="text-xs font-semibold" style="color:var(--apricot);letter-spacing:.05em">' + bars + ' <span style="font-size:.7rem">' + views + '</span></div>';
+  const count = Math.max(1, Math.ceil((views - minViews) / range * 5));
+  let dots = '';
+  for (let i = 0; i < 5; i++) {
+    dots += '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + (i < count ? 'var(--blue)' : 'rgba(0,0,0,.10)') + '"></span>';
+  }
+  return '<div style="display:flex;align-items:center;gap:3px">' + dots + '<span style="font-size:.68rem;margin-left:4px;color:var(--ink-light);line-height:1">' + views + '</span></div>';
 }
 
 function renderArticleCard(article, minViews, maxViews, isAdmin) {
@@ -198,7 +201,7 @@ async function init(){
   const maxViews = Math.max(...views, 0);
   document.getElementById('articles-grid').innerHTML = artData.articles.length
     ? artData.articles.map(a => renderArticleCard(a, minViews, maxViews, IS_ADMIN)).join('')
-    : '<div class="col-span-3 text-center py-16" style="color:var(--ink-light)">Aucun voyage publié pour l\'instant.</div>';
+    : '<div class="col-span-3 text-center py-16" style="color:var(--ink-light)">Aucun voyage publi&#233; pour l&#39;instant.</div>';
 
   // Event delegation: card clicks and image fallback
   const grid = document.getElementById('articles-grid');
