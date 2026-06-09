@@ -198,7 +198,7 @@ async function init(){
   const maxViews = Math.max(...views, 0);
   document.getElementById('articles-grid').innerHTML = artData.articles.length
     ? artData.articles.map(a => renderArticleCard(a, minViews, maxViews, IS_ADMIN)).join('')
-    : "<div class=\"col-span-3 text-center py-16\" style=\"color:var(--ink-light)\">Aucun voyage publié pour l'instant.</div>";
+    : '<div class="col-span-3 text-center py-16" style="color:var(--ink-light)">Aucun voyage publié pour l\'instant.</div>';
 
   // Event delegation: card clicks and image fallback
   const grid = document.getElementById('articles-grid');
