@@ -13,6 +13,8 @@
     "db:migrate": "wrangler d1 execute tranquille-vacances-db --local --file=schema.sql",
     "db:migrate:remote": "wrangler d1 execute tranquille-vacances-db --file=schema.sql",
     "db:studio": "wrangler d1 studio tranquille-vacances-db --local",
+    "migrate:images": "node scripts/migrate-images.js",
+    "migrate:images:remote": "node scripts/migrate-images.js --remote",
     "vapid:generate": "node scripts/generate-vapid.js",
     "tail": "wrangler tail"
   },
