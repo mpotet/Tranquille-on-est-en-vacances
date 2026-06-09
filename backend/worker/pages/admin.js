@@ -109,6 +109,14 @@ ${ADMIN_NAV()}
         </div>
       </div>
       <div class="grid grid-cols-2 gap-3" id="stats-grid">
+        <div class="bg-white rounded-2xl p-4 text-center border border-stone-100">
+          <div id="stat-total" class="text-2xl font-black text-stone-800">-</div>
+          <div class="text-xs font-bold text-stone-500 mt-1">Articles</div>
+        </div>
+        <div class="bg-sky-50 rounded-2xl p-4 text-center border border-sky-100">
+          <div id="stat-views" class="text-2xl font-black text-sky-600">-</div>
+          <div class="text-xs font-bold text-sky-700 mt-1">Vues</div>
+        </div>
         <div class="bg-emerald-50 rounded-2xl p-4 text-center border border-emerald-100">
           <div id="stat-pub" class="text-2xl font-black text-emerald-600">-</div>
           <div class="text-xs font-bold text-emerald-700 mt-1">Publiés</div>
@@ -279,8 +287,10 @@ async function init() {
   ]);
 
   document.getElementById('folder-tree').innerHTML = renderFolderTree(folders, null);
+  document.getElementById('stat-total').textContent = artData.articles.length;
   document.getElementById('stat-pub').textContent = artData.articles.filter(a=>a.status==='published').length;
   document.getElementById('stat-draft').textContent = artData.articles.filter(a=>a.status==='draft'||a.status==='archived').length;
+  document.getElementById('stat-views').textContent = artData.articles.reduce((s,a)=>s+(a.view_count||0),0);
   renderArticles(artData.articles, folders);
 
   // Pré-chargement en cache de l'éditeur pour tous les articles < 1 an (édition hors-ligne)
@@ -319,30 +329,35 @@ function renderFolderTree(folders, parentId, depth=0) {
 
 function renderArticles(arts, folders) {
   if (!arts.length) {
-    document.getElementById('articles-list').innerHTML = '<div class="text-center text-stone-400 py-16">Aucun article pour l\\'instant.</div>';
+    document.getElementById('articles-list').innerHTML = '<div class="text-center text-stone-400 py-16">Aucun article pour l&#39;instant.</div>';
     return;
   }
   document.getElementById('articles-list').innerHTML = arts.map(a => {
     const isPub = a.status === 'published';
+    const toggleLabel = isPub ? '<i class="ph ph-lock-simple"></i> Archiver' : '<i class="ph ph-rocket-launch"></i> Publier';
+    const toggleCls = isPub ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50';
     return \`
-    <div class="bg-white rounded-2xl border border-stone-100 p-4 flex items-center gap-4 hover:shadow-md transition-shadow group">
-      <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover flex-shrink-0" data-fallback="https://picsum.photos/seed/\${a.id}z/200/200">
-      <div class="flex-1 min-w-0">
-        <div class="flex items-start justify-between gap-2 mb-1">
-          <h3 class="font-bold text-stone-900 text-sm sm:text-base truncate">\${esc(a.title)}</h3>
-          <span class="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 \${isPub?'badge-published':'badge-draft'}">\${isPub?'<i class=\\"ph-fill ph-check-circle\\"></i> Publié':'<i class=\\"ph ph-archive\\"></i> Archivé'}</span>
-        </div>
-        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-400">
-          <span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span>
-          <span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span>
-          \${a.folder_name ? \`<span>\${esc(a.folder_icon||'')} \${esc(a.folder_name)}</span>\` : ''}
+    <div class="bg-white rounded-2xl border border-stone-100 overflow-hidden hover:shadow-md transition-shadow">
+      <div class="flex gap-4 p-4">
+        <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-cover flex-shrink-0" data-fallback="https://picsum.photos/seed/\${a.id}z/200/200">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between gap-2 mb-1.5">
+            <h3 class="font-bold text-stone-900 text-sm sm:text-base leading-snug">\${esc(a.title)}</h3>
+            <span class="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 \${isPub?'badge-published':'badge-draft'}">\${isPub?'Publié':'Archivé'}</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-stone-400">
+            <span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span>
+            \${a.destination ? \`<span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span>\` : ''}
+            \${a.folder_name ? \`<span>\${esc(a.folder_icon||'')} \${esc(a.folder_name)}</span>\` : ''}
+            \${a.view_count ? \`<span><i class="ph ph-eye"></i> \${a.view_count} vue\${a.view_count>1?'s':''}</span>\` : ''}
+          </div>
         </div>
       </div>
-      <div class="flex flex-col sm:flex-row items-center gap-1 flex-shrink-0">
-        <button data-action="toggle-status" data-id="\${a.id}" data-status="\${a.status}" title="\${isPub?'D&#233;publier':'Publier'}" class="p-2 rounded-xl text-stone-400 hover:text-\${isPub?'amber':'emerald'}-600 hover:bg-\${isPub?'amber':'emerald'}-50 transition-all text-base">\${isPub?'<i class=\\"ph ph-lock-simple\\"></i>':'<i class=\\"ph ph-rocket-launch\\"></i>'}</button>
-        <a href="/admin/editor/\${a.id}" class="p-2 rounded-xl text-stone-400 hover:text-sky-600 hover:bg-sky-50 transition-all text-base"><i class="ph ph-pencil"></i></a>
-        <a href="/voyage/\${a.slug}" class="p-2 rounded-xl text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all text-base"><i class="ph ph-eye"></i></a>
-        <button data-action="del-article" data-id="\${a.id}" class="p-2.5 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-all text-base touch-manipulation"><i class="ph ph-trash"></i></button>
+      <div class="border-t border-stone-50 flex items-center gap-1 px-3 py-2">
+        <button data-action="toggle-status" data-id="\${a.id}" data-status="\${a.status}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors \${toggleCls}">\${toggleLabel}</button>
+        <a href="/admin/editor/\${a.id}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"><i class="ph ph-pencil"></i> Modifier</a>
+        <a href="/voyage/\${a.slug}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-400 hover:bg-stone-50 rounded-lg transition-colors"><i class="ph ph-eye"></i> Voir</a>
+        <button data-action="del-article" data-id="\${a.id}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-50 rounded-lg transition-colors ml-auto touch-manipulation"><i class="ph ph-trash"></i></button>
       </div>
     </div>\`;
   }).join('');
@@ -424,8 +439,8 @@ async function uploadHeroImageFromSettings(files) {
   toast('Image héro importée !', 'ok');
 }
 async function deleteHeroImageFromSettings() {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer l\'image héro ?')) return;
-  toast('Suppression de l\'image héro...', 'info');
+  if (!confirm("Êtes-vous sûr de vouloir supprimer l'image héro ?")) return;
+  toast("Suppression de l'image héro...", 'info');
   const res = await fetch('/api/settings/hero-image', { method:'DELETE' }).catch(()=>null);
   const data = await res?.json().catch(()=>null);
   if (!res?.ok || !data?.success) {

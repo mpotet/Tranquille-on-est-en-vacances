@@ -73,6 +73,8 @@ function fmtDateRange(a){
 function escAttr(s){return esc(s).replace(/'/g,'&#39;')}
 function safeAttr(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function safeText(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function fmtDateCard(a){const s=a.start_date||a.date,e=a.end_date||a.date;if(!s)return'';const opt={month:'short',year:'numeric'};const ms=new Date(s).toLocaleDateString('fr-FR',opt);const me=new Date(e).toLocaleDateString('fr-FR',opt);return ms===me?ms:ms+' – '+me;}
+function stripMd(s){return(s||'').replace(/!\\[[^\\]]*\\]\\([^)]*\\)/g,'').replace(/\\*\\*([^*\\n]+)\\*\\*/g,'$1').replace(/\\*([^*\\n]+)\\*/g,'$1').replace(/^#{1,6}\\s+/gm,'').replace(/\\s+/g,' ').trim();}
 function renderPopularityBars(views, minViews, maxViews) {
   const range = maxViews - minViews || 1;
   const count = Math.max(1, Math.ceil((views - minViews) / range * 5));
@@ -92,7 +94,7 @@ function card(a, minViews=0, maxViews=0){
   const title = safeText(a.title || '');
   const cover = safeAttr(a.cover_url || '');
   const dest = safeText(a.destination || '');
-  const desc = safeText(a.short_description || '');
+  const desc = stripMd(a.short_description || '');
   const ariaLabel = safeText('Lire : ' + (a.title || ''));
   const popBars = renderPopularityBars(a.view_count || 0, minViews, maxViews);
 
@@ -114,21 +116,21 @@ function card(a, minViews=0, maxViews=0){
     folder='<div class="absolute top-3 left-3"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm" style="background:rgba(255,253,249,.92);color:var(--palm);border:1px solid rgba(255,255,255,.6)">' + flagImg(a.folder_icon || '') + ' ' + folderName + '</span></div>';
   }
 
-  return '<article class="voyage-card cursor-pointer group" style="position:relative" data-slug="' + slug + '" role="link" tabindex="0" aria-label="' + ariaLabel + '">' +
+  return '<article class="voyage-card cursor-pointer group" style="position:relative;display:flex;flex-direction:column" data-slug="' + slug + '" role="link" tabindex="0" aria-label="' + ariaLabel + '">' +
     eb +
-    '<div class="relative overflow-hidden" style="height:15rem;border-radius:1.5rem 1.5rem 0 0">' +
+    '<div class="relative overflow-hidden" style="height:15rem;border-radius:1.5rem 1.5rem 0 0;flex-shrink:0">' +
       '<img src="' + cover + '" alt="' + title + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" data-fallback="https://picsum.photos/seed/' + a.id + 'x/800/600">' +
       folder +
       sb +
     '</div>' +
-    '<div class="p-5">' +
-      '<div class="flex flex-col gap-1 text-xs font-medium mb-2.5" style="color:var(--ink-light)"><span><i class="ph ph-calendar-blank"></i> ' + fmtDateRange(a) + '</span><span><i class="ph ph-map-pin"></i> ' + dest + '</span></div>' +
-      '<h3 class="font-display font-bold text-lg leading-snug mb-2 line-clamp-2" style="color:var(--ink)">' + title + '</h3>' +
-      '<p class="text-sm leading-relaxed line-clamp-2 mb-4" style="color:var(--ink-muted)">' + desc + '</p>' +
-      '<div class="flex items-center justify-between">' +
-        '<span class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--blue)">Lire la suite <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></span>' +
-        popBars +
+    '<div class="p-5" style="display:flex;flex-direction:column;flex:1">' +
+      '<div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem">' +
+        '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph ph-calendar-blank" style="color:var(--blue)"></i> ' + fmtDateCard(a) + '</span>' +
+        (dest ? '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph ph-map-pin" style="color:var(--blue)"></i> ' + dest + '</span>' : '') +
       '</div>' +
+      '<h3 class="font-display font-bold" style="font-size:1.05rem;line-height:1.35;margin-bottom:.5rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink)">' + title + '</h3>' +
+      '<p style="font-size:.875rem;line-height:1.55;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink-muted);margin-bottom:1rem">' + desc + '</p>' +
+      '<div style="display:flex;justify-content:flex-end">' + popBars + '</div>' +
     '</div>' +
   '</article>';
 }

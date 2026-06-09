@@ -123,6 +123,8 @@ function safeText(s){return esc(s);}
 function safeAttr(s){return esc(s);}
 function normalizeHeroHtml(html){return(html||'').replace(/<div>/gi,'<br>').replace(/<\\/div>/gi,'').trim();}
 function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
+function stripMd(s){return(s||'').replace(/!\\[[^\\]]*\\]\\([^)]*\\)/g,'').replace(/\\*\\*([^*\\n]+)\\*\\*/g,'$1').replace(/\\*([^*\\n]+)\\*/g,'$1').replace(/^#{1,6}\\s+/gm,'').replace(/\\s+/g,' ').trim();}
+function fmtDateCard(a){const s=a.start_date||a.date,e=a.end_date||a.date;if(!s)return'';const opt={month:'short',year:'numeric'};const ms=new Date(s).toLocaleDateString('fr-FR',opt);const me=new Date(e).toLocaleDateString('fr-FR',opt);return ms===me?ms:ms+' – '+me;}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
 function fmtDateRange(a){
   const s=a.start_date||a.date,e=a.end_date||a.date;
@@ -144,31 +146,27 @@ function renderArticleCard(article, minViews, maxViews, isAdmin) {
   const slug = safeAttr(article.slug);
   const title = safeText(article.title);
   const dest = safeText(article.destination);
-  const desc = safeText(article.short_description);
+  const desc = stripMd(article.short_description || '');
   const coverUrl = safeAttr(article.cover_url || '');
   const editLink = isAdmin ? '<a href="/admin/editor/' + article.id + '" onclick="event.stopPropagation()" style="position:absolute;top:.75rem;right:.75rem;z-index:5;display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border-radius:999px;font-size:.73rem;font-weight:700;background:rgba(0,87,184,.92);color:#fff;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.25)"><i class="ph ph-pencil-simple"></i> Modifier</a>' : '';
   const folderBadge = article.folder_name ? '<div class="absolute top-3 left-3"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm" style="background:rgba(255,253,249,.92);color:var(--palm);border:1px solid rgba(255,255,255,.6)">' + flagImg(article.folder_icon || '') + ' ' + safeText(article.folder_name) + '</span></div>' : '';
   const popBars = renderPopularityBars(article.view_count || 0, minViews, maxViews);
   const dest2 = article.destination ? ' - ' + safeAttr(dest) : '';
 
-  return '<article class="voyage-card cursor-pointer group" style="position:relative" data-slug="' + slug + '" role="link" tabindex="0" aria-label="Lire le voyage : ' + safeAttr(title) + dest2 + '">' +
+  return '<article class="voyage-card cursor-pointer group" style="position:relative;display:flex;flex-direction:column" data-slug="' + slug + '" role="link" tabindex="0" aria-label="Lire le voyage : ' + safeAttr(title) + dest2 + '">' +
     editLink +
-    '<div class="relative overflow-hidden" style="height:15rem;border-radius:1.5rem 1.5rem 0 0">' +
+    '<div class="relative overflow-hidden" style="height:15rem;border-radius:1.5rem 1.5rem 0 0;flex-shrink:0">' +
       '<img src="' + coverUrl + '" alt="' + safeAttr(title) + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" data-fallback="https://picsum.photos/seed/' + article.id + 'x/800/600">' +
       folderBadge +
     '</div>' +
-    '<div class="p-5">' +
-      '<div class="flex flex-col gap-1 text-xs font-medium mb-2.5" style="color:var(--ink-light)">' +
-        '<span><i class="ph ph-calendar-blank"></i> ' + fmtDateRange(article) + '</span><span><i class="ph ph-map-pin"></i> ' + dest + '</span>' +
+    '<div class="p-5" style="display:flex;flex-direction:column;flex:1">' +
+      '<div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem">' +
+        '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph ph-calendar-blank" style="color:var(--blue)"></i> ' + fmtDateCard(article) + '</span>' +
+        (dest ? '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph ph-map-pin" style="color:var(--blue)"></i> ' + dest + '</span>' : '') +
       '</div>' +
-      '<h3 class="font-display font-bold text-lg leading-snug mb-2 line-clamp-2" style="color:var(--ink)">' + title + '</h3>' +
-      '<p class="text-sm leading-relaxed line-clamp-2 mb-4" style="color:var(--ink-muted)">' + desc + '</p>' +
-      '<div class="flex items-center justify-between">' +
-        '<span class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--blue)">Lire la suite' +
-          '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>' +
-        '</span>' +
-        popBars +
-      '</div>' +
+      '<h3 class="font-display font-bold" style="font-size:1.05rem;line-height:1.35;margin-bottom:.5rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink)">' + title + '</h3>' +
+      '<p style="font-size:.875rem;line-height:1.55;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink-muted);margin-bottom:1rem">' + desc + '</p>' +
+      '<div style="display:flex;justify-content:flex-end">' + popBars + '</div>' +
     '</div>' +
   '</article>';
 }
