@@ -105,7 +105,7 @@ function card(a){
   return '<article class="voyage-card cursor-pointer group" style="position:relative" data-slug="' + slug + '" role="link" tabindex="0" aria-label="' + ariaLabel + '">' +
     eb +
     '<div class="relative overflow-hidden" style="height:15rem;border-radius:1.5rem 1.5rem 0 0">' +
-      '<img src="' + cover + '" alt="' + title + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" onerror="this.src=\'https://picsum.photos/seed/' + a.id + 'x/800/600\'">' +
+      '<img src="' + cover + '" alt="' + title + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" data-fallback="https://picsum.photos/seed/' + a.id + 'x/800/600">' +
       folder +
       sb +
     '</div>' +
@@ -262,6 +262,14 @@ async function init(){
       location.href = '/voyages?folder=' + slug;
     }
   });
+
+  // Image fallback handler
+  document.getElementById('grid').addEventListener('error', (e) => {
+    const img = e.target.closest('img[data-fallback]');
+    if (img && img.src !== img.dataset.fallback) {
+      img.src = img.dataset.fallback;
+    }
+  }, true);
 
   document.getElementById('grid').addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;
