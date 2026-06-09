@@ -4,6 +4,7 @@
 
 import { HEAD, NAV, FOOTER, TOAST, LIGHTBOX } from './shell.js';
 import { html } from '../utils.js';
+import { safeAttr, safeText } from '../helpers/html.js';
 
 export function homePage(authed=false) {
   return html(`<!DOCTYPE html>
@@ -118,6 +119,8 @@ ${LIGHTBOX}
 <script>
 const IS_ADMIN=${JSON.stringify(authed)};
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function safeText(s){return esc(s);}
+function safeAttr(s){return esc(s);}
 function normalizeHeroHtml(html){return(html||'').replace(/<div>/gi,'<br>').replace(/<\\/div>/gi,'').trim();}
 function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
@@ -127,25 +130,45 @@ function fmtDateRange(a){
   return s===e ? fmtDate(s) : fmtDate(s)+' → '+fmtDate(e);
 }
 
-function articleCard(a){
-  const eb=IS_ADMIN?'<a href="/admin/editor/'+a.id+'" onclick="event.stopPropagation()" style="position:absolute;top:.75rem;right:.75rem;z-index:5;display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border-radius:999px;font-size:.73rem;font-weight:700;background:rgba(0,87,184,.92);color:#fff;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.25)"><i class="ph ph-pencil-simple"></i> Modifier</a>':'';
-  return \`<article class="voyage-card cursor-pointer group" style="position:relative" onclick="location.href='/voyage/\${a.slug}'" role="link" tabindex="0" onkeydown="if(event.key==='Enter')location.href='/voyage/\${a.slug}'" aria-label="\${esc('Lire le voyage : '+(a.title||'')+(a.destination?' - '+a.destination:''))}">
-    \${eb}
-    <div class="relative overflow-hidden" style="height:15rem;border-radius:1.5rem 1.5rem 0 0">
-      <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" onerror="this.src='https://picsum.photos/seed/\${a.id}x/800/600'">
-      \${a.folder_name?'<div class="absolute top-3 left-3"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm" style="background:rgba(255,253,249,.92);color:var(--palm);border:1px solid rgba(255,255,255,.6)">'+flagImg(a.folder_icon||'')+' '+esc(a.folder_name)+'</span></div>':''}
-    </div>
-    <div class="p-5">
-      <div class="flex flex-col gap-1 text-xs font-medium mb-2.5" style="color:var(--ink-light)">
-        <span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span><span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span>
-      </div>
-      <h3 class="font-display font-bold text-lg leading-snug mb-2 line-clamp-2" style="color:var(--ink)">\${esc(a.title)}</h3>
-      <p class="text-sm leading-relaxed line-clamp-2 mb-4" style="color:var(--ink-muted)">\${esc(a.short_description)}</p>
-      <span class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--blue)">Lire la suite
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-      </span>
-    </div>
-  </article>\`;
+function renderPopularityBars(views, minViews, maxViews) {
+  const range = maxViews - minViews || 1;
+  const barCount = Math.max(1, Math.ceil((views - minViews) / range * 5));
+  const bars = '★★★★★'.slice(0, barCount) + '☆☆☆☆☆'.slice(0, 5 - barCount);
+  return '<div class="text-xs font-semibold" style="color:var(--apricot);letter-spacing:.05em">' + bars + ' <span style="font-size:.7rem">' + views + '</span></div>';
+}
+
+function renderArticleCard(article, minViews, maxViews, isAdmin) {
+  const slug = safeAttr(article.slug);
+  const title = safeText(article.title);
+  const dest = safeText(article.destination);
+  const desc = safeText(article.short_description);
+  const coverUrl = safeAttr(article.cover_url || '');
+  const editLink = isAdmin ? '<a href="/admin/editor/' + article.id + '" onclick="event.stopPropagation()" style="position:absolute;top:.75rem;right:.75rem;z-index:5;display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border-radius:999px;font-size:.73rem;font-weight:700;background:rgba(0,87,184,.92);color:#fff;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.25)"><i class="ph ph-pencil-simple"></i> Modifier</a>' : '';
+  const folderBadge = article.folder_name ? '<div class="absolute top-3 left-3"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm" style="background:rgba(255,253,249,.92);color:var(--palm);border:1px solid rgba(255,255,255,.6)">' + flagImg(article.folder_icon || '') + ' ' + safeText(article.folder_name) + '</span></div>' : '';
+  const popBars = renderPopularityBars(article.view_count || 0, minViews, maxViews);
+  const dest2 = article.destination ? ' - ' + safeAttr(dest) : '';
+
+  return '<article class="voyage-card cursor-pointer group" style="position:relative" onclick="location.href=\'/voyage/' + slug + '\'" role="link" tabindex="0" onkeydown="if(event.key===\'Enter\')location.href=\'/voyage/' + slug + '\'" aria-label="Lire le voyage : ' + safeAttr(title) + dest2 + '">' +
+    editLink +
+    '<div class="relative overflow-hidden" style="height:15rem;border-radius:1.5rem 1.5rem 0 0">' +
+      '<img src="' + coverUrl + '" alt="' + safeAttr(title) + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" onerror="this.src=\'https://picsum.photos/seed/' + article.id + 'x/800/600\'">' +
+      folderBadge +
+    '</div>' +
+    '<div class="p-5">' +
+      '<div class="flex flex-col gap-1 text-xs font-medium mb-2.5" style="color:var(--ink-light)">' +
+        '<span><i class="ph ph-calendar-blank"></i> ' + fmtDateRange(article) + '</span><span><i class="ph ph-map-pin"></i> ' + dest + '</span>' +
+      '</div>' +
+      '<h3 class="font-display font-bold text-lg leading-snug mb-2 line-clamp-2" style="color:var(--ink)">' + title + '</h3>' +
+      '<p class="text-sm leading-relaxed line-clamp-2 mb-4" style="color:var(--ink-muted)">' + desc + '</p>' +
+      '<div class="flex items-center justify-between">' +
+        '<span class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--blue)">Lire la suite' +
+          '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>' +
+        '</span>' +
+        popBars +
+      '</div>' +
+    '</div>' +
+  '</article>';
+}
 }
 
 async function init(){
@@ -171,8 +194,11 @@ async function init(){
   document.getElementById('stat-dest').textContent    = folderData.length || '-';
 
   // Grille articles
+  const views = artData.articles.map(a => a.view_count || 0);
+  const minViews = Math.min(...views, 0);
+  const maxViews = Math.max(...views, 0);
   document.getElementById('articles-grid').innerHTML = artData.articles.length
-    ? artData.articles.map(articleCard).join('')
+    ? artData.articles.map(a => renderArticleCard(a, minViews, maxViews, IS_ADMIN)).join('')
     : "<div class=\"col-span-3 text-center py-16\" style=\"color:var(--ink-light)\">Aucun voyage publié pour l'instant.</div>";
 
   // Escales

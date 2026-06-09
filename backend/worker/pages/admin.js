@@ -164,6 +164,7 @@ ${ADMIN_NAV()}
             <div class="flex flex-col sm:flex-row sm:items-center gap-3">
               <input type="file" id="s-hero-img-file" accept="image/*" class="hidden" onchange="uploadHeroImageFromSettings(this.files)">
               <button type="button" onclick="document.getElementById('s-hero-img-file').click()" class="action-btn-sm"><i class="ph ph-upload-simple"></i> Importer une image</button>
+              <button type="button" id="s-hero-img-delete-btn" onclick="deleteHeroImageFromSettings()" class="action-btn-sm" style="background:rgba(220,60,60,.92)!important;border-color:rgba(220,60,60,.92)!important;display:none"><i class="ph ph-trash"></i> Supprimer</button>
               <p class="text-xs text-stone-500 font-medium">L'image est stockée dans le bucket photos puis utilisée sur la page d'accueil.</p>
             </div>
             <input type="hidden" id="s-hero-img">
@@ -396,8 +397,15 @@ async function loadSettings() {
 function previewHeroImg(url) {
   const wrap = document.getElementById('s-hero-img-preview');
   const img  = document.getElementById('s-hero-img-el');
-  if (url) { wrap.classList.remove('hidden'); img.src = url; }
-  else       wrap.classList.add('hidden');
+  const btn  = document.getElementById('s-hero-img-delete-btn');
+  if (url) {
+    wrap.classList.remove('hidden');
+    img.src = url;
+    btn.style.display = '';
+  } else {
+    wrap.classList.add('hidden');
+    btn.style.display = 'none';
+  }
 }
 async function uploadHeroImageFromSettings(files) {
   const file = files && files[0];
@@ -414,6 +422,19 @@ async function uploadHeroImageFromSettings(files) {
   document.getElementById('s-hero-img').value = data.url;
   previewHeroImg(data.url);
   toast('Image héro importée !', 'ok');
+}
+async function deleteHeroImageFromSettings() {
+  if (!confirm('Êtes-vous sûr de vouloir supprimer l\'image héro ?')) return;
+  toast('Suppression de l\'image héro...', 'info');
+  const res = await fetch('/api/settings/hero-image', { method:'DELETE' }).catch(()=>null);
+  const data = await res?.json().catch(()=>null);
+  if (!res?.ok || !data?.success) {
+    toast(data?.error || 'Erreur suppression', 'err');
+    return;
+  }
+  document.getElementById('s-hero-img').value = '';
+  previewHeroImg('');
+  toast('Image héro supprimée !', 'ok');
 }
 async function saveSettings() {
   const body = {

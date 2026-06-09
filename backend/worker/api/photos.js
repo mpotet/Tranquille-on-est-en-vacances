@@ -194,6 +194,23 @@ export async function uploadHeroImage(request, env) {
   return json({ url: publicUrl, r2_key: r2Key });
 }
 
+export async function deleteHeroImage(env) {
+  const current = await env.DB.prepare('SELECT key, value FROM site_settings WHERE key IN (?, ?)')
+    .bind('hero_image_url', 'hero_image_r2_key')
+    .all();
+  const currentSettings = Object.fromEntries((current.results || []).map(r => [r.key, r.value]));
+
+  if (currentSettings.hero_image_r2_key) {
+    await env.PHOTOS.delete(currentSettings.hero_image_r2_key).catch(() => {});
+  }
+
+  const stmt = env.DB.prepare("INSERT OR REPLACE INTO site_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))");
+  await stmt.bind('hero_image_url', '').run();
+  await stmt.bind('hero_image_r2_key', '').run();
+
+  return json({ success: true });
+}
+
 // ──────────────────────────────────────────────────────────────
 // Serve an R2 object (proxied through the Worker)
 // ──────────────────────────────────────────────────────────────

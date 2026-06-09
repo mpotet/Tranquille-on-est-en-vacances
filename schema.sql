@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS articles (
   folder_id         INTEGER  REFERENCES folders(id) ON DELETE SET NULL,
   cover_r2_key      TEXT,    -- R2 object key for the cover photo
   cover_url         TEXT,    -- Public URL of the cover photo
+  view_count        INTEGER  NOT NULL DEFAULT 0,            -- Total article views
   created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -60,6 +61,7 @@ CREATE TABLE IF NOT EXISTS site_settings (
 CREATE INDEX IF NOT EXISTS idx_articles_status     ON articles(status);
 CREATE INDEX IF NOT EXISTS idx_articles_folder     ON articles(folder_id);
 CREATE INDEX IF NOT EXISTS idx_articles_date       ON articles(date DESC);
+CREATE INDEX IF NOT EXISTS idx_articles_views      ON articles(view_count DESC);
 CREATE INDEX IF NOT EXISTS idx_photos_article      ON photos(article_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_folders_parent      ON folders(parent_id);
 

@@ -12,14 +12,14 @@ directory = "./public"
 # ── Environment variables (non-secret) ───────────────────────────────────────
 [vars]
 # Public base URL used to build photo URLs
-PUBLIC_URL = "https://tranquille-vacances.YOUR_SUBDOMAIN.workers.dev"
+PUBLIC_URL = "TODO"
 
 # ── Cloudflare D1 (SQLite) ────────────────────────────────────────────────────
 # Create with: wrangler d1 create tranquille-vacances-db
 [[d1_databases]]
 binding      = "DB"
 database_name = "tranquille-vacances-db"
-database_id  = "YOUR_D1_DATABASE_ID"      # replace after `wrangler d1 create`
+database_id  = "TODO"      # replace after `wrangler d1 create`
 
 # ── Cloudflare R2 (photo storage) ─────────────────────────────────────────────
 # Create with: wrangler r2 bucket create tranquille-vacances-photos

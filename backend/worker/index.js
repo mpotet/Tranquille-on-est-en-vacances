@@ -11,11 +11,12 @@
 
 import { isAuthenticated, createSession, clearSession } from './auth.js';
 import { matchPath, json, notFound, unauthorized, redirect, html } from './utils.js';
+import { safeAttr, safeText } from './helpers/html.js';
 
 // API handlers
 import { listFolders, createFolder, updateFolder, deleteFolder } from './api/folders.js';
-import { listArticles, getArticle, createArticle, updateArticle, patchArticleStatus, deleteArticle } from './api/articles.js';
-import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, serveR2Object } from './api/photos.js';
+import { listArticles, getArticle, createArticle, updateArticle, patchArticleStatus, deleteArticle, recordView } from './api/articles.js';
+import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, deleteHeroImage, serveR2Object } from './api/photos.js';
 import { getSettings, updateSettings } from './api/settings.js';
 import {
   getPushConfig, pushSubscribe, pushUnsubscribe,
@@ -76,53 +77,83 @@ function statusMeta(status){
   return {label:'Archive',icon:'ph ph-archive',bg:'rgba(87,83,78,.9)',color:'#fff'};
 }
 function card(a){
-  const eb=IS_ADMIN?'<a href="/admin/editor/'+a.id+'" onclick="event.stopPropagation()" style="position:absolute;top:.75rem;right:.75rem;z-index:5;display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border-radius:999px;font-size:.73rem;font-weight:700;background:rgba(0,87,184,.92);color:#fff;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.25)"><i class="ph ph-pencil-simple"></i> Modifier</a>':'';
-  const sm=statusMeta(a.status);
-  const sb=IS_ADMIN?'<span style="position:absolute;left:.75rem;bottom:.75rem;z-index:5;display:inline-flex;align-items:center;gap:.35rem;padding:.35rem .65rem;border-radius:999px;font-size:.72rem;font-weight:700;background:'+sm.bg+';color:'+sm.color+';box-shadow:0 2px 8px rgba(0,0,0,.22)"><i class="'+sm.icon+'"></i> '+sm.label+'</span>':'';
-  return \`<article class="voyage-card cursor-pointer group" style="position:relative" onclick="location.href='/voyage/\${a.slug}'" role="link" tabindex="0" onkeydown="if(event.key==='Enter')location.href='/voyage/\${a.slug}'" aria-label="\${esc('Lire : '+(a.title||''))}">
-  \${eb}
-  <div class="relative overflow-hidden" style="height:15rem;border-radius:1.5rem 1.5rem 0 0">
-    <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" onerror="this.src='https://picsum.photos/seed/\${a.id}x/800/600'">
-    \${a.folder_name?'<div class="absolute top-3 left-3"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm" style="background:rgba(255,253,249,.92);color:var(--palm);border:1px solid rgba(255,255,255,.6)">'+flagImg(a.folder_icon||'')+' '+esc(a.folder_name)+'</span></div>':''}
-    \${sb}
-  </div>
-  <div class="p-5">
-    <div class="flex flex-col gap-1 text-xs font-medium mb-2.5" style="color:var(--ink-light)"><span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span><span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span></div>
-    <h3 class="font-display font-bold text-lg leading-snug mb-2 line-clamp-2" style="color:var(--ink)">\${esc(a.title)}</h3>
-    <p class="text-sm leading-relaxed line-clamp-2 mb-4" style="color:var(--ink-muted)">\${esc(a.short_description)}</p>
-    <span class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--blue)">Lire la suite <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></span>
-  </div>
-</article>\`;}
+  const slug = safeAttr(a.slug || '');
+  const title = safeText(a.title || '');
+  const cover = safeAttr(a.cover_url || '');
+  const dest = safeText(a.destination || '');
+  const desc = safeText(a.short_description || '');
+  const ariaLabel = safeText('Lire : ' + (a.title || ''));
 
-function folderCard(f){return \`<article class="voyage-card cursor-pointer group" onclick="location.href='/voyages?folder=\${f.slug}'" role="link" tabindex="0" onkeydown="if(event.key==='Enter')location.href='/voyages?folder=\${f.slug}'">
-  <div class="relative overflow-hidden flex items-center justify-center" style="height:15rem;border-radius:1.5rem 1.5rem 0 0;background:linear-gradient(135deg,rgba(0,87,184,.12),rgba(255,199,138,.18))">
-    <div class="text-center px-6">
-      <div class="mx-auto mb-4 flex items-center justify-center rounded-full" style="width:4.75rem;height:4.75rem;background:rgba(255,255,255,.72);box-shadow:0 8px 20px rgba(0,0,0,.08)">\${flagImg(f.icon||'📁')}</div>
-      <div class="text-xs font-black uppercase tracking-[.18em]" style="color:var(--blue)">Sous-dossier</div>
-    </div>
-  </div>
-  <div class="p-5">
-    <h3 class="font-display font-bold text-lg leading-snug mb-2" style="color:var(--ink)">\${esc(f.name)}</h3>
-    <p class="text-sm leading-relaxed mb-4" style="color:var(--ink-muted)">Ouvrir ce sous-dossier et voir ses voyages.</p>
-    <span class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--blue)">Ouvrir le sous-dossier <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></span>
-  </div>
-</article>\`;}
+  let eb='';
+  if(IS_ADMIN){
+    const editUrl = '/admin/editor/' + String(a.id);
+    eb='<a href="' + safeAttr(editUrl) + '" onclick="event.stopPropagation()" style="position:absolute;top:.75rem;right:.75rem;z-index:5;display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border-radius:999px;font-size:.73rem;font-weight:700;background:rgba(0,87,184,.92);color:#fff;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.25)"><i class="ph ph-pencil-simple"></i> Modifier</a>';
+  }
+
+  let sb='';
+  if(IS_ADMIN){
+    const sm=statusMeta(a.status);
+    sb='<span style="position:absolute;left:.75rem;bottom:.75rem;z-index:5;display:inline-flex;align-items:center;gap:.35rem;padding:.35rem .65rem;border-radius:999px;font-size:.72rem;font-weight:700;background:' + sm.bg + ';color:' + sm.color + ';box-shadow:0 2px 8px rgba(0,0,0,.22)"><i class="' + sm.icon + '"></i> ' + sm.label + '</span>';
+  }
+
+  let folder='';
+  if(a.folder_name){
+    const folderName = safeText(a.folder_name);
+    folder='<div class="absolute top-3 left-3"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm" style="background:rgba(255,253,249,.92);color:var(--palm);border:1px solid rgba(255,255,255,.6)">' + flagImg(a.folder_icon || '') + ' ' + folderName + '</span></div>';
+  }
+
+  return '<article class="voyage-card cursor-pointer group" style="position:relative" data-slug="' + slug + '" role="link" tabindex="0" aria-label="' + ariaLabel + '">' +
+    eb +
+    '<div class="relative overflow-hidden" style="height:15rem;border-radius:1.5rem 1.5rem 0 0">' +
+      '<img src="' + cover + '" alt="' + title + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" onerror="this.src=\'https://picsum.photos/seed/' + a.id + 'x/800/600\'">' +
+      folder +
+      sb +
+    '</div>' +
+    '<div class="p-5">' +
+      '<div class="flex flex-col gap-1 text-xs font-medium mb-2.5" style="color:var(--ink-light)"><span><i class="ph ph-calendar-blank"></i> ' + fmtDateRange(a) + '</span><span><i class="ph ph-map-pin"></i> ' + dest + '</span></div>' +
+      '<h3 class="font-display font-bold text-lg leading-snug mb-2 line-clamp-2" style="color:var(--ink)">' + title + '</h3>' +
+      '<p class="text-sm leading-relaxed line-clamp-2 mb-4" style="color:var(--ink-muted)">' + desc + '</p>' +
+      '<span class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--blue)">Lire la suite <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></span>' +
+    '</div>' +
+  '</article>';
+}
+
+function folderCard(f){
+  const slug = safeAttr(f.slug || '');
+  const name = safeText(f.name || '');
+  return '<article class="voyage-card cursor-pointer group" data-folder-slug="' + slug + '" role="link" tabindex="0">' +
+    '<div class="relative overflow-hidden flex items-center justify-center" style="height:15rem;border-radius:1.5rem 1.5rem 0 0;background:linear-gradient(135deg,rgba(0,87,184,.12),rgba(255,199,138,.18))">' +
+      '<div class="text-center px-6">' +
+        '<div class="mx-auto mb-4 flex items-center justify-center rounded-full" style="width:4.75rem;height:4.75rem;background:rgba(255,255,255,.72);box-shadow:0 8px 20px rgba(0,0,0,.08)">' + flagImg(f.icon || '📁') + '</div>' +
+        '<div class="text-xs font-black uppercase tracking-[.18em]" style="color:var(--blue)">Sous-dossier</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="p-5">' +
+      '<h3 class="font-display font-bold text-lg leading-snug mb-2" style="color:var(--ink)">' + name + '</h3>' +
+      '<p class="text-sm leading-relaxed mb-4" style="color:var(--ink-muted)">Ouvrir ce sous-dossier et voir ses voyages.</p>' +
+      '<span class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--blue)">Ouvrir le sous-dossier <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></span>' +
+    '</div>' +
+  '</article>';
+}
 
 function renderAdminFolderActions(activeFolder){
   if(!IS_ADMIN||!activeFolder) return '';
   const parentHint=activeFolder.parent_id
     ? 'Ce sous-dossier recevra les nouveaux voyages et sous-dossiers.'
     : 'Créez directement un voyage ou un sous-dossier dans cette destination.';
+  const folderName = safeText(activeFolder.name || '');
+  const editorUrl = '/admin/editor?folder=' + encodeURIComponent(activeFolder.slug || '');
+
   return '<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-2">'+
     '<div class="rounded-[1.6rem] px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style="background:rgba(0,87,184,.08);border:1px solid rgba(0,87,184,.16)">'+
       '<div>'+
         '<div class="text-xs font-black uppercase tracking-[.18em]" style="color:var(--blue)">Mode admin</div>'+
-        '<div class="font-display text-xl font-bold mt-1" style="color:var(--ink)">'+flagImg(activeFolder.icon||'')+' '+esc(activeFolder.name)+'</div>'+
+        '<div class="font-display text-xl font-bold mt-1" style="color:var(--ink)">'+flagImg(activeFolder.icon||'')+' '+folderName+'</div>'+
         '<p class="text-sm mt-1" style="color:var(--ink-muted)">'+parentHint+'</p>'+
       '</div>'+
       '<div class="flex flex-wrap gap-2">'+
-        '<a href="/admin/editor?folder='+encodeURIComponent(activeFolder.slug)+'" class="action-btn-sm"><i class="ph ph-pencil-line"></i> Nouveau voyage</a>'+
-        '<button type="button" class="subtle-btn" onclick="openPublicFolderModal('+activeFolder.id+',\\''+escAttr(activeFolder.name)+'\\')"><i class="ph ph-folder-plus"></i> Nouveau sous-dossier</button>'+
+        '<a href="' + safeAttr(editorUrl) + '" class="action-btn-sm"><i class="ph ph-pencil-line"></i> Nouveau voyage</a>'+
+        '<button type="button" class="subtle-btn" data-folder-id="' + activeFolder.id + '" data-folder-name="' + safeAttr(activeFolder.name || '') + '"><i class="ph ph-folder-plus"></i> Nouveau sous-dossier</button>'+
       '</div>'+
     '</div>'+
   '</div>';
@@ -152,7 +183,16 @@ async function init(){
   const totalCount=(artData.total??artData.articles.length);
   const plural=totalCount!==1?'s':'';
   const rootF=parentF||activeF;
-  const destLabel=rootF?' - <strong style="color:var(--palm)">'+flagImg(rootF.icon||'')+' '+esc(rootF.name)+(parentF?' / '+flagImg(activeF.icon||'')+' '+esc(activeF.name):'')+'</strong>':'';
+  let destLabel='';
+  if(rootF){
+    const rootName = safeText(rootF.name || '');
+    destLabel=' - <strong style="color:var(--palm)">'+flagImg(rootF.icon||'')+' '+rootName;
+    if(parentF){
+      const activeName = safeText(activeF.name || '');
+      destLabel+=' / '+flagImg(activeF.icon||'')+' '+activeName;
+    }
+    destLabel+='</strong>';
+  }
   document.getElementById('subtitle').innerHTML='<strong style="color:var(--blue)">'+totalCount+'</strong> itinéraire'+plural+' documenté'+destLabel;
   // Fil d'ariane
   const bc=document.getElementById('breadcrumb');
@@ -161,10 +201,16 @@ async function init(){
       const sep='<span class="mx-1 opacity-40"><i class="ph ph-caret-right"></i></span>';
       let crumbs='<a href="/voyages" style="color:var(--ink-muted);text-decoration:none;white-space:nowrap" class="hover:underline">Tous les voyages</a>';
       if(parentF){
-        crumbs+=sep+'<a href="/voyages?folder='+parentF.slug+'" style="color:var(--ink-muted);text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap" class="hover:underline">'+flagImg(parentF.icon||'')+' '+esc(parentF.name)+'</a>';
-        crumbs+=sep+'<span style="color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap">'+flagImg(activeF.icon||'')+' '+esc(activeF.name)+'</span>';
+        const parentSlug = safeAttr(parentF.slug || '');
+        const parentName = safeText(parentF.name || '');
+        const activeSlug = safeAttr(activeF.slug || '');
+        const activeName = safeText(activeF.name || '');
+        crumbs+=sep+'<a href="/voyages?folder=' + parentSlug + '" style="color:var(--ink-muted);text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap" class="hover:underline">'+flagImg(parentF.icon||'')+' '+parentName+'</a>';
+        crumbs+=sep+'<span style="color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap">'+flagImg(activeF.icon||'')+' '+activeName+'</span>';
       }else{
-        crumbs+=sep+'<span style="color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap">'+flagImg(activeF.icon||'')+' '+esc(activeF.name)+'</span>';
+        const activeSlug = safeAttr(activeF.slug || '');
+        const activeName = safeText(activeF.name || '');
+        crumbs+=sep+'<span style="color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap">'+flagImg(activeF.icon||'')+' '+activeName+'</span>';
       }
       bc.innerHTML='<nav class="flex items-center flex-wrap gap-0.5 text-sm py-1" style="color:var(--ink-muted)">'+crumbs+'</nav>';
       bc.classList.remove('hidden');
@@ -191,14 +237,56 @@ async function init(){
   let btns='<a href="/voyages" class="'+pill(!folder,false)+'"><i class="ph ph-globe-hemisphere-west"></i> Tous</a>';
   roots.forEach(f=>{
     const isActive=folder===f.slug||(parentF&&parentF.id===f.id);
-    btns+='<a href="/voyages?folder='+f.slug+'" class="'+pill(isActive,false)+'">'+flagImg(f.icon)+' '+esc(f.name)+'</a>';
+    const fSlug = safeAttr(f.slug || '');
+    const fName = safeText(f.name || '');
+    btns+='<a href="/voyages?folder='+fSlug+'" class="'+pill(isActive,false)+'">'+flagImg(f.icon)+' '+fName+'</a>';
   });
   document.getElementById('filters').innerHTML=btns;
   const childFolders=activeF ? kids(activeF.id) : [];
   const gridItems=[...childFolders.map(folderCard),...artData.articles.map(card)];
   document.getElementById('grid').innerHTML=gridItems.length
     ?gridItems.join('')
-    :'<div class="col-span-3 text-center py-20" style="color:var(--ink-light)"><i class="ph ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1rem;color:var(--ink-light)"></i><p class="text-xl font-semibold mb-1" style="color:var(--ink)">Pas encore de voyage ici</p></div>';
+    :'<div class="col\\-span-3 text-center py-20" style="color:var(--ink-light)"><i class="ph ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1rem;color:var(--ink-light)"></i><p class="text-xl font-semibold mb-1" style="color:var(--ink)">Pas encore de voyage ici</p></div>';
+
+  // Event delegation for card clicks
+  document.getElementById('grid').addEventListener('click', (e) => {
+    const card = e.target.closest('[data-slug]');
+    if (card) {
+      const slug = card.getAttribute('data-slug');
+      location.href = '/voyage/' + slug;
+      return;
+    }
+    const folderCard = e.target.closest('[data-folder-slug]');
+    if (folderCard) {
+      const slug = folderCard.getAttribute('data-folder-slug');
+      location.href = '/voyages?folder=' + slug;
+    }
+  });
+
+  document.getElementById('grid').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const card = e.target.closest('[data-slug]');
+    if (card) {
+      const slug = card.getAttribute('data-slug');
+      location.href = '/voyage/' + slug;
+      return;
+    }
+    const folderCard = e.target.closest('[data-folder-slug]');
+    if (folderCard) {
+      const slug = folderCard.getAttribute('data-folder-slug');
+      location.href = '/voyages?folder=' + slug;
+    }
+  });
+
+  // Event delegation for folder modal button
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-folder-id][data-folder-name]');
+    if (btn) {
+      const parentId = btn.getAttribute('data-folder-id');
+      const parentName = btn.getAttribute('data-folder-name');
+      openPublicFolderModal(parentId, parentName);
+    }
+  });
 }
 init();
 </script>
@@ -245,6 +333,7 @@ async function init(){
     document.getElementById('main').innerHTML=\`<div class="max-w-2xl mx-auto px-4 py-32 text-center"><i class="ph ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1.5rem;color:var(--ink-light)"></i><h1 class="font-display text-3xl font-bold mb-4" style="color:var(--ink)">Voyage introuvable</h1><p class="mb-8" style="color:var(--ink-muted)">Ce voyage n'existe pas ou n'est pas encore publié.</p><a href="/voyages" class="action-btn">← Retour aux voyages</a></div>\`;
     return;
   }
+  fetch('/api/articles/'+a.id+'/view',{method:'POST'}).catch(()=>{});
   document.title=esc(a.title)+' - Tranquille, on est en vacances';
   const photos=a.photos||[];
   const inlineImgs=extractInlineImages(a.content||'');
@@ -282,10 +371,23 @@ async function init(){
       <a href="/voyages" class="inline-flex items-center gap-2 font-semibold text-sm hover:underline" style="color:var(--blue)">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Tous les voyages
       </a>
-      <button onclick="share()" class="subtle-btn"><i class="ph ph-share-network"></i> Partager</button>
+      <button data-share-btn class="subtle-btn"><i class="ph ph-share-network"></i> Partager</button>
     </div>
   </div>\`;
   if(IS_ADMIN){const fab=document.createElement('a');fab.href='/admin/editor/'+a.id;fab.setAttribute('style','position:fixed;bottom:5rem;right:1.5rem;z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:#0057B8;color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,87,184,.4)');fab.innerHTML='<i class="ph ph-pencil-simple" style="font-size:1.1rem"></i> Modifier';document.body.appendChild(fab);}
+
+  // Event delegation for gallery images
+  setTimeout(()=>{
+    document.getElementById('main').addEventListener('click',(e)=>{
+      const img=e.target.closest('img[data-gallery-index]');
+      if(img){
+        const idx=parseInt(img.dataset.galleryIndex);
+        openLightbox(window.photos,idx);
+      }
+    });
+    const shareBtn=document.querySelector('button[data-share-btn]');
+    if(shareBtn) shareBtn.addEventListener('click',share);
+  },0);
 }
 
 function renderVoyageContent(content,photos){
@@ -305,16 +407,19 @@ function renderVoyageContent(content,photos){
     }
     const n=Math.min(imgs.length,3);
     const grid=document.createElement('div');
-    grid.className=\`img-row img-row-\${n}\`;
+    grid.className='img-row img-row-'+n;
     imgs.forEach(img=>{
       const cell=document.createElement('div');
       img.loading='lazy';
       const src=img.getAttribute('src')||'';
       const idx=photoIndexByUrl.get(src);
       if(typeof idx==='number'){
-        img.classList.add('cursor-zoom-in');img.setAttribute('onclick','openLightbox(window.photos,'+idx+')');
+        img.classList.add('cursor-zoom-in');
+        img.dataset.photoIndex = idx;
       } else {
-        img.classList.add('cursor-zoom-in');img.setAttribute('onclick','openLightbox([{url:this.src,caption:this.alt}],0)');
+        img.classList.add('cursor-zoom-in');
+        img.dataset.photoUrl = src;
+        img.dataset.photoCaption = img.getAttribute('alt') || '';
       }
       cell.appendChild(img);
       grid.appendChild(cell);
@@ -325,7 +430,7 @@ function renderVoyageContent(content,photos){
   // Single images → figure
   wrapper.querySelectorAll('img').forEach(img=>{
     if(img.closest('.img-row')||img.closest('.img-pair')) return;
-    img.className=\`\${img.className||''} rounded-2xl my-6 shadow-md\`.trim();
+    img.className=(img.className||'')+' rounded-2xl my-6 shadow-md';
     img.loading='lazy';
     if(!img.closest('figure')){
       const figure=document.createElement('figure');
@@ -336,25 +441,43 @@ function renderVoyageContent(content,photos){
     const src=img.getAttribute('src')||'';
     const idx=photoIndexByUrl.get(src);
     if(typeof idx==='number'){
-      img.classList.add('cursor-zoom-in');img.setAttribute('onclick','openLightbox(window.photos,'+idx+')');
+      img.classList.add('cursor-zoom-in');
+      img.dataset.photoIndex = idx;
     } else {
-      img.classList.add('cursor-zoom-in');img.setAttribute('onclick','openLightbox([{url:this.src,caption:this.alt}],0)');
+      img.classList.add('cursor-zoom-in');
+      img.dataset.photoUrl = src;
+      img.dataset.photoCaption = img.getAttribute('alt') || '';
     }
   });
+
+  // Add event delegation for image clicks
+  wrapper.addEventListener('click', (e) => {
+    const img = e.target.closest('img.cursor-zoom-in');
+    if (!img) return;
+    if (img.dataset.photoIndex !== undefined) {
+      openLightbox(window.photos, parseInt(img.dataset.photoIndex));
+    } else if (img.dataset.photoUrl) {
+      openLightbox([{url: img.dataset.photoUrl, caption: img.dataset.photoCaption}], 0);
+    }
+  });
+
   return wrapper.innerHTML;
 }
 
 function renderGallery(photos){
   if(!photos.length) return '';
-  const items=photos.map((p,i)=>\`
-    <div class="break-inside-avoid mb-3">
-      <img src="\${esc(p.url)}" alt="\${esc(p.caption||'')}" class="w-full rounded-2xl cursor-zoom-in shadow-sm hover:shadow-md transition-all" onclick="openLightbox(window.photos,\${i})" loading="lazy">
-      \${p.caption?'<p class="text-xs mt-1.5 px-1" style="color:var(--ink-muted)">'+esc(p.caption)+'</p>':''}
-    </div>\`).join('');
-  return \`<section class="mb-12">
-    <h2 class="font-display text-2xl sm:text-3xl font-bold mb-6" style="color:var(--ink)"><i class="ph ph-images"></i> Galerie du voyage</h2>
-    <div class="columns-2 sm:columns-3 gap-3">\${items}</div>
-  </section>\`;
+  const items=photos.map((p,i)=>{
+    const pUrl = safeAttr(p.url || '');
+    const pCaption = safeAttr(p.caption || '');
+    return '<div class="break-inside-avoid mb-3">' +
+      '<img src="' + pUrl + '" alt="' + pCaption + '" class="w-full rounded-2xl cursor-zoom-in shadow-sm hover:shadow-md transition-all" data-gallery-index="' + i + '" loading="lazy">' +
+      (p.caption ? '<p class="text-xs mt-1.5 px-1" style="color:var(--ink-muted)">' + safeText(p.caption) + '</p>' : '') +
+    '</div>';
+  }).join('');
+  return '<section class="mb-12">' +
+    '<h2 class="font-display text-2xl sm:text-3xl font-bold mb-6" style="color:var(--ink)"><i class="ph ph-images"></i> Galerie du voyage</h2>' +
+    '<div class="columns-2 sm:columns-3 gap-3">' + items + '</div>' +
+  '</section>';
 }
 
 function renderWritingDays(days){
@@ -439,6 +562,9 @@ export default {
       if (path === '/api/settings/hero-image' && method === 'POST') {
         return authed ? uploadHeroImage(request, env) : unauthorized();
       }
+      if (path === '/api/settings/hero-image' && method === 'DELETE') {
+        return authed ? deleteHeroImage(env) : unauthorized();
+      }
 
       // Folders
       if (path === '/api/folders') {
@@ -490,6 +616,11 @@ export default {
       const coverUploadMatch = matchPath('/api/articles/:id/cover', path);
       if (coverUploadMatch && method === 'POST') {
         return authed ? uploadCover(request, env, parseInt(coverUploadMatch.id)) : unauthorized();
+      }
+      const viewMatch = matchPath('/api/articles/:id/view', path);
+      if (viewMatch && method === 'POST') {
+        const id = parseInt(viewMatch.id);
+        return !isNaN(id) ? recordView(env, id) : recordView(env, viewMatch.id);
       }
 
       // Photos

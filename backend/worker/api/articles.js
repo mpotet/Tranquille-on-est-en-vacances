@@ -316,3 +316,28 @@ async function getAllFolderIds(env, folderId) {
   }
   return ids;
 }
+
+// ──────────────────────────────────────────────────────────────
+// Record a view for an article
+// ──────────────────────────────────────────────────────────────
+export async function recordView(env, slugOrId) {
+  const isNumericId = /^\d+$/.test(String(slugOrId));
+  const article = await env.DB
+    .prepare(`SELECT id, view_count FROM articles WHERE ${isNumericId ? 'id = ?' : 'slug = ?'}`)
+    .bind(isNumericId ? parseInt(slugOrId) : slugOrId)
+    .first();
+
+  if (!article) return notFound('Article not found');
+
+  await env.DB
+    .prepare('UPDATE articles SET view_count = view_count + 1 WHERE id = ?')
+    .bind(article.id)
+    .run();
+
+  const updated = await env.DB
+    .prepare('SELECT view_count FROM articles WHERE id = ?')
+    .bind(article.id)
+    .first();
+
+  return json({ views: updated.view_count });
+}
