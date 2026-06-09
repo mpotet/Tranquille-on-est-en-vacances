@@ -62,7 +62,8 @@ for (const line of sql.split('\n')) {
     buffer += line + '\n';
     if (line.includes('WHERE slug') && line.includes(';')) {
       // Parse the complete UPDATE statement
-      const contentMatch = buffer.match(/content = '((?:[^']|'')*?)'/);
+      // Greedy (no ?) needed: non-greedy *? stops prematurely at first '' (escaped quote)
+      const contentMatch = buffer.match(/content = '((?:[^']|'')*)'/);
       const coverMatch = buffer.match(/cover_url = '([^']*)'/);
 
       if (contentMatch) {

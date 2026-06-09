@@ -148,10 +148,10 @@ function renderArticleCard(article, minViews, maxViews, isAdmin) {
   const popBars = renderPopularityBars(article.view_count || 0, minViews, maxViews);
   const dest2 = article.destination ? ' - ' + safeAttr(dest) : '';
 
-  return '<article class="voyage-card cursor-pointer group" style="position:relative" onclick="location.href=\'/voyage/' + slug + '\'" role="link" tabindex="0" onkeydown="if(event.key===\'Enter\')location.href=\'/voyage/' + slug + '\'" aria-label="Lire le voyage : ' + safeAttr(title) + dest2 + '">' +
+  return '<article class="voyage-card cursor-pointer group" style="position:relative" data-slug="' + slug + '" role="link" tabindex="0" aria-label="Lire le voyage : ' + safeAttr(title) + dest2 + '">' +
     editLink +
     '<div class="relative overflow-hidden" style="height:15rem;border-radius:1.5rem 1.5rem 0 0">' +
-      '<img src="' + coverUrl + '" alt="' + safeAttr(title) + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" onerror="this.src=\'https://picsum.photos/seed/' + article.id + 'x/800/600\'">' +
+      '<img src="' + coverUrl + '" alt="' + safeAttr(title) + '" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" data-fallback="https://picsum.photos/seed/' + article.id + 'x/800/600">' +
       folderBadge +
     '</div>' +
     '<div class="p-5">' +
@@ -168,7 +168,6 @@ function renderArticleCard(article, minViews, maxViews, isAdmin) {
       '</div>' +
     '</div>' +
   '</article>';
-}
 }
 
 async function init(){
@@ -201,29 +200,45 @@ async function init(){
     ? artData.articles.map(a => renderArticleCard(a, minViews, maxViews, IS_ADMIN)).join('')
     : "<div class=\"col-span-3 text-center py-16\" style=\"color:var(--ink-light)\">Aucun voyage publié pour l'instant.</div>";
 
+  // Event delegation: card clicks and image fallback
+  const grid = document.getElementById('articles-grid');
+  grid.addEventListener('click', e => {
+    const card = e.target.closest('[data-slug]');
+    if (card && !e.target.closest('a')) location.href = '/voyage/' + card.getAttribute('data-slug');
+  });
+  grid.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const card = e.target.closest('[data-slug]');
+    if (card) location.href = '/voyage/' + card.getAttribute('data-slug');
+  });
+  grid.addEventListener('error', e => {
+    const img = e.target.closest('img[data-fallback]');
+    if (img && img.src !== img.dataset.fallback) img.src = img.dataset.fallback;
+  }, true);
+
   // Escales
   document.getElementById('escales').innerHTML = artData.articles.slice(0,3).map((a,i)=>
-    '<a href="/voyage/'+a.slug+'" aria-label="'+esc('Consulter : '+(a.title||''))+'"\
-       class="block rounded-2xl p-4 bg-white transition-all hover:-translate-y-0.5"\
-       style="border:1px solid var(--line);box-shadow:var(--card-shadow)">'+
-      '<div class="flex items-center justify-between gap-3">'+
-        '<div>'+
-          '<div class="font-semibold text-sm" style="color:var(--ink)">'+esc(a.title)+'</div>'+
-          '<div class="text-xs mt-0.5 uppercase tracking-[.16em]" style="color:var(--ink-light)">'+esc(a.destination)+'</div>'+
-        '</div>'+
-        '<span class="text-sm font-bold flex-shrink-0" style="color:var(--ink-light)">0'+(i+1)+'</span>'+
-      '</div>'+
+    '<a href="/voyage/' + safeAttr(a.slug) + '" aria-label="' + safeAttr('Consulter : ' + (a.title||'')) + '"' +
+       ' class="block rounded-2xl p-4 bg-white transition-all hover:-translate-y-0.5"' +
+       ' style="border:1px solid var(--line);box-shadow:var(--card-shadow)">' +
+      '<div class="flex items-center justify-between gap-3">' +
+        '<div>' +
+          '<div class="font-semibold text-sm" style="color:var(--ink)">' + safeText(a.title) + '</div>' +
+          '<div class="text-xs mt-0.5 uppercase tracking-[.16em]" style="color:var(--ink-light)">' + safeText(a.destination) + '</div>' +
+        '</div>' +
+        '<span class="text-sm font-bold flex-shrink-0" style="color:var(--ink-light)">0' + (i+1) + '</span>' +
+      '</div>' +
     '</a>'
   ).join('') || '<p class="text-sm" style="color:var(--ink-light)">Aucun récit publié pour le moment.</p>';
 
   // Destinations
   const roots = folderData.filter(f=>!f.parent_id);
   document.getElementById('destinations').innerHTML = roots.map(f=>
-    '<a href="/voyages?folder='+f.slug+'"\
-       class="flex items-center gap-2.5 rounded-2xl px-5 py-3 bg-white transition-all font-semibold hover:-translate-y-0.5"\
-       style="border:1px solid var(--line);box-shadow:var(--card-shadow);color:var(--ink)">'+
-      flagImg(f.icon)+
-      '<span>'+esc(f.name)+'</span>'+
+    '<a href="/voyages?folder=' + safeAttr(f.slug) + '"' +
+       ' class="flex items-center gap-2.5 rounded-2xl px-5 py-3 bg-white transition-all font-semibold hover:-translate-y-0.5"' +
+       ' style="border:1px solid var(--line);box-shadow:var(--card-shadow);color:var(--ink)">' +
+      flagImg(f.icon) +
+      '<span>' + safeText(f.name) + '</span>' +
     '</a>'
   ).join('');
 
