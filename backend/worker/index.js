@@ -9,9 +9,17 @@
  *   R2 photo proxy      →  /r2/*
  */
 
-import { isAuthenticated, createSession, clearSession } from './auth.js';
-import { matchPath, json, notFound, unauthorized, redirect, html } from './utils.js';
+import { isAuthenticated, createSession, clearSession, issueSessionCookie } from './auth.js';
+import { matchPath, json, notFound, unauthorized, redirect, html, badRequest } from './utils.js';
 import { safeAttr, safeText } from './helpers/html.js';
+import { hashPassword, verifyPassword } from './password.js';
+import {
+  getAdminAccount, getAdminByEmail, issueToken, findByValidToken, clearToken,
+} from './admin-account.js';
+import {
+  sendResetEmail, sendEmailChangeEmail, sendPasswordChangedEmail,
+} from './admin-email.js';
+import { setPasswordPage, confirmEmailPage } from './pages/admin-auth.js';
 import {
   renderVoyageContent as ssrVoyageContent, renderGallery as ssrGallery,
   renderWritingDays as ssrWritingDays, extractInlineImages as ssrExtractImages,
@@ -731,10 +739,17 @@ export default {
     if (path === '/admin/login' && method === 'POST') {
       const form = await request.formData().catch(() => null);
       const password = form?.get('password') || '';
-      const cookie = await createSession(password, env.ADMIN_PASSWORD, env.SESSION_SECRET);
-      if (!cookie) {
+      const account = await getAdminAccount(env.DB);
+
+      // First-run: no password set yet → nothing to compare against.
+      if (!account || !account.password_hash) {
+        return loginPage('', true /* noPassword */);
+      }
+      const ok = await verifyPassword(password, account.password_hash);
+      if (!ok) {
         return loginPage('Mot de passe incorrect. Réessayez.');
       }
+      const cookie = await issueSessionCookie(env.SESSION_SECRET);
       return new Response(null, {
         status: 302,
         headers: { Location: '/admin/dashboard', 'Set-Cookie': cookie },
@@ -748,10 +763,94 @@ export default {
       });
     }
 
+    // ── Forgot password (public; body { email }) ──────────────
+    if (path === '/admin/forgot-password' && method === 'POST') {
+      const body = await request.json().catch(() => ({}));
+      const email = String(body.email || '').trim();
+      // Generic response regardless of match (don't leak account existence).
+      if (email) {
+        const account = await getAdminByEmail(env.DB, email);
+        if (account) {
+          const { token } = await issueToken(env.DB, 'reset');
+          ctx.waitUntil(sendResetEmail(env, account.email, token));
+        }
+      }
+      return json({ ok: true });
+    }
+
+    // ── Setup / Reset landing pages (choose new password) ─────
+    if ((path === '/admin/setup' || path === '/admin/reset') && method === 'GET') {
+      const mode = path === '/admin/setup' ? 'setup' : 'reset';
+      const token = url.searchParams.get('token') || '';
+      const row = await findByValidToken(env.DB, token, mode);
+      return setPasswordPage(mode, token, !!row);
+    }
+
+    // ── Consume setup/reset token → set password → log in ─────
+    if (path === '/admin/set-password' && method === 'POST') {
+      const body = await request.json().catch(() => ({}));
+      const token = String(body.token || '');
+      const password = String(body.password || '');
+      if (password.length < 8) {
+        return badRequest('Le mot de passe doit contenir au moins 8 caractères.');
+      }
+      // A single token may be either 'setup' or 'reset'; accept whichever matches.
+      const row =
+        (await findByValidToken(env.DB, token, 'setup')) ||
+        (await findByValidToken(env.DB, token, 'reset'));
+      if (!row) {
+        return badRequest('Lien invalide ou expiré.');
+      }
+      const hash = await hashPassword(password);
+      await env.DB
+        .prepare(
+          `UPDATE admin_account
+           SET password_hash = ?, token = NULL, token_purpose = NULL,
+               token_expires_at = NULL, updated_at = CURRENT_TIMESTAMP
+           WHERE id = ?`,
+        )
+        .bind(hash, row.id)
+        .run();
+      const cookie = await issueSessionCookie(env.SESSION_SECRET);
+      return new Response(JSON.stringify({ ok: true, redirect: '/admin/dashboard' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'Set-Cookie': cookie },
+      });
+    }
+
+    // ── Confirm email change (requires an active admin session) ─
+    if (path === '/admin/confirm-email' && method === 'GET') {
+      const authed = await isAuthenticated(request, env.SESSION_SECRET);
+      const token = url.searchParams.get('token') || '';
+      if (!authed) {
+        // The confirmation link proves inbox ownership, but we also require the
+        // clicker to be logged in as admin. Send them to log in, then re-click.
+        return confirmEmailPage('login');
+      }
+      const row = await findByValidToken(env.DB, token, 'email_change');
+      if (!row || !row.pending_email) {
+        return confirmEmailPage('invalid');
+      }
+      const newEmail = row.pending_email;
+      await env.DB
+        .prepare(
+          `UPDATE admin_account
+           SET email = ?, pending_email = NULL, token = NULL, token_purpose = NULL,
+               token_expires_at = NULL, updated_at = CURRENT_TIMESTAMP
+           WHERE id = ?`,
+        )
+        .bind(newEmail, row.id)
+        .run();
+      return confirmEmailPage('ok', newEmail);
+    }
+
     // ── Admin HTML pages (protected) ──────────────────────────
     if (path === '/admin' || path === '/admin/') {
       const authed = await isAuthenticated(request, env.SESSION_SECRET);
-      return authed ? redirect('/admin/dashboard') : loginPage();
+      if (authed) return redirect('/admin/dashboard');
+      const account = await getAdminAccount(env.DB);
+      const noPassword = !account || !account.password_hash;
+      return loginPage('', noPassword);
     }
     if (path.startsWith('/admin/')) {
       const authed = await isAuthenticated(request, env.SESSION_SECRET);
@@ -801,6 +900,51 @@ export default {
       }
       if (path === '/api/settings/hero-image' && method === 'DELETE') {
         return authed ? deleteHeroImage(env) : unauthorized();
+      }
+
+      // ── Admin account (all admin-only) ──────────────────────
+      if (path === '/api/admin/account' && method === 'GET') {
+        if (!authed) return unauthorized();
+        const acc = await getAdminAccount(env.DB);
+        // Only expose non-sensitive fields — never password_hash/token.
+        return json({ email: acc?.email || '', pending_email: acc?.pending_email || null });
+      }
+
+      if (path === '/api/admin/change-password' && method === 'POST') {
+        if (!authed) return unauthorized();
+        const body = await request.json().catch(() => ({}));
+        const currentPassword = String(body.current_password || '');
+        const newPassword = String(body.new_password || '');
+        if (newPassword.length < 8) {
+          return badRequest('Le nouveau mot de passe doit contenir au moins 8 caractères.');
+        }
+        const acc = await getAdminAccount(env.DB);
+        // Re-auth: verify the current password even though a session exists.
+        const ok = await verifyPassword(currentPassword, acc?.password_hash);
+        if (!ok) return json({ error: 'Mot de passe actuel incorrect.' }, 403);
+        const hash = await hashPassword(newPassword);
+        await env.DB
+          .prepare('UPDATE admin_account SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+          .bind(hash, acc.id).run();
+        // Courtesy notification to the account email (fire-and-forget).
+        if (acc.email) ctx.waitUntil(sendPasswordChangedEmail(env, acc.email));
+        return json({ ok: true });
+      }
+
+      if (path === '/api/admin/request-email-change' && method === 'POST') {
+        if (!authed) return unauthorized();
+        const body = await request.json().catch(() => ({}));
+        const newEmail = String(body.new_email || '').trim();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmail)) {
+          return badRequest('Adresse email invalide.');
+        }
+        const acc = await getAdminAccount(env.DB);
+        await env.DB
+          .prepare('UPDATE admin_account SET pending_email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+          .bind(newEmail, acc.id).run();
+        const { token } = await issueToken(env.DB, 'email_change');
+        ctx.waitUntil(sendEmailChangeEmail(env, newEmail, token));
+        return json({ ok: true });
       }
 
       // Folders

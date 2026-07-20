@@ -5,6 +5,7 @@
 
 import { HEAD, TOAST } from './shell.js';
 import { html } from '../utils.js';
+import { safeText, safeAttr } from '../helpers/html.js';
 
 // ── Admin shared nav bar ──────────────────────────────────────
 const ADMIN_NAV = (subtitle = '') => `
@@ -54,7 +55,67 @@ const ADMIN_NAV = (subtitle = '') => `
 </script>`;
 
 // ── Login page ────────────────────────────────────────────────
-export function loginPage(error = '') {
+// `error`      : optional error banner text (wrong password, etc.)
+// `noPassword` : true when the admin account has no password set yet (first-run);
+//                shows a "compte non initialisé" notice instead of the form.
+export function loginPage(error = '', noPassword = false) {
+  const safeErr = safeText(error);
+  const notInitialised = `
+      <div class="mb-5 bg-amber-50 text-amber-800 px-4 py-3 rounded-2xl text-sm font-medium border border-amber-100">
+        <i class="ph-fill ph-envelope-simple"></i> Compte non initialisé — vérifiez vos emails pour définir votre mot de passe.
+      </div>
+      <p class="text-sm text-stone-500">Un lien d'initialisation a été (ou sera) envoyé à l'adresse administrateur. Il est valable 1 heure.</p>`;
+
+  const loginForm = `
+      ${error ? `<div class="mb-5 bg-red-50 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium border border-red-100"><i class="ph-fill ph-x-circle"></i> ${safeErr}</div>` : ''}
+      <form method="POST" action="/admin/login" id="login-form">
+        <div class="mb-6">
+          <label class="block text-sm font-bold text-stone-700 mb-2" for="password">Mot de passe</label>
+          <input type="password" id="password" name="password" placeholder="••••••••" autofocus required
+                 class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-medium">
+        </div>
+        <button type="submit" class="w-full action-btn justify-center text-base">
+          Se connecter <i class="ph ph-arrow-right"></i>
+        </button>
+      </form>
+      <div class="mt-4 text-center">
+        <button type="button" id="forgot-link" class="text-sm text-stone-500 hover:text-sky-600 transition-colors underline">Mot de passe oublié ?</button>
+      </div>
+
+      <!-- Forgot-password panel (hidden until toggled) -->
+      <div id="forgot-panel" class="hidden mt-5 pt-5 border-t border-stone-100">
+        <div id="forgot-done" class="hidden bg-emerald-50 text-emerald-800 px-4 py-3 rounded-2xl text-sm font-medium border border-emerald-100">
+          <i class="ph-fill ph-check-circle"></i> Si cette adresse est reconnue, un email a été envoyé.
+        </div>
+        <form id="forgot-form">
+          <label class="block text-sm font-bold text-stone-700 mb-2" for="forgot-email">Votre adresse email</label>
+          <input type="email" id="forgot-email" name="email" required placeholder="vous@exemple.fr"
+                 class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-medium mb-3">
+          <button type="submit" id="forgot-submit" class="w-full action-btn-sm justify-center">Envoyer le lien de réinitialisation</button>
+        </form>
+      </div>
+
+      <script>
+      (function(){
+        var link=document.getElementById('forgot-link');
+        var panel=document.getElementById('forgot-panel');
+        var form=document.getElementById('forgot-form');
+        var done=document.getElementById('forgot-done');
+        if(link) link.addEventListener('click',function(){
+          panel.classList.toggle('hidden');
+          if(!panel.classList.contains('hidden')) document.getElementById('forgot-email').focus();
+        });
+        if(form) form.addEventListener('submit', async function(e){
+          e.preventDefault();
+          var btn=document.getElementById('forgot-submit');
+          btn.disabled=true;
+          await fetch('/admin/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('forgot-email').value.trim()})}).catch(function(){});
+          form.classList.add('hidden');
+          done.classList.remove('hidden');
+        });
+      })();
+      </script>`;
+
   return html(`<!DOCTYPE html>
 <html lang="fr">
 <head>${HEAD('Admin - Connexion')}</head>
@@ -69,18 +130,7 @@ export function loginPage(error = '') {
       <p class="text-stone-500 mt-2 text-sm">Connexion réservée à la famille Potet</p>
     </div>
     <div class="section-panel majorelle-frame rounded-3xl shadow-xl p-8 border border-stone-100">
-      ${error ? `<div class="mb-5 bg-red-50 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium border border-red-100"><i class="ph-fill ph-x-circle"></i> ${error}</div>` : ''}
-      <form method="POST" action="/admin/login">
-        <div class="mb-6">
-          <label class="block text-sm font-bold text-stone-700 mb-2" for="password">Mot de passe</label>
-          <input type="password" id="password" name="password" placeholder="••••••••" autofocus required
-                 class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-medium">
-        </div>
-        <button type="submit"
-                class="w-full action-btn justify-center text-base">
-          Se connecter <i class="ph ph-arrow-right"></i>
-        </button>
-      </form>
+      ${noPassword ? notInitialised : loginForm}
     </div>
     <p class="text-center text-stone-400 text-sm mt-6">
       <a href="/" class="hover:text-sky-600 transition-colors">< Retour au blog</a>
@@ -239,6 +289,58 @@ ${ADMIN_NAV()}
       <div class="mt-6 flex justify-end">
         <button onclick="saveSettings()" class="action-btn-sm"><i class="ph ph-floppy-disk"></i> Sauvegarder les paramètres</button>
       </div>
+    </div>
+  </details>
+
+  <!-- Account panel (credentials) -->
+  <details id="account" class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden mt-5">
+    <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none select-none hover:bg-stone-50 transition-colors">
+      <div class="flex items-center gap-3">
+        <span class="text-xl"><i class="ph ph-user-circle" style="color:var(--blue)"></i></span>
+        <div>
+          <h2 class="font-bold text-stone-800 text-sm">Compte administrateur</h2>
+          <p class="text-xs text-stone-400">Adresse email &amp; mot de passe</p>
+        </div>
+      </div>
+      <span class="text-stone-400 text-xs font-semibold">Cliquer pour gérer ▾</span>
+    </summary>
+    <div class="px-6 pb-6 border-t border-stone-100">
+
+      <!-- Email -->
+      <p class="text-xs font-black text-stone-400 uppercase tracking-wider mt-5 mb-3">Adresse email</p>
+      <div class="rounded-2xl border border-stone-100 bg-stone-50 p-4">
+        <p class="text-sm text-stone-600 mb-1">Adresse actuelle : <strong id="acc-current-email" class="text-stone-800">…</strong></p>
+        <p id="acc-pending" class="hidden text-xs text-amber-700 mb-3"><i class="ph-fill ph-clock"></i> Confirmation en attente à <strong id="acc-pending-email"></strong></p>
+        <div class="grid sm:grid-cols-[1fr_auto] gap-3 mt-3">
+          <input type="email" id="acc-new-email" placeholder="nouvelle@adresse.fr" autocomplete="off"
+                 class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+          <button onclick="requestEmailChange()" class="action-btn-sm whitespace-nowrap"><i class="ph ph-paper-plane-tilt"></i> Demander le changement</button>
+        </div>
+        <p class="text-xs text-stone-400 mt-2">Un email de confirmation sera envoyé à la nouvelle adresse. Le changement ne prend effet qu'après confirmation.</p>
+      </div>
+
+      <!-- Password -->
+      <p class="text-xs font-black text-stone-400 uppercase tracking-wider mt-6 mb-3">Mot de passe</p>
+      <div class="rounded-2xl border border-stone-100 bg-stone-50 p-4">
+        <div class="grid sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide" for="acc-cur-pw">Actuel</label>
+            <input type="password" id="acc-cur-pw" autocomplete="current-password" placeholder="••••••••" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide" for="acc-new-pw">Nouveau</label>
+            <input type="password" id="acc-new-pw" autocomplete="new-password" placeholder="8 caractères min." class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide" for="acc-new-pw2">Confirmer</label>
+            <input type="password" id="acc-new-pw2" autocomplete="new-password" placeholder="••••••••" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+          </div>
+        </div>
+        <div class="mt-4 flex justify-end">
+          <button onclick="changePassword()" class="action-btn-sm"><i class="ph ph-key"></i> Modifier le mot de passe</button>
+        </div>
+      </div>
+
     </div>
   </details>
   </div>
@@ -526,6 +628,54 @@ async function saveSettings() {
   else        toast('Erreur','err');
 }
 
+// ── Account (credentials) ─────────────────────────────────────
+async function loadAccount() {
+  const a = await fetch('/api/admin/account').then(r=>r.json()).catch(()=>null);
+  if (!a) return;
+  const cur = document.getElementById('acc-current-email');
+  if (cur) cur.textContent = a.email || '—';
+  const pend = document.getElementById('acc-pending');
+  const pendEmail = document.getElementById('acc-pending-email');
+  if (a.pending_email) {
+    if (pendEmail) pendEmail.textContent = a.pending_email;
+    if (pend) pend.classList.remove('hidden');
+  } else if (pend) {
+    pend.classList.add('hidden');
+  }
+}
+async function requestEmailChange() {
+  const input = document.getElementById('acc-new-email');
+  const email = (input?.value || '').trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast('Adresse email invalide','err'); return; }
+  const res = await fetch('/api/admin/request-email-change', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({new_email:email})}).catch(()=>null);
+  const data = await res?.json().catch(()=>null);
+  if (res && res.ok) {
+    toast('Email de confirmation envoyé à '+email,'ok');
+    input.value='';
+    loadAccount();
+  } else {
+    toast((data&&data.error)||'Erreur','err');
+  }
+}
+async function changePassword() {
+  const cur = document.getElementById('acc-cur-pw');
+  const pw = document.getElementById('acc-new-pw');
+  const pw2 = document.getElementById('acc-new-pw2');
+  const current_password = cur.value;
+  const new_password = pw.value;
+  if (!current_password) { toast('Saisissez votre mot de passe actuel','err'); return; }
+  if (new_password.length < 8) { toast('Le nouveau mot de passe doit contenir au moins 8 caractères','err'); return; }
+  if (new_password !== pw2.value) { toast('Les deux mots de passe ne correspondent pas','err'); return; }
+  const res = await fetch('/api/admin/change-password', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({current_password,new_password})}).catch(()=>null);
+  const data = await res?.json().catch(()=>null);
+  if (res && res.ok) {
+    toast('Mot de passe modifié !','ok');
+    cur.value=''; pw.value=''; pw2.value='';
+  } else {
+    toast((data&&data.error)||'Erreur','err');
+  }
+}
+
 document.addEventListener('click', e => {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
@@ -547,6 +697,7 @@ document.addEventListener('error', e => {
 }, true);
 init();
 loadSettings();
+loadAccount();
 // Open the settings panel when arriving via /admin/dashboard#settings
 if (location.hash === '#settings') {
   const d = document.getElementById('settings');

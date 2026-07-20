@@ -15,6 +15,8 @@
     "db:studio": "wrangler d1 studio tranquille-vacances-db --local",
     "migrate:images": "node scripts/migrate-images.js",
     "migrate:images:remote": "node scripts/migrate-images.js --remote",
+    "admin:send-setup-email": "node scripts/send-admin-setup-email.js",
+    "admin:send-setup-email:remote": "node scripts/send-admin-setup-email.js --remote",
     "vapid:generate": "node scripts/generate-vapid.js",
     "tail": "wrangler tail"
   },

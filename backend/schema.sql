@@ -104,6 +104,37 @@ CREATE TABLE IF NOT EXISTS email_subscriptions (
 
 CREATE INDEX IF NOT EXISTS idx_email_active ON email_subscriptions(active);
 
+-- ── Admin account (single-row credential store) ──────────────────────────────
+-- There is only ever ONE admin, but this is a normal table (id, not hardcoded)
+-- because it holds credential data that must stay separate from the generic
+-- site_settings key/value store and must NEVER be exposed via the settings API.
+--   password_hash    : NULL until first-run setup is completed. Composite string
+--                       "salt:iterations:hash" (all base64url) produced by
+--                       worker/password.js (PBKDF2-SHA256).
+--   pending_email    : set while an email change awaits confirmation, cleared on
+--                       confirm/cancel.
+--   token / token_purpose / token_expires_at :
+--                       one active one-time token at a time (setup | reset |
+--                       email_change). A new request overwrites the previous one;
+--                       a consumed token is cleared immediately (single use).
+CREATE TABLE IF NOT EXISTS admin_account (
+  id               INTEGER  PRIMARY KEY AUTOINCREMENT,
+  email            TEXT     NOT NULL UNIQUE,
+  password_hash    TEXT,                       -- NULL = no password set yet (first-run)
+  pending_email    TEXT,                       -- awaiting email-change confirmation
+  token            TEXT,                       -- current one-time token (or NULL)
+  token_purpose    TEXT     CHECK (token_purpose IN ('setup', 'reset', 'email_change')),
+  token_expires_at DATETIME,
+  created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed the single admin row in first-run state (no password, no token).
+-- The setup email/token is generated at runtime by
+-- `npm run admin:send-setup-email`, NOT here (that would send a real email).
+INSERT OR IGNORE INTO admin_account (id, email, password_hash) VALUES
+  (1, 'damien.potet@free.fr', NULL);
+
 -- =========================================================
 -- Seed data - remove or adapt before deploying to production
 -- =========================================================

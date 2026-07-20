@@ -88,9 +88,21 @@ export async function createSession(password, adminPw, sessionSecret) {
   for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
   if (diff !== 0) return null;
 
+  return issueSessionCookie(sessionSecret);
+}
+
+/**
+ * Issue a signed admin session cookie. Call this AFTER the caller has already
+ * validated the credentials (e.g. verifyPassword against the DB hash, or a
+ * consumed one-time setup/reset token). Kept separate from createSession so the
+ * password-comparison logic isn't tangled with cookie minting.
+ *
+ * @param {string} sessionSecret - SESSION_SECRET env variable
+ * @returns {Promise<string>} Set-Cookie header value
+ */
+export async function issueSessionCookie(sessionSecret) {
   const payload = JSON.stringify({ role: 'admin', exp: Date.now() + TOKEN_TTL_MS });
   const token = await sign(payload, sessionSecret);
-
   return `${COOKIE_NAME}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${TOKEN_TTL_MS / 1000}`;
 }
 
