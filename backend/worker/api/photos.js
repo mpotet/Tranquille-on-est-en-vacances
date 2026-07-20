@@ -23,6 +23,38 @@
 import { json, notFound, badRequest } from '../utils.js';
 
 // ──────────────────────────────────────────────────────────────
+// Image type validation (magic bytes) — never trust the client-supplied
+// File.type/filename for the stored R2 Content-Type. An attacker-controlled
+// Content-Type (e.g. image/svg+xml or text/html) served back verbatim by
+// serveR2Object() from the same origin would be a stored XSS vector, since
+// SVG/HTML can embed executable <script>. Only a small allowlist of real
+// raster image formats — verified by their leading bytes — is accepted.
+// ──────────────────────────────────────────────────────────────
+const IMAGE_SIGNATURES = [
+  { ext: 'jpg',  contentType: 'image/jpeg', match: b => b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF },
+  { ext: 'png',  contentType: 'image/png',  match: b => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47 },
+  { ext: 'gif',  contentType: 'image/gif',  match: b => b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38 },
+  {
+    ext: 'webp', contentType: 'image/webp',
+    match: b => b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
+                b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50,
+  },
+];
+
+/**
+ * Identify a real, safe image format from the file's actual bytes.
+ * @param {ArrayBuffer} buf
+ * @returns {{ext: string, contentType: string}|null} null if not a recognised image.
+ */
+function detectImageType(buf) {
+  const bytes = new Uint8Array(buf.slice(0, 12));
+  for (const sig of IMAGE_SIGNATURES) {
+    if (sig.match(bytes)) return { ext: sig.ext, contentType: sig.contentType };
+  }
+  return null;
+}
+
+// ──────────────────────────────────────────────────────────────
 // Upload photo(s) for an article
 // ──────────────────────────────────────────────────────────────
 export async function uploadPhotos(request, env, articleId) {
@@ -50,16 +82,16 @@ export async function uploadPhotos(request, env, articleId) {
   for (const [, file] of formData.entries()) {
     if (!(file instanceof File)) continue;
 
-    const ext      = file.type.includes('webp') ? 'webp'
-                   : file.type.includes('png')  ? 'png'
-                   : 'jpg';
+    const arrayBuf = await file.arrayBuffer();
+    const detected = detectImageType(arrayBuf);
+    if (!detected) continue; // silently skip non-image parts of the form
+
     const uuid     = crypto.randomUUID();
     const year     = new Date().getFullYear();
-    const r2Key    = `photos/${year}/${articleId}/${uuid}.${ext}`;
+    const r2Key    = `photos/${year}/${articleId}/${uuid}.${detected.ext}`;
 
-    const arrayBuf = await file.arrayBuffer();
     await env.PHOTOS.put(r2Key, arrayBuf, {
-      httpMetadata: { contentType: file.type },
+      httpMetadata: { contentType: detected.contentType },
     });
 
     // Build the public URL.  If the R2 bucket has a custom domain configured
@@ -147,12 +179,15 @@ export async function uploadCover(request, env, articleId) {
     await env.PHOTOS.delete(article.cover_r2_key).catch(() => {});
   }
 
-  const ext   = file.type.includes('webp') ? 'webp' : file.type.includes('png') ? 'png' : 'jpg';
+  const arrayBuf = await file.arrayBuffer();
+  const detected = detectImageType(arrayBuf);
+  if (!detected) return badRequest('Fichier image invalide.');
+
   const uuid  = crypto.randomUUID();
   const year  = new Date().getFullYear();
-  const r2Key = `covers/${year}/${articleId}/${uuid}.${ext}`;
+  const r2Key = `covers/${year}/${articleId}/${uuid}.${detected.ext}`;
 
-  await env.PHOTOS.put(r2Key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } });
+  await env.PHOTOS.put(r2Key, arrayBuf, { httpMetadata: { contentType: detected.contentType } });
 
   const publicUrl = `${env.PUBLIC_URL}/r2/${r2Key}`;
   await env.DB
@@ -179,12 +214,15 @@ export async function uploadHeroImage(request, env) {
     await env.PHOTOS.delete(currentSettings.hero_image_r2_key).catch(() => {});
   }
 
-  const ext = file.type.includes('webp') ? 'webp' : file.type.includes('png') ? 'png' : 'jpg';
+  const arrayBuf = await file.arrayBuffer();
+  const detected = detectImageType(arrayBuf);
+  if (!detected) return badRequest('Fichier image invalide.');
+
   const uuid = crypto.randomUUID();
   const year = new Date().getFullYear();
-  const r2Key = `hero/${year}/${uuid}.${ext}`;
+  const r2Key = `hero/${year}/${uuid}.${detected.ext}`;
 
-  await env.PHOTOS.put(r2Key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } });
+  await env.PHOTOS.put(r2Key, arrayBuf, { httpMetadata: { contentType: detected.contentType } });
   const publicUrl = `${env.PUBLIC_URL}/r2/${r2Key}`;
 
   const stmt = env.DB.prepare("INSERT OR REPLACE INTO site_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))");
@@ -222,6 +260,10 @@ export async function serveR2Object(env, r2Key) {
   object.writeHttpMetadata(headers);
   headers.set('Cache-Control', 'public, max-age=31536000, immutable');
   headers.set('ETag', object.httpEtag);
+  // Defense in depth: uploads are validated by magic bytes to a raster-image
+  // allowlist at write time, but never let a browser "sniff" a served object
+  // into executing as HTML/script regardless of what Content-Type is stored.
+  headers.set('X-Content-Type-Options', 'nosniff');
 
   return new Response(object.body, { headers });
 }
