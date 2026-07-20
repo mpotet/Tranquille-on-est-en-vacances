@@ -47,10 +47,15 @@ function progressBar(current, total, label = '') {
   return `${label} [${bar}] ${pctStr}% ${countStr}`;
 }
 
+// execSync has no timeout by default (blocks forever on a hung child process
+// - this migration once hung for 90+ minutes on a stalled network call with
+// no way to detect it). Every wrangler invocation gets a hard ceiling.
+const EXEC_TIMEOUT_MS = 60_000;
+
 function dbExecFile(sqlPath) {
   execSync(
     `npx wrangler d1 execute ${DB} ${LOCAL_FLAG} --yes --file "${sqlPath}"`,
-    { encoding: 'utf8', maxBuffer: 1024 * 1024 * 1024, stdio: ['pipe','pipe','pipe'] }
+    { encoding: 'utf8', maxBuffer: 1024 * 1024 * 1024, stdio: ['pipe','pipe','pipe'], timeout: EXEC_TIMEOUT_MS }
   );
 }
 
@@ -60,7 +65,7 @@ function dbQuery(sql) {
   // `--command` reliably returns query results in both --local and --remote.
   const out = execSync(
     `npx wrangler d1 execute ${DB} ${LOCAL_FLAG} --json --command "${sql.replace(/"/g, '\\"')}"`,
-    { encoding: 'utf8', maxBuffer: 512 * 1024 * 1024 }
+    { encoding: 'utf8', maxBuffer: 512 * 1024 * 1024, timeout: EXEC_TIMEOUT_MS }
   );
   // --remote may still print progress lines before the JSON payload in some
   // wrangler versions; extract the first '[' .. last ']' to be safe.
@@ -74,7 +79,7 @@ function r2Put(key, filePath, contentType) {
   // wrangler r2 object put <bucket>/<key> --file <path> --content-type <ct> --local
   execSync(
     `npx wrangler r2 object put "${BUCKET}/${key}" --file "${filePath}" --content-type "${contentType}" ${LOCAL_FLAG}`,
-    { encoding: 'utf8', stdio: ['pipe','pipe','pipe'] }
+    { encoding: 'utf8', stdio: ['pipe','pipe','pipe'], timeout: EXEC_TIMEOUT_MS }
   );
 }
 
@@ -87,6 +92,10 @@ async function downloadImage(url, retries = 3) {
           'Referer': 'https://cetipar.canalblog.com/',
         },
         redirect: 'follow',
+        // Without an explicit timeout, a stalled connection to a dead/slow
+        // CanalBlog host hangs the whole migration indefinitely (fetch has
+        // no default timeout). 20s is generous for a single image download.
+        signal: AbortSignal.timeout(20_000),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const contentType = (res.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
