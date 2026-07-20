@@ -218,7 +218,7 @@ async function init(){
   const maxViews = Math.max(...views, 0);
   document.getElementById('articles-grid').innerHTML = artData.articles.length
     ? artData.articles.map(a => renderArticleCard(a, minViews, maxViews, IS_ADMIN)).join('')
-    : elevatedEmpty('ph-airplane-takeoff', 'Aucun voyage publié pour l\\'instant', 'Les prochains récits de la famille Potet arriveront bientôt.');
+    : elevatedEmpty('ph-airplane-takeoff', 'Aucun voyage publié pour l’instant', 'Les prochains récits de la famille Potet arriveront bientôt.');
   if(_fetchFailed) showErrorBanner();
 
   // Event delegation: card clicks and image fallback
@@ -268,7 +268,7 @@ async function init(){
     // tagline, CTA, comment gate) now lives in the dashboard settings panel.
     const bar=document.createElement("div");
     bar.setAttribute("style","position:fixed;top:64px;left:0;right:0;z-index:49;background:#0057B8;color:#fff;padding:.4rem 1rem .4rem 1.25rem;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:.75rem;box-shadow:0 2px 6px rgba(0,0,0,.18)");
-    bar.innerHTML="<i class=\"ph ph-shield-check\"></i> Mode admin <a href=\"/admin/dashboard#settings\" style=\"margin-left:auto;color:#fff;text-decoration:none;background:rgba(255,255,255,.2);padding:.2rem .65rem;border-radius:999px;font-size:.73rem\"><i class=\"ph ph-gear\"></i> Modifier le contenu du site →</a>";
+    bar.innerHTML="<i class='ph ph-shield-check'></i> Mode admin <a href='/admin/dashboard#settings' style='margin-left:auto;color:#fff;text-decoration:none;background:rgba(255,255,255,.2);padding:.2rem .65rem;border-radius:999px;font-size:.73rem'><i class='ph ph-gear'></i> Modifier le contenu du site →</a>";
     document.body.prepend(bar);
   }
 }

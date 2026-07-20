@@ -22,7 +22,12 @@ const DB      = 'tranquille-vacances-db';
 const BUCKET  = 'tranquille-vacances-photos';
 const DELAY   = 400; // ms between downloads — be kind to canalblog CDN
 
-const CANALBLOG_RE = /https:\/\/(?:storage|image)\.canalblog\.com\/[^\s"'\)\]\n]+/g;
+// Matches a canalblog URL embedded in markdown image/link syntax:
+// ![alt](url) or [text](url). CanalBlog's image proxy URLs contain parentheses
+// themselves (e.g. ".../filters:no_upscale()/..."), so a naive "stop at the
+// first ')'" pattern truncates them mid-URL. Instead, only treat the closing
+// ')' as the end of the markdown construct when it's followed by whitespace/EOL.
+const CANALBLOG_RE = /!?\[[^\]]*\]\((https:\/\/(?:storage|image)\.canalblog\.com\/[^\s]+?)(?:\s+"[^"]*")?\)(?=\s|$)/g;
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -50,15 +55,19 @@ function dbExecFile(sqlPath) {
 }
 
 function dbQuery(sql) {
-  const f = join(tmpdir(), `tvq-${Date.now()}.sql`);
-  writeFileSync(f, sql, 'utf8');
-  try {
-    const out = execSync(
-      `npx wrangler d1 execute ${DB} ${LOCAL_FLAG} --json --file "${f}"`,
-      { encoding: 'utf8', maxBuffer: 512 * 1024 * 1024 }
-    );
-    return JSON.parse(out)[0]?.results || [];
-  } finally { try { unlinkSync(f); } catch {} }
+  // NOTE: `--file` with `--remote` returns an upload/execution summary (rows
+  // read/written counts), not the SELECT's actual result rows - only
+  // `--command` reliably returns query results in both --local and --remote.
+  const out = execSync(
+    `npx wrangler d1 execute ${DB} ${LOCAL_FLAG} --json --command "${sql.replace(/"/g, '\\"')}"`,
+    { encoding: 'utf8', maxBuffer: 512 * 1024 * 1024 }
+  );
+  // --remote may still print progress lines before the JSON payload in some
+  // wrangler versions; extract the first '[' .. last ']' to be safe.
+  const start = out.indexOf('[');
+  const end = out.lastIndexOf(']');
+  if (start === -1 || end === -1) throw new Error('No JSON array found in wrangler output:\n' + out);
+  return JSON.parse(out.slice(start, end + 1))[0]?.results || [];
 }
 
 function r2Put(key, filePath, contentType) {
@@ -118,13 +127,14 @@ async function main() {
   const allUrls = new Set();
   for (const art of articles) {
     for (const m of (art.content || '').matchAll(CANALBLOG_RE)) {
-      let url = m[0].replace(/[.,!?()]+$/, ''); // remove trailing punctuation including parens
-      if (url && !url.match(/[=(/]$/)) allUrls.add(url);
+      if (m[1]) allUrls.add(m[1]);
     }
     const c = art.cover_url || '';
     if (c.includes('canalblog.com')) {
-      const url = c.replace(/[.,!?()]+$/, '');
-      if (url && !url.match(/[=(/]$/)) allUrls.add(url);
+      // cover_url is a bare URL (not wrapped in markdown syntax) - trim only
+      // real trailing punctuation, not the proxy URL's own parentheses.
+      const url = c.replace(/[.,!?]+$/, '');
+      if (url) allUrls.add(url);
     }
   }
   console.log(`Unique canalblog images: ${allUrls.size}\n`);

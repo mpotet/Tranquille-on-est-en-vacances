@@ -479,7 +479,7 @@ function renderArticles(arts, folders) {
     document.getElementById('articles-list').innerHTML =
       '<div class="section-panel rounded-2xl border border-stone-100 text-center py-16 px-6">' +
       '<i class="ph ph-notebook" style="font-size:3rem;display:block;margin-bottom:.75rem;color:var(--ink-light)"></i>' +
-      '<p class="text-base font-semibold mb-1" style="color:var(--ink)">Aucun article pour l\'instant</p>' +
+      '<p class="text-base font-semibold mb-1" style="color:var(--ink)">Aucun article pour l’instant</p>' +
       '<p class="text-sm text-stone-400 mb-4">Commencez par écrire votre premier récit de voyage.</p>' +
       '<a href="/admin/editor" class="action-btn-sm"><i class="ph ph-pencil-line"></i> Nouvel article</a>' +
       '</div>';
@@ -1185,7 +1185,7 @@ async function init() {
       existingPhotos = a.photos || [];
       renderPhotoGrid();
     } else if (a && !a.title) {
-      toast('Impossible de charger l\\'article','err');
+      toast('Impossible de charger l’article','err');
     }
   }
 
@@ -1648,7 +1648,7 @@ async function saveArticle() {
   if (!navigator.onLine) {
     saveDraftLocal();
     updateSyncInfo();
-    toast('Sauvegardé sur l\\'appareil 📴', 'ok');
+    toast('Sauvegardé sur l’appareil 📴', 'ok');
     const lbl = document.getElementById('sticky-status-lbl');
     if (lbl) lbl.textContent = '📴 Sauvegardé';
     return;
