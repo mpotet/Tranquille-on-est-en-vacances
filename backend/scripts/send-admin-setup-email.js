@@ -45,7 +45,13 @@ function dbQuery(sql) {
       `npx wrangler d1 execute ${DB} ${LOCAL_FLAG} --json --file "${f}"`,
       { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
     );
-    return JSON.parse(out)[0]?.results || [];
+    // --remote prints progress lines ("├ Checking if file needs uploading...")
+    // before the JSON output; --json only guarantees the final payload is JSON,
+    // not that stdout contains nothing else. Extract the first '[' .. last ']'.
+    const start = out.indexOf('[');
+    const end = out.lastIndexOf(']');
+    if (start === -1 || end === -1) throw new Error('No JSON array found in wrangler output:\n' + out);
+    return JSON.parse(out.slice(start, end + 1))[0]?.results || [];
   } finally { try { unlinkSync(f); } catch {} }
 }
 
