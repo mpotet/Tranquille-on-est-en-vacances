@@ -1,9 +1,14 @@
 {
+  "id": "/",
   "name": "Tranquille, on est en vacances",
   "short_name": "Blog Tranquille",
   "description": "Le carnet de voyage de la famille Potet",
+  "lang": "fr",
+  "dir": "ltr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#FFFDF9",
   "theme_color": "#0057B8",
   "icons": [

@@ -1,81 +1,160 @@
 /**
- * public/sw.js - Service Worker : cache offline + notifications push
- * Stratégie : network-first avec fallback cache pour toutes les requêtes GET.
- * Les assets statiques sont pré-cachés à l'installation.
+ * public/sw.js - Service Worker : PWA offline-first + notifications push
+ *
+ * Stratégie :
+ * - Pages HTML (navigations) : stale-while-revalidate → réponse immédiate depuis
+ *   le cache si dispo, mise à jour silencieuse en arrière-plan. Ne bascule sur
+ *   la page "hors connexion" que si la page n'a VRAIMENT jamais été visitée.
+ * - Assets statiques (icônes, manifest, polices, JS/CSS, images R2) : cache-first.
+ * - API publique en lecture (GET /api/articles, /api/folders, /api/settings) :
+ *   stale-while-revalidate, pour que le contenu déjà consulté reste lisible hors ligne
+ *   (les pages voyage/:slug chargent leur contenu via ces endpoints en client-side).
+ * - Mutations (POST/PUT/DELETE) et tout /admin/* : toujours réseau, jamais de cache.
+ * - Retour de connexion : aucune action utilisateur requise, la prochaine requête
+ *   revalide silencieusement le cache.
  */
 
-const CACHE = 'tranquille-v6';
+const VERSION = 'v8';
+const PAGES_CACHE = `tranquille-pages-${VERSION}`;
+const ASSETS_CACHE = `tranquille-assets-${VERSION}`;
+const API_CACHE = `tranquille-api-${VERSION}`;
+const CACHES = [PAGES_CACHE, ASSETS_CACHE, API_CACHE];
 
-const PRECACHE = [
+const PRECACHE_ASSETS = [
   '/manifest.json',
+  '/icon.svg',
   '/icon-192.png',
   '/icon-512.png',
 ];
 
-// ── Installation : pré-cache des assets statiques ─────────────
+const PRECACHE_PAGES = [
+  '/',
+  '/voyages',
+];
+
+const PUBLIC_API_PREFIXES = [
+  '/api/articles',
+  '/api/folders',
+  '/api/settings',
+];
+
+function isPublicApiGet(url) {
+  return PUBLIC_API_PREFIXES.some(p => url.pathname.startsWith(p));
+}
+
+// ── Installation : pré-cache du shell et des pages clés ───────
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE)
-      .then(async c => {
-        await c.addAll(PRECACHE);
-        // Tente de pré-cacher l'éditeur si l'utilisateur est déjà authentifié
-        await fetch('/admin/editor', { credentials: 'include' })
-          .then(r => { if (r.ok && !r.redirected) return c.put('/admin/editor', r); })
-          .catch(() => {});
-        self.skipWaiting();
-      })
+    (async () => {
+      const assetsCache = await caches.open(ASSETS_CACHE);
+      await assetsCache.addAll(PRECACHE_ASSETS);
+
+      const pagesCache = await caches.open(PAGES_CACHE);
+      await Promise.all(
+        PRECACHE_PAGES.map(url =>
+          fetch(url).then(r => { if (r.ok) return pagesCache.put(url, r); }).catch(() => {})
+        )
+      );
+
+      self.skipWaiting();
+    })()
   );
 });
 
 // ── Activation : suppression des anciens caches ───────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
-      ))
-      .then(() => clients.claim())
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter(k => !CACHES.includes(k)).map(k => caches.delete(k)));
+      await clients.claim();
+    })()
   );
 });
 
-// ── Fetch : network-first, fallback cache ─────────────────────
+// ── Fetch ───────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
   if (!req.url.startsWith('http')) return;
+
   const url = new URL(req.url);
-  // API calls and admin pages must always go straight to the network - never serve from cache
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/admin')) return;
-  event.respondWith(networkFirstCache(req));
+  if (url.pathname.startsWith('/admin')) return;
+
+  if (url.pathname.startsWith('/api/')) {
+    if (isPublicApiGet(url)) {
+      event.respondWith(staleWhileRevalidateJson(event, req, API_CACHE));
+    }
+    return;
+  }
+
+  if (req.mode === 'navigate' || req.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(staleWhileRevalidate(event, req, PAGES_CACHE));
+  } else {
+    event.respondWith(cacheFirst(req, ASSETS_CACHE));
+  }
 });
 
-async function networkFirstCache(req) {
-  const cache = await caches.open(CACHE);
+// Réponse immédiate depuis le cache si dispo, revalidation réseau en tâche de fond.
+async function staleWhileRevalidate(event, req, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(req);
+
+  const revalidate = fetch(req).then(resp => {
+    if (resp && resp.ok) cache.put(req, resp.clone());
+    return resp;
+  }).catch(() => null);
+
+  if (cached) {
+    event.waitUntil(revalidate);
+    return cached;
+  }
+
+  const fresh = await revalidate;
+  if (fresh) return fresh;
+
+  return new Response(offlineFallbackHtml(), {
+    status: 200,
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  });
+}
+
+// Comme staleWhileRevalidate, mais renvoie un corps JSON en cas d'échec total
+// (ces endpoints sont toujours consommés via response.json() côté client).
+async function staleWhileRevalidateJson(event, req, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(req);
+
+  const revalidate = fetch(req).then(resp => {
+    if (resp && resp.ok) cache.put(req, resp.clone());
+    return resp;
+  }).catch(() => null);
+
+  if (cached) {
+    event.waitUntil(revalidate);
+    return cached;
+  }
+
+  const fresh = await revalidate;
+  if (fresh) return fresh;
+
+  return new Response('{"error":"offline"}', {
+    status: 503,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+// Assets statiques : servir depuis le cache s'il existe, sinon aller au réseau et cacher.
+async function cacheFirst(req, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(req);
+  if (cached) return cached;
+
   try {
     const resp = await fetch(req);
-    if (resp && resp.status < 400) {
-      // Don't cache responses that explicitly opt out (e.g. API JSON responses)
-      const cc = resp.headers.get('cache-control') || '';
-      if (!cc.includes('no-store')) {
-        cache.put(req, resp.clone()); // mise en cache async
-      }
-    }
+    if (resp && resp.ok) cache.put(req, resp.clone());
     return resp;
   } catch (_) {
-    const cached = await cache.match(req);
-    if (cached) return cached;
-    // For admin HTML navigations, try falling back to the editor shell
-    if (req.headers.get('accept')?.includes('text/html')) {
-      const url = new URL(req.url);
-      if (url.pathname.startsWith('/admin')) {
-        const editorShell = await cache.match('/admin/editor');
-        if (editorShell) return editorShell;
-      }
-      return new Response(offlineFallbackHtml(), {
-        status: 200,
-        headers: { 'Content-Type': 'text/html; charset=utf-8' },
-      });
-    }
     return new Response('', { status: 503 });
   }
 }
@@ -101,8 +180,8 @@ function offlineFallbackHtml() {
 <body>
   <div class="card">
     <div class="ico">📡</div>
-    <h1>Hors connexion</h1>
-    <p>Cette page n'a pas encore été mise en cache.<br>Reconnectez-vous pour continuer.</p>
+    <h1>Page non disponible hors connexion</h1>
+    <p>Cette page n'a pas encore été consultée avec une connexion active.<br>Elle sera disponible hors connexion après une première visite.</p>
     <button onclick="location.reload()">Réessayer</button>
   </div>
 </body>

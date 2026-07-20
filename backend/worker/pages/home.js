@@ -124,12 +124,12 @@ function safeAttr(s){return esc(s);}
 function normalizeHeroHtml(html){return(html||'').replace(/<div>/gi,'<br>').replace(/<\\/div>/gi,'').trim();}
 function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
 function stripMd(s){return(s||'').replace(/!\\[[^\\]]*\\]\\([^)]*\\)/g,'').replace(/\\*\\*([^*\\n]+)\\*\\*/g,'$1').replace(/\\*([^*\\n]+)\\*/g,'$1').replace(/^#{1,6}\\s+/gm,'').replace(/\\s+/g,' ').trim();}
-function fmtDateCard(a){const s=a.start_date||a.date,e=a.end_date||a.date;if(!s)return'';const opt={month:'short',year:'numeric'};const ms=new Date(s).toLocaleDateString('fr-FR',opt);const me=new Date(e).toLocaleDateString('fr-FR',opt);return ms===me?ms:ms+' – '+me;}
+function fmtDateCard(a){const s=a.start_date||a.date,e=a.end_date||a.date;if(!s)return'';const opt={month:'short',year:'numeric'};const ms=new Date(s).toLocaleDateString('fr-FR',opt);const me=new Date(e).toLocaleDateString('fr-FR',opt);return ms===me?ms:ms+' - '+me;}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
 function fmtDateRange(a){
   const s=a.start_date||a.date,e=a.end_date||a.date;
   if(!s) return 'Dates non définies';
-  return s===e ? fmtDate(s) : fmtDate(s)+' – '+fmtDate(e);
+  return s===e ? fmtDate(s) : fmtDate(s)+' - '+fmtDate(e);
 }
 
 function renderPopularityBars(views, minViews, maxViews) {
@@ -245,12 +245,17 @@ async function init(){
 
   if(IS_ADMIN){
     const heroStyle=document.createElement('style');
-    heroStyle.textContent='.admin-editable-cue{position:relative;transition:box-shadow .15s ease,background .15s ease}.admin-editable-cue:hover{box-shadow:0 0 0 2px rgba(255,199,138,.55),0 0 0 8px rgba(255,199,138,.12);border-radius:1rem;background:rgba(255,255,255,.03)}.admin-editable-cue.admin-editing{box-shadow:0 0 0 2px rgba(255,199,138,.95),0 0 0 10px rgba(255,199,138,.18);border-radius:1rem}.admin-editable-cue::after{content:attr(data-admin-label);position:absolute;top:-.85rem;right:0;padding:.18rem .5rem;border-radius:999px;background:rgba(10,18,30,.82);color:#fff;font-size:.66rem;font-weight:700;letter-spacing:.04em;opacity:0;transform:translateY(3px);transition:opacity .15s ease,transform .15s ease;pointer-events:none}.admin-editable-cue:hover::after,.admin-editable-cue.admin-editing::after{opacity:1;transform:translateY(0)}#hero-admin-toolbar{position:fixed;right:1rem;top:7rem;z-index:60;display:flex;align-items:center;gap:.65rem;padding:.7rem .9rem;border-radius:1rem;background:rgba(10,18,30,.88);backdrop-filter:blur(10px);box-shadow:0 10px 28px rgba(0,0,0,.22);color:#fff}';
+    heroStyle.textContent='.admin-editable-cue{position:relative;transition:box-shadow .15s ease,background .15s ease}.admin-editable-cue:hover{box-shadow:0 0 0 2px rgba(255,199,138,.55),0 0 0 8px rgba(255,199,138,.12);border-radius:1rem;background:rgba(255,255,255,.03)}.admin-editable-cue.admin-editing{box-shadow:0 0 0 2px rgba(255,199,138,.95),0 0 0 10px rgba(255,199,138,.18);border-radius:1rem;cursor:text !important;background:rgba(255,199,138,.08)}.admin-editable-cue[contenteditable="true"]{cursor:text !important}#hero-admin-toolbar{position:fixed;right:1rem;top:7rem;z-index:60;display:flex;align-items:center;gap:.65rem;padding:.7rem .9rem;border-radius:1rem;background:rgba(10,18,30,.88);backdrop-filter:blur(10px);box-shadow:0 10px 28px rgba(0,0,0,.22);color:#fff}#admin-edit-pill{position:fixed;z-index:70;display:none;align-items:center;gap:.3rem;padding:.22rem .55rem;border-radius:999px;background:rgba(10,18,30,.88);color:#fff;font-size:.7rem;font-weight:700;border:1px solid rgba(255,199,138,.45);backdrop-filter:blur(8px);cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.3);white-space:nowrap;line-height:1.6}#admin-edit-pill:disabled{opacity:.4;cursor:not-allowed}';
     document.head.appendChild(heroStyle);
     const bar=document.createElement('div');
     bar.setAttribute('style','position:fixed;top:64px;left:0;right:0;z-index:49;background:#0057B8;color:#fff;padding:.4rem 1rem .4rem 1.25rem;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:.75rem;box-shadow:0 2px 6px rgba(0,0,0,.18)');
-    bar.innerHTML='<i class="ph ph-shield-check"></i> Mode admin <span style="opacity:.7;font-weight:400">\u2014 double-clic pour éditer, puis utilisez la palette de couleur</span><a href="/admin/dashboard" style="margin-left:auto;color:#fff;text-decoration:none;background:rgba(255,255,255,.2);padding:.2rem .65rem;border-radius:999px;font-size:.73rem">Dashboard \u2192</a>';
+    bar.innerHTML='<i class="ph ph-shield-check"></i> Mode admin <span style="opacity:.7;font-weight:400">\u2014 survolez pour éditer</span><a href="/admin/dashboard" style="margin-left:auto;color:#fff;text-decoration:none;background:rgba(255,255,255,.2);padding:.2rem .65rem;border-radius:999px;font-size:.73rem">Dashboard \u2192</a>';
     document.body.prepend(bar);
+    const editPencil=document.createElement('button');
+    editPencil.type='button';
+    editPencil.id='admin-edit-pill';
+    editPencil.innerHTML='<i class="ph ph-pencil-simple"></i> Éditer';
+    document.body.appendChild(editPencil);
     const toolbar=document.createElement('div');
     toolbar.id='hero-admin-toolbar';
     toolbar.style.display='none';
@@ -258,6 +263,9 @@ async function init(){
     document.body.appendChild(toolbar);
     let activeEditor=null;
     let savedRange=null;
+    let pencilHideTimer=null;
+    let pencilTarget=null;
+    let pencilKey='';
     function saveRange(){const sel=window.getSelection();if(sel&&sel.rangeCount)savedRange=sel.getRangeAt(0).cloneRange();}
     function restoreRange(){if(!savedRange)return;const sel=window.getSelection();sel.removeAllRanges();sel.addRange(savedRange);}
     function finishEditor(save){
@@ -272,9 +280,37 @@ async function init(){
       el.removeEventListener('mouseup', saveRange);
       el.removeEventListener('keyup', saveRange);
       el.onkeydown=null;
+      editPencil.disabled=false;
       if(!save){el.innerHTML=prev;activeEditor=null;return;}
-      if(next && next!==prev){fetch('/api/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({[key]:next})}).then(()=>toast('Modifie !','ok')).catch(()=>toast('Erreur','err'));}
+      if(next && next!==prev){fetch('/api/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({[key]:next})}).then(()=>toast('Modifié !','ok')).catch(()=>toast('Erreur','err'));}
       activeEditor=null;
+    }
+    function startEditor(el,key){
+      if(activeEditor&&activeEditor.el!==el) finishEditor(true);
+      const prev=normalizeHeroHtml(el.innerHTML);
+      activeEditor={el,key,prev};
+      el.contentEditable='true';
+      el.classList.add('admin-editing');
+      el.focus();
+      toolbar.style.display='flex';
+      editPencil.style.display='none';
+      editPencil.disabled=true;
+      el.addEventListener('mouseup', saveRange);
+      el.addEventListener('keyup', saveRange);
+      saveRange();
+      el.onkeydown=e=>{
+        if(e.key==='Escape'){e.preventDefault();finishEditor(false);}
+        if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();finishEditor(true);}
+        if(e.key==='Enter'){e.preventDefault();document.execCommand('insertLineBreak');saveRange();}
+      };
+      el.addEventListener('focusout',function onfo(){
+        setTimeout(function(){
+          if(!activeEditor||activeEditor.el!==el)return;
+          if(toolbar.contains(document.activeElement))return;
+          finishEditor(true);
+        },200);
+        el.removeEventListener('focusout',onfo);
+      });
     }
     document.getElementById('hero-color-picker').addEventListener('input',function(){
       if(!activeEditor)return;
@@ -286,48 +322,48 @@ async function init(){
     });
     document.getElementById('hero-save-btn').onclick=()=>finishEditor(true);
     document.getElementById('hero-cancel-btn').onclick=()=>finishEditor(false);
-    function makeEditable(el,key,label){
-      if(!el)return;
-      el.title='Double-clic pour modifier';
-      el.style.cursor='pointer';
-      el.classList.add('admin-editable-cue');
-      el.setAttribute('data-admin-label',label);
-      el.addEventListener('dblclick',function(){
-        if(activeEditor&&activeEditor.el!==this) finishEditor(true);
-        const prev=normalizeHeroHtml(this.innerHTML);
-        activeEditor={el:this,key,prev};
-        this.contentEditable='true';
-        this.classList.add('admin-editing');
-        this.focus();
-        toolbar.style.display='flex';
-        this.addEventListener('mouseup', saveRange);
-        this.addEventListener('keyup', saveRange);
-        saveRange();
-        this.onkeydown=e=>{
-          if(e.key==='Escape'){e.preventDefault();finishEditor(false);}
-          if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();finishEditor(true);}
-          if(e.key==='Enter'){e.preventDefault();document.execCommand('insertLineBreak');saveRange();}
-        };
-        this.addEventListener('focusout',function onfo(){
-          setTimeout(function(){
-            if(!activeEditor||activeEditor.el!==el)return;
-            if(toolbar.contains(document.activeElement))return;
-            finishEditor(true);
-          },200);
-          el.removeEventListener('focusout',onfo);
-        });
+    editPencil.addEventListener('mouseenter',()=>clearTimeout(pencilHideTimer));
+    editPencil.addEventListener('mouseleave',()=>{pencilHideTimer=setTimeout(()=>{editPencil.style.display='none';},200);});
+    editPencil.addEventListener('click',e=>{
+      if(editPencil.disabled) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if(pencilTarget) startEditor(pencilTarget,pencilKey);
+    });
+    const cta1=document.querySelector('#hero-cta-primary');
+    const cta2=document.querySelector('#hero-cta-secondary');
+    [cta1,cta2].forEach(cta=>{
+      if(cta) cta.addEventListener('click',e=>{
+        if(activeEditor&&activeEditor.el===e.target) e.preventDefault();
+        if(pencilTarget&&cta.contains(pencilTarget)) e.preventDefault();
       });
+    });
+    function makeEditable(el,key){
+      if(!el)return;
+      el.classList.add('admin-editable-cue');
+      el.addEventListener('mouseenter',function(){
+        if(activeEditor&&activeEditor.el===this)return;
+        clearTimeout(pencilHideTimer);
+        pencilTarget=this;
+        pencilKey=key;
+        const r=this.getBoundingClientRect();
+        editPencil.style.top=(r.top-1)+'px';
+        editPencil.style.left=Math.max(4,r.right-84)+'px';
+        editPencil.style.display='flex';
+        editPencil.disabled=activeEditor!==null;
+      });
+      el.addEventListener('mouseleave',()=>{pencilHideTimer=setTimeout(()=>{editPencil.style.display='none';},200);});
     }
-    makeEditable(document.getElementById('hero-eyebrow'),'hero_eyebrow','modifiable');
-    makeEditable(document.getElementById('hero-title'),'hero_title','titre');
-    makeEditable(document.getElementById('hero-subtitle'),'hero_subtitle','texte');
-    makeEditable(document.getElementById('hero-badge'),'hero_badge','badge');
-    makeEditable(document.getElementById('site-tagline'),'site_tagline','citation');
-    makeEditable(document.querySelector('#hero-cta-primary span'),'hero_cta_primary','bouton');
-    makeEditable(document.querySelector('#hero-cta-secondary span'),'hero_cta_secondary','bouton');
+    makeEditable(document.getElementById('hero-eyebrow'),'hero_eyebrow');
+    makeEditable(document.getElementById('hero-title'),'hero_title');
+    makeEditable(document.getElementById('hero-subtitle'),'hero_subtitle');
+    makeEditable(document.getElementById('hero-badge'),'hero_badge');
+    makeEditable(document.getElementById('site-tagline'),'site_tagline');
+    makeEditable(document.querySelector('#hero-cta-primary span'),'hero_cta_primary');
+    makeEditable(document.querySelector('#hero-cta-secondary span'),'hero_cta_secondary');
     const heroImageBtn=document.createElement('button');
     heroImageBtn.type='button';
-    heroImageBtn.setAttribute('style','position:absolute;top:1rem;right:1rem;z-index:55;display:inline-flex;align-items:center;gap:.45rem;padding:.55rem .8rem;border-radius:999px;background:rgba(10,18,30,.72);color:#fff;font-size:.75rem;font-weight:700;border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px)');
+    heroImageBtn.setAttribute('style','position:absolute;bottom:1.5rem;right:1rem;z-index:55;display:inline-flex;align-items:center;gap:.45rem;padding:.55rem .8rem;border-radius:999px;background:rgba(10,18,30,.72);color:#fff;font-size:.75rem;font-weight:700;border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px)');
     heroImageBtn.innerHTML='<i class="ph ph-image"></i> Image héro';
     const heroFile=document.createElement('input');
     heroFile.type='file';

@@ -26,6 +26,7 @@ import {
 // Page templates
 import { homePage }     from './pages/home.js';
 import { loginPage, dashboardPage, editorPage } from './pages/admin.js';
+import { printPage, exportWordDocx } from './pages/print.js';
 
 // ──────────────────────────────────────────────────────────────
 // Simple voyages-list & voyage-detail pages (inline for brevity)
@@ -68,12 +69,12 @@ function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric'
 function fmtDateRange(a){
   const s=a.start_date||a.date, e=a.end_date||a.date;
   if(!s) return 'Dates non définies';
-  return s===e ? fmtDate(s) : fmtDate(s)+' – '+fmtDate(e);
+  return s===e ? fmtDate(s) : fmtDate(s)+' - '+fmtDate(e);
 }
 function escAttr(s){return esc(s).replace(/'/g,'&#39;')}
 function safeAttr(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function safeText(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-function fmtDateCard(a){const s=a.start_date||a.date,e=a.end_date||a.date;if(!s)return'';const opt={month:'short',year:'numeric'};const ms=new Date(s).toLocaleDateString('fr-FR',opt);const me=new Date(e).toLocaleDateString('fr-FR',opt);return ms===me?ms:ms+' – '+me;}
+function fmtDateCard(a){const s=a.start_date||a.date,e=a.end_date||a.date;if(!s)return'';const opt={month:'short',year:'numeric'};const ms=new Date(s).toLocaleDateString('fr-FR',opt);const me=new Date(e).toLocaleDateString('fr-FR',opt);return ms===me?ms:ms+' - '+me;}
 function stripMd(s){return(s||'').replace(/!\\[[^\\]]*\\]\\([^)]*\\)/g,'').replace(/\\*\\*([^*\\n]+)\\*\\*/g,'$1').replace(/\\*([^*\\n]+)\\*/g,'$1').replace(/^#{1,6}\\s+/gm,'').replace(/\\s+/g,' ').trim();}
 function renderPopularityBars(views, minViews, maxViews) {
   const range = maxViews - minViews || 1;
@@ -345,7 +346,7 @@ function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric'
 function fmtDateRange(a){
   const s=a.start_date||a.date, e=a.end_date||a.date;
   if(!s) return 'Dates non définies';
-  return s===e ? fmtDate(s) : fmtDate(s)+' – '+fmtDate(e);
+  return s===e ? fmtDate(s) : fmtDate(s)+' - '+fmtDate(e);
 }
 function safeAttr(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function safeText(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
@@ -372,7 +373,7 @@ function extractInlineImages(content){
 async function init(){
   const a=await fetch('/api/articles/'+SLUG).then(r=>r.json()).catch(()=>null);
   if(!a||a.error){
-    document.getElementById('main').innerHTML=\`<div class="max-w-2xl mx-auto px-4 py-32 text-center"><i class="ph ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1.5rem;color:var(--ink-light)"></i><h1 class="font-display text-3xl font-bold mb-4" style="color:var(--ink)">Voyage introuvable</h1><p class="mb-8" style="color:var(--ink-muted)">Ce voyage n'existe pas ou n'est pas encore publié.</p><a href="/voyages" class="action-btn">← Retour aux voyages</a></div>\`;
+    document.getElementById('main').innerHTML=\`<div class="max-w-2xl mx-auto px-4 py-32 text-center"><i class="ph ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1.5rem;color:var(--ink-light)"></i><h1 class="font-display text-3xl font-bold mb-4" style="color:var(--ink)">Voyage introuvable</h1><p class="mb-8" style="color:var(--ink-muted)">Ce voyage n'existe pas ou n'est pas encore publié.</p><a href="/voyages" class="action-btn">< Retour aux voyages</a></div>\`;
     return;
   }
   const _vk = 'viewed_' + a.id;
@@ -408,6 +409,7 @@ async function init(){
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph ph-map-pin" style="color:var(--blue);flex-shrink:0"></i>\${esc(a.destination)}</span>
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph ph-camera" style="color:var(--blue);flex-shrink:0"></i>\${allPhotos.length} photo\${allPhotos.length!==1?'s':''}</span>
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph ph-eye" style="color:var(--blue);flex-shrink:0"></i>\${a.view_count||0} lecture\${(a.view_count||0)!==1?'s':''}&ensp;\${popularityBars(a.view_count||0)}</span>
+        <button data-share-btn class="subtle-btn text-sm" style="padding:.35rem .85rem"><i class="ph ph-share-network"></i> Partager</button>
       </div>
     </div>
     <div class="panel rounded-[2rem] p-6 sm:p-8 mb-10" style="border-left:4px solid rgba(var(--blue-rgb),.22)">
@@ -423,7 +425,19 @@ async function init(){
       <button data-share-btn class="subtle-btn"><i class="ph ph-share-network"></i> Partager</button>
     </div>
   </div>\`;
-  if(IS_ADMIN){const fab=document.createElement('a');fab.href='/admin/editor/'+a.id;fab.setAttribute('style','position:fixed;bottom:5rem;right:1.5rem;z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:#0057B8;color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,87,184,.4)');fab.innerHTML='<i class="ph ph-pencil-simple" style="font-size:1.1rem"></i> Modifier';document.body.appendChild(fab);}
+  if(IS_ADMIN){
+    const fab=document.createElement('a');
+    fab.href='/admin/editor/'+a.id;
+    fab.setAttribute('style','position:fixed;bottom:5rem;right:1.5rem;z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:#0057B8;color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,87,184,.4)');
+    fab.innerHTML='<i class="ph ph-pencil-simple" style="font-size:1.1rem"></i> Modifier';
+    document.body.appendChild(fab);
+    const exportFab=document.createElement('a');
+    exportFab.href='/admin/articles/'+a.id+'/print';
+    exportFab.target='_blank';
+    exportFab.setAttribute('style','position:fixed;bottom:5rem;right:calc(1.5rem + 130px + .75rem);z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:rgba(10,18,30,.82);color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.25);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.15)');
+    exportFab.innerHTML='<i class="ph ph-export" style="font-size:1.1rem"></i> Exporter';
+    document.body.appendChild(exportFab);
+  }
 
   // Event delegation for all clickable images and share button
   setTimeout(()=>{
@@ -593,6 +607,29 @@ export default {
       if (path === '/admin/editor')    return editorPage(null);
       const editorMatch = matchPath('/admin/editor/:id', path);
       if (editorMatch) return editorPage(parseInt(editorMatch.id));
+      const printMatch = matchPath('/admin/articles/:id/print', path);
+      if (printMatch) {
+        const art = await env.DB.prepare(
+          'SELECT * FROM articles WHERE id = ?'
+        ).bind(parseInt(printMatch.id)).first();
+        if (!art) return notFound();
+        art.publicUrl = env.PUBLIC_URL || '';
+        return printPage(art);
+      }
+      const wordMatch = matchPath('/admin/articles/:id/export-word', path);
+      if (wordMatch) {
+        const art = await env.DB.prepare(
+          'SELECT * FROM articles WHERE id = ?'
+        ).bind(parseInt(wordMatch.id)).first();
+        if (!art) return notFound();
+        const docBuffer = await exportWordDocx(art);
+        return new Response(docBuffer, {
+          headers: {
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Content-Disposition': `attachment; filename="${art.title.replace(/[^a-z0-9]/gi, '').substring(0, 50)}.docx"`
+          }
+        });
+      }
     }
 
     // ── API routes ────────────────────────────────────────────
@@ -694,7 +731,7 @@ export default {
 <body style="font-family:sans-serif;text-align:center;padding:4rem">
   <h1 style="font-size:3rem"><i class="ph ph-map-trifold"></i></h1>
   <h2>Page introuvable</h2>
-  <p><a href="/">← Retour à l'accueil</a></p>
+  <p><a href="/">< Retour à l'accueil</a></p>
 </body></html>`, 404);
   },
 };

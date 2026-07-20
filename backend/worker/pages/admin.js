@@ -8,22 +8,27 @@ import { html } from '../utils.js';
 
 // ── Admin shared nav bar ──────────────────────────────────────
 const ADMIN_NAV = (subtitle = '') => `
-<nav class="fixed top-0 left-0 right-0 z-50 bg-[rgba(255,249,233,0.84)] text-stone-800 shadow-sm border-b border-stone-200/80 backdrop-blur-md">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
-    <div class="flex items-center gap-4">
-      <a href="/" class="flex items-center gap-2 group">
-        <span class="brand-mark"><i class="ph ph-tree-palm" style="font-size:1rem;color:var(--blue)"></i></span>
-        <span class="brand-title font-display font-bold text-sm group-hover:text-sky-700 transition-colors">Blog Potet</span>
-      </a>
-      <span class="text-stone-400">/</span>
-      <span class="text-stone-600 text-sm font-medium">Admin ${subtitle ? '/ ' + subtitle : ''}</span>
-    </div>
-    <div class="flex items-center gap-3">
-      <a href="/" class="ghost-btn hidden sm:inline-flex">Voir le blog</a>
-      <a href="/admin/dashboard" class="nav-link text-sm">Tableau de bord</a>
-      <form method="POST" action="/admin/logout" class="inline">
-        <button type="submit" class="subtle-btn !px-4 !py-2 !text-xs">Déconnexion</button>
-      </form>
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <div class="flex items-center gap-3">
+        <a href="/" class="flex items-center gap-3 group" aria-label="Accueil">
+          <img src="/icon-192.png" width="38" height="38" alt="" aria-hidden="true" style="border-radius:.75rem;flex-shrink:0;box-shadow:0 2px 8px rgba(0,87,184,.20)">
+          <div class="leading-none">
+            <span class="brand-title font-display font-bold text-base block">Tranquille,</span>
+            <span class="brand-subtitle text-[0.68rem] font-semibold tracking-[0.20em] uppercase block mt-0.5">on est en vacances</span>
+          </div>
+        </a>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[0.65rem] font-black uppercase tracking-wide" style="background:rgba(var(--blue-rgb),.10);color:var(--blue);border:1px solid rgba(var(--blue-rgb),.20)">Admin</span>
+        ${subtitle ? `<span class="hidden sm:flex items-center gap-1.5 text-sm font-medium" style="color:var(--ink-muted)"><i class="ph ph-caret-right" style="color:var(--ink-light);font-size:.8rem"></i>${subtitle}</span>` : ''}
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="/" class="nav-link hidden sm:inline-flex"><i class="ph ph-house"></i> Blog</a>
+        <a href="/admin/dashboard" class="nav-link"><i class="ph ph-squares-four"></i> <span class="hidden sm:inline">Dashboard</span></a>
+        <form method="POST" action="/admin/logout" class="inline">
+          <button type="submit" class="subtle-btn !px-3 !py-2 !text-xs"><i class="ph ph-sign-out"></i> <span class="hidden sm:inline">Déconnexion</span></button>
+        </form>
+      </div>
     </div>
   </div>
 </nav>
@@ -78,7 +83,7 @@ export function loginPage(error = '') {
       </form>
     </div>
     <p class="text-center text-stone-400 text-sm mt-6">
-      <a href="/" class="hover:text-sky-600 transition-colors">← Retour au blog</a>
+      <a href="/" class="hover:text-sky-600 transition-colors">< Retour au blog</a>
     </p>
   </div>
 </div>
@@ -91,7 +96,7 @@ export function dashboardPage() {
   return html(`<!DOCTYPE html>
 <html lang="fr">
 <head>${HEAD('Admin - Tableau de bord')}</head>
-<body class="bg-stone-50 font-sans text-stone-900 antialiased pt-14">
+<body class="bg-stone-50 font-sans text-stone-900 antialiased pt-16">
 ${ADMIN_NAV()}
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -152,7 +157,8 @@ ${ADMIN_NAV()}
 </div>
 
 <!-- Site settings panel -->
-<div class="max-w-7xl mx-auto px-4 sm:px-6 pb-10">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
+  <div class="border-t border-stone-200 pt-8">
   <details class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
     <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none select-none hover:bg-stone-50 transition-colors">
       <div class="flex items-center gap-3">
@@ -199,6 +205,7 @@ ${ADMIN_NAV()}
       </div>
     </div>
   </details>
+  </div>
 </div>
 
 <!-- Folder modal -->
@@ -276,7 +283,7 @@ function fmtDateRange(a){
   const start = a.start_date || a.date;
   const end = a.end_date || a.date;
   if (!start) return 'Dates non définies';
-  return start === end ? fmtDate(start) : fmtDate(start) + ' – ' + fmtDate(end);
+  return start === end ? fmtDate(start) : fmtDate(start) + ' - ' + fmtDate(end);
 }
 
 // ── Load dashboard data ───────────────────────────────────────
@@ -551,8 +558,9 @@ ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
     <aside class="order-1 lg:col-start-3 lg:row-start-1 space-y-4">
 
       <!-- Save button (desktop only - mobile uses sticky bottom bar) -->
-      <div class="hidden lg:block">
+      <div class="hidden lg:block space-y-2">
         <button onclick="saveArticle()" class="w-full action-btn text-white font-bold py-3 rounded-2xl transition-all"><i class="ph ph-floppy-disk"></i> Sauvegarder</button>
+        ${isEdit ? `<a id="export-btn" href="/admin/articles/${articleId}/print" target="_blank" class="w-full flex items-center justify-center gap-2 border border-stone-200 rounded-2xl py-2.5 text-sm font-semibold text-stone-600 hover:bg-stone-50 transition-colors" style="text-decoration:none"><i class="ph ph-export"></i> Exporter (PDF / Word)</a>` : ''}
       </div>
 
       <!-- Status -->

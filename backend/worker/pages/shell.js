@@ -370,7 +370,7 @@ export const FOOTER = `
     </div>
     <div class="divider mb-6"></div>
     <div class="text-center text-sm" style="color:var(--ink-light)">
-      Famille Potet &bull; ${new Date().getFullYear()}
+      &copy; ${new Date().getFullYear()} Famille Potet
     </div>
   </div>
 </footer>

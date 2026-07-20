@@ -117,7 +117,7 @@ export async function emailUnsubscribe(request, env) {
     <h1>Vous êtes désabonné(e)</h1>
     <p>Votre adresse a bien été retirée de la liste de diffusion.</p>
     <p>Vous ne recevrez plus les notifications email du blog.</p>
-    <a href="/" class="btn">← Retour au blog</a>
+    <a href="/" class="btn">< Retour au blog</a>
   </div>
 </body>
 </html>`);

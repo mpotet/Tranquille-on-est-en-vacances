@@ -13,13 +13,15 @@ directory = "./public"
 [vars]
 # Public base URL used to build photo URLs
 PUBLIC_URL = "TODO"
+# "From" address for notification emails (e.g. "Blog Potet <noreply@yourdomain.com>")
+NOTIFY_FROM_EMAIL = "TODO"
 
 # ── Cloudflare D1 (SQLite) ────────────────────────────────────────────────────
 # Create with: wrangler d1 create tranquille-vacances-db
 [[d1_databases]]
 binding      = "DB"
 database_name = "tranquille-vacances-db"
-database_id  = "TODO"      # replace after `wrangler d1 create`
+database_id  = "7144bce8-324e-4df8-a689-455d82dbd335"
 
 # ── Cloudflare R2 (photo storage) ─────────────────────────────────────────────
 # Create with: wrangler r2 bucket create tranquille-vacances-photos
@@ -47,4 +49,14 @@ bucket_name = "tranquille-vacances-photos"
 [env.production]
 name = "tranquille-vacances"
 [env.production.vars]
-PUBLIC_URL = "https://vacances.potet.fr"   # your custom domain if any
+PUBLIC_URL = "https://tranquille-vacances.esti-archi.workers.dev"
+# NOTIFY_FROM_EMAIL intentionally omitted: falls back to Resend's onboarding@resend.dev sender
+
+[[env.production.d1_databases]]
+binding      = "DB"
+database_name = "tranquille-vacances-db"
+database_id  = "7144bce8-324e-4df8-a689-455d82dbd335"
+
+[[env.production.r2_buckets]]
+binding     = "PHOTOS"
+bucket_name = "tranquille-vacances-photos"

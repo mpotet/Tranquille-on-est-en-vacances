@@ -110,7 +110,7 @@ PUBLIC_URL = "https://tranquille-vacances.YOUR_SUBDOMAIN.workers.dev"
 [[d1_databases]]
 binding      = "DB"
 database_name = "tranquille-vacances-db"
-database_id  = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # ← votre ID
+database_id  = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # < votre ID
 
 [[r2_buckets]]
 binding     = "PHOTOS"

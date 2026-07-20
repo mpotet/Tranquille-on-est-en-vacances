@@ -29,6 +29,19 @@ const CANALBLOG_RE = /https:\/\/(?:storage|image)\.canalblog\.com\/[^\s"'\)\]\n]
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const sq    = s  => (s || '').replace(/'/g, "''");
 
+// ── Progress bar ──────────────────────────────────────────────────────────────
+
+function progressBar(current, total, label = '') {
+  const width = 40;
+  const pct = Math.min(total ? (current / total * 100) : 0, 100);
+  const filled = Math.round(width * pct / 100);
+  const empty = width - filled;
+  const bar = '█'.repeat(filled) + '░'.repeat(empty);
+  const pctStr = pct.toFixed(1).padStart(5);
+  const countStr = `${current}/${total}`.padEnd(10);
+  return `${label} [${bar}] ${pctStr}% ${countStr}`;
+}
+
 function dbExecFile(sqlPath) {
   execSync(
     `npx wrangler d1 execute ${DB} ${LOCAL_FLAG} --yes --file "${sqlPath}"`,
@@ -104,9 +117,15 @@ async function main() {
   // 2. Collect unique canalblog image URLs
   const allUrls = new Set();
   for (const art of articles) {
-    for (const m of (art.content || '').matchAll(CANALBLOG_RE)) allUrls.add(m[0].replace(/[.,!?]+$/, ''));
+    for (const m of (art.content || '').matchAll(CANALBLOG_RE)) {
+      let url = m[0].replace(/[.,!?()]+$/, ''); // remove trailing punctuation including parens
+      if (url && !url.match(/[=(/]$/)) allUrls.add(url);
+    }
     const c = art.cover_url || '';
-    if (c.includes('canalblog.com')) allUrls.add(c);
+    if (c.includes('canalblog.com')) {
+      const url = c.replace(/[.,!?()]+$/, '');
+      if (url && !url.match(/[=(/]$/)) allUrls.add(url);
+    }
   }
   console.log(`Unique canalblog images: ${allUrls.size}\n`);
   if (!allUrls.size) { console.log('Nothing to migrate.'); return; }
@@ -117,6 +136,7 @@ async function main() {
 
   const urlMap = new Map(); // originalUrl → '/r2/imported/<hash>.<ext>'
   let ok = 0, fail = 0;
+  const startTime = Date.now();
 
   for (const url of allUrls) {
     const hash = urlKey(url);
@@ -130,7 +150,11 @@ async function main() {
       r2Put(key, tmp, contentType);
       urlMap.set(url, `/r2/${key}`);
       ok++;
-      process.stdout.write(`  ✓ ${ok}/${allUrls.size}  ${url.slice(-50).padEnd(50)}\r`);
+      const elapsed = (Date.now() - startTime) / 1000;
+      const rate = ok / elapsed;
+      const remaining = Math.round((allUrls.size - ok) / rate);
+      const bar = progressBar(ok, allUrls.size, '⬇️  Images');
+      process.stdout.write(`${bar} ETA: ${Math.max(0, remaining)}s\r`);
     } catch (err) {
       fail++;
       process.stdout.write('\n');
@@ -144,7 +168,16 @@ async function main() {
 
   // 4. Update articles — write one SQL file per article to avoid size limits
   let updated = 0;
-  for (const art of articles) {
+  const articlesToUpdate = articles.filter(art => {
+    let content = art.content || '';
+    let cover = art.cover_url || '';
+    for (const orig of urlMap.keys()) {
+      if (content.includes(orig) || cover === orig) return true;
+    }
+    return false;
+  });
+
+  for (const art of articlesToUpdate) {
     let content  = art.content  || '';
     let coverUrl = art.cover_url || '';
     let changed  = false;
@@ -170,7 +203,8 @@ async function main() {
     dbExecFile(sqlFile);
     try { unlinkSync(sqlFile); } catch {}
     updated++;
-    console.log(`  Updated: ${art.slug}`);
+    const bar = progressBar(updated, articlesToUpdate.length, '📝 Articles');
+    console.log(`${bar}`);
   }
 
   console.log(`\n✅ Done! ${updated} articles updated.`);
