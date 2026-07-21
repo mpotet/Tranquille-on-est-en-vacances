@@ -30,6 +30,12 @@ import { json, notFound, badRequest } from '../utils.js';
 // SVG/HTML can embed executable <script>. Only a small allowlist of real
 // raster image formats — verified by their leading bytes — is accepted.
 // ──────────────────────────────────────────────────────────────
+// HEIC/HEIF (ISOBMFF container) brand codes seen from real devices — iPhone's
+// native Camera app shoots HEIC by default (unless the user opted into "Most
+// Compatible" in Settings > Camera > Formats), so admins editing from a phone
+// while travelling will very often be uploading this format.
+const HEIF_BRANDS = ['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'hevm', 'hevs', 'mif1', 'msf1'];
+
 const IMAGE_SIGNATURES = [
   { ext: 'jpg',  contentType: 'image/jpeg', match: b => b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF },
   { ext: 'png',  contentType: 'image/png',  match: b => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47 },
@@ -38,6 +44,12 @@ const IMAGE_SIGNATURES = [
     ext: 'webp', contentType: 'image/webp',
     match: b => b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
                 b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50,
+  },
+  {
+    ext: 'heic', contentType: 'image/heic',
+    // ISOBMFF box layout: 4-byte size, then ASCII "ftyp", then a 4-byte brand.
+    match: b => b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70 &&
+                HEIF_BRANDS.includes(String.fromCharCode(b[8], b[9], b[10], b[11])),
   },
 ];
 
@@ -71,6 +83,7 @@ export async function uploadPhotos(request, env, articleId) {
 
   const formData = await request.formData();
   const uploaded = [];
+  const rejected = []; // filenames that failed magic-byte validation — surfaced to the client instead of silently vanishing
 
   // Count existing photos to set initial sort_order
   const countRow = await env.DB
@@ -84,7 +97,7 @@ export async function uploadPhotos(request, env, articleId) {
 
     const arrayBuf = await file.arrayBuffer();
     const detected = detectImageType(arrayBuf);
-    if (!detected) continue; // silently skip non-image parts of the form
+    if (!detected) { rejected.push(file.name || 'fichier'); continue; }
 
     const uuid     = crypto.randomUUID();
     const year     = new Date().getFullYear();
@@ -108,11 +121,15 @@ export async function uploadPhotos(request, env, articleId) {
       r2_key:     r2Key,
       url:        publicUrl,
       caption:    '',
+      // The client submits multiple files per request and needs to map each
+      // uploaded result back to its source File — array position alone isn't
+      // reliable once some files are rejected, so echo back the original name.
+      source_name: file.name || '',
       sort_order: sortOrder - 1,
     });
   }
 
-  return json({ uploaded });
+  return json({ uploaded, rejected });
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -174,14 +191,15 @@ export async function uploadCover(request, env, articleId) {
   const file = formData.get('cover');
   if (!file || !(file instanceof File)) return badRequest('No cover file');
 
-  // Delete old cover from R2 if exists
-  if (article.cover_r2_key) {
-    await env.PHOTOS.delete(article.cover_r2_key).catch(() => {});
-  }
-
   const arrayBuf = await file.arrayBuffer();
   const detected = detectImageType(arrayBuf);
   if (!detected) return badRequest('Fichier image invalide.');
+
+  // Only delete the old cover once the new file is confirmed valid — deleting
+  // first would leave the article with no cover if validation failed below.
+  if (article.cover_r2_key) {
+    await env.PHOTOS.delete(article.cover_r2_key).catch(() => {});
+  }
 
   const uuid  = crypto.randomUUID();
   const year  = new Date().getFullYear();
@@ -210,13 +228,16 @@ export async function uploadHeroImage(request, env) {
     .bind('hero_image_url', 'hero_image_r2_key')
     .all();
   const currentSettings = Object.fromEntries((current.results || []).map(r => [r.key, r.value]));
-  if (currentSettings.hero_image_r2_key) {
-    await env.PHOTOS.delete(currentSettings.hero_image_r2_key).catch(() => {});
-  }
 
   const arrayBuf = await file.arrayBuffer();
   const detected = detectImageType(arrayBuf);
   if (!detected) return badRequest('Fichier image invalide.');
+
+  // Only delete the old hero image once the new file is confirmed valid —
+  // deleting first would leave the site with no hero image if validation failed.
+  if (currentSettings.hero_image_r2_key) {
+    await env.PHOTOS.delete(currentSettings.hero_image_r2_key).catch(() => {});
+  }
 
   const uuid = crypto.randomUUID();
   const year = new Date().getFullYear();

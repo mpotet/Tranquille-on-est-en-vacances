@@ -199,6 +199,7 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 /* ── Status badges ──────────────────────────────────────────── */
 .badge-published { background: var(--palm-light); color: var(--palm); border: 1px solid rgba(var(--palm-rgb),.28); }
 .badge-draft     { background: var(--blue-light);  color: var(--blue);  border: 1px solid rgba(var(--blue-rgb),.26); }
+.badge-pending   { background: #fffbeb;            color: #b45309;      border: 1px solid rgba(217,119,6,.28); }
 
 /* ── Prose (article body) ───────────────────────────────────── */
 .prose-vacation h1, .prose-vacation h2, .prose-vacation h3 { font-family: "Playfair Display", Georgia, serif; color: var(--ink); letter-spacing: -.02em; }
@@ -234,6 +235,14 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .toolbar-btn:hover { background:#e7e5e4; color:#1c1917; }
 .toolbar-btn:active { background:#d6d3d1; }
 .toolbar-sep { display:inline-block; width:1px; height:1.1rem; background:#d6d3d1; margin:0 .2rem; vertical-align:middle; }
+/* On touch devices (phone/tablet - no hover capability), bump the toolbar
+   buttons up to the ~44px minimum recommended touch target size. The admin
+   writes articles from their phone while travelling, so mis-taps here (e.g.
+   hitting "citation" instead of "gras" on a 32px button) are a real problem.
+   Keep the compact 32px size for mouse-driven desktop use. */
+@media (pointer: coarse) {
+  .toolbar-btn { width:2.75rem; height:2.75rem; font-size:1.15rem; }
+}
 #e-content[data-placeholder]:empty:before { content:attr(data-placeholder); color:#a8a29e; pointer-events:none; display:block; }
 
 /* ── Lightbox ───────────────────────────────────────────────── */

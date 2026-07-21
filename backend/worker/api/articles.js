@@ -35,7 +35,10 @@ export async function listArticles(request, env, isAdmin) {
     bindings.push(statusParam);
   }
 
-  // Filter by folder (all articles in the folder tree)
+  // Filter by folder (all articles in the folder tree). An unknown/stale
+  // slug must force zero results, not silently drop the filter — otherwise
+  // /voyages?folder=deleted-slug would return ALL published articles instead
+  // of an empty state.
   if (folderSlug) {
     const folder = await env.DB
       .prepare('SELECT id FROM folders WHERE slug = ?')
@@ -44,6 +47,8 @@ export async function listArticles(request, env, isAdmin) {
     if (folder) {
       const ids = await getAllFolderIds(env, folder.id);
       whereClauses.push(`a.folder_id IN (${ids.join(',')})`);
+    } else {
+      whereClauses.push('0 = 1');
     }
   }
 
@@ -105,7 +110,7 @@ export async function createArticle(request, env, ctx) {
   const { startDate, endDate, writingDays, error } = normalizeTripFields(body);
   if (error) return badRequest(error);
 
-  const status = body.status === 'published' ? 'published' : 'archived';
+  const status = ['published', 'draft', 'publish_when_online'].includes(body.status) ? body.status : 'archived';
   const slug   = await uniqueSlug(env, toSlug(body.title));
 
   const result = await env.DB
@@ -162,7 +167,7 @@ export async function updateArticle(request, env, id, ctx) {
   const { startDate, endDate, writingDays, error } = normalizeTripFields(merged);
   if (error) return badRequest(error);
 
-  const newStatus = body.status && ['published','archived','draft'].includes(body.status)
+  const newStatus = body.status && ['published','archived','draft','publish_when_online'].includes(body.status)
     ? (body.status === 'draft' ? 'archived' : body.status)
     : article.status;
 
@@ -213,7 +218,13 @@ export async function patchArticleStatus(env, id, ctx) {
   const article = await env.DB.prepare('SELECT * FROM articles WHERE id = ?').bind(id).first();
   if (!article) return notFound('Article not found');
 
-  const newStatus = article.status === 'published' ? 'archived' : 'published';
+  // A plain published/archived toggle only makes sense between those two
+  // states. An article deliberately left as 'draft' or 'publish_when_online'
+  // should not be silently force-published by this quick toggle — that would
+  // discard the admin's explicit "not ready yet" / "wait for connectivity"
+  // choice. Those statuses must be changed via the editor's status selector.
+  const newStatus = article.status === 'published' ? 'archived'
+    : (article.status === 'archived' ? 'published' : article.status);
   await env.DB
     .prepare('UPDATE articles SET status=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
     .bind(newStatus, id)

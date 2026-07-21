@@ -258,15 +258,30 @@ async function init(){
     _voyFetch('/api/articles'+(folder?'?folder='+encodeURIComponent(folder):''),{articles:[],total:0}),
   ]);
   const activeF=folder?folders.find(f=>f.slug===folder):null;
-  const parentF=activeF?.parent_id?folders.find(f=>f.id===activeF.parent_id):null;
+  // Walk the FULL ancestor chain (not just one level up) so folders nested
+  // 3+ levels deep still get a correct breadcrumb/parent — a folder tree of
+  // arbitrary depth can already be created via the admin UI.
+  const ancestorsOf=(f)=>{
+    const chain=[];
+    let cur=f?.parent_id?folders.find(x=>x.id===f.parent_id):null;
+    const seen=new Set();
+    while(cur && !seen.has(cur.id)){
+      chain.unshift(cur);
+      seen.add(cur.id);
+      cur=cur.parent_id?folders.find(x=>x.id===cur.parent_id):null;
+    }
+    return chain;
+  };
+  const ancestors=activeF?ancestorsOf(activeF):[];
+  const parentF=ancestors.length?ancestors[ancestors.length-1]:null;
+  const rootF=ancestors.length?ancestors[0]:activeF;
   const totalCount=(artData.total??artData.articles.length);
   const plural=totalCount!==1?'s':'';
-  const rootF=parentF||activeF;
   let destLabel='';
   if(rootF){
     const rootName = safeText(rootF.name || '');
     destLabel=' - <strong style="color:var(--palm)">'+flagImg(rootF.icon||'')+' '+rootName;
-    if(parentF){
+    if(activeF && activeF.id!==rootF.id){
       const activeName = safeText(activeF.name || '');
       destLabel+=' / '+flagImg(activeF.icon||'')+' '+activeName;
     }
@@ -279,18 +294,16 @@ async function init(){
     if(activeF){
       const sep='<span class="mx-1 opacity-40"><i class="ph ph-caret-right"></i></span>';
       let crumbs='<a href="/voyages" style="color:var(--ink-muted);text-decoration:none;white-space:nowrap" class="hover:underline">Tous les voyages</a>';
-      if(parentF){
-        const parentSlug = safeAttr(parentF.slug || '');
-        const parentName = safeText(parentF.name || '');
-        const activeSlug = safeAttr(activeF.slug || '');
-        const activeName = safeText(activeF.name || '');
-        crumbs+=sep+'<a href="/voyages?folder=' + parentSlug + '" style="color:var(--ink-muted);text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap" class="hover:underline">'+flagImg(parentF.icon||'')+' '+parentName+'</a>';
-        crumbs+=sep+'<span style="color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap">'+flagImg(activeF.icon||'')+' '+activeName+'</span>';
-      }else{
-        const activeSlug = safeAttr(activeF.slug || '');
-        const activeName = safeText(activeF.name || '');
-        crumbs+=sep+'<span style="color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap">'+flagImg(activeF.icon||'')+' '+activeName+'</span>';
-      }
+      // Render one crumb per ancestor (root → immediate parent), then the
+      // active folder as the non-clickable current crumb. Supports any
+      // folder nesting depth, not just a single parent level.
+      ancestors.forEach(f=>{
+        const fSlug = safeAttr(f.slug || '');
+        const fName = safeText(f.name || '');
+        crumbs+=sep+'<a href="/voyages?folder=' + fSlug + '" style="color:var(--ink-muted);text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap" class="hover:underline">'+flagImg(f.icon||'')+' '+fName+'</a>';
+      });
+      const activeName = safeText(activeF.name || '');
+      crumbs+=sep+'<span style="color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap">'+flagImg(activeF.icon||'')+' '+activeName+'</span>';
       bc.innerHTML='<nav class="flex items-center flex-wrap gap-0.5 text-sm py-1" style="color:var(--ink-muted)">'+crumbs+'</nav>';
       bc.classList.remove('hidden');
     }else{
@@ -315,7 +328,9 @@ async function init(){
   };
   let btns='<a href="/voyages" class="'+pill(!folder,false)+'"><i class="ph ph-globe-hemisphere-west"></i> Tous</a>';
   roots.forEach(f=>{
-    const isActive=folder===f.slug||(parentF&&parentF.id===f.id);
+    // Highlight the root pill whenever the active folder is this root itself
+    // or anywhere in its subtree (any nesting depth), not just a direct child.
+    const isActive=folder===f.slug||(rootF&&rootF.id===f.id);
     const fSlug = safeAttr(f.slug || '');
     const fName = safeText(f.name || '');
     btns+='<a href="/voyages?folder='+fSlug+'" class="'+pill(isActive,false)+'">'+flagImg(f.icon)+' '+fName+'</a>';
@@ -488,10 +503,14 @@ ${TOAST}
   const [photosRes, prevRow, nextRow] = await Promise.all([
     env.DB.prepare('SELECT * FROM photos WHERE article_id = ? ORDER BY sort_order, id').bind(article.id).all(),
     // Previous = older article (earlier date). Next = newer article.
-    env.DB.prepare(`SELECT slug, title FROM articles a WHERE a.status='published' AND (a.date < ? OR (a.date = ? AND a.created_at < ?)) ORDER BY a.date DESC, a.created_at DESC LIMIT 1`)
-      .bind(article.date, article.date, article.created_at).first(),
-    env.DB.prepare(`SELECT slug, title FROM articles a WHERE a.status='published' AND (a.date > ? OR (a.date = ? AND a.created_at > ?)) ORDER BY a.date ASC, a.created_at ASC LIMIT 1`)
-      .bind(article.date, article.date, article.created_at).first(),
+    // Tie-break on id as a final fallback: bulk imports can insert several
+    // rows in the same transaction with identical (date, created_at), which
+    // would otherwise make every article in that tie group silently lose its
+    // prev/next links (both '<' comparisons on an equal created_at are false).
+    env.DB.prepare(`SELECT slug, title FROM articles a WHERE a.status='published' AND (a.date < ? OR (a.date = ? AND a.created_at < ?) OR (a.date = ? AND a.created_at = ? AND a.id < ?)) ORDER BY a.date DESC, a.created_at DESC, a.id DESC LIMIT 1`)
+      .bind(article.date, article.date, article.created_at, article.date, article.created_at, article.id).first(),
+    env.DB.prepare(`SELECT slug, title FROM articles a WHERE a.status='published' AND (a.date > ? OR (a.date = ? AND a.created_at > ?) OR (a.date = ? AND a.created_at = ? AND a.id > ?)) ORDER BY a.date ASC, a.created_at ASC, a.id ASC LIMIT 1`)
+      .bind(article.date, article.date, article.created_at, article.date, article.created_at, article.id).first(),
   ]);
   const photos = (photosRes.results || []).map(p => ({ ...p, url: p.url, caption: p.caption || '' }));
 
@@ -501,10 +520,14 @@ ${TOAST}
     .bind(article.id).all();
   const comments = commentsRes.results || [];
 
-  // Build the combined photo list (gallery photos + inline images not already listed)
+  // Build the combined photo list (gallery photos + inline images not already listed).
+  // Compare via a normalized (decoded) URL so a gallery photo and the same
+  // image referenced inline with different percent-encoding (e.g. a raw space
+  // vs "%20") are recognized as the same photo instead of appearing twice.
+  const normalizeUrl = (u) => { try { return decodeURI(u); } catch { return u; } };
   const inlineImgs = ssrExtractImages(article.content || '');
-  const photoUrlSet = new Set(photos.map(p => p.url));
-  const allPhotos = [...photos, ...inlineImgs.filter(img => !photoUrlSet.has(img.url))];
+  const photoUrlSet = new Set(photos.map(p => normalizeUrl(p.url)));
+  const allPhotos = [...photos, ...inlineImgs.filter(img => !photoUrlSet.has(normalizeUrl(img.url)))];
 
   const renderedContent = ssrVoyageContent(article.content || '', allPhotos);
   const galleryHtml = allPhotos.length ? ssrGallery(allPhotos) : '';

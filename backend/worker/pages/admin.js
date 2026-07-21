@@ -466,8 +466,8 @@ function renderFolderTree(folders, parentId, depth=0) {
           <span class="flex-shrink-0">\${flagImg(f.icon)}</span><span>\${esc(f.name)}</span>
         </a>
         <div class="flex items-center gap-1 ml-2">
-          <button data-action="open-folder-modal" data-id="\${f.id}" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-1.5 text-base touch-manipulation rounded-lg hover:bg-sky-50 transition-colors" title="Ajouter un sous-dossier"><i class="ph ph-folder-plus"></i></button>
-          <button data-action="del-folder" data-id="\${f.id}" class="text-stone-400 hover:text-red-500 active:text-red-600 p-1.5 text-base touch-manipulation rounded-lg hover:bg-red-50 transition-colors" title="Supprimer ce dossier"><i class="ph ph-trash"></i></button>
+          <button data-action="open-folder-modal" data-id="\${f.id}" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center hover:bg-sky-50 transition-colors" title="Ajouter un sous-dossier"><i class="ph ph-folder-plus"></i></button>
+          <button data-action="del-folder" data-id="\${f.id}" class="text-stone-400 hover:text-red-500 active:text-red-600 p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center hover:bg-red-50 transition-colors" title="Supprimer ce dossier"><i class="ph ph-trash"></i></button>
         </div>
       </div>
       \${renderFolderTree(folders, f.id, depth+1)}
@@ -485,10 +485,22 @@ function renderArticles(arts, folders) {
       '</div>';
     return;
   }
+  const STATUS_META = {
+    published:           { label: 'Publié',                badge: 'badge-published' },
+    archived:             { label: 'Archivé',                badge: 'badge-draft' },
+    draft:                { label: 'Brouillon',              badge: 'badge-draft' },
+    publish_when_online:  { label: '⏳ Publier dès connexion', badge: 'badge-pending' },
+  };
   document.getElementById('articles-list').innerHTML = arts.map(a => {
     const isPub = a.status === 'published';
+    // The quick toggle only ever flips between published <-> archived (see
+    // patchArticleStatus server-side) — draft / publish_when_online articles
+    // must be changed via the editor's status selector instead, so the
+    // button reflects that rather than offering a misleading force-publish.
+    const canToggle = a.status === 'published' || a.status === 'archived';
     const toggleLabel = isPub ? '<i class="ph ph-lock-simple"></i> Archiver' : '<i class="ph ph-rocket-launch"></i> Publier';
     const toggleCls = isPub ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50';
+    const meta = STATUS_META[a.status] || STATUS_META.archived;
     return \`
     <div class="bg-white rounded-2xl border border-stone-100 overflow-hidden hover:shadow-md transition-shadow">
       <div class="flex gap-4 p-4">
@@ -496,7 +508,7 @@ function renderArticles(arts, folders) {
         <div class="flex-1 min-w-0">
           <div class="flex items-start justify-between gap-2 mb-1.5">
             <h3 class="font-bold text-stone-900 text-sm sm:text-base leading-snug">\${esc(a.title)}</h3>
-            <span class="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 \${isPub?'badge-published':'badge-draft'}">\${isPub?'Publié':'Archivé'}</span>
+            <span class="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 \${meta.badge}">\${meta.label}</span>
           </div>
           <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-stone-400">
             <span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span>
@@ -507,7 +519,7 @@ function renderArticles(arts, folders) {
         </div>
       </div>
       <div class="border-t border-stone-50 flex items-center gap-1 px-3 py-2">
-        <button data-action="toggle-status" data-id="\${a.id}" data-status="\${a.status}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors \${toggleCls}">\${toggleLabel}</button>
+        \${canToggle ? \`<button data-action="toggle-status" data-id="\${a.id}" data-status="\${a.status}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors \${toggleCls}">\${toggleLabel}</button>\` : ''}
         <a href="/admin/editor/\${a.id}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"><i class="ph ph-pencil"></i> Modifier</a>
         <a href="/voyage/\${a.slug}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-400 hover:bg-stone-50 rounded-lg transition-colors"><i class="ph ph-eye"></i> Voir</a>
         <button data-action="del-article" data-id="\${a.id}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-50 rounded-lg transition-colors ml-auto touch-manipulation"><i class="ph ph-trash"></i></button>
@@ -713,7 +725,28 @@ export function editorPage(articleId = null) {
   const isEdit = articleId !== null;
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD(isEdit ? 'Admin - Modifier article' : 'Admin - Nouvel article')}<style>#e-content .img-pair{outline:2px dashed rgba(99,179,237,.35);outline-offset:3px;border-radius:.75rem}#e-content .img-pair figure{max-width:49%;min-width:0}#e-content figure{position:relative}#e-content .img-delete,#e-content .img-split,#e-content .img-expand{position:absolute;top:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;font-weight:700;opacity:0;transition:opacity .15s;z-index:10;padding:0}#e-content .img-delete{right:6px}#e-content .img-split{right:38px;font-size:.7rem}#e-content .img-expand{left:6px;font-size:.7rem}#e-content figure:hover .img-delete,#e-content figure:hover .img-split,#e-content figure:hover .img-expand{opacity:1}#e-content .img-pair-add{flex:1;min-width:0;max-width:49%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;border:2px dashed rgba(99,179,237,.5);border-radius:.75rem;cursor:pointer;color:rgba(56,139,202,.8);font-size:.8rem;font-weight:600;padding:1.5rem .5rem;transition:all .15s;background:rgba(99,179,237,.04)}#e-content .img-pair-add:hover{border-color:#63b3ed;background:rgba(99,179,237,.12);color:#2b6cb0}#e-content .img-pair-add i{font-size:1.6rem}</style></head>
+<head>${HEAD(isEdit ? 'Admin - Modifier article' : 'Admin - Nouvel article')}<style>
+#e-content .img-pair{outline:2px dashed rgba(99,179,237,.35);outline-offset:3px;border-radius:.75rem}
+#e-content .img-pair figure{max-width:49%;min-width:0}
+#e-content figure{position:relative}
+#e-content .img-delete,#e-content .img-split,#e-content .img-expand{position:absolute;top:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;font-weight:700;opacity:0;transition:opacity .15s;z-index:10;padding:0}
+#e-content .img-delete{right:6px}
+#e-content .img-split{right:38px;font-size:.7rem}
+#e-content .img-expand{left:6px;font-size:.7rem}
+#e-content figure:hover .img-delete,#e-content figure:hover .img-split,#e-content figure:hover .img-expand{opacity:1}
+/* Touch devices have no :hover state, so opacity:0-until-hover would leave
+   these buttons effectively untappable — an admin on a phone could never
+   discover or reliably hit a 26px invisible button. Make them always visible
+   and bump them to the ~44px minimum touch target size instead. */
+@media (pointer: coarse) {
+  #e-content .img-delete,#e-content .img-split,#e-content .img-expand{opacity:1;width:40px;height:40px;font-size:1.1rem}
+  #e-content .img-split{right:46px;font-size:.85rem}
+  #e-content .img-expand{font-size:.85rem}
+}
+#e-content .img-pair-add{flex:1;min-width:0;max-width:49%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;border:2px dashed rgba(99,179,237,.5);border-radius:.75rem;cursor:pointer;color:rgba(56,139,202,.8);font-size:.8rem;font-weight:600;padding:1.5rem .5rem;transition:all .15s;background:rgba(99,179,237,.04)}
+#e-content .img-pair-add:hover{border-color:#63b3ed;background:rgba(99,179,237,.12);color:#2b6cb0}
+#e-content .img-pair-add i{font-size:1.6rem}
+</style></head>
 <body class="bg-stone-50 font-sans text-stone-900 antialiased pt-14 pb-20 lg:pb-0">
 ${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
 
@@ -1094,6 +1127,41 @@ function _fmtRelTime(ts) {
   return new Date(ts).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
 }
 
+// ── Shared single-photo upload with timeout + one retry ───────
+// On a weak travel connection a bare fetch() can hang indefinitely (no
+// default timeout) leaving the admin staring at a toast that vanishes after
+// 3s with no idea whether the upload is still in flight, succeeded, or died.
+// This wraps the upload with an explicit ceiling and a single automatic
+// retry on timeout/network failure before giving up and telling the admin.
+async function uploadPhotoFile(articleId, file, { onProgress } = {}) {
+  const UPLOAD_TIMEOUT_MS = 30000;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const fd = new FormData(); fd.append('photo', file);
+    try {
+      if (onProgress) onProgress(attempt === 0 ? 'uploading' : 'retrying');
+      const res = await fetch('/api/articles/' + articleId + '/photos', {
+        method: 'POST', body: fd, signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
+      });
+      if (!res.ok) { if (attempt === 1) return { error: 'http' }; continue; }
+      const data = await res.json().catch(() => ({}));
+      if (data.rejected && data.rejected.length) return { error: 'rejected', filename: data.rejected[0] };
+      const p = data.uploaded?.[0];
+      if (!p) return { error: 'empty' };
+      return { photo: p };
+    } catch (err) {
+      if (attempt === 1) return { error: err?.name === 'TimeoutError' ? 'timeout' : 'network' };
+      // fall through to retry once
+    }
+  }
+  return { error: 'unknown' };
+}
+function uploadErrorMessage(error) {
+  if (error === 'rejected') return 'Format de photo non pris en charge (essayez JPEG, PNG, WebP)';
+  if (error === 'timeout') return 'Upload trop lent, connexion instable — réessayez';
+  if (error === 'network') return 'Connexion perdue pendant l’upload — réessayez';
+  return 'Erreur upload';
+}
+
 // ── Upload data: URI images queued while offline ──────────────
 async function _processOfflineImgs() {
   const editor = document.getElementById('e-content');
@@ -1107,14 +1175,9 @@ async function _processOfflineImgs() {
   for (const img of pending) {
     const dataUrl = img.getAttribute('src');
     const file = dataUrlToFile(dataUrl, 'photo.jpg');
-    const fd = new FormData(); fd.append('photo', file);
-    const res = await fetch('/api/articles/' + ARTICLE_ID + '/photos', {method:'POST', body:fd}).catch(() => null);
-    if (res?.ok) {
-      const d = await res.json();
-      const p = d.uploaded?.[0];
-      if (p) { img.src = p.url; existingPhotos.push(p); }
-      else failed++;
-    } else failed++;
+    const result = await uploadPhotoFile(ARTICLE_ID, file);
+    if (result.photo) { img.src = result.photo.url; existingPhotos.push(result.photo); }
+    else failed++;
   }
   renderPhotoGrid();
   updateSyncInfo();
@@ -1386,13 +1449,13 @@ async function uploadAndInsertAtRange(file, range) {
   toast('Upload...', 'info');
   const ok = await ensureArticleId();
   if (!ok) return;
-  const fd = new FormData(); fd.append('photo', file);
-  const res = await fetch('/api/articles/' + ARTICLE_ID + '/photos', {method:'POST', body:fd}).catch(() => null);
-  if (res?.ok) {
-    const data = await res.json();
-    const p = data.uploaded?.[0];
-    if (p) { existingPhotos.push(p); renderPhotoGrid(); insertPhotoAtRange(p.url, p.caption || '', range); toast('Image insérée !', 'ok'); }
-  } else toast('Erreur upload', 'err');
+  const result = await uploadPhotoFile(ARTICLE_ID, file);
+  if (result.photo) {
+    const p = result.photo;
+    existingPhotos.push(p); renderPhotoGrid(); insertPhotoAtRange(p.url, p.caption || '', range); toast('Image insérée !', 'ok');
+  } else {
+    toast(uploadErrorMessage(result.error), 'err');
+  }
 }
 let _pairAddTarget = null;
 function openInsertImg(pairRow) {
@@ -1474,23 +1537,21 @@ async function _uploadAndInsertIim(file, size, targetRow, caption) {
   }
   toast('Upload...', 'info');
   const ok = await ensureArticleId(); if (!ok) return;
-  const fd = new FormData(); fd.append('photo', file);
-  const res = await fetch('/api/articles/' + ARTICLE_ID + '/photos', {method:'POST', body:fd}).catch(() => null);
-  if (res?.ok) {
-    const data = await res.json();
-    const p = data.uploaded?.[0];
-    if (p) {
-      // Prefer the admin-typed caption; fall back to the server-provided one.
-      const finalCaption = caption || p.caption || '';
-      existingPhotos.push(p); renderPhotoGrid();
-      if (targetRow && targetRow.isConnected) {
-        const figure = _makeImgFigure(p.url, finalCaption, 'half');
-        targetRow.querySelectorAll('.img-pair-add').forEach(el => el.remove());
-        targetRow.appendChild(figure); _refreshImgPairSlot(targetRow);
-      } else { insertPhotoInText(p.url, finalCaption, false, size); }
-      toast('Image insérée !', 'ok');
-    }
-  } else toast('Erreur upload', 'err');
+  const result = await uploadPhotoFile(ARTICLE_ID, file);
+  if (result.photo) {
+    const p = result.photo;
+    // Prefer the admin-typed caption; fall back to the server-provided one.
+    const finalCaption = caption || p.caption || '';
+    existingPhotos.push(p); renderPhotoGrid();
+    if (targetRow && targetRow.isConnected) {
+      const figure = _makeImgFigure(p.url, finalCaption, 'half');
+      targetRow.querySelectorAll('.img-pair-add').forEach(el => el.remove());
+      targetRow.appendChild(figure); _refreshImgPairSlot(targetRow);
+    } else { insertPhotoInText(p.url, finalCaption, false, size); }
+    toast('Image insérée !', 'ok');
+  } else {
+    toast(uploadErrorMessage(result.error), 'err');
+  }
 }
 
 // ── Cover preview ─────────────────────────────────────────────
@@ -1565,16 +1626,24 @@ function handleFiles(files) {
     toast('Upload en cours...', 'ok');
     const fd = new FormData();
     Array.from(files).forEach(f => fd.append('photo', f));
-    fetch('/api/articles/'+ARTICLE_ID+'/photos', {method:'POST', body:fd})
+    fetch('/api/articles/'+ARTICLE_ID+'/photos', {method:'POST', body:fd, signal: AbortSignal.timeout(30000)})
       .then(r=>r.json())
       .then(data=>{
         const uploaded = data.uploaded || [];
+        const rejected = data.rejected || [];
         existingPhotos.push(...uploaded);
         renderPhotoGrid();
         uploaded.forEach(p => insertPhotoInText(p.url, p.caption || 'photo', false));
-        toast(uploaded.length === 1 ? 'Photo insérée !' : uploaded.length + ' photos insérées !','ok');
+        if (uploaded.length) {
+          toast(uploaded.length === 1 ? 'Photo insérée !' : uploaded.length + ' photos insérées !','ok');
+        }
+        // Every file failed magic-byte validation (e.g. HEIC/HEIF or another
+        // unsupported format) — don't show a false "success" toast for 0 photos.
+        if (rejected.length) {
+          toast(rejected.length + ' photo(s) au format non pris en charge (essayez JPEG, PNG, WebP)', 'err');
+        }
       })
-      .catch(()=>toast('Erreur upload','err'));
+      .catch(err=>toast(err?.name === 'TimeoutError' ? 'Upload trop lent, connexion instable' : 'Erreur upload','err'));
   })();
 }
 function handleDrop(e) {
@@ -1662,7 +1731,13 @@ async function saveArticle() {
   if (endDate < startDate) { toast('La fin doit être après le début','err'); return; }
 
   const status = getStatus();
-  const apiStatus = status === 'publish_when_online' ? 'published' : status;
+  // Send the status honestly to the server — it used to be silently rewritten
+  // to 'published' here, which meant choosing "publier dès connexion" while
+  // actually online force-published the article immediately regardless of
+  // the admin's intent. The server now stores publish_when_online as its own
+  // real status; enforceOfflineStatus() already prevents selecting it while
+  // online is possible in a confusing way (see below for the online case).
+  const apiStatus = status;
 
   // Notify flag: true by default when publishing; admin can uncheck
   const notifyCheckbox = document.getElementById('e-notify');
@@ -1701,15 +1776,29 @@ async function saveArticle() {
   if (newPhotos.length && savedId) {
     const fd = new FormData();
     newPhotos.forEach(p => fd.append('photo', p.file));
-    const uploadRes = await fetch('/api/articles/'+savedId+'/photos', {method:'POST', body:fd}).catch(()=>null);
+    const uploadRes = await fetch('/api/articles/'+savedId+'/photos', {method:'POST', body:fd, signal: AbortSignal.timeout(30000)}).catch(()=>null);
     if (uploadRes?.ok) {
       const uploadData = await uploadRes.json();
       const uploaded = uploadData.uploaded || [];
+      if (uploadData.rejected && uploadData.rejected.length) {
+        toast(uploadData.rejected.length + ' photo(s) au format non pris en charge (essayez JPEG, PNG, WebP)', 'err');
+      }
       if (uploaded.length) {
         const editor = document.getElementById('e-content');
+        // Match each uploaded photo back to its source File by original
+        // filename rather than by array index — if any file was rejected
+        // (e.g. HEIC), 'uploaded' is shorter than 'newPhotos' and a
+        // positional match would silently pair the wrong caption/dataUrl
+        // with the wrong uploaded photo.
+        const usedIdx = new Set();
+        const matchSource = (uploadedPhoto, idx) => {
+          const i = newPhotos.findIndex((np, j) => !usedIdx.has(j) && np.file && np.file.name === uploadedPhoto.source_name);
+          if (i !== -1) { usedIdx.add(i); return newPhotos[i]; }
+          return newPhotos[idx];
+        };
         uploaded.forEach((p, i) => {
-          const src = newPhotos[i]?.dataUrl;
-          if (newPhotos[i]?.inline && src) {
+          const src = matchSource(p, i)?.dataUrl;
+          if (matchSource(p, i)?.inline && src) {
             // Replace the data-URL placeholder already in the text with the real R2 URL
             editor.querySelectorAll('img').forEach(img => {
               if (img.getAttribute('src') === src) img.src = p.url;
