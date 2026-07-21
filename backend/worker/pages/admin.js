@@ -358,33 +358,47 @@ ${ADMIN_NAV()}
   <div id="tab-emails" class="admin-tab-panel">
   <div class="space-y-5">
 
-    <!-- Sending domain setup -->
+    <!-- Brevo sender setup -->
     <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
       <div class="px-6 py-5 border-b border-stone-100">
-        <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-globe" style="color:var(--blue)"></i> Domaine d'envoi</h2>
-        <p class="text-xs text-stone-400 mt-0.5">Un domaine vérifié permet d'envoyer des emails (mot de passe, changement d'adresse...) vers n'importe quelle boîte mail.</p>
+        <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-paper-plane-tilt" style="color:var(--blue)"></i> Envoi des emails (Brevo)</h2>
+        <p class="text-xs text-stone-400 mt-0.5">Aucun nom de domaine requis : il suffit de vérifier votre propre adresse email pour pouvoir envoyer vers n'importe quelle boîte mail.</p>
       </div>
       <div class="px-6 pb-6 pt-4">
-        <div id="email-domain-status" class="text-sm text-stone-500">Chargement…</div>
+        <div id="email-config-status" class="text-sm text-stone-500 mb-5">Chargement…</div>
 
-        <div class="mt-5 pt-5 border-t border-stone-100">
-          <p class="text-xs font-black text-stone-400 uppercase tracking-wider mb-3">Enregistrer un nouveau domaine</p>
-          <div class="grid sm:grid-cols-[1fr_auto] gap-3">
-            <input type="text" id="ed-domain" placeholder="mondomaine.fr" autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
-            <button onclick="registerDomain()" class="action-btn-sm whitespace-nowrap"><i class="ph ph-plus-circle"></i> Enregistrer</button>
+        <details class="rounded-xl border border-stone-100 bg-stone-50 mb-5">
+          <summary class="px-4 py-3 cursor-pointer list-none select-none text-sm font-bold text-stone-700 flex items-center gap-2"><i class="ph ph-lightbulb" style="color:var(--blue)"></i> Comment configurer Brevo (5 minutes) <span class="text-stone-400 font-normal ml-auto text-xs">Cliquer pour ouvrir ▾</span></summary>
+          <ol class="px-4 pb-4 text-sm text-stone-600 space-y-2 list-decimal list-inside">
+            <li>Créez un compte gratuit sur <strong>brevo.com</strong> (bouton "S'inscrire", gratuit, aucune carte bancaire requise).</li>
+            <li>Une fois connecté, allez dans <strong>Paramètres</strong> (icône engrenage, en haut à droite) → <strong>Expéditeurs, domaines et dédiabolisation</strong> → onglet <strong>Expéditeurs</strong>.</li>
+            <li>Cliquez sur <strong>Ajouter un expéditeur</strong>, entrez le nom à afficher (ex: "Tranquille, on est en vacances") et l'adresse email à utiliser pour l'envoi (ex: votre adresse @free.fr, @gmail.com, peu importe).</li>
+            <li>Brevo envoie un <strong>code à 6 chiffres</strong> à cette adresse — ouvrez votre boîte mail, récupérez le code, entrez-le sur Brevo pour valider l'expéditeur.</li>
+            <li>Retournez dans <strong>Paramètres → Clés API</strong> (dans le même menu), cliquez sur <strong>Générer une nouvelle clé API</strong>, donnez-lui un nom (ex: "Blog voyage") et copiez la clé affichée (elle commence par <code>xkeysib-</code>).</li>
+            <li>Collez cette clé et l'adresse expéditrice ci-dessous, puis cliquez sur Enregistrer.</li>
+          </ol>
+        </details>
+
+        <div class="grid gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Clé API Brevo</label>
+            <input type="password" id="ec-api-key" placeholder="xkeysib-..." autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm font-mono">
+            <p id="ec-api-key-current" class="text-xs text-stone-400 mt-1"></p>
           </div>
-          <p class="text-xs text-stone-400 mt-2">Le domaine doit vous appartenir (achetable chez n'importe quel registrar, ~10-15€/an). Une fois enregistré, ajoutez les enregistrements DNS affichés ci-dessous chez votre registrar, puis cliquez sur « Vérifier ».</p>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Adresse expéditrice</label>
+              <input type="email" id="ec-from-address" placeholder="votreadresse@exemple.fr" autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Nom affiché</label>
+              <input type="text" id="ec-from-name" placeholder="Tranquille, on est en vacances" autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+            </div>
+          </div>
         </div>
-
-        <div id="email-domain-records" class="mt-5 hidden"></div>
-
-        <div class="mt-5 pt-5 border-t border-stone-100">
-          <p class="text-xs font-black text-stone-400 uppercase tracking-wider mb-3">Adresse d'expédition</p>
-          <div class="grid sm:grid-cols-[1fr_auto] gap-3">
-            <input type="email" id="ed-from" placeholder="noreply@mondomaine.fr" autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
-            <button onclick="saveFromAddress()" class="action-btn-sm whitespace-nowrap"><i class="ph ph-floppy-disk"></i> Enregistrer</button>
-          </div>
-          <p class="text-xs text-stone-400 mt-2">Utilisée comme expéditeur pour tous les emails (mot de passe, changement d'adresse...). Doit utiliser un domaine vérifié ci-dessus pour fonctionner vers toutes les adresses.</p>
+        <div class="mt-4 flex flex-wrap gap-2 justify-end">
+          <button onclick="checkSenderStatus()" class="subtle-btn text-sm"><i class="ph ph-arrow-clockwise"></i> Vérifier le statut</button>
+          <button onclick="saveEmailConfig()" class="action-btn-sm"><i class="ph ph-floppy-disk"></i> Enregistrer</button>
         </div>
       </div>
     </div>
@@ -756,65 +770,49 @@ async function changePassword() {
   }
 }
 
-// ── Emails tab: domain setup + send history ────────────────────
-const RECORD_STATUS_LABEL = { verified: 'Vérifié', pending: 'En attente', not_started: 'Non démarré', failed: 'Échec' };
-function domainStatusBadge(status) {
-  const map = { verified: ['#f0fdf4','var(--palm)','ph-check-circle'], pending: ['#fffbeb','#b45309','ph-clock'], failed: ['#fef2f2','#dc3c3c','ph-x-circle'], not_started: ['#f5f5f4','#78716c','ph-circle-dashed'] };
-  const [bg,color,icon] = map[status] || map.not_started;
-  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:'+bg+';color:'+color+'"><i class="ph '+icon+'"></i> '+(RECORD_STATUS_LABEL[status]||status)+'</span>';
+// ── Emails tab: Brevo sender setup + send history ──────────────
+function senderStatusBadge(verified) {
+  if (verified === true)  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#f0fdf4;color:var(--palm)"><i class="ph ph-check-circle"></i> Vérifié</span>';
+  if (verified === false) return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#fef2f2;color:#dc3c3c"><i class="ph ph-x-circle"></i> Non vérifié</span>';
+  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#f5f5f4;color:#78716c"><i class="ph ph-circle-dashed"></i> Inconnu</span>';
 }
-async function loadEmailDomainStatus() {
-  const box = document.getElementById('email-domain-status');
-  const data = await fetch('/api/admin/email-domain').then(r=>r.json()).catch(()=>null);
+async function loadEmailConfigStatus() {
+  const box = document.getElementById('email-config-status');
+  const data = await fetch('/api/admin/email-config').then(r=>r.json()).catch(()=>null);
   if (!data) { box.innerHTML = '<p class="text-red-500 text-sm">Erreur de chargement.</p>'; return; }
-  document.getElementById('ed-from').value = data.from_address || '';
-  if (!data.api_key_configured) {
-    box.innerHTML = '<p class="text-sm text-red-500"><i class="ph ph-warning"></i> Clé API Resend non configurée sur le serveur — aucun email ne peut être envoyé.</p>';
+  document.getElementById('ec-from-address').value = data.from_address || '';
+  document.getElementById('ec-from-name').value = data.from_name || '';
+  document.getElementById('ec-api-key-current').textContent = data.api_key_configured
+    ? 'Clé actuellement enregistrée : ' + data.api_key_masked + ' (laissez le champ vide pour la conserver)'
+    : 'Aucune clé enregistrée pour le moment.';
+  if (!data.api_key_configured || !data.from_address) {
+    box.innerHTML = '<p class="text-sm text-stone-500"><i class="ph ph-info"></i> Configuration incomplète — aucun email ne peut être envoyé tant que la clé API et l\\'adresse expéditrice ne sont pas enregistrées ci-dessous.</p>';
     return;
   }
-  if (!data.domain) {
-    box.innerHTML = '<p class="text-sm text-stone-500"><i class="ph ph-info"></i> Aucun domaine enregistré. Adresse d\\'envoi actuelle : <strong>'+esc(data.from_address)+'</strong> (fonctionne uniquement en mode test Resend, vers votre propre adresse).</p>';
-    document.getElementById('email-domain-records').classList.add('hidden');
-    return;
-  }
-  box.innerHTML = '<div class="flex items-center gap-2 flex-wrap"><strong class="text-stone-800">'+esc(data.domain.name)+'</strong> '+domainStatusBadge(data.domain.status)+
-    (data.domain.status!=='verified' ? ' <button onclick="verifyDomain()" class="text-sky-600 hover:text-sky-700 text-xs font-bold ml-1">Vérifier maintenant</button>' : '')+'</div>';
-  renderDomainRecords(data.domain.records);
+  box.innerHTML = '<div class="flex items-center gap-2 flex-wrap"><strong class="text-stone-800">'+esc(data.from_address)+'</strong> '+senderStatusBadge(data.sender_verified)+'</div>' +
+    (data.sender_verified===false ? '<p class="text-xs text-amber-700 mt-2"><i class="ph ph-warning"></i> Cette adresse n\\'est pas encore vérifiée sur Brevo. Suivez le tuto ci-dessous pour la valider avec le code reçu par email.</p>' : '');
 }
-function renderDomainRecords(records) {
-  const box = document.getElementById('email-domain-records');
-  if (!records || !records.length) { box.classList.add('hidden'); return; }
-  box.classList.remove('hidden');
-  box.innerHTML = '<p class="text-xs font-black text-stone-400 uppercase tracking-wider mb-2">Enregistrements DNS à ajouter chez votre registrar</p>' +
-    '<div class="overflow-x-auto"><table class="w-full text-xs border-collapse"><thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2 pr-3">Type</th><th class="py-2 pr-3">Nom</th><th class="py-2 pr-3">Valeur</th><th class="py-2">Statut</th></tr></thead><tbody>' +
-    records.map(r => '<tr class="border-b border-stone-50"><td class="py-2 pr-3 font-mono">'+esc(r.type||'')+'</td><td class="py-2 pr-3 font-mono break-all">'+esc(r.name||'')+'</td><td class="py-2 pr-3 font-mono break-all">'+esc(r.value||'')+'</td><td class="py-2">'+domainStatusBadge(r.status||'not_started')+'</td></tr>').join('') +
-    '</tbody></table></div>';
-}
-async function registerDomain() {
-  const input = document.getElementById('ed-domain');
-  const domain = (input?.value||'').trim();
-  if (!domain) { toast('Indiquez un nom de domaine','err'); return; }
-  const res = await fetch('/api/admin/email-domain', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({domain})}).catch(()=>null);
-  const data = await res?.json().catch(()=>null);
-  if (res && res.ok) { toast('Domaine enregistré ! Ajoutez les enregistrements DNS ci-dessous.','ok'); input.value=''; loadEmailDomainStatus(); }
-  else toast((data&&data.error)||'Erreur','err');
-}
-async function verifyDomain() {
-  toast('Vérification en cours...','info');
-  const res = await fetch('/api/admin/email-domain/verify', {method:'POST'}).catch(()=>null);
+async function saveEmailConfig() {
+  const apiKey = (document.getElementById('ec-api-key')?.value||'').trim();
+  const fromAddress = (document.getElementById('ec-from-address')?.value||'').trim();
+  const fromName = (document.getElementById('ec-from-name')?.value||'').trim();
+  if (fromAddress && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fromAddress)) { toast('Adresse email invalide','err'); return; }
+  const res = await fetch('/api/admin/email-config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:apiKey,from_address:fromAddress,from_name:fromName})}).catch(()=>null);
   const data = await res?.json().catch(()=>null);
   if (res && res.ok) {
-    toast(data.status==='verified' ? 'Domaine vérifié !' : 'Toujours en attente — la propagation DNS peut prendre jusqu\\'à 24-48h.', data.status==='verified'?'ok':'info');
-    loadEmailDomainStatus();
+    toast('Configuration enregistrée !','ok');
+    document.getElementById('ec-api-key').value = '';
+    loadEmailConfigStatus();
   } else toast((data&&data.error)||'Erreur','err');
 }
-async function saveFromAddress() {
-  const input = document.getElementById('ed-from');
-  const address = (input?.value||'').trim();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) { toast('Adresse email invalide','err'); return; }
-  const res = await fetch('/api/admin/email-from', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from_address:address})}).catch(()=>null);
-  if (res && res.ok) toast('Adresse d\\'expédition enregistrée !','ok');
-  else toast('Erreur','err');
+async function checkSenderStatus() {
+  toast('Vérification en cours...','info');
+  const res = await fetch('/api/admin/email-config/check', {method:'POST'}).catch(()=>null);
+  const data = await res?.json().catch(()=>null);
+  if (res && res.ok) {
+    toast(data.sender_verified ? 'Adresse vérifiée !' : (data.found ? 'Toujours non vérifiée — entrez le code reçu par email sur Brevo.' : 'Adresse introuvable sur Brevo — ajoutez-la comme expéditeur d\\'abord.'), data.sender_verified?'ok':'info');
+    loadEmailConfigStatus();
+  } else toast((data&&data.error)||'Erreur','err');
 }
 const EMAIL_TYPE_LABEL = { setup: 'Configuration initiale', reset: 'Réinitialisation mot de passe', email_change: 'Changement d\\'adresse', password_changed: 'Mot de passe modifié (notification)' };
 function fmtLogDate(d){try{return new Date((d||'').replace(' ','T')+'Z').toLocaleString('fr-FR',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return d||''}}
@@ -836,7 +834,7 @@ async function loadEmailLog() {
 }
 
 // ── Tab switching ───────────────────────────────────────────────
-const TAB_LOADERS = { emails: () => { loadEmailDomainStatus(); loadEmailLog(); } };
+const TAB_LOADERS = { emails: () => { loadEmailConfigStatus(); loadEmailLog(); } };
 const _loadedTabs = new Set(['articles']);
 function switchTab(name) {
   document.querySelectorAll('.admin-tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));

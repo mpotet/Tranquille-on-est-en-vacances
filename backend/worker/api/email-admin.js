@@ -1,29 +1,42 @@
 /**
- * api/email-admin.js - "Emails" dashboard tab: send history + sending domain setup.
+ * api/email-admin.js - "Emails" dashboard tab: send history + Brevo sender setup.
  *
  * Routes (all admin-only):
  *   GET  /api/admin/email-log        - recent transactional email attempts
- *   GET  /api/admin/email-domain     - current from-address + Resend domain status
- *   POST /api/admin/email-domain     - register a new domain with Resend, get DNS records
- *   POST /api/admin/email-from       - set the from-address used for outgoing emails
+ *   GET  /api/admin/email-config     - current Brevo config + sender verification status
+ *   POST /api/admin/email-config     - save Brevo API key + sender address/name
+ *   POST /api/admin/email-config/check - re-check sender verification status with Brevo
  *
- * Domain verification itself happens on Resend's side (DNS propagation, then
- * their own check) - this module only registers the domain, surfaces the DNS
- * records the admin needs to add at their registrar, and reports back the
- * verification status Resend has recorded.
+ * Brevo (not Resend) is used here specifically because it lets you verify a
+ * single sender ADDRESS via a 6-digit code emailed to it - no domain/DNS
+ * ownership required - then send to any recipient. That's what makes this
+ * usable without buying a domain. See worker/admin-email.js for the actual
+ * send() implementation and why it was chosen.
  */
 
 import { json, badRequest } from '../utils.js';
 
-async function resendFetch(env, path, options = {}) {
-  if (!env.RESEND_API_KEY) return { ok: false, error: 'Clé API Resend non configurée sur le serveur.' };
-  const res = await fetch(`https://api.resend.com${path}`, {
+async function brevoFetch(apiKey, path, options = {}) {
+  if (!apiKey) return { ok: false, error: 'Clé API Brevo manquante.' };
+  const res = await fetch(`https://api.brevo.com${path}`, {
     ...options,
-    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json', ...(options.headers || {}) },
+    headers: { 'api-key': apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json', ...(options.headers || {}) },
   });
   const body = await res.json().catch(() => null);
   if (!res.ok) return { ok: false, error: body?.message || `Erreur HTTP ${res.status}`, status: res.status };
   return { ok: true, data: body };
+}
+
+async function getConfig(env) {
+  const { results } = await env.DB
+    .prepare("SELECT key, value FROM site_settings WHERE key IN ('brevo_api_key', 'email_from_address', 'email_from_name')")
+    .all();
+  const settings = Object.fromEntries((results || []).map(r => [r.key, r.value]));
+  return {
+    apiKey: settings.brevo_api_key || '',
+    fromAddress: settings.email_from_address || '',
+    fromName: settings.email_from_name || 'Tranquille, on est en vacances',
+  };
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -37,90 +50,67 @@ export async function listEmailLog(env) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Current from-address + domain verification status
+// Current Brevo config + sender verification status
 // ──────────────────────────────────────────────────────────────
-export async function getEmailDomainStatus(env) {
-  const fromRow = await env.DB.prepare("SELECT value FROM site_settings WHERE key = 'email_from_address'").first();
-  const domainIdRow = await env.DB.prepare("SELECT value FROM site_settings WHERE key = 'email_resend_domain_id'").first();
-  const fromAddress = fromRow?.value || env.NOTIFY_FROM_EMAIL || 'onboarding@resend.dev';
+export async function getEmailConfigStatus(env) {
+  const { apiKey, fromAddress, fromName } = await getConfig(env);
 
-  let domain = null;
-  if (domainIdRow?.value) {
-    const result = await resendFetch(env, `/domains/${domainIdRow.value}`);
+  // Never send the raw API key back to the client - only whether one is set.
+  const masked = apiKey ? apiKey.slice(0, 8) + '…' + apiKey.slice(-4) : '';
+
+  let senderStatus = null; // null = unknown/not checked, true = verified, false = not verified
+  if (apiKey && fromAddress) {
+    const result = await brevoFetch(apiKey, '/v3/senders');
     if (result.ok) {
-      domain = {
-        id: result.data.id,
-        name: result.data.name,
-        status: result.data.status, // 'not_started' | 'pending' | 'verified' | 'failed'
-        records: result.data.records || [],
-      };
+      const match = (result.data.senders || []).find(s => s.email.toLowerCase() === fromAddress.toLowerCase());
+      senderStatus = match ? !!match.active : false;
     }
   }
-  return json({ from_address: fromAddress, domain, api_key_configured: !!env.RESEND_API_KEY });
-}
-
-// ──────────────────────────────────────────────────────────────
-// Register a new sending domain with Resend
-// ──────────────────────────────────────────────────────────────
-export async function registerEmailDomain(request, env) {
-  const body = await request.json().catch(() => ({}));
-  const name = String(body.domain || '').trim().toLowerCase();
-  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(name)) {
-    return badRequest('Nom de domaine invalide.');
-  }
-
-  const result = await resendFetch(env, '/domains', {
-    method: 'POST',
-    body: JSON.stringify({ name }),
-  });
-  if (!result.ok) return badRequest(result.error);
-
-  await env.DB
-    .prepare("INSERT OR REPLACE INTO site_settings (key, value, updated_at) VALUES ('email_resend_domain_id', ?, datetime('now'))")
-    .bind(result.data.id)
-    .run();
 
   return json({
-    id: result.data.id,
-    name: result.data.name,
-    status: result.data.status,
-    records: result.data.records || [],
+    api_key_configured: !!apiKey,
+    api_key_masked: masked,
+    from_address: fromAddress,
+    from_name: fromName,
+    sender_verified: senderStatus,
   });
 }
 
 // ──────────────────────────────────────────────────────────────
-// Re-check verification status of the currently registered domain
+// Save Brevo API key + sender address/name
 // ──────────────────────────────────────────────────────────────
-export async function verifyEmailDomain(env) {
-  const domainIdRow = await env.DB.prepare("SELECT value FROM site_settings WHERE key = 'email_resend_domain_id'").first();
-  if (!domainIdRow?.value) return badRequest('Aucun domaine enregistré.');
-
-  const result = await resendFetch(env, `/domains/${domainIdRow.value}/verify`, { method: 'POST' });
-  if (!result.ok) return badRequest(result.error);
-
-  const statusResult = await resendFetch(env, `/domains/${domainIdRow.value}`);
-  if (!statusResult.ok) return badRequest(statusResult.error);
-
-  return json({
-    id: statusResult.data.id,
-    name: statusResult.data.name,
-    status: statusResult.data.status,
-    records: statusResult.data.records || [],
-  });
-}
-
-// ──────────────────────────────────────────────────────────────
-// Set the "from" address used for all outgoing admin emails
-// ──────────────────────────────────────────────────────────────
-export async function setEmailFromAddress(request, env) {
+export async function saveEmailConfig(request, env) {
   const body = await request.json().catch(() => ({}));
-  const address = String(body.from_address || '').trim();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) {
+  const apiKey = String(body.api_key ?? '').trim();
+  const fromAddress = String(body.from_address ?? '').trim();
+  const fromName = String(body.from_name ?? '').trim();
+
+  if (fromAddress && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fromAddress)) {
     return badRequest('Adresse email invalide.');
   }
-  await env.DB
-    .prepare("INSERT OR REPLACE INTO site_settings (key, value, updated_at) VALUES ('email_from_address', ?, datetime('now'))")
-    .bind(address)
-    .run();
+
+  const stmt = env.DB.prepare("INSERT OR REPLACE INTO site_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))");
+  // Only overwrite the API key if a new one was actually provided - the
+  // client never receives the real key back, so an empty submit must not
+  // wipe out a previously-saved one.
+  if (apiKey) await stmt.bind('brevo_api_key', apiKey).run();
+  if (fromAddress) await stmt.bind('email_from_address', fromAddress).run();
+  if (fromName) await stmt.bind('email_from_name', fromName).run();
+
   return json({ ok: true });
+}
+
+// ──────────────────────────────────────────────────────────────
+// Re-check sender verification status with Brevo
+// ──────────────────────────────────────────────────────────────
+export async function checkEmailSenderStatus(env) {
+  const { apiKey, fromAddress } = await getConfig(env);
+  if (!apiKey) return badRequest('Clé API Brevo non configurée.');
+  if (!fromAddress) return badRequest('Adresse expéditrice non configurée.');
+
+  const result = await brevoFetch(apiKey, '/v3/senders');
+  if (!result.ok) return badRequest(result.error);
+
+  const match = (result.data.senders || []).find(s => s.email.toLowerCase() === fromAddress.toLowerCase());
+  return json({ from_address: fromAddress, sender_verified: match ? !!match.active : false, found: !!match });
 }

@@ -64,16 +64,30 @@ function publicBase(env) {
   return (env.PUBLIC_URL || '').replace(/\/$/, '');
 }
 
-/** Look up the admin-configured "from" address (site_settings.email_from_address),
- *  falling back to the legacy NOTIFY_FROM_EMAIL env var, then Resend's sandbox
- *  default. Configured via the dashboard's "Emails" tab once a domain is
- *  verified with Resend. */
-async function resolveFromAddress(env) {
-  try {
-    const row = await env.DB.prepare("SELECT value FROM site_settings WHERE key = 'email_from_address'").first();
-    if (row?.value) return row.value;
-  } catch { /* table/row may not exist yet on older DBs - fall through */ }
-  return env.NOTIFY_FROM_EMAIL || 'onboarding@resend.dev';
+/**
+ * Email provider: Brevo (ex-Sendinblue) transactional API.
+ *
+ * Chosen over Resend because Brevo lets you verify a single SENDER ADDRESS
+ * (a 6-digit code emailed to that address, no DNS/domain ownership needed)
+ * and then send to any recipient - unlike Resend, which requires verifying
+ * an entire domain you own before lifting the "sandbox: only your own
+ * address" restriction. This project has no domain, so Brevo is the option
+ * that actually works without one.
+ *
+ * Both the API key and the verified sender address are stored in
+ * site_settings (not a wrangler secret) so the admin can configure this
+ * entirely from the dashboard's "Emails" tab, without shell/CLI access.
+ */
+async function getEmailConfig(env) {
+  const { results } = await env.DB
+    .prepare("SELECT key, value FROM site_settings WHERE key IN ('brevo_api_key', 'email_from_address', 'email_from_name')")
+    .all();
+  const settings = Object.fromEntries((results || []).map(r => [r.key, r.value]));
+  return {
+    apiKey: settings.brevo_api_key || '',
+    fromAddress: settings.email_from_address || '',
+    fromName: settings.email_from_name || 'Tranquille, on est en vacances',
+  };
 }
 
 async function logEmailAttempt(env, { emailType, recipient, ok, error }) {
@@ -89,19 +103,31 @@ async function logEmailAttempt(env, { emailType, recipient, ok, error }) {
 }
 
 async function send(env, { to, subject, html, emailType }) {
-  if (!env.RESEND_API_KEY) {
-    console.warn('[AdminEmail] RESEND_API_KEY manquant - email ignoré');
-    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: 'Clé API Resend non configurée.' });
-    return { ok: false, skipped: true };
+  const { apiKey, fromAddress, fromName } = await getEmailConfig(env);
+  if (!apiKey) {
+    console.warn('[AdminEmail] Clé API Brevo non configurée - email ignoré');
+    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: "Clé API Brevo non configurée. Rendez-vous dans l'onglet Emails du tableau de bord." });
+    return { ok: false, skipped: true, error: "Clé API Brevo non configurée." };
   }
-  const from = await resolveFromAddress(env);
-  const res = await fetch('https://api.resend.com/emails', {
+  if (!fromAddress) {
+    console.warn('[AdminEmail] Adresse expéditrice non configurée - email ignoré');
+    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: "Adresse expéditrice non configurée. Rendez-vous dans l'onglet Emails du tableau de bord." });
+    return { ok: false, skipped: true, error: "Adresse expéditrice non configurée." };
+  }
+
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      'api-key': apiKey,
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
     },
-    body: JSON.stringify({ from, to: [to], subject, html }),
+    body: JSON.stringify({
+      sender: { name: fromName, email: fromAddress },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
@@ -109,6 +135,9 @@ async function send(env, { to, subject, html, emailType }) {
     try {
       const parsed = JSON.parse(body);
       if (parsed?.message) friendly = parsed.message;
+      if (res.status === 401 || parsed?.code === 'unauthorized') {
+        friendly = "Expéditeur non vérifié ou clé API invalide. Vérifiez l'adresse dans l'onglet Emails.";
+      }
     } catch { /* keep generic message if body isn't JSON */ }
     console.error(`[AdminEmail] HTTP ${res.status} pour ${to}: ${body}`);
     await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: friendly });

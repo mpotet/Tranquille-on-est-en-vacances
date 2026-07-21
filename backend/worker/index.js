@@ -34,7 +34,7 @@ import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, de
 import { getSettings, updateSettings } from './api/settings.js';
 import { listComments, createComment, deleteComment } from './api/comments.js';
 import {
-  listEmailLog, getEmailDomainStatus, registerEmailDomain, verifyEmailDomain, setEmailFromAddress,
+  listEmailLog, getEmailConfigStatus, saveEmailConfig, checkEmailSenderStatus,
 } from './api/email-admin.js';
 import {
   getPushConfig, pushSubscribe, pushUnsubscribe,
@@ -1005,23 +1005,19 @@ export default {
         return json({ ok: true, email_sent: true });
       }
 
-      // ── Emails tab: send history + sending-domain setup ──────
+      // ── Emails tab: send history + Brevo sender setup ────────
       if (path === '/api/admin/email-log' && method === 'GET') {
         if (!authed) return unauthorized();
         return listEmailLog(env);
       }
-      if (path === '/api/admin/email-domain') {
+      if (path === '/api/admin/email-config') {
         if (!authed) return unauthorized();
-        if (method === 'GET')  return getEmailDomainStatus(env);
-        if (method === 'POST') return registerEmailDomain(request, env);
+        if (method === 'GET')  return getEmailConfigStatus(env);
+        if (method === 'POST') return saveEmailConfig(request, env);
       }
-      if (path === '/api/admin/email-domain/verify' && method === 'POST') {
+      if (path === '/api/admin/email-config/check' && method === 'POST') {
         if (!authed) return unauthorized();
-        return verifyEmailDomain(env);
-      }
-      if (path === '/api/admin/email-from' && method === 'POST') {
-        if (!authed) return unauthorized();
-        return setEmailFromAddress(request, env);
+        return checkEmailSenderStatus(env);
       }
 
       // Folders
