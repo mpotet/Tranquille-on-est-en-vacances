@@ -20,6 +20,7 @@ import {
   sendResetEmail, sendEmailChangeEmail, sendPasswordChangedEmail,
 } from './admin-email.js';
 import { setPasswordPage, confirmEmailPage } from './pages/admin-auth.js';
+import { checkRateLimit, recordFailedAttempt, clearAttempts, clientKey } from './rate-limit.js';
 import {
   renderVoyageContent as ssrVoyageContent, renderGallery as ssrGallery,
   renderWritingDays as ssrWritingDays, extractInlineImages as ssrExtractImages,
@@ -766,6 +767,15 @@ export default {
 
     // ── Auth endpoints ────────────────────────────────────────
     if (path === '/admin/login' && method === 'POST') {
+      const ip = clientKey(request);
+      // 8 attempts per 15 minutes per IP — generous for a real admin who
+      // mistypes a password, but stops an automated brute force from making
+      // more than a handful of guesses before being locked out.
+      const limit = await checkRateLimit(env.DB, 'login', ip, { max: 8, windowMinutes: 15 });
+      if (limit.blocked) {
+        return loginPage(`Trop de tentatives. Réessayez dans ${Math.ceil(limit.retryAfterSeconds / 60)} min.`);
+      }
+
       const form = await request.formData().catch(() => null);
       const password = form?.get('password') || '';
       const account = await getAdminAccount(env.DB);
@@ -776,8 +786,10 @@ export default {
       }
       const ok = await verifyPassword(password, account.password_hash);
       if (!ok) {
+        await recordFailedAttempt(env.DB, 'login', ip);
         return loginPage('Mot de passe incorrect. Réessayez.');
       }
+      await clearAttempts(env.DB, 'login', ip);
       const cookie = await issueSessionCookie(env.SESSION_SECRET);
       return new Response(null, {
         status: 302,
@@ -794,10 +806,18 @@ export default {
 
     // ── Forgot password (public; body { email }) ──────────────
     if (path === '/admin/forgot-password' && method === 'POST') {
+      // Throttle regardless of outcome so this can't be used to spam the
+      // admin's inbox with reset emails, or (combined with response timing)
+      // to probe for account existence at high volume.
+      const ip = clientKey(request);
+      const limit = await checkRateLimit(env.DB, 'forgot_password', ip, { max: 5, windowMinutes: 15 });
+      if (limit.blocked) return json({ ok: true }); // same generic response either way
+
       const body = await request.json().catch(() => ({}));
       const email = String(body.email || '').trim();
       // Generic response regardless of match (don't leak account existence).
       if (email) {
+        await recordFailedAttempt(env.DB, 'forgot_password', ip);
         const account = await getAdminByEmail(env.DB, email);
         if (account) {
           const { token } = await issueToken(env.DB, 'reset');

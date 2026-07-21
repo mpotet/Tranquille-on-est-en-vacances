@@ -13,6 +13,7 @@
  */
 
 import { json, notFound, badRequest, forbidden } from '../utils.js';
+import { checkRateLimit, recordFailedAttempt, clientKey } from '../rate-limit.js';
 
 const MAX_AUTHOR_LEN = 80;
 const MAX_BODY_LEN = 2000;
@@ -52,6 +53,16 @@ export async function createComment(request, env, slugOrId, isAdmin) {
   const articleId = await resolveArticleId(env, slugOrId, isAdmin);
   if (articleId == null) return notFound('Article not found');
 
+  // The gate answer is a single shared word (family trivia, not a real
+  // secret) — with no throttle it could be brute-forced in seconds, and once
+  // found, used to flood every article with spam comments. Block by IP
+  // before even reading the submitted answer.
+  const ip = clientKey(request);
+  const limit = await checkRateLimit(env.DB, 'comment_gate', ip, { max: 6, windowMinutes: 10 });
+  if (limit.blocked) {
+    return forbidden(`Trop de tentatives. Réessayez dans ${Math.ceil(limit.retryAfterSeconds / 60)} min.`);
+  }
+
   const body = await request.json().catch(() => null);
   if (!body) return badRequest('Invalid request body');
 
@@ -70,6 +81,7 @@ export async function createComment(request, env, slugOrId, isAdmin) {
     .first();
   const expected = String(setting?.value ?? DEFAULT_GATE_ANSWER).trim().toLowerCase();
   if (!gateAnswer || gateAnswer !== expected) {
+    await recordFailedAttempt(env.DB, 'comment_gate', ip);
     return forbidden('Mauvaise réponse à la question. Réessayez.');
   }
 

@@ -129,6 +129,20 @@ CREATE TABLE IF NOT EXISTS admin_account (
   updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ── Rate limiting (brute-force protection) ───────────────────────────────────
+-- Tracks failed attempts per (scope, key) — e.g. scope='login', key=<client IP>,
+-- or scope='comment_gate', key=<client IP>. A sliding window is enforced in
+-- application code (worker/rate-limit.js) by counting rows newer than N
+-- minutes; old rows are pruned opportunistically on each check.
+CREATE TABLE IF NOT EXISTS rate_limit_attempts (
+  id         INTEGER  PRIMARY KEY AUTOINCREMENT,
+  scope      TEXT     NOT NULL,
+  attempt_key TEXT    NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limit_lookup ON rate_limit_attempts(scope, attempt_key, created_at);
+
 -- Seed the single admin row in first-run state (no password, no token).
 -- The setup email/token is generated at runtime by
 -- `npm run admin:send-setup-email`, NOT here (that would send a real email).
