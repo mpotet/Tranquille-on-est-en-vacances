@@ -37,7 +37,7 @@ async function mailjetFetch(apiKey, apiSecret, path, options = {}) {
     return { ok: false, error: err?.name === 'TimeoutError' ? 'Mailjet ne répond pas (délai dépassé).' : 'Erreur réseau vers Mailjet.' };
   }
   const parsed = await res.json().catch(() => null);
-  if (!res.ok) return { ok: false, error: parsed?.ErrorMessage || `Erreur HTTP ${res.status}`, status: res.status };
+  if (!res.ok) return { ok: false, error: parsed?.ErrorMessage || `Erreur HTTP ${res.status}`, errorCode: parsed?.ErrorCode, status: res.status };
   return { ok: true, data: parsed };
 }
 
@@ -154,6 +154,16 @@ export async function requestSenderVerification(env) {
     method: 'POST',
     body: JSON.stringify({ Email: fromAddress }),
   });
-  if (!result.ok) return badRequest(result.error);
+  if (!result.ok) {
+    // MJ18: this address is already registered as a sender on the account
+    // (e.g. added earlier via the Mailjet dashboard directly) - not an
+    // error, just nothing new to do. Point the admin at "Vérifier le statut"
+    // instead of showing a confusing failure for an address that likely
+    // already works.
+    if (result.errorCode === 'MJ18') {
+      return json({ ok: true, message: `${fromAddress} est déjà enregistrée chez Mailjet. Cliquez sur « Vérifier le statut » pour voir si elle est déjà validée.` });
+    }
+    return badRequest(result.error);
+  }
   return json({ ok: true, message: `Email de vérification envoyé à ${fromAddress}. Cliquez le lien reçu, puis revenez vérifier le statut.` });
 }
