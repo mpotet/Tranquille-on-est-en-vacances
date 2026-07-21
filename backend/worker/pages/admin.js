@@ -149,7 +149,27 @@ export function dashboardPage() {
 <body class="bg-stone-50 font-sans text-stone-900 antialiased pt-16">
 ${ADMIN_NAV()}
 
+<!-- Tab bar -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+  <div id="admin-tabs" role="tablist" aria-label="Sections de l'administration" class="flex flex-wrap gap-1.5 border-b border-stone-200 pb-0 mb-2">
+    <button type="button" role="tab" data-tab="articles" class="admin-tab" aria-selected="true"><i class="ph ph-notebook"></i> Articles</button>
+    <button type="button" role="tab" data-tab="settings" class="admin-tab" aria-selected="false"><i class="ph ph-gear"></i> Paramètres du site</button>
+    <button type="button" role="tab" data-tab="account" class="admin-tab" aria-selected="false"><i class="ph ph-user-circle"></i> Compte</button>
+    <button type="button" role="tab" data-tab="emails" class="admin-tab" aria-selected="false"><i class="ph ph-envelope"></i> Emails</button>
+  </div>
+</div>
+<style>
+.admin-tab{display:inline-flex;align-items:center;gap:.4rem;padding:.6rem 1rem;font-size:.85rem;font-weight:700;color:#78716c;border-bottom:2.5px solid transparent;margin-bottom:-1px;cursor:pointer;background:none;border-left:none;border-right:none;border-top:none;transition:color .12s,border-color .12s;min-height:2.75rem}
+.admin-tab:hover{color:#1c1917}
+.admin-tab[aria-selected="true"]{color:#0057B8;border-bottom-color:#0057B8}
+.admin-tab-panel{display:none}
+.admin-tab-panel.active{display:block}
+</style>
+
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+
+  <!-- Tab: Articles -->
+  <div id="tab-articles" class="admin-tab-panel active">
   <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
     <!-- Sidebar -->
@@ -204,23 +224,16 @@ ${ADMIN_NAV()}
       </div>
     </main>
   </div>
-</div>
+  </div>
 
-<!-- Site settings panel -->
-<div class="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
-  <div class="border-t border-stone-200 pt-8">
-  <details id="settings" class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
-    <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none select-none hover:bg-stone-50 transition-colors">
-      <div class="flex items-center gap-3">
-        <span class="text-xl"><i class="ph ph-gear" style="color:var(--blue)"></i></span>
-        <div>
-          <h2 class="font-bold text-stone-800 text-sm">Contenu &amp; paramètres du site</h2>
-          <p class="text-xs text-stone-400">Héro (image + textes), accroche, commentaires</p>
-        </div>
-      </div>
-      <span class="text-stone-400 text-xs font-semibold">Cliquer pour modifier ▾</span>
-    </summary>
-    <div class="px-6 pb-6 border-t border-stone-100">
+  <!-- Tab: Site settings -->
+  <div id="tab-settings" class="admin-tab-panel">
+  <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+    <div class="px-6 py-5 border-b border-stone-100">
+      <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-gear" style="color:var(--blue)"></i> Contenu &amp; paramètres du site</h2>
+      <p class="text-xs text-stone-400 mt-0.5">Héro (image + textes), accroche, commentaires</p>
+    </div>
+    <div class="px-6 pb-6 pt-2">
 
       <!-- Hero image -->
       <div class="mt-5">
@@ -290,21 +303,17 @@ ${ADMIN_NAV()}
         <button onclick="saveSettings()" class="action-btn-sm"><i class="ph ph-floppy-disk"></i> Sauvegarder les paramètres</button>
       </div>
     </div>
-  </details>
+  </div>
+  </div>
 
-  <!-- Account panel (credentials) -->
-  <details id="account" class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden mt-5">
-    <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none select-none hover:bg-stone-50 transition-colors">
-      <div class="flex items-center gap-3">
-        <span class="text-xl"><i class="ph ph-user-circle" style="color:var(--blue)"></i></span>
-        <div>
-          <h2 class="font-bold text-stone-800 text-sm">Compte administrateur</h2>
-          <p class="text-xs text-stone-400">Adresse email &amp; mot de passe</p>
-        </div>
-      </div>
-      <span class="text-stone-400 text-xs font-semibold">Cliquer pour gérer ▾</span>
-    </summary>
-    <div class="px-6 pb-6 border-t border-stone-100">
+  <!-- Tab: Account -->
+  <div id="tab-account" class="admin-tab-panel">
+  <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+    <div class="px-6 py-5 border-b border-stone-100">
+      <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-user-circle" style="color:var(--blue)"></i> Compte administrateur</h2>
+      <p class="text-xs text-stone-400 mt-0.5">Adresse email &amp; mot de passe</p>
+    </div>
+    <div class="px-6 pb-6 pt-2">
 
       <!-- Email -->
       <p class="text-xs font-black text-stone-400 uppercase tracking-wider mt-5 mb-3">Adresse email</p>
@@ -342,8 +351,61 @@ ${ADMIN_NAV()}
       </div>
 
     </div>
-  </details>
   </div>
+  </div>
+
+  <!-- Tab: Emails -->
+  <div id="tab-emails" class="admin-tab-panel">
+  <div class="space-y-5">
+
+    <!-- Sending domain setup -->
+    <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-stone-100">
+        <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-globe" style="color:var(--blue)"></i> Domaine d'envoi</h2>
+        <p class="text-xs text-stone-400 mt-0.5">Un domaine vérifié permet d'envoyer des emails (mot de passe, changement d'adresse...) vers n'importe quelle boîte mail.</p>
+      </div>
+      <div class="px-6 pb-6 pt-4">
+        <div id="email-domain-status" class="text-sm text-stone-500">Chargement…</div>
+
+        <div class="mt-5 pt-5 border-t border-stone-100">
+          <p class="text-xs font-black text-stone-400 uppercase tracking-wider mb-3">Enregistrer un nouveau domaine</p>
+          <div class="grid sm:grid-cols-[1fr_auto] gap-3">
+            <input type="text" id="ed-domain" placeholder="mondomaine.fr" autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+            <button onclick="registerDomain()" class="action-btn-sm whitespace-nowrap"><i class="ph ph-plus-circle"></i> Enregistrer</button>
+          </div>
+          <p class="text-xs text-stone-400 mt-2">Le domaine doit vous appartenir (achetable chez n'importe quel registrar, ~10-15€/an). Une fois enregistré, ajoutez les enregistrements DNS affichés ci-dessous chez votre registrar, puis cliquez sur « Vérifier ».</p>
+        </div>
+
+        <div id="email-domain-records" class="mt-5 hidden"></div>
+
+        <div class="mt-5 pt-5 border-t border-stone-100">
+          <p class="text-xs font-black text-stone-400 uppercase tracking-wider mb-3">Adresse d'expédition</p>
+          <div class="grid sm:grid-cols-[1fr_auto] gap-3">
+            <input type="email" id="ed-from" placeholder="noreply@mondomaine.fr" autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+            <button onclick="saveFromAddress()" class="action-btn-sm whitespace-nowrap"><i class="ph ph-floppy-disk"></i> Enregistrer</button>
+          </div>
+          <p class="text-xs text-stone-400 mt-2">Utilisée comme expéditeur pour tous les emails (mot de passe, changement d'adresse...). Doit utiliser un domaine vérifié ci-dessus pour fonctionner vers toutes les adresses.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Send history -->
+    <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-stone-100 flex items-center justify-between">
+        <div>
+          <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-clock-counter-clockwise" style="color:var(--blue)"></i> Historique des envois</h2>
+          <p class="text-xs text-stone-400 mt-0.5">Les 50 derniers emails administrateur (setup, réinitialisation, changement d'adresse...)</p>
+        </div>
+        <button onclick="loadEmailLog()" class="text-sky-600 hover:text-sky-700 text-sm font-bold transition-colors"><i class="ph ph-arrow-clockwise"></i></button>
+      </div>
+      <div id="email-log-list" class="divide-y divide-stone-100">
+        <div class="text-stone-400 text-sm p-6 animate-pulse text-center">Chargement…</div>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
 </div>
 
 <!-- Folder modal -->
@@ -661,8 +723,14 @@ async function requestEmailChange() {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast('Adresse email invalide','err'); return; }
   const res = await fetch('/api/admin/request-email-change', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({new_email:email})}).catch(()=>null);
   const data = await res?.json().catch(()=>null);
-  if (res && res.ok) {
+  if (res && res.ok && data?.email_sent) {
     toast('Email de confirmation envoyé à '+email,'ok');
+    input.value='';
+    loadAccount();
+  } else if (res && res.ok) {
+    // The pending_email row was saved, but the actual send failed (e.g. no
+    // verified domain) - say so instead of a false "email sent" toast.
+    toast("Changement enregistré mais l'email n'a pas pu être envoyé : "+(data?.email_error||'erreur inconnue')+'. Voir l’onglet Emails.','err');
     input.value='';
     loadAccount();
   } else {
@@ -688,6 +756,99 @@ async function changePassword() {
   }
 }
 
+// ── Emails tab: domain setup + send history ────────────────────
+const RECORD_STATUS_LABEL = { verified: 'Vérifié', pending: 'En attente', not_started: 'Non démarré', failed: 'Échec' };
+function domainStatusBadge(status) {
+  const map = { verified: ['#f0fdf4','var(--palm)','ph-check-circle'], pending: ['#fffbeb','#b45309','ph-clock'], failed: ['#fef2f2','#dc3c3c','ph-x-circle'], not_started: ['#f5f5f4','#78716c','ph-circle-dashed'] };
+  const [bg,color,icon] = map[status] || map.not_started;
+  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:'+bg+';color:'+color+'"><i class="ph '+icon+'"></i> '+(RECORD_STATUS_LABEL[status]||status)+'</span>';
+}
+async function loadEmailDomainStatus() {
+  const box = document.getElementById('email-domain-status');
+  const data = await fetch('/api/admin/email-domain').then(r=>r.json()).catch(()=>null);
+  if (!data) { box.innerHTML = '<p class="text-red-500 text-sm">Erreur de chargement.</p>'; return; }
+  document.getElementById('ed-from').value = data.from_address || '';
+  if (!data.api_key_configured) {
+    box.innerHTML = '<p class="text-sm text-red-500"><i class="ph ph-warning"></i> Clé API Resend non configurée sur le serveur — aucun email ne peut être envoyé.</p>';
+    return;
+  }
+  if (!data.domain) {
+    box.innerHTML = '<p class="text-sm text-stone-500"><i class="ph ph-info"></i> Aucun domaine enregistré. Adresse d\\'envoi actuelle : <strong>'+esc(data.from_address)+'</strong> (fonctionne uniquement en mode test Resend, vers votre propre adresse).</p>';
+    document.getElementById('email-domain-records').classList.add('hidden');
+    return;
+  }
+  box.innerHTML = '<div class="flex items-center gap-2 flex-wrap"><strong class="text-stone-800">'+esc(data.domain.name)+'</strong> '+domainStatusBadge(data.domain.status)+
+    (data.domain.status!=='verified' ? ' <button onclick="verifyDomain()" class="text-sky-600 hover:text-sky-700 text-xs font-bold ml-1">Vérifier maintenant</button>' : '')+'</div>';
+  renderDomainRecords(data.domain.records);
+}
+function renderDomainRecords(records) {
+  const box = document.getElementById('email-domain-records');
+  if (!records || !records.length) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  box.innerHTML = '<p class="text-xs font-black text-stone-400 uppercase tracking-wider mb-2">Enregistrements DNS à ajouter chez votre registrar</p>' +
+    '<div class="overflow-x-auto"><table class="w-full text-xs border-collapse"><thead><tr class="text-left text-stone-400 border-b border-stone-100"><th class="py-2 pr-3">Type</th><th class="py-2 pr-3">Nom</th><th class="py-2 pr-3">Valeur</th><th class="py-2">Statut</th></tr></thead><tbody>' +
+    records.map(r => '<tr class="border-b border-stone-50"><td class="py-2 pr-3 font-mono">'+esc(r.type||'')+'</td><td class="py-2 pr-3 font-mono break-all">'+esc(r.name||'')+'</td><td class="py-2 pr-3 font-mono break-all">'+esc(r.value||'')+'</td><td class="py-2">'+domainStatusBadge(r.status||'not_started')+'</td></tr>').join('') +
+    '</tbody></table></div>';
+}
+async function registerDomain() {
+  const input = document.getElementById('ed-domain');
+  const domain = (input?.value||'').trim();
+  if (!domain) { toast('Indiquez un nom de domaine','err'); return; }
+  const res = await fetch('/api/admin/email-domain', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({domain})}).catch(()=>null);
+  const data = await res?.json().catch(()=>null);
+  if (res && res.ok) { toast('Domaine enregistré ! Ajoutez les enregistrements DNS ci-dessous.','ok'); input.value=''; loadEmailDomainStatus(); }
+  else toast((data&&data.error)||'Erreur','err');
+}
+async function verifyDomain() {
+  toast('Vérification en cours...','info');
+  const res = await fetch('/api/admin/email-domain/verify', {method:'POST'}).catch(()=>null);
+  const data = await res?.json().catch(()=>null);
+  if (res && res.ok) {
+    toast(data.status==='verified' ? 'Domaine vérifié !' : 'Toujours en attente — la propagation DNS peut prendre jusqu\\'à 24-48h.', data.status==='verified'?'ok':'info');
+    loadEmailDomainStatus();
+  } else toast((data&&data.error)||'Erreur','err');
+}
+async function saveFromAddress() {
+  const input = document.getElementById('ed-from');
+  const address = (input?.value||'').trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) { toast('Adresse email invalide','err'); return; }
+  const res = await fetch('/api/admin/email-from', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from_address:address})}).catch(()=>null);
+  if (res && res.ok) toast('Adresse d\\'expédition enregistrée !','ok');
+  else toast('Erreur','err');
+}
+const EMAIL_TYPE_LABEL = { setup: 'Configuration initiale', reset: 'Réinitialisation mot de passe', email_change: 'Changement d\\'adresse', password_changed: 'Mot de passe modifié (notification)' };
+function fmtLogDate(d){try{return new Date((d||'').replace(' ','T')+'Z').toLocaleString('fr-FR',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return d||''}}
+async function loadEmailLog() {
+  const box = document.getElementById('email-log-list');
+  box.innerHTML = '<div class="text-stone-400 text-sm p-6 animate-pulse text-center">Chargement…</div>';
+  const data = await fetch('/api/admin/email-log').then(r=>r.json()).catch(()=>null);
+  const entries = data?.entries || [];
+  if (!entries.length) { box.innerHTML = '<div class="text-stone-400 text-sm p-6 text-center">Aucun email envoyé pour le moment.</div>'; return; }
+  box.innerHTML = entries.map(e => {
+    const ok = !!e.ok;
+    return '<div class="flex items-start gap-3 px-6 py-3.5">' +
+      '<i class="ph-fill '+(ok?'ph-check-circle':'ph-x-circle')+'" style="font-size:1.15rem;color:'+(ok?'var(--palm)':'#dc3c3c')+';margin-top:.1rem;flex-shrink:0"></i>' +
+      '<div class="flex-1 min-w-0"><div class="flex items-center justify-between gap-2"><span class="text-sm font-semibold text-stone-800">'+esc(EMAIL_TYPE_LABEL[e.email_type]||e.email_type)+'</span><span class="text-xs text-stone-400 whitespace-nowrap">'+fmtLogDate(e.created_at)+'</span></div>' +
+      '<p class="text-xs text-stone-500 mt-0.5">Vers '+esc(e.recipient)+'</p>' +
+      (!ok && e.error ? '<p class="text-xs text-red-500 mt-1">'+esc(e.error)+'</p>' : '') +
+      '</div></div>';
+  }).join('');
+}
+
+// ── Tab switching ───────────────────────────────────────────────
+const TAB_LOADERS = { emails: () => { loadEmailDomainStatus(); loadEmailLog(); } };
+const _loadedTabs = new Set(['articles']);
+function switchTab(name) {
+  document.querySelectorAll('.admin-tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+  document.querySelectorAll('.admin-tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-'+name));
+  if (!_loadedTabs.has(name) && TAB_LOADERS[name]) { _loadedTabs.add(name); TAB_LOADERS[name](); }
+  if (history.replaceState) history.replaceState(null, '', name === 'articles' ? location.pathname : location.pathname + '#' + name);
+}
+document.getElementById('admin-tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.admin-tab');
+  if (btn) switchTab(btn.dataset.tab);
+});
+
 document.addEventListener('click', e => {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
@@ -710,11 +871,9 @@ document.addEventListener('error', e => {
 init();
 loadSettings();
 loadAccount();
-// Open the settings panel when arriving via /admin/dashboard#settings
-if (location.hash === '#settings') {
-  const d = document.getElementById('settings');
-  if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-}
+// Deep-link support: /admin/dashboard#settings, #account, #emails
+const _initialTab = (location.hash || '').replace('#','');
+if (['settings','account','emails'].includes(_initialTab)) switchTab(_initialTab);
 </script>
 </body>
 </html>`);

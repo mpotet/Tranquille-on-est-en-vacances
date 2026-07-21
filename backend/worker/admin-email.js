@@ -64,12 +64,37 @@ function publicBase(env) {
   return (env.PUBLIC_URL || '').replace(/\/$/, '');
 }
 
-async function send(env, { to, subject, html }) {
+/** Look up the admin-configured "from" address (site_settings.email_from_address),
+ *  falling back to the legacy NOTIFY_FROM_EMAIL env var, then Resend's sandbox
+ *  default. Configured via the dashboard's "Emails" tab once a domain is
+ *  verified with Resend. */
+async function resolveFromAddress(env) {
+  try {
+    const row = await env.DB.prepare("SELECT value FROM site_settings WHERE key = 'email_from_address'").first();
+    if (row?.value) return row.value;
+  } catch { /* table/row may not exist yet on older DBs - fall through */ }
+  return env.NOTIFY_FROM_EMAIL || 'onboarding@resend.dev';
+}
+
+async function logEmailAttempt(env, { emailType, recipient, ok, error }) {
+  try {
+    await env.DB
+      .prepare('INSERT INTO email_log (email_type, recipient, ok, error) VALUES (?, ?, ?, ?)')
+      .bind(emailType, recipient, ok ? 1 : 0, error || null)
+      .run();
+  } catch (err) {
+    // Logging must never break the actual email flow.
+    console.error('[AdminEmail] Échec écriture email_log:', err?.message || err);
+  }
+}
+
+async function send(env, { to, subject, html, emailType }) {
   if (!env.RESEND_API_KEY) {
     console.warn('[AdminEmail] RESEND_API_KEY manquant - email ignoré');
+    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: 'Clé API Resend non configurée.' });
     return { ok: false, skipped: true };
   }
-  const from = env.NOTIFY_FROM_EMAIL || 'onboarding@resend.dev';
+  const from = await resolveFromAddress(env);
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -80,9 +105,16 @@ async function send(env, { to, subject, html }) {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
+    let friendly = `Erreur HTTP ${res.status}`;
+    try {
+      const parsed = JSON.parse(body);
+      if (parsed?.message) friendly = parsed.message;
+    } catch { /* keep generic message if body isn't JSON */ }
     console.error(`[AdminEmail] HTTP ${res.status} pour ${to}: ${body}`);
-    return { ok: false, status: res.status };
+    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: friendly });
+    return { ok: false, status: res.status, error: friendly };
   }
+  await logEmailAttempt(env, { emailType, recipient: to, ok: true });
   return { ok: true };
 }
 
@@ -99,7 +131,7 @@ export function sendSetupEmail(env, to, token) {
     ctaLabel: 'Choisir mon mot de passe',
     footerNote: "Vous recevez cet email car un compte administrateur a été créé pour cette adresse.",
   });
-  return send(env, { to, subject: 'Initialisez votre mot de passe administrateur', html });
+  return send(env, { to, subject: 'Initialisez votre mot de passe administrateur', html, emailType: 'setup' });
 }
 
 // ── Forgot password: reset ────────────────────────────────────────────────────
@@ -115,7 +147,7 @@ export function sendResetEmail(env, to, token) {
     ctaLabel: 'Réinitialiser mon mot de passe',
     footerNote: "Vous recevez cet email suite à une demande de réinitialisation de mot de passe.",
   });
-  return send(env, { to, subject: 'Réinitialisez votre mot de passe', html });
+  return send(env, { to, subject: 'Réinitialisez votre mot de passe', html, emailType: 'reset' });
 }
 
 // ── Email change: confirm the NEW address ─────────────────────────────────────
@@ -131,7 +163,7 @@ export function sendEmailChangeEmail(env, to, token) {
     ctaLabel: 'Confirmer cette adresse',
     footerNote: "Vous recevez cet email car cette adresse a été proposée comme nouvel email administrateur.",
   });
-  return send(env, { to, subject: 'Confirmez votre nouvelle adresse email', html });
+  return send(env, { to, subject: 'Confirmez votre nouvelle adresse email', html, emailType: 'email_change' });
 }
 
 // ── Courtesy notice after a self-service password change ──────────────────────
@@ -147,5 +179,5 @@ export function sendPasswordChangedEmail(env, to) {
     ctaLabel: 'Aller à la connexion',
     footerNote: "Vous recevez cet email car le mot de passe de votre compte a été modifié.",
   });
-  return send(env, { to, subject: 'Votre mot de passe a été modifié', html });
+  return send(env, { to, subject: 'Votre mot de passe a été modifié', html, emailType: 'password_changed' });
 }

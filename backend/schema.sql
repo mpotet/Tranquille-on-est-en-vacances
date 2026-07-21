@@ -143,6 +143,22 @@ CREATE TABLE IF NOT EXISTS rate_limit_attempts (
 
 CREATE INDEX IF NOT EXISTS idx_rate_limit_lookup ON rate_limit_attempts(scope, attempt_key, created_at);
 
+-- ── Transactional email log ───────────────────────────────────────────────────
+-- Every admin-account email (setup / reset / email-change / password-changed)
+-- is recorded here with its actual outcome, so the admin dashboard can show a
+-- real success/failure history instead of the previous silent fire-and-forget
+-- (a failed send used to look identical to a successful one in the UI).
+CREATE TABLE IF NOT EXISTS email_log (
+  id          INTEGER  PRIMARY KEY AUTOINCREMENT,
+  email_type  TEXT     NOT NULL,   -- 'setup' | 'reset' | 'email_change' | 'password_changed'
+  recipient   TEXT     NOT NULL,
+  ok          INTEGER  NOT NULL,   -- 1 = sent successfully, 0 = failed/skipped
+  error       TEXT,                -- human-readable failure reason, if any
+  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_log_created ON email_log(created_at DESC);
+
 -- Seed the single admin row in first-run state (no password, no token).
 -- The setup email/token is generated at runtime by
 -- `npm run admin:send-setup-email`, NOT here (that would send a real email).

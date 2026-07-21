@@ -585,22 +585,100 @@ export const LIGHTBOX = `
           style="background:rgba(255,255,255,.15)">
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
   </button>
-  <div class="max-w-5xl w-full px-16" onclick="event.stopPropagation()">
-    <img id="lb-img" src="" alt="" class="max-w-full max-h-[78vh] mx-auto object-contain rounded-xl shadow-2xl">
-    <p id="lb-caption" class="text-white/80 text-center mt-3 text-sm"></p>
-    <p id="lb-counter" class="text-white/45 text-center text-xs mt-1"></p>
+  <div class="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10" onclick="event.stopPropagation()">
+    <button onclick="lbZoomBy(-0.5)" aria-label="Dézoomer" class="text-white/80 hover:text-white rounded-full p-2.5 transition-all" style="background:rgba(255,255,255,.15)">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14"/></svg>
+    </button>
+    <button onclick="lbZoomReset()" aria-label="Réinitialiser le zoom" id="lb-zoom-pct" class="text-white/80 hover:text-white rounded-full px-3 py-2.5 text-xs font-semibold transition-all" style="background:rgba(255,255,255,.15);min-width:3.2rem">100%</button>
+    <button onclick="lbZoomBy(0.5)" aria-label="Zoomer" class="text-white/80 hover:text-white rounded-full p-2.5 transition-all" style="background:rgba(255,255,255,.15)">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14M5 12h14"/></svg>
+    </button>
   </div>
+  <div id="lb-viewport" class="max-w-5xl w-full h-[78vh] px-16 overflow-hidden" style="touch-action:none" onclick="event.stopPropagation()">
+    <img id="lb-img" src="" alt="" class="w-full h-full object-contain rounded-xl shadow-2xl" style="transform-origin:center center;transition:transform .12s ease-out;user-select:none;-webkit-user-drag:none" draggable="false">
+  </div>
+  <p id="lb-caption" class="text-white/80 text-center mt-3 text-sm absolute left-0 right-0" style="bottom:4.75rem"></p>
+  <p id="lb-counter" class="text-white/45 text-center text-xs mt-1 absolute left-0 right-0" style="bottom:3.25rem"></p>
 </div>
 <script>
-const _lb={photos:[],idx:0};
-function openLightbox(photos,idx){_lb.photos=photos;_lb.idx=idx;_updLb();document.getElementById('lightbox').classList.remove('hidden');document.body.style.overflow='hidden'}
+// ── Lightbox zoom/pan state ────────────────────────────────────
+// Real pinch/scroll/double-click zoom with drag-to-pan, not just a bigger
+// fit-to-screen view - the zoom-in cursor on article images promises actual
+// zoom, so the lightbox needs to deliver it.
+const _lb={photos:[],idx:0,scale:1,tx:0,ty:0,MIN:1,MAX:4};
+function openLightbox(photos,idx){_lb.photos=photos;_lb.idx=idx;_lbResetZoom();_updLb();document.getElementById('lightbox').classList.remove('hidden');document.body.style.overflow='hidden'}
 function closeLightbox(){document.getElementById('lightbox').classList.add('hidden');document.body.style.overflow=''}
-function lbNav(d){if(_lb.photos.length<=1)return;_lb.idx=(_lb.idx+d+_lb.photos.length)%_lb.photos.length;_updLb()}
+function lbNav(d){if(_lb.photos.length<=1)return;_lb.idx=(_lb.idx+d+_lb.photos.length)%_lb.photos.length;_lbResetZoom();_updLb()}
 function _updLb(){const p=_lb.photos[_lb.idx];const img=document.getElementById('lb-img');img.src=p.url;img.alt=p.caption||'';document.getElementById('lb-caption').textContent=p.caption||'';const nav=_lb.photos.length>1;document.getElementById('lb-counter').textContent=nav?(_lb.idx+1)+' / '+_lb.photos.length:'';document.querySelectorAll('#lightbox button[aria-label="Photo précédente"],#lightbox button[aria-label="Photo suivante"]').forEach(b=>b.style.display=nav?'':'none');}
-document.addEventListener('keydown',e=>{if(document.getElementById('lightbox').classList.contains('hidden'))return;if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')lbNav(-1);if(e.key==='ArrowRight')lbNav(1)});
-// Touch swipe support for lightbox
-let _lbTx=null;
-document.getElementById('lightbox').addEventListener('touchstart',e=>{_lbTx=e.touches[0].clientX;},{passive:true});
-document.getElementById('lightbox').addEventListener('touchend',e=>{if(_lbTx===null)return;const dx=e.changedTouches[0].clientX-_lbTx;_lbTx=null;if(Math.abs(dx)>50)lbNav(dx<0?1:-1);},{passive:true});
+function _lbResetZoom(){_lb.scale=1;_lb.tx=0;_lb.ty=0;_lbApplyTransform()}
+function _lbApplyTransform(){const img=document.getElementById('lb-img');if(!img)return;img.style.transform='translate('+_lb.tx+'px,'+_lb.ty+'px) scale('+_lb.scale+')';const pct=document.getElementById('lb-zoom-pct');if(pct)pct.textContent=Math.round(_lb.scale*100)+'%'}
+function lbZoomReset(){_lbResetZoom()}
+function lbZoomBy(delta,cx,cy){_lbSetZoom(_lb.scale+delta,cx,cy)}
+function _lbSetZoom(newScale,cx,cy){
+  const clamped=Math.min(_lb.MAX,Math.max(_lb.MIN,newScale));
+  if(clamped===_lb.scale)return;
+  // Zoom toward the cursor/finger position rather than always the image center.
+  const vp=document.getElementById('lb-viewport');
+  const rect=vp.getBoundingClientRect();
+  const originX=cx!=null?cx-rect.left-rect.width/2:0;
+  const originY=cy!=null?cy-rect.top-rect.height/2:0;
+  const ratio=clamped/_lb.scale;
+  _lb.tx=originX-(originX-_lb.tx)*ratio;
+  _lb.ty=originY-(originY-_lb.ty)*ratio;
+  _lb.scale=clamped;
+  if(_lb.scale===_lb.MIN){_lb.tx=0;_lb.ty=0;}
+  _lbClampPan();
+  _lbApplyTransform();
+}
+function _lbClampPan(){
+  // Keep the image from being dragged entirely off-screen once zoomed.
+  const vp=document.getElementById('lb-viewport');
+  if(!vp)return;
+  const maxX=(vp.clientWidth*(_lb.scale-1))/2+40;
+  const maxY=(vp.clientHeight*(_lb.scale-1))/2+40;
+  _lb.tx=Math.min(maxX,Math.max(-maxX,_lb.tx));
+  _lb.ty=Math.min(maxY,Math.max(-maxY,_lb.ty));
+}
+document.addEventListener('keydown',e=>{if(document.getElementById('lightbox').classList.contains('hidden'))return;if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft'&&_lb.scale===_lb.MIN)lbNav(-1);if(e.key==='ArrowRight'&&_lb.scale===_lb.MIN)lbNav(1);if(e.key==='+'||e.key==='=')lbZoomBy(0.5);if(e.key==='-')lbZoomBy(-0.5);});
+// Double-click / double-tap to zoom in, mouse wheel to zoom, drag to pan when zoomed.
+const _lbVp=document.getElementById('lb-viewport');
+_lbVp.addEventListener('dblclick',e=>{e.stopPropagation();_lb.scale>_lb.MIN?_lbResetZoom():_lbSetZoom(2.5,e.clientX,e.clientY)});
+_lbVp.addEventListener('wheel',e=>{e.preventDefault();e.stopPropagation();_lbSetZoom(_lb.scale-e.deltaY*0.0025,e.clientX,e.clientY)},{passive:false});
+let _lbDrag=null;
+_lbVp.addEventListener('mousedown',e=>{if(_lb.scale<=_lb.MIN)return;e.preventDefault();e.stopPropagation();_lbDrag={x:e.clientX,y:e.clientY,tx:_lb.tx,ty:_lb.ty}});
+window.addEventListener('mousemove',e=>{if(!_lbDrag)return;_lb.tx=_lbDrag.tx+(e.clientX-_lbDrag.x);_lb.ty=_lbDrag.ty+(e.clientY-_lbDrag.y);_lbClampPan();_lbApplyTransform()});
+window.addEventListener('mouseup',()=>{_lbDrag=null});
+// Touch: swipe to navigate (only when not zoomed), pinch to zoom, one-finger drag to pan when zoomed.
+let _lbTouch=null;
+function _lbTouchDist(t){const dx=t[0].clientX-t[1].clientX,dy=t[0].clientY-t[1].clientY;return Math.hypot(dx,dy)}
+function _lbTouchMid(t){return{x:(t[0].clientX+t[1].clientX)/2,y:(t[0].clientY+t[1].clientY)/2}}
+_lbVp.addEventListener('touchstart',e=>{
+  if(e.touches.length===2){_lbTouch={mode:'pinch',dist:_lbTouchDist(e.touches),scale0:_lb.scale};}
+  else if(e.touches.length===1){
+    if(_lb.scale>_lb.MIN)_lbTouch={mode:'pan',x:e.touches[0].clientX,y:e.touches[0].clientY,tx:_lb.tx,ty:_lb.ty};
+    else _lbTouch={mode:'swipe',x:e.touches[0].clientX};
+  }
+},{passive:true});
+_lbVp.addEventListener('touchmove',e=>{
+  if(!_lbTouch)return;
+  if(_lbTouch.mode==='pinch'&&e.touches.length===2){
+    e.preventDefault();
+    const mid=_lbTouchMid(e.touches);
+    const ratio=_lbTouchDist(e.touches)/_lbTouch.dist;
+    _lbSetZoom(_lbTouch.scale0*ratio,mid.x,mid.y);
+  }else if(_lbTouch.mode==='pan'&&e.touches.length===1){
+    e.preventDefault();
+    _lb.tx=_lbTouch.tx+(e.touches[0].clientX-_lbTouch.x);
+    _lb.ty=_lbTouch.ty+(e.touches[0].clientY-_lbTouch.y);
+    _lbClampPan();_lbApplyTransform();
+  }
+},{passive:false});
+_lbVp.addEventListener('touchend',e=>{
+  if(_lbTouch&&_lbTouch.mode==='swipe'&&e.changedTouches.length){
+    const dx=e.changedTouches[0].clientX-_lbTouch.x;
+    if(Math.abs(dx)>50)lbNav(dx<0?1:-1);
+  }
+  _lbTouch=null;
+},{passive:true});
 function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:#dc3c3c;font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
 </script>`;

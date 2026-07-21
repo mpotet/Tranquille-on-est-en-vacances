@@ -34,6 +34,9 @@ import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, de
 import { getSettings, updateSettings } from './api/settings.js';
 import { listComments, createComment, deleteComment } from './api/comments.js';
 import {
+  listEmailLog, getEmailDomainStatus, registerEmailDomain, verifyEmailDomain, setEmailFromAddress,
+} from './api/email-admin.js';
+import {
   getPushConfig, pushSubscribe, pushUnsubscribe,
   emailSubscribe, emailUnsubscribe,
 } from './api/subscriptions.js';
@@ -992,8 +995,33 @@ export default {
           .prepare('UPDATE admin_account SET pending_email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
           .bind(newEmail, acc.id).run();
         const { token } = await issueToken(env.DB, 'email_change');
-        ctx.waitUntil(sendEmailChangeEmail(env, newEmail, token));
-        return json({ ok: true });
+        // Awaited (not ctx.waitUntil) so the client learns immediately whether
+        // the email actually went out, instead of a silent { ok: true } that
+        // looked identical whether Resend accepted or rejected the send.
+        const result = await sendEmailChangeEmail(env, newEmail, token);
+        if (!result.ok) {
+          return json({ ok: true, email_sent: false, email_error: result.error || 'Échec envoi email.' });
+        }
+        return json({ ok: true, email_sent: true });
+      }
+
+      // ── Emails tab: send history + sending-domain setup ──────
+      if (path === '/api/admin/email-log' && method === 'GET') {
+        if (!authed) return unauthorized();
+        return listEmailLog(env);
+      }
+      if (path === '/api/admin/email-domain') {
+        if (!authed) return unauthorized();
+        if (method === 'GET')  return getEmailDomainStatus(env);
+        if (method === 'POST') return registerEmailDomain(request, env);
+      }
+      if (path === '/api/admin/email-domain/verify' && method === 'POST') {
+        if (!authed) return unauthorized();
+        return verifyEmailDomain(env);
+      }
+      if (path === '/api/admin/email-from' && method === 'POST') {
+        if (!authed) return unauthorized();
+        return setEmailFromAddress(request, env);
       }
 
       // Folders
