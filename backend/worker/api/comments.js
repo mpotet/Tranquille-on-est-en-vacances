@@ -116,3 +116,41 @@ export async function deleteComment(env, id) {
   await env.DB.prepare('DELETE FROM comments WHERE id = ?').bind(id).run();
   return json({ success: true });
 }
+
+// ──────────────────────────────────────────────────────────────
+// Admin: list recent comments across the site
+// ──────────────────────────────────────────────────────────────
+export async function listRecentCommentsAdmin(env, limit = 20) {
+  const { results } = await env.DB
+    .prepare(`SELECT c.id, c.article_id, a.title AS article_title, c.author_name, c.body, c.created_at
+              FROM comments c JOIN articles a ON a.id = c.article_id
+              ORDER BY c.created_at DESC LIMIT ?`)
+    .bind(limit)
+    .all();
+  return json({ comments: results || [] });
+}
+
+// ──────────────────────────────────────────────────────────────
+// Admin: reply to a comment (creates a new comment as admin)
+// ──────────────────────────────────────────────────────────────
+export async function replyToComment(request, env, commentId) {
+  const orig = await env.DB.prepare('SELECT id, article_id FROM comments WHERE id = ?').bind(commentId).first();
+  if (!orig) return notFound('Comment not found');
+  const body = await request.json().catch(() => null);
+  if (!body || !body.body) return badRequest('Missing reply body');
+  const replyText = String(body.body).trim();
+  if (!replyText) return badRequest('Empty reply body');
+
+  // Admin display name stored in site_settings.admin_display_name (fallback)
+  const row = await env.DB.prepare("SELECT value FROM site_settings WHERE key = 'admin_display_name'").first();
+  const adminName = row?.value || 'Damien Potet';
+
+  const res = await env.DB.prepare('INSERT INTO comments (article_id, author_name, body) VALUES (?, ?, ?)')
+    .bind(orig.article_id, adminName, replyText)
+    .run();
+
+  const comment = await env.DB.prepare('SELECT id, author_name, body, created_at FROM comments WHERE id = ?')
+    .bind(res.meta.last_row_id)
+    .first();
+  return json({ comment }, 201);
+}

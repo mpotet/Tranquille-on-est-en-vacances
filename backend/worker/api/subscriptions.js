@@ -130,3 +130,23 @@ export async function emailUnsubscribe(request, env) {
 </body>
 </html>`);
 }
+
+// ──────────────────────────────────────────────────────────────
+// Admin: list all email subscribers
+// ──────────────────────────────────────────────────────────────
+export async function listEmailSubscribersAdmin(env) {
+  const { results } = await env.DB
+    .prepare('SELECT id, email, active, created_at FROM email_subscriptions ORDER BY created_at DESC')
+    .all();
+  return json({ subscribers: results || [] });
+}
+
+// ──────────────────────────────────────────────────────────────
+// Admin: unsubscribe (deactivate) a subscriber by id
+// ──────────────────────────────────────────────────────────────
+export async function adminUnsubscribeById(request, env, id) {
+  const sub = await env.DB.prepare('SELECT id, email, active FROM email_subscriptions WHERE id = ?').bind(id).first();
+  if (!sub) return badRequest('Abonné introuvable');
+  await env.DB.prepare('UPDATE email_subscriptions SET active = 0 WHERE id = ?').bind(id).run();
+  return json({ ok: true });
+}

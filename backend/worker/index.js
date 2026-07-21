@@ -32,13 +32,13 @@ import { listFolders, createFolder, updateFolder, deleteFolder } from './api/fol
 import { listArticles, getArticle, createArticle, updateArticle, patchArticleStatus, deleteArticle, recordView } from './api/articles.js';
 import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, deleteHeroImage, serveR2Object } from './api/photos.js';
 import { getSettings, updateSettings } from './api/settings.js';
-import { listComments, createComment, deleteComment } from './api/comments.js';
+import { listComments, createComment, deleteComment, listRecentCommentsAdmin, replyToComment } from './api/comments.js';
 import {
   listEmailLog, getEmailConfigStatus, saveEmailConfig, checkEmailSenderStatus, requestSenderVerification,
 } from './api/email-admin.js';
 import {
   getPushConfig, pushSubscribe, pushUnsubscribe,
-  emailSubscribe, emailUnsubscribe,
+  emailSubscribe, emailUnsubscribe, listEmailSubscribersAdmin, adminUnsubscribeById,
 } from './api/subscriptions.js';
 
 // Page templates
@@ -1059,6 +1059,28 @@ export default {
       if (path === '/api/admin/email-config/verify' && method === 'POST') {
         if (!authed) return unauthorized();
         return requestSenderVerification(env);
+      }
+
+      // Admin: list email subscribers / unsubscribe
+      if (path === '/api/admin/email-subscribers' && method === 'GET') {
+        if (!authed) return unauthorized();
+        return listEmailSubscribersAdmin(env);
+      }
+      const subsMatch = matchPath('/api/admin/email-subscribers/:id', path);
+      if (subsMatch && method === 'DELETE') {
+        if (!authed) return unauthorized();
+        return adminUnsubscribeById(request, env, parseInt(subsMatch.id));
+      }
+
+      // Admin: recent comments across site and reply
+      if (path === '/api/admin/comments/recent' && method === 'GET') {
+        if (!authed) return unauthorized();
+        return listRecentCommentsAdmin(env);
+      }
+      const replyMatch = matchPath('/api/admin/comments/:id/reply', path);
+      if (replyMatch && method === 'POST') {
+        if (!authed) return unauthorized();
+        return replyToComment(request, env, parseInt(replyMatch.id));
       }
 
       // Folders
