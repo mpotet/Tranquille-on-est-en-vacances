@@ -9,12 +9,12 @@
  *   VAPID_SUBJECT     - "mailto:..."
  *   PUBLIC_URL        - public base URL e.g. "https://vacances.potet.fr"
  *
- * Email sending uses SMTP2GO (same provider + config as worker/admin-email.js:
- * site_settings.smtp2go_api_key / email_from_address / email_from_name)
- * rather than Resend - this used to be the one place still on Resend after
- * the rest of the app migrated, which meant subscriber notifications would
- * silently fail (only a console.error, invisible in the editor UI) once the
- * Resend key stopped being the thing actually configured.
+ * Email sending uses Mailjet (same provider + config as worker/admin-email.js:
+ * site_settings.mailjet_api_key / mailjet_api_secret / email_from_address /
+ * email_from_name) rather than Resend - this used to be the one place still
+ * on Resend after the rest of the app migrated, which meant subscriber
+ * notifications would silently fail (only a console.error, invisible in the
+ * editor UI) once the Resend key stopped being the thing actually configured.
  */
 
 import { sendWebPush } from './vapid.js';
@@ -173,18 +173,19 @@ async function _doNotify(env, article, isUpdate, changes) {
     console.warn('[Push] VAPID_PUBLIC_KEY ou VAPID_PRIVATE_KEY manquants - push ignoré');
   }
 
-  // ── Email notifications (via SMTP2GO) ─────────────────────────────────────
+  // ── Email notifications (via Mailjet) ─────────────────────────────────────
   try {
     const { results: settingsRows } = await env.DB
-      .prepare("SELECT key, value FROM site_settings WHERE key IN ('smtp2go_api_key', 'email_from_address', 'email_from_name')")
+      .prepare("SELECT key, value FROM site_settings WHERE key IN ('mailjet_api_key', 'mailjet_api_secret', 'email_from_address', 'email_from_name')")
       .all();
     const settings = Object.fromEntries((settingsRows || []).map(r => [r.key, r.value]));
-    const apiKey = settings.smtp2go_api_key || '';
+    const apiKey = settings.mailjet_api_key || '';
+    const apiSecret = settings.mailjet_api_secret || '';
     const fromAddress = settings.email_from_address || '';
     const fromName = settings.email_from_name || 'Tranquille, on est en vacances';
 
-    if (!apiKey || !fromAddress) {
-      console.warn('[Email] Configuration SMTP2GO incomplète - notifications email ignorées');
+    if (!apiKey || !apiSecret || !fromAddress) {
+      console.warn('[Email] Configuration Mailjet incomplète - notifications email ignorées');
     } else {
       const { results: emailSubs } = await env.DB
         .prepare('SELECT email, token FROM email_subscriptions WHERE active=1')
@@ -193,33 +194,33 @@ async function _doNotify(env, article, isUpdate, changes) {
       console.log(`[Email] ${emailSubs?.length ?? 0} abonné(s) email`);
 
       if (emailSubs && emailSubs.length > 0) {
+        const auth = btoa(`${apiKey}:${apiSecret}`);
         await Promise.allSettled(emailSubs.map(async sub => {
           try {
             const unsubUrl = `${publicUrl}/unsubscribe?token=${sub.token}`;
             const subject = isUpdate
               ? `✏️ Récit mis à jour : ${article.title}`
               : `✈️ Nouveau voyage : ${article.title}`;
-            const emailRes = await fetch('https://api.smtp2go.com/v3/email/send', {
+            const emailRes = await fetch('https://api.mailjet.com/v3.1/send', {
               method:  'POST',
               headers: {
-                'X-Smtp2go-Api-Key': apiKey,
+                'Authorization': `Basic ${auth}`,
                 'Content-Type': 'application/json',
-                'Accept': 'application/json',
               },
               body: JSON.stringify({
-                sender: `${fromName} <${fromAddress}>`,
-                to:     [sub.email],
-                subject,
-                html_body: buildEmailHtml(article, articleUrl, unsubUrl, isUpdate, changes),
+                Messages: [{
+                  From: { Email: fromAddress, Name: fromName },
+                  To:   [{ Email: sub.email }],
+                  Subject: subject,
+                  HTMLPart: buildEmailHtml(article, articleUrl, unsubUrl, isUpdate, changes),
+                }],
               }),
               signal: AbortSignal.timeout(10000),
             });
             const emailBody = await emailRes.json().catch(() => null);
-            const failures = emailBody?.data?.failures;
-            if (!emailRes.ok) {
+            const msgResult = emailBody?.Messages?.[0];
+            if (!emailRes.ok || !msgResult || msgResult.Status !== 'success') {
               console.error(`[Email] HTTP ${emailRes.status} pour ${sub.email}:`, emailBody);
-            } else if (Array.isArray(failures) && failures.length > 0) {
-              console.error(`[Email] Rejeté (expéditeur non vérifié ?) pour ${sub.email}:`, failures);
             } else {
               console.log('[Email] ✓ envoyé à', sub.email);
             }

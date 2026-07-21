@@ -1012,7 +1012,7 @@ export default {
         // never be sent - starting the change anyway would leave
         // pending_email set with no way for the admin to ever confirm it.
         if (!(await isEmailConfigured(env))) {
-          return badRequest("L'envoi d'emails n'est pas configuré. Configurez SMTP2GO dans l'onglet Emails avant de changer d'adresse.");
+          return badRequest("L'envoi d'emails n'est pas configuré. Configurez Mailjet dans l'onglet Emails avant de changer d'adresse.");
         }
         const body = await request.json().catch(() => ({}));
         const newEmail = String(body.new_email || '').trim();
@@ -1042,7 +1042,7 @@ export default {
         return json({ ok: true, email_sent: true });
       }
 
-      // ── Emails tab: send history + SMTP2GO sender setup ──────
+      // ── Emails tab: send history + Mailjet sender setup ──────
       if (path === '/api/admin/email-log' && method === 'GET') {
         if (!authed) return unauthorized();
         return listEmailLog(env);

@@ -358,32 +358,39 @@ ${ADMIN_NAV()}
   <div id="tab-emails" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-emails">
   <div class="space-y-5">
 
-    <!-- SMTP2GO sender setup -->
+    <!-- Mailjet sender setup -->
     <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
       <div class="px-6 py-5 border-b border-stone-100">
-        <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-paper-plane-tilt" style="color:var(--blue)"></i> Envoi des emails (SMTP2GO)</h2>
+        <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-paper-plane-tilt" style="color:var(--blue)"></i> Envoi des emails (Mailjet)</h2>
         <p class="text-xs text-stone-400 mt-0.5">Aucun nom de domaine requis : il suffit de vérifier votre propre adresse email (même @free.fr, @gmail.com...) pour pouvoir envoyer vers n'importe quelle boîte mail.</p>
       </div>
       <div class="px-6 pb-6 pt-4">
         <div id="email-config-status" class="text-sm text-stone-500 mb-5">Chargement…</div>
 
         <details class="rounded-xl border border-stone-100 bg-stone-50 mb-5">
-          <summary class="px-4 py-3 cursor-pointer list-none select-none text-sm font-bold text-stone-700 flex items-center gap-2"><i class="ph ph-lightbulb" style="color:var(--blue)"></i> Comment configurer SMTP2GO (5 minutes) <span class="text-stone-400 font-normal ml-auto text-xs">Cliquer pour ouvrir ▾</span></summary>
+          <summary class="px-4 py-3 cursor-pointer list-none select-none text-sm font-bold text-stone-700 flex items-center gap-2"><i class="ph ph-lightbulb" style="color:var(--blue)"></i> Comment configurer Mailjet (5 minutes) <span class="text-stone-400 font-normal ml-auto text-xs">Cliquer pour ouvrir ▾</span></summary>
           <ol class="px-4 pb-4 text-sm text-stone-600 space-y-2 list-decimal list-inside">
-            <li>Créez un compte gratuit sur <strong>smtp2go.com</strong> (bouton "Sign up free", gratuit jusqu'à 1000 emails/mois, aucune carte bancaire requise).</li>
-            <li>Une fois connecté, allez dans <strong>Settings → API Keys</strong>, cliquez sur <strong>Add API Key</strong>, donnez-lui un nom (ex: "Blog voyage") et copiez la clé affichée (elle commence par <code>api-</code>).</li>
-            <li>Renseignez ci-dessous cette clé, l'adresse email à utiliser pour l'envoi (ex: votre adresse @free.fr) et le nom affiché, puis cliquez sur <strong>Enregistrer</strong>.</li>
-            <li>Cliquez ensuite sur <strong>Envoyer l'email de vérification</strong> ci-dessous — SMTP2GO envoie un lien de confirmation à cette adresse.</li>
-            <li>Ouvrez votre boîte mail et cliquez sur le lien reçu (« Verified Sender » chez SMTP2GO).</li>
+            <li>Créez un compte gratuit sur <strong>mailjet.com</strong> (bouton "S'inscrire", gratuit jusqu'à 6000 emails/mois - 200/jour, aucune carte bancaire requise).</li>
+            <li>Une fois connecté, allez dans <strong>Compte → Clés API REST</strong> (ou "API Key Management") pour récupérer votre <strong>API Key</strong> et votre <strong>Secret Key</strong>.</li>
+            <li>Renseignez ci-dessous ces deux clés, l'adresse email à utiliser pour l'envoi (ex: votre adresse @free.fr) et le nom affiché, puis cliquez sur <strong>Enregistrer</strong>.</li>
+            <li>Cliquez ensuite sur <strong>Envoyer l'email de vérification</strong> ci-dessous — Mailjet envoie un lien de confirmation à cette adresse.</li>
+            <li>Ouvrez votre boîte mail et cliquez sur le lien reçu (page "Domaines et expéditeurs" chez Mailjet).</li>
             <li>Revenez ici et cliquez sur <strong>Vérifier le statut</strong> pour confirmer que tout est actif.</li>
           </ol>
         </details>
 
         <div class="grid gap-4">
-          <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Clé API SMTP2GO</label>
-            <input type="password" id="ec-api-key" placeholder="api-..." autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm font-mono">
-            <p id="ec-api-key-current" class="text-xs text-stone-400 mt-1"></p>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Clé API (API Key)</label>
+              <input type="password" id="ec-api-key" placeholder="Clé API Mailjet" autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm font-mono">
+              <p id="ec-api-key-current" class="text-xs text-stone-400 mt-1"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Clé secrète (Secret Key)</label>
+              <input type="password" id="ec-api-secret" placeholder="Clé secrète Mailjet" autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm font-mono">
+              <p id="ec-api-secret-current" class="text-xs text-stone-400 mt-1"></p>
+            </div>
           </div>
           <div class="grid sm:grid-cols-2 gap-4">
             <div>
@@ -771,7 +778,7 @@ async function changePassword() {
   }
 }
 
-// ── Emails tab: SMTP2GO sender setup + send history ─────────────
+// ── Emails tab: Mailjet sender setup + send history ─────────────
 function senderStatusBadge(verified) {
   if (verified === true)  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#f0fdf4;color:var(--palm)"><i class="ph ph-check-circle"></i> Vérifié</span>';
   if (verified === false) return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#fef2f2;color:#dc3c3c"><i class="ph ph-x-circle"></i> Non vérifié</span>';
@@ -783,26 +790,31 @@ async function loadEmailConfigStatus() {
   if (!data) { box.innerHTML = '<p class="text-red-500 text-sm">Erreur de chargement.</p>'; return; }
   document.getElementById('ec-from-address').value = data.from_address || '';
   document.getElementById('ec-from-name').value = data.from_name || '';
-  document.getElementById('ec-api-key-current').textContent = data.api_key_configured
+  document.getElementById('ec-api-key-current').textContent = data.api_key_masked
     ? 'Clé actuellement enregistrée : ' + data.api_key_masked + ' (laissez le champ vide pour la conserver)'
     : 'Aucune clé enregistrée pour le moment.';
+  document.getElementById('ec-api-secret-current').textContent = data.api_secret_masked
+    ? 'Clé actuellement enregistrée : ' + data.api_secret_masked + ' (laissez le champ vide pour la conserver)'
+    : 'Aucune clé enregistrée pour le moment.';
   if (!data.api_key_configured || !data.from_address) {
-    box.innerHTML = '<p class="text-sm text-stone-500"><i class="ph ph-info"></i> Configuration incomplète — aucun email ne peut être envoyé tant que la clé API et l\\'adresse expéditrice ne sont pas enregistrées ci-dessous.</p>';
+    box.innerHTML = '<p class="text-sm text-stone-500"><i class="ph ph-info"></i> Configuration incomplète — aucun email ne peut être envoyé tant que les clés API et l\\'adresse expéditrice ne sont pas enregistrées ci-dessous.</p>';
     return;
   }
   box.innerHTML = '<div class="flex items-center gap-2 flex-wrap"><strong class="text-stone-800">'+esc(data.from_address)+'</strong> '+senderStatusBadge(data.sender_verified)+'</div>' +
-    (data.sender_verified===false ? '<p class="text-xs text-amber-700 mt-2"><i class="ph ph-warning"></i> Cette adresse n\\'est pas encore vérifiée sur SMTP2GO. Cliquez sur « Envoyer l\\'email de vérification » puis suivez le lien reçu.</p>' : '');
+    (data.sender_verified===false ? '<p class="text-xs text-amber-700 mt-2"><i class="ph ph-warning"></i> Cette adresse n\\'est pas encore vérifiée sur Mailjet. Cliquez sur « Envoyer l\\'email de vérification » puis suivez le lien reçu.</p>' : '');
 }
 async function saveEmailConfig() {
   const apiKey = (document.getElementById('ec-api-key')?.value||'').trim();
+  const apiSecret = (document.getElementById('ec-api-secret')?.value||'').trim();
   const fromAddress = (document.getElementById('ec-from-address')?.value||'').trim();
   const fromName = (document.getElementById('ec-from-name')?.value||'').trim();
   if (fromAddress && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fromAddress)) { toast('Adresse email invalide','err'); return; }
-  const res = await fetch('/api/admin/email-config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:apiKey,from_address:fromAddress,from_name:fromName})}).catch(()=>null);
+  const res = await fetch('/api/admin/email-config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:apiKey,api_secret:apiSecret,from_address:fromAddress,from_name:fromName})}).catch(()=>null);
   const data = await res?.json().catch(()=>null);
   if (res && res.ok) {
     toast('Configuration enregistrée !','ok');
     document.getElementById('ec-api-key').value = '';
+    document.getElementById('ec-api-secret').value = '';
     loadEmailConfigStatus();
   } else toast((data&&data.error)||'Erreur','err');
 }

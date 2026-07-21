@@ -65,41 +65,44 @@ function publicBase(env) {
 }
 
 /**
- * Email provider: SMTP2GO transactional API.
+ * Email provider: Mailjet transactional API (Send API v3.1).
  *
  * Resend requires a fully DNS-verified domain (no domain here, so a hard
- * no). Brevo lets you verify a single sender ADDRESS with no domain needed
- * in principle, but new free accounts require a manual support-ticket
- * activation of their transactional API before it works at all ("Your SMTP
- * account is not yet activated") - unusable for a "works right away" need.
- * SMTP2GO's "Single Sender Email" verification (click a confirmation link,
- * no domain, no manual support activation) is the option that actually
- * works immediately without buying a domain.
+ * no). Brevo's free accounts require a manual support-ticket activation of
+ * the transactional API before it works at all ("Your SMTP account is not
+ * yet activated"). SMTP2GO refuses to even let you SIGN UP with a Gmail/ISP
+ * address for the account itself ("Please use an email at your own domain
+ * to sign up"), regardless of the separate sender-verification step.
+ * Mailjet accepted account creation with a personal Gmail address and lets
+ * you verify individual sender addresses (no domain ownership needed) via a
+ * confirmation-link email - the option that actually worked in practice.
  *
- * Both the API key and the verified sender address are stored in
- * site_settings (not a wrangler secret) so the admin can configure this
- * entirely from the dashboard's "Emails" tab, without shell/CLI access.
+ * Mailjet auth is HTTP Basic with two keys (API Key + API Secret), unlike
+ * the single-key providers tried before - both stored in site_settings (not
+ * a wrangler secret) so the admin can configure this entirely from the
+ * dashboard's "Emails" tab, without shell/CLI access.
  */
 export async function getEmailConfig(env) {
   const { results } = await env.DB
-    .prepare("SELECT key, value FROM site_settings WHERE key IN ('smtp2go_api_key', 'email_from_address', 'email_from_name')")
+    .prepare("SELECT key, value FROM site_settings WHERE key IN ('mailjet_api_key', 'mailjet_api_secret', 'email_from_address', 'email_from_name')")
     .all();
   const settings = Object.fromEntries((results || []).map(r => [r.key, r.value]));
   return {
-    apiKey: settings.smtp2go_api_key || '',
+    apiKey: settings.mailjet_api_key || '',
+    apiSecret: settings.mailjet_api_secret || '',
     fromAddress: settings.email_from_address || '',
     fromName: settings.email_from_name || 'Tranquille, on est en vacances',
   };
 }
 
-/** True once both an API key and a sender address are saved - the minimum
- *  needed to even attempt a send. Use this to block actions that depend on
- *  email delivery (email-change, subscribing to notifications) up front,
- *  with a clear message, rather than letting them proceed and fail silently
- *  or leave the account in a half-changed state. */
+/** True once an API key, secret, and a sender address are saved - the
+ *  minimum needed to even attempt a send. Use this to block actions that
+ *  depend on email delivery (email-change, subscribing to notifications) up
+ *  front, with a clear message, rather than letting them proceed and fail
+ *  silently or leave the account in a half-changed state. */
 export async function isEmailConfigured(env) {
-  const { apiKey, fromAddress } = await getEmailConfig(env);
-  return !!(apiKey && fromAddress);
+  const { apiKey, apiSecret, fromAddress } = await getEmailConfig(env);
+  return !!(apiKey && apiSecret && fromAddress);
 }
 
 async function logEmailAttempt(env, { emailType, recipient, ok, error }) {
@@ -115,11 +118,11 @@ async function logEmailAttempt(env, { emailType, recipient, ok, error }) {
 }
 
 async function send(env, { to, subject, html, emailType }) {
-  const { apiKey, fromAddress, fromName } = await getEmailConfig(env);
-  if (!apiKey) {
-    console.warn('[AdminEmail] Clé API SMTP2GO non configurée - email ignoré');
-    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: "Clé API SMTP2GO non configurée. Rendez-vous dans l'onglet Emails du tableau de bord." });
-    return { ok: false, skipped: true, error: "Clé API SMTP2GO non configurée." };
+  const { apiKey, apiSecret, fromAddress, fromName } = await getEmailConfig(env);
+  if (!apiKey || !apiSecret) {
+    console.warn('[AdminEmail] Clés API Mailjet non configurées - email ignoré');
+    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: "Clés API Mailjet non configurées. Rendez-vous dans l'onglet Emails du tableau de bord." });
+    return { ok: false, skipped: true, error: "Clés API Mailjet non configurées." };
   }
   if (!fromAddress) {
     console.warn('[AdminEmail] Adresse expéditrice non configurée - email ignoré');
@@ -129,45 +132,40 @@ async function send(env, { to, subject, html, emailType }) {
 
   let res;
   try {
-    res = await fetch('https://api.smtp2go.com/v3/email/send', {
+    res = await fetch('https://api.mailjet.com/v3.1/send', {
       method: 'POST',
       headers: {
-        'X-Smtp2go-Api-Key': apiKey,
+        'Authorization': `Basic ${btoa(`${apiKey}:${apiSecret}`)}`,
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
       },
       body: JSON.stringify({
-        sender: `${fromName} <${fromAddress}>`,
-        to: [to],
-        subject,
-        html_body: html,
+        Messages: [{
+          From: { Email: fromAddress, Name: fromName },
+          To: [{ Email: to }],
+          Subject: subject,
+          HTMLPart: html,
+        }],
       }),
       signal: AbortSignal.timeout(10000),
     });
   } catch (err) {
-    const friendly = err?.name === 'TimeoutError' ? 'SMTP2GO ne répond pas (délai dépassé).' : 'Erreur réseau vers SMTP2GO.';
+    const friendly = err?.name === 'TimeoutError' ? 'Mailjet ne répond pas (délai dépassé).' : 'Erreur réseau vers Mailjet.';
     console.error(`[AdminEmail] ${friendly} pour ${to}:`, err?.message || err);
     await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: friendly });
     return { ok: false, error: friendly };
   }
   const body = await res.json().catch(() => null);
-  if (!res.ok) {
-    let friendly = body?.data?.error || `Erreur HTTP ${res.status}`;
-    if (res.status === 401) friendly = 'Clé API invalide. Vérifiez-la dans l\'onglet Emails.';
+  // Mailjet can return an overall HTTP 200 while still failing an individual
+  // message - always check Messages[0].Status/Errors, not just res.ok.
+  const msgResult = body?.Messages?.[0];
+  if (!res.ok || !msgResult || msgResult.Status !== 'success') {
+    let friendly = body?.ErrorMessage || msgResult?.Errors?.[0]?.ErrorMessage || `Erreur HTTP ${res.status}`;
+    const errCode = msgResult?.Errors?.[0]?.ErrorCode;
+    if (res.status === 401 || body?.ErrorCode === 'mj-0015') friendly = 'Clés API invalides. Vérifiez-les dans l\'onglet Emails.';
+    else if (errCode === 'send-0008') friendly = "Adresse expéditrice non vérifiée sur Mailjet. Ajoutez et confirmez l'adresse dans l'onglet Emails (email de vérification à cliquer).";
     console.error(`[AdminEmail] HTTP ${res.status} pour ${to}:`, body);
     await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: friendly });
     return { ok: false, status: res.status, error: friendly };
-  }
-  // SMTP2GO can return HTTP 200 with succeeded:1 and STILL silently drop the
-  // email server-side if the sender address isn't a verified "Single Sender
-  // Email" yet - the API accepts it, but delivery fails after the fact with
-  // no error surfaced here unless we check `failures` explicitly.
-  const failures = body?.data?.failures;
-  if (Array.isArray(failures) && failures.length > 0) {
-    const friendly = "Expéditeur non vérifié sur SMTP2GO. Ajoutez et confirmez l'adresse dans l'onglet Emails (email de vérification à cliquer).";
-    console.error(`[AdminEmail] Envoi rejeté pour ${to}:`, failures);
-    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: friendly });
-    return { ok: false, error: friendly };
   }
   await logEmailAttempt(env, { emailType, recipient: to, ok: true });
   return { ok: true };
