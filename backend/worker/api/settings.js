@@ -12,6 +12,7 @@ const ALLOWED_KEYS = [
   'hero_title', 'hero_subtitle', 'site_tagline',
   'hero_eyebrow', 'hero_badge', 'hero_cta_primary', 'hero_cta_secondary',
   'comment_gate_question', 'comment_gate_answer',
+  'admin_display_name',
 ];
 
 // Keys that must never be exposed to non-admin visitors (spam-gate answer).

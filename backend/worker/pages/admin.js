@@ -156,6 +156,8 @@ ${ADMIN_NAV()}
     <button type="button" id="admintab-settings" role="tab" data-tab="settings" class="admin-tab" aria-selected="false" aria-controls="tab-settings" tabindex="-1"><i class="ph ph-gear"></i> Paramètres du site</button>
     <button type="button" id="admintab-account" role="tab" data-tab="account" class="admin-tab" aria-selected="false" aria-controls="tab-account" tabindex="-1"><i class="ph ph-user-circle"></i> Compte</button>
     <button type="button" id="admintab-emails" role="tab" data-tab="emails" class="admin-tab" aria-selected="false" aria-controls="tab-emails" tabindex="-1"><i class="ph ph-envelope"></i> Emails</button>
+    <button type="button" id="admintab-subscribers" role="tab" data-tab="subscribers" class="admin-tab" aria-selected="false" aria-controls="tab-subscribers" tabindex="-1"><i class="ph ph-users-three"></i> Abonnés</button>
+    <button type="button" id="admintab-moderation" role="tab" data-tab="moderation" class="admin-tab" aria-selected="false" aria-controls="tab-moderation" tabindex="-1"><i class="ph ph-shield-check"></i> Modération</button>
   </div>
 </div>
 <style>
@@ -223,6 +225,35 @@ ${ADMIN_NAV()}
           </div>`).join('')}
       </div>
     </main>
+  </div>
+  <!-- Tab: Subscribers -->
+  <div id="tab-subscribers" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-subscribers">
+    <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-stone-100">
+        <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-users-three" style="color:var(--blue)"></i> Abonnés email</h2>
+        <p class="text-xs text-stone-400 mt-0.5">Liste des abonnés à la newsletter; possibilité de désabonner manuellement.</p>
+      </div>
+      <div class="px-6 pb-6 pt-4">
+        <div id="subscribers-list" class="divide-y divide-stone-100 text-sm text-stone-700">
+          <div class="text-stone-400 p-6 text-center">Chargement…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: Moderation -->
+  <div id="tab-moderation" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-moderation">
+    <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-stone-100">
+        <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-shield-check" style="color:var(--blue)"></i> Modération &amp; Commentaires</h2>
+        <p class="text-xs text-stone-400 mt-0.5">Derniers commentaires publiés; supprimer ou répondre en tant qu'admin (nom configurable).</p>
+      </div>
+      <div class="px-6 pb-6 pt-4">
+        <div id="recent-comments-list" class="divide-y divide-stone-100 text-sm text-stone-700">
+          <div class="text-stone-400 p-6 text-center">Chargement…</div>
+        </div>
+      </div>
+    </div>
   </div>
   </div>
 
@@ -299,12 +330,22 @@ ${ADMIN_NAV()}
         </div>
       </div>
 
+      <!-- Admin display name -->
+      <div class="mt-4">
+        <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-user-circle-gear"></i> Nom affiché par l'admin (réponses aux commentaires)</label>
+        <input type="text" id="s-admin-display-name" placeholder="Damien Potet" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+        <p class="text-xs text-stone-400 mt-1">Nom utilisé lors des réponses aux commentaires.</p>
+      </div>
+
       <div class="mt-6 flex justify-end">
         <button onclick="saveSettings()" class="action-btn-sm"><i class="ph ph-floppy-disk"></i> Sauvegarder les paramètres</button>
       </div>
     </div>
   </div>
   </div>
+
+
+
 
   <!-- Tab: Account -->
   <div id="tab-account" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-account">
@@ -662,6 +703,7 @@ async function loadSettings() {
   document.getElementById('s-tagline').value        = s.site_tagline      || '';
   document.getElementById('s-gate-question').value  = s.comment_gate_question || '';
   document.getElementById('s-gate-answer').value    = s.comment_gate_answer   || '';
+  document.getElementById('s-admin-display-name').value = s.admin_display_name || 'Damien Potet';
   previewHeroImg(s.hero_image_url || '');
 }
 function previewHeroImg(url) {
@@ -718,6 +760,7 @@ async function saveSettings() {
     site_tagline:        document.getElementById('s-tagline').value.trim(),
     comment_gate_question: document.getElementById('s-gate-question').value.trim(),
     comment_gate_answer:   document.getElementById('s-gate-answer').value.trim(),
+    admin_display_name:    document.getElementById('s-admin-display-name').value.trim(),
   };
   const res = await fetch('/api/settings', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
   if (res.ok) toast('Paramètres sauvegardés !','ok');
@@ -853,10 +896,82 @@ async function loadEmailLog() {
   }).join('');
 }
 
+// ── Subscribers (admin) ───────────────────────────────────────
+async function loadSubscribers() {
+  const box = document.getElementById('subscribers-list');
+  if (!box) return;
+  box.innerHTML = '<div class="text-stone-400 p-6 text-center">Chargement…</div>';
+  const data = await fetch('/api/admin/email-subscribers').then(r=>r.json()).catch(()=>null);
+  const subs = data?.subscribers || [];
+  if (!subs.length) { box.innerHTML = '<div class="text-stone-400 p-6 text-center">Aucun abonné pour le moment.</div>'; return; }
+  box.innerHTML = subs.map(s => {
+    return '<div class="flex items-center justify-between px-6 py-3.5">'
+      + '<div><div class="text-sm font-semibold text-stone-800">' + esc(s.email) + '</div>'
+      + '<div class="text-xs text-stone-500">Abonné le ' + fmtDate(s.created_at) + '</div></div>'
+      + '<div><button data-id="' + s.id + '" class="subtle-btn" data-action="admin-unsubscribe">Désabonner</button></div></div>';
+  }).join('');
+}
+
+document.addEventListener('click', async (e) => {
+  const u = e.target.closest('[data-action="admin-unsubscribe"]');
+  if (u) {
+    const id = parseInt(u.dataset.id);
+    if (!confirm('Désabonner cet utilisateur ?')) return;
+    const res = await fetch('/api/admin/email-subscribers/'+id, { method: 'DELETE' });
+    if (res.ok) { toast('Abonné désabonné','ok'); loadSubscribers(); } else toast('Erreur','err');
+  }
+});
+
+// ── Moderation / comments (admin) ─────────────────────────────
+async function loadRecentComments() {
+  const box = document.getElementById('recent-comments-list');
+  if (!box) return;
+  box.innerHTML = '<div class="text-stone-400 p-6 text-center">Chargement…</div>';
+  const data = await fetch('/api/admin/comments/recent').then(r=>r.json()).catch(()=>null);
+  const comments = data?.comments || [];
+  if (!comments.length) { box.innerHTML = '<div class="text-stone-400 p-6 text-center">Aucun commentaire récent.</div>'; return; }
+  box.innerHTML = comments.map(c => {
+    const preview = esc(c.body).replace(/\n/g,' ');
+    return '<div class="px-6 py-3.5">'
+      + '<div class="flex items-start justify-between gap-4">'
+      + '<div class="flex-1 min-w-0">'
+      + '<div class="text-sm font-semibold text-stone-800">' + esc(c.author_name) + ' <span class="text-xs text-stone-400">sur <a href="/voyage/' + esc(c.article_id) + '" class="text-sky-600 hover:underline">' + esc(c.article_title) + '</a></span></div>'
+      + '<p class="text-sm text-stone-700 mt-1">' + preview + '</p>'
+      + '<div class="text-xs text-stone-400 mt-2">' + fmtDate(c.created_at) + '</div>'
+      + '</div>'
+      + '<div class="flex flex-col gap-2 items-end">'
+      + '<button data-id="' + c.id + '" class="subtle-btn" data-action="admin-reply">Répondre</button>'
+      + '<button data-id="' + c.id + '" class="subtle-btn" data-action="admin-delete-comment" style="background:rgba(220,60,60,.08);border-color:rgba(220,60,60,.12);">Supprimer</button>'
+      + '</div></div></div>';
+  }).join('');
+}
+
+document.addEventListener('click', async (e) => {
+  const replyBtn = e.target.closest('[data-action="admin-reply"]');
+  if (replyBtn) {
+    const id = parseInt(replyBtn.dataset.id);
+    const reply = prompt('Votre réponse (sera publiée comme admin)');
+    if (!reply) return; // cancelled or empty
+    const res = await fetch('/api/admin/comments/'+id+'/reply', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ body: reply }) });
+    if (res.ok) { toast('Réponse publiée','ok'); loadRecentComments(); } else { const d = await res.json().catch(()=>null); toast((d&&d.error)||'Erreur','err'); }
+  }
+  const delBtn = e.target.closest('[data-action="admin-delete-comment"]');
+  if (delBtn) {
+    const id = parseInt(delBtn.dataset.id);
+    if (!confirm('Supprimer ce commentaire ?')) return;
+    const res = await fetch('/api/comments/'+id, { method: 'DELETE' });
+    if (res.ok) { toast('Commentaire supprimé','ok'); loadRecentComments(); } else toast('Erreur','err');
+  }
+});
+
 // ── Tab switching ───────────────────────────────────────────────
-const TAB_LOADERS = { emails: () => { loadEmailConfigStatus(); loadEmailLog(); } };
+const TAB_LOADERS = {
+  emails: () => { loadEmailConfigStatus(); loadEmailLog(); },
+  subscribers: () => { loadSubscribers(); },
+  moderation: () => { loadRecentComments(); },
+};
 const _loadedTabs = new Set(['articles']);
-const TAB_NAMES = ['articles','settings','account','emails'];
+const TAB_NAMES = ['articles','settings','account','emails','subscribers','moderation'];
 function switchTab(name, focusTab) {
   document.querySelectorAll('.admin-tab').forEach(b => {
     const selected = b.dataset.tab === name;
@@ -911,9 +1026,9 @@ document.addEventListener('error', e => {
 init();
 loadSettings();
 loadAccount();
-// Deep-link support: /admin/dashboard#settings, #account, #emails
+// Deep-link support: /admin/dashboard#settings, #account, #emails, #subscribers, #moderation
 const _initialTab = (location.hash || '').replace('#','');
-if (['settings','account','emails'].includes(_initialTab)) switchTab(_initialTab);
+if (['settings','account','emails','subscribers','moderation'].includes(_initialTab)) switchTab(_initialTab);
 </script>
 </body>
 </html>`);
