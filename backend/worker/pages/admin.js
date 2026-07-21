@@ -931,7 +931,7 @@ async function loadRecentComments() {
   const comments = data?.comments || [];
   if (!comments.length) { box.innerHTML = '<div class="text-stone-400 p-6 text-center">Aucun commentaire récent.</div>'; return; }
   box.innerHTML = comments.map(c => {
-    const preview = esc(c.body).replace(/\n/g,' ');
+    const preview = (esc(c.body) || '').replaceAll('\n',' ');
     return '<div class="px-6 py-3.5">'
       + '<div class="flex items-start justify-between gap-4">'
       + '<div class="flex-1 min-w-0">'
