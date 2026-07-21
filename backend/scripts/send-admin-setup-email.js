@@ -38,21 +38,22 @@ if (!PUBLIC_URL)     { console.error('✗ PUBLIC_URL manquant (env var requise).
 const sq = s => (s || '').replace(/'/g, "''");
 
 function dbQuery(sql) {
-  const f = join(tmpdir(), `admin-setup-${Date.now()}.sql`);
-  writeFileSync(f, sql, 'utf8');
-  try {
-    const out = execSync(
-      `npx wrangler d1 execute ${DB} ${LOCAL_FLAG} --json --file "${f}"`,
-      { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
-    );
-    // --remote prints progress lines ("├ Checking if file needs uploading...")
-    // before the JSON output; --json only guarantees the final payload is JSON,
-    // not that stdout contains nothing else. Extract the first '[' .. last ']'.
-    const start = out.indexOf('[');
-    const end = out.lastIndexOf(']');
-    if (start === -1 || end === -1) throw new Error('No JSON array found in wrangler output:\n' + out);
-    return JSON.parse(out.slice(start, end + 1))[0]?.results || [];
-  } finally { try { unlinkSync(f); } catch {} }
+  // NOTE: `--file` with `--remote` returns an upload/execution summary (rows
+  // read/written counts), not the SELECT's actual result rows - only
+  // `--command` reliably returns query results in both --local and --remote.
+  // (Using --file here previously made account.email come back as undefined,
+  // which silently became `to: [null]` in the Resend payload → 422 error.)
+  const out = execSync(
+    `npx wrangler d1 execute ${DB} ${LOCAL_FLAG} --json --command "${sql.replace(/"/g, '\\"')}"`,
+    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+  );
+  // --remote prints progress lines ("├ Checking if file needs uploading...")
+  // before the JSON output; --json only guarantees the final payload is JSON,
+  // not that stdout contains nothing else. Extract the first '[' .. last ']'.
+  const start = out.indexOf('[');
+  const end = out.lastIndexOf(']');
+  if (start === -1 || end === -1) throw new Error('No JSON array found in wrangler output:\n' + out);
+  return JSON.parse(out.slice(start, end + 1))[0]?.results || [];
 }
 
 function dbExec(sql) {
