@@ -358,31 +358,31 @@ ${ADMIN_NAV()}
   <div id="tab-emails" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-emails">
   <div class="space-y-5">
 
-    <!-- Brevo sender setup -->
+    <!-- SMTP2GO sender setup -->
     <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
       <div class="px-6 py-5 border-b border-stone-100">
-        <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-paper-plane-tilt" style="color:var(--blue)"></i> Envoi des emails (Brevo)</h2>
-        <p class="text-xs text-stone-400 mt-0.5">Aucun nom de domaine requis : il suffit de vérifier votre propre adresse email pour pouvoir envoyer vers n'importe quelle boîte mail.</p>
+        <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-paper-plane-tilt" style="color:var(--blue)"></i> Envoi des emails (SMTP2GO)</h2>
+        <p class="text-xs text-stone-400 mt-0.5">Aucun nom de domaine requis : il suffit de vérifier votre propre adresse email (même @free.fr, @gmail.com...) pour pouvoir envoyer vers n'importe quelle boîte mail.</p>
       </div>
       <div class="px-6 pb-6 pt-4">
         <div id="email-config-status" class="text-sm text-stone-500 mb-5">Chargement…</div>
 
         <details class="rounded-xl border border-stone-100 bg-stone-50 mb-5">
-          <summary class="px-4 py-3 cursor-pointer list-none select-none text-sm font-bold text-stone-700 flex items-center gap-2"><i class="ph ph-lightbulb" style="color:var(--blue)"></i> Comment configurer Brevo (5 minutes) <span class="text-stone-400 font-normal ml-auto text-xs">Cliquer pour ouvrir ▾</span></summary>
+          <summary class="px-4 py-3 cursor-pointer list-none select-none text-sm font-bold text-stone-700 flex items-center gap-2"><i class="ph ph-lightbulb" style="color:var(--blue)"></i> Comment configurer SMTP2GO (5 minutes) <span class="text-stone-400 font-normal ml-auto text-xs">Cliquer pour ouvrir ▾</span></summary>
           <ol class="px-4 pb-4 text-sm text-stone-600 space-y-2 list-decimal list-inside">
-            <li>Créez un compte gratuit sur <strong>brevo.com</strong> (bouton "S'inscrire", gratuit, aucune carte bancaire requise).</li>
-            <li>Une fois connecté, allez dans <strong>Paramètres</strong> (icône engrenage, en haut à droite) → <strong>Expéditeurs, domaines et dédiabolisation</strong> → onglet <strong>Expéditeurs</strong>.</li>
-            <li>Cliquez sur <strong>Ajouter un expéditeur</strong>, entrez le nom à afficher (ex: "Tranquille, on est en vacances") et l'adresse email à utiliser pour l'envoi (ex: votre adresse @free.fr, @gmail.com, peu importe).</li>
-            <li>Brevo envoie un <strong>code à 6 chiffres</strong> à cette adresse — ouvrez votre boîte mail, récupérez le code, entrez-le sur Brevo pour valider l'expéditeur.</li>
-            <li>Retournez dans <strong>Paramètres → Clés API</strong> (dans le même menu), cliquez sur <strong>Générer une nouvelle clé API</strong>, donnez-lui un nom (ex: "Blog voyage") et copiez la clé affichée (elle commence par <code>xkeysib-</code>).</li>
-            <li>Collez cette clé et l'adresse expéditrice ci-dessous, puis cliquez sur Enregistrer.</li>
+            <li>Créez un compte gratuit sur <strong>smtp2go.com</strong> (bouton "Sign up free", gratuit jusqu'à 1000 emails/mois, aucune carte bancaire requise).</li>
+            <li>Une fois connecté, allez dans <strong>Settings → API Keys</strong>, cliquez sur <strong>Add API Key</strong>, donnez-lui un nom (ex: "Blog voyage") et copiez la clé affichée (elle commence par <code>api-</code>).</li>
+            <li>Renseignez ci-dessous cette clé, l'adresse email à utiliser pour l'envoi (ex: votre adresse @free.fr) et le nom affiché, puis cliquez sur <strong>Enregistrer</strong>.</li>
+            <li>Cliquez ensuite sur <strong>Envoyer l'email de vérification</strong> ci-dessous — SMTP2GO envoie un lien de confirmation à cette adresse.</li>
+            <li>Ouvrez votre boîte mail et cliquez sur le lien reçu (« Verified Sender » chez SMTP2GO).</li>
+            <li>Revenez ici et cliquez sur <strong>Vérifier le statut</strong> pour confirmer que tout est actif.</li>
           </ol>
         </details>
 
         <div class="grid gap-4">
           <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Clé API Brevo</label>
-            <input type="password" id="ec-api-key" placeholder="xkeysib-..." autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm font-mono">
+            <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Clé API SMTP2GO</label>
+            <input type="password" id="ec-api-key" placeholder="api-..." autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm font-mono">
             <p id="ec-api-key-current" class="text-xs text-stone-400 mt-1"></p>
           </div>
           <div class="grid sm:grid-cols-2 gap-4">
@@ -397,6 +397,7 @@ ${ADMIN_NAV()}
           </div>
         </div>
         <div class="mt-4 flex flex-wrap gap-2 justify-end">
+          <button onclick="requestSenderVerification()" class="subtle-btn text-sm"><i class="ph ph-paper-plane-tilt"></i> Envoyer l'email de vérification</button>
           <button onclick="checkSenderStatus()" class="subtle-btn text-sm"><i class="ph ph-arrow-clockwise"></i> Vérifier le statut</button>
           <button onclick="saveEmailConfig()" class="action-btn-sm"><i class="ph ph-floppy-disk"></i> Enregistrer</button>
         </div>
@@ -770,7 +771,7 @@ async function changePassword() {
   }
 }
 
-// ── Emails tab: Brevo sender setup + send history ──────────────
+// ── Emails tab: SMTP2GO sender setup + send history ─────────────
 function senderStatusBadge(verified) {
   if (verified === true)  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#f0fdf4;color:var(--palm)"><i class="ph ph-check-circle"></i> Vérifié</span>';
   if (verified === false) return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#fef2f2;color:#dc3c3c"><i class="ph ph-x-circle"></i> Non vérifié</span>';
@@ -790,7 +791,7 @@ async function loadEmailConfigStatus() {
     return;
   }
   box.innerHTML = '<div class="flex items-center gap-2 flex-wrap"><strong class="text-stone-800">'+esc(data.from_address)+'</strong> '+senderStatusBadge(data.sender_verified)+'</div>' +
-    (data.sender_verified===false ? '<p class="text-xs text-amber-700 mt-2"><i class="ph ph-warning"></i> Cette adresse n\\'est pas encore vérifiée sur Brevo. Suivez le tuto ci-dessous pour la valider avec le code reçu par email.</p>' : '');
+    (data.sender_verified===false ? '<p class="text-xs text-amber-700 mt-2"><i class="ph ph-warning"></i> Cette adresse n\\'est pas encore vérifiée sur SMTP2GO. Cliquez sur « Envoyer l\\'email de vérification » puis suivez le lien reçu.</p>' : '');
 }
 async function saveEmailConfig() {
   const apiKey = (document.getElementById('ec-api-key')?.value||'').trim();
@@ -805,12 +806,19 @@ async function saveEmailConfig() {
     loadEmailConfigStatus();
   } else toast((data&&data.error)||'Erreur','err');
 }
+async function requestSenderVerification() {
+  toast('Envoi de l\\'email de vérification...','info');
+  const res = await fetch('/api/admin/email-config/verify', {method:'POST'}).catch(()=>null);
+  const data = await res?.json().catch(()=>null);
+  if (res && res.ok) toast(data.message || 'Email de vérification envoyé !','ok');
+  else toast((data&&data.error)||'Erreur','err');
+}
 async function checkSenderStatus() {
   toast('Vérification en cours...','info');
   const res = await fetch('/api/admin/email-config/check', {method:'POST'}).catch(()=>null);
   const data = await res?.json().catch(()=>null);
   if (res && res.ok) {
-    toast(data.sender_verified ? 'Adresse vérifiée !' : (data.found ? 'Toujours non vérifiée — entrez le code reçu par email sur Brevo.' : 'Adresse introuvable sur Brevo — ajoutez-la comme expéditeur d\\'abord.'), data.sender_verified?'ok':'info');
+    toast(data.sender_verified ? 'Adresse vérifiée !' : (data.found ? 'Toujours non vérifiée — cliquez le lien reçu par email.' : 'Adresse pas encore soumise — cliquez « Envoyer l\\'email de vérification » d\\'abord.'), data.sender_verified?'ok':'info');
     loadEmailConfigStatus();
   } else toast((data&&data.error)||'Erreur','err');
 }

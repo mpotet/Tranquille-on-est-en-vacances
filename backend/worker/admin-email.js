@@ -65,14 +65,16 @@ function publicBase(env) {
 }
 
 /**
- * Email provider: Brevo (ex-Sendinblue) transactional API.
+ * Email provider: SMTP2GO transactional API.
  *
- * Chosen over Resend because Brevo lets you verify a single SENDER ADDRESS
- * (a 6-digit code emailed to that address, no DNS/domain ownership needed)
- * and then send to any recipient - unlike Resend, which requires verifying
- * an entire domain you own before lifting the "sandbox: only your own
- * address" restriction. This project has no domain, so Brevo is the option
- * that actually works without one.
+ * Resend requires a fully DNS-verified domain (no domain here, so a hard
+ * no). Brevo lets you verify a single sender ADDRESS with no domain needed
+ * in principle, but new free accounts require a manual support-ticket
+ * activation of their transactional API before it works at all ("Your SMTP
+ * account is not yet activated") - unusable for a "works right away" need.
+ * SMTP2GO's "Single Sender Email" verification (click a confirmation link,
+ * no domain, no manual support activation) is the option that actually
+ * works immediately without buying a domain.
  *
  * Both the API key and the verified sender address are stored in
  * site_settings (not a wrangler secret) so the admin can configure this
@@ -80,11 +82,11 @@ function publicBase(env) {
  */
 async function getEmailConfig(env) {
   const { results } = await env.DB
-    .prepare("SELECT key, value FROM site_settings WHERE key IN ('brevo_api_key', 'email_from_address', 'email_from_name')")
+    .prepare("SELECT key, value FROM site_settings WHERE key IN ('smtp2go_api_key', 'email_from_address', 'email_from_name')")
     .all();
   const settings = Object.fromEntries((results || []).map(r => [r.key, r.value]));
   return {
-    apiKey: settings.brevo_api_key || '',
+    apiKey: settings.smtp2go_api_key || '',
     fromAddress: settings.email_from_address || '',
     fromName: settings.email_from_name || 'Tranquille, on est en vacances',
   };
@@ -105,9 +107,9 @@ async function logEmailAttempt(env, { emailType, recipient, ok, error }) {
 async function send(env, { to, subject, html, emailType }) {
   const { apiKey, fromAddress, fromName } = await getEmailConfig(env);
   if (!apiKey) {
-    console.warn('[AdminEmail] Clé API Brevo non configurée - email ignoré');
-    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: "Clé API Brevo non configurée. Rendez-vous dans l'onglet Emails du tableau de bord." });
-    return { ok: false, skipped: true, error: "Clé API Brevo non configurée." };
+    console.warn('[AdminEmail] Clé API SMTP2GO non configurée - email ignoré');
+    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: "Clé API SMTP2GO non configurée. Rendez-vous dans l'onglet Emails du tableau de bord." });
+    return { ok: false, skipped: true, error: "Clé API SMTP2GO non configurée." };
   }
   if (!fromAddress) {
     console.warn('[AdminEmail] Adresse expéditrice non configurée - email ignoré');
@@ -117,40 +119,45 @@ async function send(env, { to, subject, html, emailType }) {
 
   let res;
   try {
-    res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    res = await fetch('https://api.smtp2go.com/v3/email/send', {
       method: 'POST',
       headers: {
-        'api-key': apiKey,
+        'X-Smtp2go-Api-Key': apiKey,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        sender: { name: fromName, email: fromAddress },
-        to: [{ email: to }],
+        sender: `${fromName} <${fromAddress}>`,
+        to: [to],
         subject,
-        htmlContent: html,
+        html_body: html,
       }),
       signal: AbortSignal.timeout(10000),
     });
   } catch (err) {
-    const friendly = err?.name === 'TimeoutError' ? 'Brevo ne répond pas (délai dépassé).' : 'Erreur réseau vers Brevo.';
+    const friendly = err?.name === 'TimeoutError' ? 'SMTP2GO ne répond pas (délai dépassé).' : 'Erreur réseau vers SMTP2GO.';
     console.error(`[AdminEmail] ${friendly} pour ${to}:`, err?.message || err);
     await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: friendly });
     return { ok: false, error: friendly };
   }
+  const body = await res.json().catch(() => null);
   if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    let friendly = `Erreur HTTP ${res.status}`;
-    try {
-      const parsed = JSON.parse(body);
-      if (parsed?.message) friendly = parsed.message;
-      if (res.status === 401 || parsed?.code === 'unauthorized') {
-        friendly = "Expéditeur non vérifié ou clé API invalide. Vérifiez l'adresse dans l'onglet Emails.";
-      }
-    } catch { /* keep generic message if body isn't JSON */ }
-    console.error(`[AdminEmail] HTTP ${res.status} pour ${to}: ${body}`);
+    let friendly = body?.data?.error || `Erreur HTTP ${res.status}`;
+    if (res.status === 401) friendly = 'Clé API invalide. Vérifiez-la dans l\'onglet Emails.';
+    console.error(`[AdminEmail] HTTP ${res.status} pour ${to}:`, body);
     await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: friendly });
     return { ok: false, status: res.status, error: friendly };
+  }
+  // SMTP2GO can return HTTP 200 with succeeded:1 and STILL silently drop the
+  // email server-side if the sender address isn't a verified "Single Sender
+  // Email" yet - the API accepts it, but delivery fails after the fact with
+  // no error surfaced here unless we check `failures` explicitly.
+  const failures = body?.data?.failures;
+  if (Array.isArray(failures) && failures.length > 0) {
+    const friendly = "Expéditeur non vérifié sur SMTP2GO. Ajoutez et confirmez l'adresse dans l'onglet Emails (email de vérification à cliquer).";
+    console.error(`[AdminEmail] Envoi rejeté pour ${to}:`, failures);
+    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: friendly });
+    return { ok: false, error: friendly };
   }
   await logEmailAttempt(env, { emailType, recipient: to, ok: true });
   return { ok: true };

@@ -34,7 +34,7 @@ import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, de
 import { getSettings, updateSettings } from './api/settings.js';
 import { listComments, createComment, deleteComment } from './api/comments.js';
 import {
-  listEmailLog, getEmailConfigStatus, saveEmailConfig, checkEmailSenderStatus,
+  listEmailLog, getEmailConfigStatus, saveEmailConfig, checkEmailSenderStatus, requestSenderVerification,
 } from './api/email-admin.js';
 import {
   getPushConfig, pushSubscribe, pushUnsubscribe,
@@ -1036,7 +1036,7 @@ export default {
         return json({ ok: true, email_sent: true });
       }
 
-      // ── Emails tab: send history + Brevo sender setup ────────
+      // ── Emails tab: send history + SMTP2GO sender setup ──────
       if (path === '/api/admin/email-log' && method === 'GET') {
         if (!authed) return unauthorized();
         return listEmailLog(env);
@@ -1049,6 +1049,10 @@ export default {
       if (path === '/api/admin/email-config/check' && method === 'POST') {
         if (!authed) return unauthorized();
         return checkEmailSenderStatus(env);
+      }
+      if (path === '/api/admin/email-config/verify' && method === 'POST') {
+        if (!authed) return unauthorized();
+        return requestSenderVerification(env);
       }
 
       // Folders
