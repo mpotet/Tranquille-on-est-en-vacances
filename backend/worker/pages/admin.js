@@ -152,10 +152,10 @@ ${ADMIN_NAV()}
 <!-- Tab bar -->
 <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
   <div id="admin-tabs" role="tablist" aria-label="Sections de l'administration" class="flex flex-wrap gap-1.5 border-b border-stone-200 pb-0 mb-2">
-    <button type="button" role="tab" data-tab="articles" class="admin-tab" aria-selected="true"><i class="ph ph-notebook"></i> Articles</button>
-    <button type="button" role="tab" data-tab="settings" class="admin-tab" aria-selected="false"><i class="ph ph-gear"></i> Paramètres du site</button>
-    <button type="button" role="tab" data-tab="account" class="admin-tab" aria-selected="false"><i class="ph ph-user-circle"></i> Compte</button>
-    <button type="button" role="tab" data-tab="emails" class="admin-tab" aria-selected="false"><i class="ph ph-envelope"></i> Emails</button>
+    <button type="button" id="admintab-articles" role="tab" data-tab="articles" class="admin-tab" aria-selected="true" aria-controls="tab-articles"><i class="ph ph-notebook"></i> Articles</button>
+    <button type="button" id="admintab-settings" role="tab" data-tab="settings" class="admin-tab" aria-selected="false" aria-controls="tab-settings" tabindex="-1"><i class="ph ph-gear"></i> Paramètres du site</button>
+    <button type="button" id="admintab-account" role="tab" data-tab="account" class="admin-tab" aria-selected="false" aria-controls="tab-account" tabindex="-1"><i class="ph ph-user-circle"></i> Compte</button>
+    <button type="button" id="admintab-emails" role="tab" data-tab="emails" class="admin-tab" aria-selected="false" aria-controls="tab-emails" tabindex="-1"><i class="ph ph-envelope"></i> Emails</button>
   </div>
 </div>
 <style>
@@ -169,7 +169,7 @@ ${ADMIN_NAV()}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
   <!-- Tab: Articles -->
-  <div id="tab-articles" class="admin-tab-panel active">
+  <div id="tab-articles" class="admin-tab-panel active" role="tabpanel" aria-labelledby="admintab-articles">
   <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
     <!-- Sidebar -->
@@ -227,7 +227,7 @@ ${ADMIN_NAV()}
   </div>
 
   <!-- Tab: Site settings -->
-  <div id="tab-settings" class="admin-tab-panel">
+  <div id="tab-settings" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-settings">
   <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
     <div class="px-6 py-5 border-b border-stone-100">
       <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-gear" style="color:var(--blue)"></i> Contenu &amp; paramètres du site</h2>
@@ -307,7 +307,7 @@ ${ADMIN_NAV()}
   </div>
 
   <!-- Tab: Account -->
-  <div id="tab-account" class="admin-tab-panel">
+  <div id="tab-account" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-account">
   <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
     <div class="px-6 py-5 border-b border-stone-100">
       <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-user-circle" style="color:var(--blue)"></i> Compte administrateur</h2>
@@ -355,7 +355,7 @@ ${ADMIN_NAV()}
   </div>
 
   <!-- Tab: Emails -->
-  <div id="tab-emails" class="admin-tab-panel">
+  <div id="tab-emails" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-emails">
   <div class="space-y-5">
 
     <!-- Brevo sender setup -->
@@ -836,8 +836,16 @@ async function loadEmailLog() {
 // ── Tab switching ───────────────────────────────────────────────
 const TAB_LOADERS = { emails: () => { loadEmailConfigStatus(); loadEmailLog(); } };
 const _loadedTabs = new Set(['articles']);
-function switchTab(name) {
-  document.querySelectorAll('.admin-tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+const TAB_NAMES = ['articles','settings','account','emails'];
+function switchTab(name, focusTab) {
+  document.querySelectorAll('.admin-tab').forEach(b => {
+    const selected = b.dataset.tab === name;
+    b.setAttribute('aria-selected', String(selected));
+    // Roving tabindex (ARIA APG "tabs" pattern): only the active tab is a
+    // Tab-stop, arrow keys move focus between the others.
+    b.tabIndex = selected ? 0 : -1;
+    if (selected && focusTab) b.focus();
+  });
   document.querySelectorAll('.admin-tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-'+name));
   if (!_loadedTabs.has(name) && TAB_LOADERS[name]) { _loadedTabs.add(name); TAB_LOADERS[name](); }
   if (history.replaceState) history.replaceState(null, '', name === 'articles' ? location.pathname : location.pathname + '#' + name);
@@ -845,6 +853,20 @@ function switchTab(name) {
 document.getElementById('admin-tabs').addEventListener('click', e => {
   const btn = e.target.closest('.admin-tab');
   if (btn) switchTab(btn.dataset.tab);
+});
+// Arrow-key navigation between tabs (ARIA APG pattern) once a tab is focused.
+document.getElementById('admin-tabs').addEventListener('keydown', e => {
+  if (!['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) return;
+  const current = e.target.closest('.admin-tab');
+  if (!current) return;
+  e.preventDefault();
+  const i = TAB_NAMES.indexOf(current.dataset.tab);
+  let next;
+  if (e.key === 'Home') next = TAB_NAMES[0];
+  else if (e.key === 'End') next = TAB_NAMES[TAB_NAMES.length - 1];
+  else if (e.key === 'ArrowLeft') next = TAB_NAMES[(i - 1 + TAB_NAMES.length) % TAB_NAMES.length];
+  else next = TAB_NAMES[(i + 1) % TAB_NAMES.length];
+  switchTab(next, true);
 });
 
 document.addEventListener('click', e => {

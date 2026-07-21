@@ -115,20 +115,29 @@ async function send(env, { to, subject, html, emailType }) {
     return { ok: false, skipped: true, error: "Adresse expéditrice non configurée." };
   }
 
-  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: {
-      'api-key': apiKey,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
-    body: JSON.stringify({
-      sender: { name: fromName, email: fromAddress },
-      to: [{ email: to }],
-      subject,
-      htmlContent: html,
-    }),
-  });
+  let res;
+  try {
+    res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: fromName, email: fromAddress },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch (err) {
+    const friendly = err?.name === 'TimeoutError' ? 'Brevo ne répond pas (délai dépassé).' : 'Erreur réseau vers Brevo.';
+    console.error(`[AdminEmail] ${friendly} pour ${to}:`, err?.message || err);
+    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: friendly });
+    return { ok: false, error: friendly };
+  }
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     let friendly = `Erreur HTTP ${res.status}`;

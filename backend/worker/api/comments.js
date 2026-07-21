@@ -85,6 +85,15 @@ export async function createComment(request, env, slugOrId, isAdmin) {
     return forbidden('Mauvaise réponse à la question. Réessayez.');
   }
 
+  // The gate above only throttles WRONG guesses - once the (single, shared)
+  // answer is known, nothing stopped unlimited comment submissions. Throttle
+  // successful submissions too, separately from gate attempts.
+  const postLimit = await checkRateLimit(env.DB, 'comment_post', ip, { max: 5, windowMinutes: 10 });
+  if (postLimit.blocked) {
+    return forbidden(`Trop de commentaires envoyés récemment. Réessayez dans ${Math.ceil(postLimit.retryAfterSeconds / 60)} min.`);
+  }
+  await recordFailedAttempt(env.DB, 'comment_post', ip);
+
   const result = await env.DB
     .prepare('INSERT INTO comments (article_id, author_name, body) VALUES (?, ?, ?)')
     .bind(articleId, authorName, commentBody)

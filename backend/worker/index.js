@@ -823,8 +823,12 @@ export default {
         await recordFailedAttempt(env.DB, 'forgot_password', ip);
         const account = await getAdminByEmail(env.DB, email);
         if (account) {
-          const { token } = await issueToken(env.DB, 'reset');
-          ctx.waitUntil(sendResetEmail(env, account.email, token));
+          const result = await issueToken(env.DB, 'reset');
+          // A still-valid token for a different purpose (e.g. a pending email
+          // change) is left alone rather than silently invalidated - the
+          // generic { ok: true } response is kept either way so this endpoint
+          // still never reveals account existence or token state.
+          if (!result.conflict) ctx.waitUntil(sendResetEmail(env, account.email, result.token));
         }
       }
       return json({ ok: true });
@@ -840,6 +844,14 @@ export default {
 
     // ── Consume setup/reset token → set password → log in ─────
     if (path === '/admin/set-password' && method === 'POST') {
+      // Same defense-in-depth as /admin/login: without this, the token could
+      // be brute-forced by an automated client with no throttle at all.
+      const ip = clientKey(request);
+      const spLimit = await checkRateLimit(env.DB, 'set_password', ip, { max: 10, windowMinutes: 15 });
+      if (spLimit.blocked) {
+        return badRequest(`Trop de tentatives. Réessayez dans ${Math.ceil(spLimit.retryAfterSeconds / 60)} min.`);
+      }
+
       const body = await request.json().catch(() => ({}));
       const token = String(body.token || '');
       const password = String(body.password || '');
@@ -851,6 +863,7 @@ export default {
         (await findByValidToken(env.DB, token, 'setup')) ||
         (await findByValidToken(env.DB, token, 'reset'));
       if (!row) {
+        await recordFailedAttempt(env.DB, 'set_password', ip);
         return badRequest('Lien invalide ou expiré.');
       }
       const hash = await hashPassword(password);
@@ -964,6 +977,13 @@ export default {
 
       if (path === '/api/admin/change-password' && method === 'POST') {
         if (!authed) return unauthorized();
+        // Defense in depth: a stolen session cookie shouldn't let an attacker
+        // brute-force current_password with unlimited attempts.
+        const cpIp = clientKey(request);
+        const cpLimit = await checkRateLimit(env.DB, 'change_password', cpIp, { max: 8, windowMinutes: 15 });
+        if (cpLimit.blocked) {
+          return json({ error: `Trop de tentatives. Réessayez dans ${Math.ceil(cpLimit.retryAfterSeconds / 60)} min.` }, 429);
+        }
         const body = await request.json().catch(() => ({}));
         const currentPassword = String(body.current_password || '');
         const newPassword = String(body.new_password || '');
@@ -973,7 +993,10 @@ export default {
         const acc = await getAdminAccount(env.DB);
         // Re-auth: verify the current password even though a session exists.
         const ok = await verifyPassword(currentPassword, acc?.password_hash);
-        if (!ok) return json({ error: 'Mot de passe actuel incorrect.' }, 403);
+        if (!ok) {
+          await recordFailedAttempt(env.DB, 'change_password', cpIp);
+          return json({ error: 'Mot de passe actuel incorrect.' }, 403);
+        }
         const hash = await hashPassword(newPassword);
         await env.DB
           .prepare('UPDATE admin_account SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
@@ -991,14 +1014,22 @@ export default {
           return badRequest('Adresse email invalide.');
         }
         const acc = await getAdminAccount(env.DB);
+        const tokenResult = await issueToken(env.DB, 'email_change');
+        if (tokenResult.conflict) {
+          // A 'setup'/'reset' link is still live - issuing a new token here
+          // would silently kill that pending request. Tell the admin plainly
+          // instead of quietly discarding it (this used to happen with no
+          // explanation beyond a later "invalid or expired link").
+          const conflictLabel = { setup: 'de configuration initiale', reset: 'de réinitialisation de mot de passe' }[tokenResult.conflict] || tokenResult.conflict;
+          return badRequest(`Une demande ${conflictLabel} est déjà en cours (lien envoyé il y a moins d'1h). Attendez son expiration ou utilisez-la d'abord avant de changer d'adresse.`);
+        }
         await env.DB
           .prepare('UPDATE admin_account SET pending_email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
           .bind(newEmail, acc.id).run();
-        const { token } = await issueToken(env.DB, 'email_change');
         // Awaited (not ctx.waitUntil) so the client learns immediately whether
         // the email actually went out, instead of a silent { ok: true } that
         // looked identical whether Resend accepted or rejected the send.
-        const result = await sendEmailChangeEmail(env, newEmail, token);
+        const result = await sendEmailChangeEmail(env, newEmail, tokenResult.token);
         if (!result.ok) {
           return json({ ok: true, email_sent: false, email_error: result.error || 'Échec envoi email.' });
         }

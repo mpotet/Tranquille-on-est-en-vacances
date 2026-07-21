@@ -7,9 +7,14 @@
  *   VAPID_PUBLIC_KEY  - base64url raw P-256 public key
  *   VAPID_PRIVATE_KEY - base64(JSON.stringify(jwk))
  *   VAPID_SUBJECT     - "mailto:..."
- *   RESEND_API_KEY    - Resend.com API key
- *   NOTIFY_FROM_EMAIL - e.g. "Blog Potet <noreply@yourdomain.com>"
  *   PUBLIC_URL        - public base URL e.g. "https://vacances.potet.fr"
+ *
+ * Email sending uses Brevo (same provider + config as worker/admin-email.js:
+ * site_settings.brevo_api_key / email_from_address / email_from_name) rather
+ * than Resend - this used to be the one place still on Resend after the rest
+ * of the app migrated, which meant subscriber notifications would silently
+ * fail (only a console.error, invisible in the editor UI) once the Resend key
+ * stopped being the thing actually configured.
  */
 
 import { sendWebPush } from './vapid.js';
@@ -168,9 +173,19 @@ async function _doNotify(env, article, isUpdate, changes) {
     console.warn('[Push] VAPID_PUBLIC_KEY ou VAPID_PRIVATE_KEY manquants - push ignoré');
   }
 
-  // ── Email notifications ───────────────────────────────────────────────────
-  if (env.RESEND_API_KEY) {
-    try {
+  // ── Email notifications (via Brevo) ───────────────────────────────────────
+  try {
+    const { results: settingsRows } = await env.DB
+      .prepare("SELECT key, value FROM site_settings WHERE key IN ('brevo_api_key', 'email_from_address', 'email_from_name')")
+      .all();
+    const settings = Object.fromEntries((settingsRows || []).map(r => [r.key, r.value]));
+    const apiKey = settings.brevo_api_key || '';
+    const fromAddress = settings.email_from_address || '';
+    const fromName = settings.email_from_name || 'Tranquille, on est en vacances';
+
+    if (!apiKey || !fromAddress) {
+      console.warn('[Email] Configuration Brevo incomplète - notifications email ignorées');
+    } else {
       const { results: emailSubs } = await env.DB
         .prepare('SELECT email, token FROM email_subscriptions WHERE active=1')
         .all();
@@ -178,26 +193,26 @@ async function _doNotify(env, article, isUpdate, changes) {
       console.log(`[Email] ${emailSubs?.length ?? 0} abonné(s) email`);
 
       if (emailSubs && emailSubs.length > 0) {
-        const fromEmail = env.NOTIFY_FROM_EMAIL || 'onboarding@resend.dev';
-
         await Promise.allSettled(emailSubs.map(async sub => {
           try {
             const unsubUrl = `${publicUrl}/unsubscribe?token=${sub.token}`;
             const subject = isUpdate
               ? `✏️ Récit mis à jour : ${article.title}`
               : `✈️ Nouveau voyage : ${article.title}`;
-            const emailRes = await fetch('https://api.resend.com/emails', {
+            const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
               method:  'POST',
               headers: {
-                Authorization:  `Bearer ${env.RESEND_API_KEY}`,
+                'api-key': apiKey,
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
               },
               body: JSON.stringify({
-                from:    fromEmail,
-                to:      [sub.email],
+                sender: { name: fromName, email: fromAddress },
+                to:     [{ email: sub.email }],
                 subject,
-                html:    buildEmailHtml(article, articleUrl, unsubUrl, isUpdate, changes),
+                htmlContent: buildEmailHtml(article, articleUrl, unsubUrl, isUpdate, changes),
               }),
+              signal: AbortSignal.timeout(10000),
             });
             if (!emailRes.ok) {
               const body = await emailRes.text().catch(() => '');
@@ -210,10 +225,8 @@ async function _doNotify(env, article, isUpdate, changes) {
           }
         }));
       }
-    } catch (err) {
-      console.error('[Email] notifications failed:', err);
     }
-  } else {
-    console.warn('[Email] RESEND_API_KEY manquant - email ignoré');
+  } catch (err) {
+    console.error('[Email] notifications failed:', err);
   }
 }

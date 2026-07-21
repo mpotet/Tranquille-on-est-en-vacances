@@ -256,6 +256,10 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 @media (prefers-reduced-motion: reduce) {
   .page-in, .float-anim { animation: none!important; }
   .voyage-card, .card, .btn-primary, .btn-ghost, .action-btn, .subtle-btn { transition: none!important; }
+  /* Lightbox zoom/pan image transform + the zoom control buttons' hover
+     transitions were not covered by the rule above and kept animating even
+     with "reduce motion" enabled at the OS level. */
+  #lb-img, #lightbox button { transition: none!important; }
 }
 
 /* ── Admin ──────────────────────────────────────────────────── */
@@ -589,7 +593,7 @@ export const LIGHTBOX = `
     <button onclick="lbZoomBy(-0.5)" aria-label="Dézoomer" class="text-white/80 hover:text-white rounded-full p-2.5 transition-all" style="background:rgba(255,255,255,.15)">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14"/></svg>
     </button>
-    <button onclick="lbZoomReset()" aria-label="Réinitialiser le zoom" id="lb-zoom-pct" class="text-white/80 hover:text-white rounded-full px-3 py-2.5 text-xs font-semibold transition-all" style="background:rgba(255,255,255,.15);min-width:3.2rem">100%</button>
+    <button onclick="lbZoomReset()" aria-label="Réinitialiser le zoom, actuellement 100%" id="lb-zoom-pct" class="text-white/80 hover:text-white rounded-full px-3 py-2.5 text-xs font-semibold transition-all" style="background:rgba(255,255,255,.15);min-width:3.2rem">100%</button>
     <button onclick="lbZoomBy(0.5)" aria-label="Zoomer" class="text-white/80 hover:text-white rounded-full p-2.5 transition-all" style="background:rgba(255,255,255,.15)">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14M5 12h14"/></svg>
     </button>
@@ -611,9 +615,19 @@ function closeLightbox(){document.getElementById('lightbox').classList.add('hidd
 function lbNav(d){if(_lb.photos.length<=1)return;_lb.idx=(_lb.idx+d+_lb.photos.length)%_lb.photos.length;_lbResetZoom();_updLb()}
 function _updLb(){const p=_lb.photos[_lb.idx];const img=document.getElementById('lb-img');img.src=p.url;img.alt=p.caption||'';document.getElementById('lb-caption').textContent=p.caption||'';const nav=_lb.photos.length>1;document.getElementById('lb-counter').textContent=nav?(_lb.idx+1)+' / '+_lb.photos.length:'';document.querySelectorAll('#lightbox button[aria-label="Photo précédente"],#lightbox button[aria-label="Photo suivante"]').forEach(b=>b.style.display=nav?'':'none');}
 function _lbResetZoom(){_lb.scale=1;_lb.tx=0;_lb.ty=0;_lbApplyTransform()}
-function _lbApplyTransform(){const img=document.getElementById('lb-img');if(!img)return;img.style.transform='translate('+_lb.tx+'px,'+_lb.ty+'px) scale('+_lb.scale+')';const pct=document.getElementById('lb-zoom-pct');if(pct)pct.textContent=Math.round(_lb.scale*100)+'%'}
-function lbZoomReset(){_lbResetZoom()}
-function lbZoomBy(delta,cx,cy){_lbSetZoom(_lb.scale+delta,cx,cy)}
+function _lbApplyTransform(){
+  const img=document.getElementById('lb-img');if(!img)return;
+  img.style.transform='translate('+_lb.tx+'px,'+_lb.ty+'px) scale('+_lb.scale+')';
+  const pct=document.getElementById('lb-zoom-pct');
+  if(pct){const pctText=Math.round(_lb.scale*100)+'%';pct.textContent=pctText;pct.setAttribute('aria-label','Réinitialiser le zoom, actuellement '+pctText);}
+}
+// Disable the CSS transition while a drag/pinch/pan is actively in progress -
+// otherwise every frame is smoothed by the .12s transition, creating a lag
+// between the finger/cursor and the image during continuous gestures. Only
+// re-enable it for discrete jumps (buttons, wheel, double-click, reset).
+function _lbSetTransition(on){const img=document.getElementById('lb-img');if(img)img.style.transitionDuration=on?'.12s':'0s'}
+function lbZoomReset(){_lbSetTransition(true);_lbResetZoom()}
+function lbZoomBy(delta,cx,cy){_lbSetTransition(true);_lbSetZoom(_lb.scale+delta,cx,cy)}
 function _lbSetZoom(newScale,cx,cy){
   const clamped=Math.min(_lb.MAX,Math.max(_lb.MIN,newScale));
   if(clamped===_lb.scale)return;
@@ -632,20 +646,37 @@ function _lbSetZoom(newScale,cx,cy){
 }
 function _lbClampPan(){
   // Keep the image from being dragged entirely off-screen once zoomed.
+  // Clamp against the actual RENDERED image size, not the viewport size -
+  // with object-contain, a tall/narrow image inside a wide viewport leaves
+  // empty side margins, and clamping to the viewport would let the image be
+  // panned fully out of view before hitting the limit.
+  const img=document.getElementById('lb-img');
+  if(!img)return;
+  const w=img.offsetWidth*_lb.scale, h=img.offsetHeight*_lb.scale;
   const vp=document.getElementById('lb-viewport');
-  if(!vp)return;
-  const maxX=(vp.clientWidth*(_lb.scale-1))/2+40;
-  const maxY=(vp.clientHeight*(_lb.scale-1))/2+40;
+  const vw=vp.clientWidth, vh=vp.clientHeight;
+  const maxX=Math.max(0,(w-vw)/2)+40;
+  const maxY=Math.max(0,(h-vh)/2)+40;
   _lb.tx=Math.min(maxX,Math.max(-maxX,_lb.tx));
   _lb.ty=Math.min(maxY,Math.max(-maxY,_lb.ty));
 }
-document.addEventListener('keydown',e=>{if(document.getElementById('lightbox').classList.contains('hidden'))return;if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft'&&_lb.scale===_lb.MIN)lbNav(-1);if(e.key==='ArrowRight'&&_lb.scale===_lb.MIN)lbNav(1);if(e.key==='+'||e.key==='=')lbZoomBy(0.5);if(e.key==='-')lbZoomBy(-0.5);});
+const LB_PAN_STEP=60;
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('lightbox').classList.contains('hidden'))return;
+  if(e.key==='Escape'){ _lb.scale>_lb.MIN ? lbZoomReset() : closeLightbox(); return; }
+  if(e.key==='ArrowLeft'){ if(_lb.scale===_lb.MIN){lbNav(-1);}else{e.preventDefault();_lbSetTransition(false);_lb.tx+=LB_PAN_STEP;_lbClampPan();_lbApplyTransform();} return; }
+  if(e.key==='ArrowRight'){ if(_lb.scale===_lb.MIN){lbNav(1);}else{e.preventDefault();_lbSetTransition(false);_lb.tx-=LB_PAN_STEP;_lbClampPan();_lbApplyTransform();} return; }
+  if(e.key==='ArrowUp'&&_lb.scale>_lb.MIN){e.preventDefault();_lbSetTransition(false);_lb.ty+=LB_PAN_STEP;_lbClampPan();_lbApplyTransform();return;}
+  if(e.key==='ArrowDown'&&_lb.scale>_lb.MIN){e.preventDefault();_lbSetTransition(false);_lb.ty-=LB_PAN_STEP;_lbClampPan();_lbApplyTransform();return;}
+  if(e.key==='+'||e.key==='=')lbZoomBy(0.5);
+  if(e.key==='-')lbZoomBy(-0.5);
+});
 // Double-click / double-tap to zoom in, mouse wheel to zoom, drag to pan when zoomed.
 const _lbVp=document.getElementById('lb-viewport');
-_lbVp.addEventListener('dblclick',e=>{e.stopPropagation();_lb.scale>_lb.MIN?_lbResetZoom():_lbSetZoom(2.5,e.clientX,e.clientY)});
-_lbVp.addEventListener('wheel',e=>{e.preventDefault();e.stopPropagation();_lbSetZoom(_lb.scale-e.deltaY*0.0025,e.clientX,e.clientY)},{passive:false});
+_lbVp.addEventListener('dblclick',e=>{e.stopPropagation();_lbSetTransition(true);_lb.scale>_lb.MIN?_lbResetZoom():_lbSetZoom(2.5,e.clientX,e.clientY)});
+_lbVp.addEventListener('wheel',e=>{e.preventDefault();e.stopPropagation();_lbSetTransition(true);_lbSetZoom(_lb.scale-e.deltaY*0.0025,e.clientX,e.clientY)},{passive:false});
 let _lbDrag=null;
-_lbVp.addEventListener('mousedown',e=>{if(_lb.scale<=_lb.MIN)return;e.preventDefault();e.stopPropagation();_lbDrag={x:e.clientX,y:e.clientY,tx:_lb.tx,ty:_lb.ty}});
+_lbVp.addEventListener('mousedown',e=>{if(_lb.scale<=_lb.MIN)return;e.preventDefault();e.stopPropagation();_lbSetTransition(false);_lbDrag={x:e.clientX,y:e.clientY,tx:_lb.tx,ty:_lb.ty}});
 window.addEventListener('mousemove',e=>{if(!_lbDrag)return;_lb.tx=_lbDrag.tx+(e.clientX-_lbDrag.x);_lb.ty=_lbDrag.ty+(e.clientY-_lbDrag.y);_lbClampPan();_lbApplyTransform()});
 window.addEventListener('mouseup',()=>{_lbDrag=null});
 // Touch: swipe to navigate (only when not zoomed), pinch to zoom, one-finger drag to pan when zoomed.
@@ -653,6 +684,7 @@ let _lbTouch=null;
 function _lbTouchDist(t){const dx=t[0].clientX-t[1].clientX,dy=t[0].clientY-t[1].clientY;return Math.hypot(dx,dy)}
 function _lbTouchMid(t){return{x:(t[0].clientX+t[1].clientX)/2,y:(t[0].clientY+t[1].clientY)/2}}
 _lbVp.addEventListener('touchstart',e=>{
+  _lbSetTransition(false);
   if(e.touches.length===2){_lbTouch={mode:'pinch',dist:_lbTouchDist(e.touches),scale0:_lb.scale};}
   else if(e.touches.length===1){
     if(_lb.scale>_lb.MIN)_lbTouch={mode:'pan',x:e.touches[0].clientX,y:e.touches[0].clientY,tx:_lb.tx,ty:_lb.ty};
@@ -661,6 +693,15 @@ _lbVp.addEventListener('touchstart',e=>{
 },{passive:true});
 _lbVp.addEventListener('touchmove',e=>{
   if(!_lbTouch)return;
+  // If a finger is lifted mid-pinch (2→1), fall back to a one-finger pan
+  // from the remaining finger's current position instead of leaving the
+  // gesture stuck in a dead 'pinch' mode that no longer reacts to input.
+  if(_lbTouch.mode==='pinch'&&e.touches.length===1){
+    _lbTouch=_lb.scale>_lb.MIN
+      ? {mode:'pan',x:e.touches[0].clientX,y:e.touches[0].clientY,tx:_lb.tx,ty:_lb.ty}
+      : {mode:'swipe',x:e.touches[0].clientX};
+    return;
+  }
   if(_lbTouch.mode==='pinch'&&e.touches.length===2){
     e.preventDefault();
     const mid=_lbTouchMid(e.touches);
@@ -674,6 +715,7 @@ _lbVp.addEventListener('touchmove',e=>{
   }
 },{passive:false});
 _lbVp.addEventListener('touchend',e=>{
+  _lbSetTransition(true);
   if(_lbTouch&&_lbTouch.mode==='swipe'&&e.changedTouches.length){
     const dx=e.changedTouches[0].clientX-_lbTouch.x;
     if(Math.abs(dx)>50)lbNav(dx<0?1:-1);

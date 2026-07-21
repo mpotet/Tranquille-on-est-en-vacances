@@ -37,10 +37,30 @@ export function getAdminByEmail(db, email) {
 
 /**
  * Create/overwrite the current one-time token for a given purpose.
- * A new token invalidates any previous one (row is overwritten). Expires 1h out.
- * @returns {Promise<{ token: string, expiresAt: string }>}
+ *
+ * Only one token can be active at a time (single `token`/`token_purpose`
+ * column on the account row). Issuing a new one silently invalidates any
+ * still-valid previous token - e.g. requesting "forgot password" and then an
+ * email change before clicking the first link makes that first email's link
+ * die with a generic "invalid or expired" message, with no indication why.
+ * To avoid that silent footgun, refuse to overwrite a token that's still
+ * live for a *different* purpose; the caller should surface this to the
+ * admin instead of quietly discarding their pending request.
+ *
+ * @returns {Promise<{ token: string, expiresAt: string }|{ conflict: string }>}
  */
 export async function issueToken(db, purpose) {
+  const existing = await getAdminAccount(db);
+  if (
+    existing?.token &&
+    existing.token_purpose &&
+    existing.token_purpose !== purpose &&
+    existing.token_expires_at &&
+    new Date(existing.token_expires_at).getTime() > Date.now()
+  ) {
+    return { conflict: existing.token_purpose };
+  }
+
   const token = generateToken();
   const expiresAt = new Date(Date.now() + TOKEN_TTL_MS).toISOString();
   await db

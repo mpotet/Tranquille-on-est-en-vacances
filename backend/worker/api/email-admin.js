@@ -18,10 +18,19 @@ import { json, badRequest } from '../utils.js';
 
 async function brevoFetch(apiKey, path, options = {}) {
   if (!apiKey) return { ok: false, error: 'Clé API Brevo manquante.' };
-  const res = await fetch(`https://api.brevo.com${path}`, {
-    ...options,
-    headers: { 'api-key': apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json', ...(options.headers || {}) },
-  });
+  // Without a timeout, a slow/unresponsive Brevo API would hang the request
+  // handler indefinitely - e.g. GET /api/admin/email-config calls this live
+  // on every load of the Emails tab, so the whole dashboard tab would stall.
+  let res;
+  try {
+    res = await fetch(`https://api.brevo.com${path}`, {
+      ...options,
+      headers: { 'api-key': apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json', ...(options.headers || {}) },
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch (err) {
+    return { ok: false, error: err?.name === 'TimeoutError' ? 'Brevo ne répond pas (délai dépassé).' : 'Erreur réseau vers Brevo.' };
+  }
   const body = await res.json().catch(() => null);
   if (!res.ok) return { ok: false, error: body?.message || `Erreur HTTP ${res.status}`, status: res.status };
   return { ok: true, data: body };
@@ -56,7 +65,11 @@ export async function getEmailConfigStatus(env) {
   const { apiKey, fromAddress, fromName } = await getConfig(env);
 
   // Never send the raw API key back to the client - only whether one is set.
-  const masked = apiKey ? apiKey.slice(0, 8) + '…' + apiKey.slice(-4) : '';
+  // For a short key, slice(0,8) and slice(-4) would overlap and reveal nearly
+  // the whole thing in "plain text" - fall back to a fixed-width mask instead.
+  const masked = apiKey
+    ? (apiKey.length > 16 ? apiKey.slice(0, 8) + '…' + apiKey.slice(-4) : '••••••••')
+    : '';
 
   let senderStatus = null; // null = unknown/not checked, true = verified, false = not verified
   if (apiKey && fromAddress) {
@@ -90,12 +103,14 @@ export async function saveEmailConfig(request, env) {
   }
 
   const stmt = env.DB.prepare("INSERT OR REPLACE INTO site_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))");
-  // Only overwrite the API key if a new one was actually provided - the
-  // client never receives the real key back, so an empty submit must not
-  // wipe out a previously-saved one.
+  // The API key is masked client-side (never sent back in full), so an empty
+  // submit there must mean "keep the existing key", not "clear it". The
+  // sender name has no such masking - the client always sees its current
+  // value, so an explicit empty submission is a deliberate "reset to
+  // default" and must be allowed through, not silently ignored.
   if (apiKey) await stmt.bind('brevo_api_key', apiKey).run();
   if (fromAddress) await stmt.bind('email_from_address', fromAddress).run();
-  if (fromName) await stmt.bind('email_from_name', fromName).run();
+  if ('from_name' in body) await stmt.bind('email_from_name', fromName).run();
 
   return json({ ok: true });
 }
