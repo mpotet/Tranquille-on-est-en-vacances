@@ -130,14 +130,20 @@ function fmtDateRange(a){
   return s===e ? fmtDate(s) : fmtDate(s)+' - '+fmtDate(e);
 }
 
+// Ascending bars (signal-strength style), not equal-sized round dots — a row
+// of same-size filled/unfilled circles reads as carousel/pagination
+// indicators ("swipe for more"), which is misleading since the card isn't
+// a slider. Bars of increasing height read as an intensity/level meter,
+// matching what this represents (relative popularity among the trips shown).
 function renderPopularityBars(views, minViews, maxViews) {
   const range = maxViews - minViews || 1;
   const count = Math.max(1, Math.ceil((views - minViews) / range * 5));
-  let dots = '';
+  const heights = [5, 8, 11, 14, 17];
+  let bars = '';
   for (let i = 0; i < 5; i++) {
-    dots += '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + (i < count ? 'var(--blue)' : 'rgba(0,0,0,.10)') + '"></span>';
+    bars += '<span style="display:inline-block;width:3px;height:' + heights[i] + 'px;border-radius:1px;background:' + (i < count ? 'var(--blue)' : 'rgba(0,0,0,.12)') + '"></span>';
   }
-  return '<div style="display:flex;align-items:center;gap:3px">' + dots + '<span style="font-size:.68rem;margin-left:4px;color:var(--ink-light);line-height:1">' + views + '</span></div>';
+  return '<div style="display:flex;align-items:center;gap:3px" aria-hidden="true">' + bars + '<span style="font-size:.68rem;margin-left:4px;color:var(--ink-light);line-height:1">' + views + '</span></div>';
 }
 
 function renderArticleCard(article, minViews, maxViews, isAdmin) {

@@ -424,14 +424,20 @@ function fmtDateRangeSSR(a) {
   if (!s) return 'Dates non définies';
   return s === e ? fmtDateSSR(s) : fmtDateSSR(s) + ' - ' + fmtDateSSR(e);
 }
+// Ascending bars (like a signal-strength icon), not equal-sized round dots —
+// a row of same-size filled/unfilled circles reads visually as carousel/
+// pagination indicators ("swipe for more"), which is misleading here since
+// there's nothing to page through. Bars of increasing height read instead as
+// an intensity/level meter, matching what this actually represents.
 function popularityBarsSSR(views) {
   const v = views || 0;
   const count = v === 0 ? 0 : v < 20 ? 1 : v < 100 ? 2 : v < 300 ? 3 : v < 800 ? 4 : 5;
-  let dots = '';
+  const heights = [5, 8, 11, 14, 17];
+  let bars = '';
   for (let i = 0; i < 5; i++) {
-    dots += '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + (i < count ? 'var(--blue)' : 'rgba(0,0,0,.10)') + '"></span>';
+    bars += '<span style="display:inline-block;width:3px;height:' + heights[i] + 'px;border-radius:1px;background:' + (i < count ? 'var(--blue)' : 'rgba(0,0,0,.12)') + '"></span>';
   }
-  return '<span style="display:inline-flex;align-items:center;gap:3px">' + dots + '</span>';
+  return '<span style="display:inline-flex;align-items:flex-end;gap:2px" aria-hidden="true">' + bars + '</span>';
 }
 function fmtCommentDate(d) {
   try { return new Date((d || '').replace(' ', 'T') + 'Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }); }
@@ -1038,7 +1044,7 @@ export default {
       const viewMatch = matchPath('/api/articles/:id/view', path);
       if (viewMatch && method === 'POST') {
         const id = parseInt(viewMatch.id);
-        return !isNaN(id) ? recordView(env, id) : recordView(env, viewMatch.id);
+        return !isNaN(id) ? recordView(env, id, request) : recordView(env, viewMatch.id, request);
       }
 
       // Photos

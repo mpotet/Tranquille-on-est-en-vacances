@@ -328,10 +328,24 @@ async function getAllFolderIds(env, folderId) {
   return ids;
 }
 
+// Known bot/crawler/preview-fetcher signatures. Search engine crawlers, SEO
+// tools, uptime monitors and social-media link-preview fetchers can execute
+// enough of a page to trigger the client-side view ping (some run headless
+// Chrome), so User-Agent sniffing on this endpoint is the only practical
+// server-side filter available without adding friction (CAPTCHA, etc.) for
+// real visitors. Not exhaustive, but covers the large majority of automated
+// traffic that would otherwise inflate "vues".
+const BOT_UA_RE = /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|whatsapp|telegrambot|discordbot|slackbot|embedly|quora link preview|pinterest|semrush|ahrefs|mj12bot|dotbot|petalbot|yandex|baiduspider|headlesschrome|phantomjs|lighthouse|pagespeed|uptimerobot|pingdom|gtmetrix/i;
+
+function isBotUserAgent(request) {
+  const ua = request?.headers?.get('User-Agent') || '';
+  return !ua || BOT_UA_RE.test(ua);
+}
+
 // ──────────────────────────────────────────────────────────────
 // Record a view for an article
 // ──────────────────────────────────────────────────────────────
-export async function recordView(env, slugOrId) {
+export async function recordView(env, slugOrId, request) {
   const isNumericId = /^\d+$/.test(String(slugOrId));
   const article = await env.DB
     .prepare(`SELECT id, view_count FROM articles WHERE ${isNumericId ? 'id = ?' : 'slug = ?'}`)
@@ -339,6 +353,12 @@ export async function recordView(env, slugOrId) {
     .first();
 
   if (!article) return notFound('Article not found');
+
+  // Don't count bots/crawlers/link-preview fetchers as real readers — still
+  // return the current count so the client's fetch resolves normally.
+  if (isBotUserAgent(request)) {
+    return json({ views: article.view_count });
+  }
 
   await env.DB
     .prepare('UPDATE articles SET view_count = view_count + 1 WHERE id = ?')
