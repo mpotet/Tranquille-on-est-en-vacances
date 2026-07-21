@@ -170,93 +170,96 @@ ${ADMIN_NAV()}
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
-  <!-- Tab: Articles -->
-  <div id="tab-articles" class="admin-tab-panel active" role="tabpanel" aria-labelledby="admintab-articles">
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Tab Articles -->
+      <div id="tab-articles" class="admin-tab-panel active" role="tabpanel" aria-labelledby="admintab-articles">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
-      <!-- Sidebar -->
-      <aside class="lg:col-span-1 space-y-5">
-        <div class="section-panel majorelle-frame rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-100">
-            <h2 class="font-bold text-stone-700 text-sm"><i class="ph ph-folder"></i> Dossiers</h2>
-            <button onclick="openFolderModal(null)" class="text-sky-600 hover:text-sky-700 text-sm font-bold transition-colors">+ Nouveau</button>
-          </div>
-          <div id="folder-tree" class="p-2 max-h-80 overflow-y-auto">
-            <div class="text-stone-400 text-sm p-3 animate-pulse">Chargement...</div>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3" id="stats-grid">
-          <div class="bg-white rounded-2xl p-4 text-center border border-stone-100">
-            <div id="stat-total" class="text-2xl font-black text-stone-800">-</div>
-            <div class="text-xs font-bold text-stone-500 mt-1">Articles</div>
-          </div>
-          <div class="bg-sky-50 rounded-2xl p-4 text-center border border-sky-100">
-            <div id="stat-views" class="text-2xl font-black text-sky-600">-</div>
-            <div class="text-xs font-bold text-sky-700 mt-1">Vues</div>
-          </div>
-          <div class="bg-emerald-50 rounded-2xl p-4 text-center border border-emerald-100">
-            <div id="stat-pub" class="text-2xl font-black text-emerald-600">-</div>
-            <div class="text-xs font-bold text-emerald-700 mt-1">Publiés</div>
-          </div>
-          <div class="bg-amber-50 rounded-2xl p-4 text-center border border-amber-100">
-            <div id="stat-draft" class="text-2xl font-black text-amber-600">-</div>
-            <div class="text-xs font-bold text-amber-700 mt-1">Archivés</div>
-          </div>
-        </div>
-      </aside>
-
-      <!-- Articles list -->
-      <main class="lg:col-span-3">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="font-display text-2xl font-bold text-stone-900">Tous les articles</h2>
-          <a href="/admin/editor"
-              class="action-btn-sm">
-            <i class="ph ph-pencil-line"></i> Nouvel article
-          </a>
-        </div>
-        <div id="articles-list" class="space-y-3">
-          ${Array.from({length:4}).map(()=>`
-            <div class="section-panel rounded-2xl border border-stone-100 p-4 flex items-center gap-4">
-              <div class="w-20 h-20 rounded-xl bg-stone-200 animate-pulse flex-shrink-0"></div>
-              <div class="flex-1 space-y-2">
-                <div class="h-4 bg-stone-200 rounded animate-pulse w-3/4"></div>
-                <div class="h-3 bg-stone-200 rounded animate-pulse w-1/2"></div>
+          <!-- Sidebar -->
+          <aside class="lg:col-span-1 space-y-5">
+            <div class="section-panel majorelle-frame rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+              <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-100">
+                <h2 class="font-bold text-stone-700 text-sm"><i class="ph ph-folder"></i> Dossiers</h2>
+                <button onclick="openFolderModal(null)" class="text-sky-600 hover:text-sky-700 text-sm font-bold transition-colors">+ Nouveau</button>
               </div>
-            </div>`).join('')}
-        </div>
-      </main>
-    </div>
-  </div>
-  <!-- Tab: Subscribers -->
-  <div id="tab-subscribers" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-subscribers">
-    <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-stone-100">
-        <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-users-three" style="color:var(--blue)"></i> Abonnés email</h2>
-        <p class="text-xs text-stone-400 mt-0.5">Liste des abonnés à la newsletter; possibilité de désabonner manuellement.</p>
-      </div>
-      <div class="px-6 pb-6 pt-4">
-        <div id="subscribers-list" class="divide-y divide-stone-100 text-sm text-stone-700">
-          <div class="text-stone-400 p-6 text-center">Chargement…</div>
-        </div>
-      </div>
-    </div>
-  </div>
+              <div id="folder-tree" class="p-2 max-h-80 overflow-y-auto">
+                <div class="text-stone-400 text-sm p-3 animate-pulse">Chargement...</div>
+              </div>
+            </div>
 
-  <!-- Tab: Moderation -->
-  <div id="tab-moderation" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-moderation">
-    <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-stone-100">
-        <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-shield-check" style="color:var(--blue)"></i> Modération &amp; Commentaires</h2>
-        <p class="text-xs text-stone-400 mt-0.5">Derniers commentaires publiés; supprimer ou répondre en tant qu'admin (nom configurable).</p>
-      </div>
-      <div class="px-6 pb-6 pt-4">
-        <div id="recent-comments-list" class="divide-y divide-stone-100 text-sm text-stone-700">
-          <div class="text-stone-400 p-6 text-center">Chargement…</div>
+            <div class="grid grid-cols-2 gap-3" id="stats-grid">
+              <div class="bg-white rounded-2xl p-4 text-center border border-stone-100">
+                <div id="stat-total" class="text-2xl font-black text-stone-800">-</div>
+                <div class="text-xs font-bold text-stone-500 mt-1">Articles</div>
+              </div>
+              <div class="bg-sky-50 rounded-2xl p-4 text-center border border-sky-100">
+                <div id="stat-views" class="text-2xl font-black text-sky-600">-</div>
+                <div class="text-xs font-bold text-sky-700 mt-1">Vues</div>
+              </div>
+              <div class="bg-emerald-50 rounded-2xl p-4 text-center border border-emerald-100">
+                <div id="stat-pub" class="text-2xl font-black text-emerald-600">-</div>
+                <div class="text-xs font-bold text-emerald-700 mt-1">Publiés</div>
+              </div>
+              <div class="bg-amber-50 rounded-2xl p-4 text-center border border-amber-100">
+                <div id="stat-draft" class="text-2xl font-black text-amber-600">-</div>
+                <div class="text-xs font-bold text-amber-700 mt-1">Archivés</div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Articles list -->
+          <main class="lg:col-span-3">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="font-display text-2xl font-bold text-stone-900">Tous les articles</h2>
+              <a href="/admin/editor" class="action-btn-sm">
+                <i class="ph ph-pencil-line"></i> Nouvel article
+              </a>
+            </div>
+
+            <div id="articles-list" class="space-y-3">
+              ${Array.from({length:4}).map(() => `
+                <div class="section-panel rounded-2xl border border-stone-100 p-4 flex items-center gap-4">
+                  <div class="w-20 h-20 rounded-xl bg-stone-200 animate-pulse flex-shrink-0"></div>
+                  <div class="flex-1 space-y-2">
+                    <div class="h-4 bg-stone-200 rounded animate-pulse w-3/4"></div>
+                    <div class="h-3 bg-stone-200 rounded animate-pulse w-1/2"></div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </main>
+
         </div>
       </div>
-    </div>
-  </div>
-  </div>
+
+      <!-- Tab Subscribers -->
+      <div id="tab-subscribers" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-subscribers">
+        <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+          <div class="px-6 py-5 border-b border-stone-100">
+            <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-users-three" style="color:var(--blue)"></i> Abonnés email</h2>
+            <p class="text-xs text-stone-400 mt-0.5">Liste des abonnés à la newsletter; possibilité de désabonner manuellement.</p>
+          </div>
+          <div class="px-6 pb-6 pt-4">
+            <div id="subscribers-list" class="divide-y divide-stone-100 text-sm text-stone-700">
+              <div class="text-stone-400 p-6 text-center">Chargement...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Moderation -->
+      <div id="tab-moderation" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-moderation">
+        <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+          <div class="px-6 py-5 border-b border-stone-100">
+            <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-shield-check" style="color:var(--blue)"></i> Modération &amp; Commentaires</h2>
+            <p class="text-xs text-stone-400 mt-0.5">Derniers commentaires publiés; supprimer ou répondre en tant qu'admin (nom configurable).</p>
+          </div>
+          <div class="px-6 pb-6 pt-4">
+            <div id="recent-comments-list" class="divide-y divide-stone-100 text-sm text-stone-700">
+              <div class="text-stone-400 p-6 text-center">Chargement...</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
   <!-- Tab: Site settings -->
   <div id="tab-settings" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-settings">
