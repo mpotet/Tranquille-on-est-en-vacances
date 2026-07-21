@@ -17,7 +17,7 @@ import {
   getAdminAccount, getAdminByEmail, issueToken, findByValidToken, clearToken,
 } from './admin-account.js';
 import {
-  sendResetEmail, sendEmailChangeEmail, sendPasswordChangedEmail,
+  sendResetEmail, sendEmailChangeEmail, sendPasswordChangedEmail, isEmailConfigured,
 } from './admin-email.js';
 import { setPasswordPage, confirmEmailPage } from './pages/admin-auth.js';
 import { checkRateLimit, recordFailedAttempt, clearAttempts, clientKey } from './rate-limit.js';
@@ -1008,6 +1008,12 @@ export default {
 
       if (path === '/api/admin/request-email-change' && method === 'POST') {
         if (!authed) return unauthorized();
+        // Without a configured email provider, the confirmation link can
+        // never be sent - starting the change anyway would leave
+        // pending_email set with no way for the admin to ever confirm it.
+        if (!(await isEmailConfigured(env))) {
+          return badRequest("L'envoi d'emails n'est pas configuré. Configurez SMTP2GO dans l'onglet Emails avant de changer d'adresse.");
+        }
         const body = await request.json().catch(() => ({}));
         const newEmail = String(body.new_email || '').trim();
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmail)) {

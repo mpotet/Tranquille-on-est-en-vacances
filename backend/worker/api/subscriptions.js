@@ -10,6 +10,7 @@
  */
 
 import { json, badRequest, notFound, html } from '../utils.js';
+import { isEmailConfigured } from '../admin-email.js';
 
 // ── Push: VAPID public key ────────────────────────────────────────────────────
 
@@ -50,6 +51,13 @@ export async function pushUnsubscribe(request, env) {
 // ── Email: subscribe ──────────────────────────────────────────────────────────
 
 export async function emailSubscribe(request, env) {
+  // Without a configured email provider, notifications can never actually be
+  // sent - accepting the subscription anyway would silently give visitors a
+  // false sense that they'll be notified.
+  if (!(await isEmailConfigured(env))) {
+    return badRequest("Les notifications par email ne sont pas disponibles pour le moment.");
+  }
+
   const body  = await request.json().catch(() => null);
   const email = (body?.email || '').trim().toLowerCase();
 

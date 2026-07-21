@@ -80,7 +80,7 @@ function publicBase(env) {
  * site_settings (not a wrangler secret) so the admin can configure this
  * entirely from the dashboard's "Emails" tab, without shell/CLI access.
  */
-async function getEmailConfig(env) {
+export async function getEmailConfig(env) {
   const { results } = await env.DB
     .prepare("SELECT key, value FROM site_settings WHERE key IN ('smtp2go_api_key', 'email_from_address', 'email_from_name')")
     .all();
@@ -90,6 +90,16 @@ async function getEmailConfig(env) {
     fromAddress: settings.email_from_address || '',
     fromName: settings.email_from_name || 'Tranquille, on est en vacances',
   };
+}
+
+/** True once both an API key and a sender address are saved - the minimum
+ *  needed to even attempt a send. Use this to block actions that depend on
+ *  email delivery (email-change, subscribing to notifications) up front,
+ *  with a clear message, rather than letting them proceed and fail silently
+ *  or leave the account in a half-changed state. */
+export async function isEmailConfigured(env) {
+  const { apiKey, fromAddress } = await getEmailConfig(env);
+  return !!(apiKey && fromAddress);
 }
 
 async function logEmailAttempt(env, { emailType, recipient, ok, error }) {

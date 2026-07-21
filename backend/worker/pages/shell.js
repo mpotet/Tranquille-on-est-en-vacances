@@ -572,7 +572,7 @@ export const TOAST = `
 export const LIGHTBOX = `
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="Visionneuse de photos"
      class="hidden fixed inset-0 z-[100] lightbox-bg flex items-center justify-center"
-     style="background:rgba(10,18,30,.90)"
+     style="background:rgba(10,18,30,.90);touch-action:none"
      onclick="closeLightbox()">
   <button onclick="closeLightbox()" aria-label="Fermer"
           class="absolute top-4 right-4 text-white/80 hover:text-white rounded-full p-2.5 transition-all z-10"
