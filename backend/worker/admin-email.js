@@ -155,6 +155,7 @@ async function send(env, { to, subject, html, emailType }) {
     return { ok: false, error: friendly };
   }
   const body = await res.json().catch(() => null);
+  console.log('[AdminEmail] Mailjet response for', to, body);
   // Mailjet can return an overall HTTP 200 while still failing an individual
   // message - always check Messages[0].Status/Errors, not just res.ok.
   const msgResult = body?.Messages?.[0];
@@ -164,8 +165,10 @@ async function send(env, { to, subject, html, emailType }) {
     if (res.status === 401 || body?.ErrorCode === 'mj-0015') friendly = 'Clés API invalides. Vérifiez-les dans l\'onglet Emails.';
     else if (errCode === 'send-0008') friendly = "Adresse expéditrice non vérifiée sur Mailjet. Ajoutez et confirmez l'adresse dans l'onglet Emails (email de vérification à cliquer).";
     console.error(`[AdminEmail] HTTP ${res.status} pour ${to}:`, body);
-    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: friendly });
-    return { ok: false, status: res.status, error: friendly };
+    // Store the friendly message plus Mailjet body (stringified) to help debugging.
+    const debug = body ? JSON.stringify(body) : `HTTP ${res.status}`;
+    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: friendly + ' — Mailjet: ' + debug });
+    return { ok: false, status: res.status, error: friendly, mailjet: body };
   }
   await logEmailAttempt(env, { emailType, recipient: to, ok: true });
   return { ok: true };
