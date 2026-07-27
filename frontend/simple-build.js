@@ -1,6 +1,6 @@
 /**
- * Simple build: Copie demo.html → dist/index.html
- * Aucune modification, juste renommage
+ * Dev build: Copie demo.html avec localhost:8787 (pour npm run dev)
+ * Utilise le backend local
  */
 
 import fs from 'node:fs/promises';
@@ -14,23 +14,30 @@ const demoFile = path.join(projectRoot, 'demo.html');
 
 async function build() {
   try {
-    console.log('📦 Création du répertoire dist...');
+    console.log('📦 Dev build (localhost:8787)...');
     await fs.rm(distDir, { recursive: true, force: true });
     await fs.mkdir(distDir, { recursive: true });
 
-    console.log('📄 Copie de demo.html → index.html (SANS MODIFICATIONS)...');
-    const demoContent = await fs.readFile(demoFile, 'utf-8');
-    await fs.writeFile(path.join(distDir, 'index.html'), demoContent);
+    console.log('📄 Copie de demo.html...');
+    let content = await fs.readFile(demoFile, 'utf-8');
 
-    console.log('\n✅ Fait!');
-    console.log(`📁 Fichier prêt: ${path.join(distDir, 'index.html')}`);
-    console.log(`   Taille: ${(demoContent.length / 1024).toFixed(1)} KB`);
-    console.log('\n📤 Prochaines étapes:');
-    console.log('1. Ouvrir Filezilla');
-    console.log('2. Connecter à ftpperso.free.fr');
-    console.log('3. Naviguer dans /www/');
-    console.log('4. Envoyer dist/index.html');
-    console.log('\n🔗 Votre site: http://tranquilleonestenvacances.free.fr/');
+    // S'assurer que localhost:8787 est bien configuré
+    if (!content.includes("const API_URL = 'http://localhost:8787'")) {
+      content = content.replace(
+        /const API_URL = ['"][^'"]*['"]/g,
+        "const API_URL = 'http://localhost:8787'"
+      );
+    }
+
+    await fs.writeFile(path.join(distDir, 'index.html'), content);
+
+    console.log('\n✅ Dev build prêt!');
+    console.log(`📁 Fichier: ${path.join(distDir, 'index.html')}`);
+    console.log(`   Backend: http://localhost:8787`);
+    console.log('\n💡 Pour développer localement:');
+    console.log('   1. Terminal 1: cd backend && npm run dev');
+    console.log('   2. Terminal 2: cd frontend && npm run dev');
+    console.log('   3. Ouvrir: http://localhost:3000');
 
   } catch (error) {
     console.error('❌ Erreur:', error.message);

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node proxy.js",
-    "build": "node simple-build.js"
+    "build": "node simple-build.js",
+    "build:prod": "node build-prod.js"
   }
 }
