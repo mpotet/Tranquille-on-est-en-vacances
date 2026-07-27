@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.dirname(__dirname);
 const distDir = path.join(projectRoot, 'dist-prod');
-const demoFile = path.join(projectRoot, 'demo.html');
+const frontendFile = path.join(__dirname, 'frontend.html');
 
 // À adapter selon ton URL worker
 const BACKEND_URL = 'https://tranquille-vacances.esti-archi.workers.dev';
@@ -20,13 +20,13 @@ async function build() {
     await fs.rm(distDir, { recursive: true, force: true });
     await fs.mkdir(distDir, { recursive: true });
 
-    console.log(`📄 Copie de demo.html...`);
-    let content = await fs.readFile(demoFile, 'utf-8');
+    console.log(`📄 Copie de frontend.html...`);
+    let content = await fs.readFile(frontendFile, 'utf-8');
 
-    // Remplacer localhost par le worker en prod
+    // Configurer le backend
     content = content.replace(
-      /const API_URL = ['"]http:\/\/localhost:8787['"]/g,
-      `const API_URL = '${BACKEND_URL}'`
+      /const API_BASE = '[^']*'/,
+      `const API_BASE = '${BACKEND_URL}'`
     );
 
     await fs.writeFile(path.join(distDir, 'index.html'), content);
@@ -36,6 +36,7 @@ async function build() {
     console.log(`📁 Fichier: ${path.join(distDir, 'index.html')}`);
     console.log(`   Taille: ${sizeKb} KB`);
     console.log(`   Backend: ${BACKEND_URL}`);
+    console.log(`   Frontend: Charge les articles en temps réel via l'API`);
     console.log(`\n📤 Envoyer dist-prod/index.html via Filezilla vers /www/`);
     console.log(`🔗 Votre site: http://tranquilleonestenvacances.free.fr/`);
 
