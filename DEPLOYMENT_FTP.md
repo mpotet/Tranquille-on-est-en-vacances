@@ -112,14 +112,32 @@ npm run build
 
 ## ⚠️ Dépannage
 
+### "500 Internal Server Error"
+**Solution rapide**: Supprimer le `.htaccess` et réessayer
+```
+Filezilla → Clic droit sur .htaccess → Supprimer
+Rafraîchir le site
+```
+👉 Voir **[FREE_TROUBLESHOOT.md](FREE_TROUBLESHOOT.md)** pour détails complets
+
 ### "Impossible de se connecter"
 - Vérifiez que l'identifiant et le mot de passe FTP sont corrects
 - Vérifiez que vous utilisez `ftpperso.free.fr` (pas un autre serveur)
+- 👉 Voir **[FREE_TROUBLESHOOT.md](FREE_TROUBLESHOOT.md)** pour plus
 
 ### "Le site est vide ou montre un texte brut"
 - Assurez-vous d'être dans le dossier `/www/` sur le serveur FTP
 - Vérifiez que `index.html` a bien été transféré
+- 👉 Voir **[FREE_TROUBLESHOOT.md](FREE_TROUBLESHOOT.md)** pour debug
 
 ### "Les modifications ne s'affichent pas"
 - Videz le cache du navigateur (Ctrl+F5 ou Cmd+Shift+R)
 - Attendez quelques minutes (cache du serveur)
+
+### "Les routes SPA affichent 404"
+- C'est normal si le `.htaccess` n'est pas appliqué
+- Le site fonctionne sur `/` mais pas sur `/voyages`, `/voyage/...`
+- 👉 Voir **[FREE_TROUBLESHOOT.md](FREE_TROUBLESHOOT.md)** pour activer les routes
+
+### Besoin d'aide?
+→ **[FREE_TROUBLESHOOT.md](FREE_TROUBLESHOOT.md)** — Guide complet de dépannage
