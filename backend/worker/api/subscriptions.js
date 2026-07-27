@@ -9,7 +9,7 @@
  *   GET    /unsubscribe?token=xxx    → remove email subscriber (renders HTML page)
  */
 
-import { json, badRequest, notFound, html } from '../utils.js';
+import { json, badRequest, notFound, html, cleanEmailInput } from '../utils.js';
 import { isEmailConfigured } from '../admin-email.js';
 
 // ── Push: VAPID public key ────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ export async function emailSubscribe(request, env) {
   }
 
   const body  = await request.json().catch(() => null);
-  const email = (body?.email || '').trim().toLowerCase();
+  const email = cleanEmailInput(body?.email).toLowerCase();
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return badRequest('Adresse email invalide');

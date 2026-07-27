@@ -18,7 +18,7 @@
  * actual send() implementation and the same reasoning.
  */
 
-import { json, badRequest } from '../utils.js';
+import { json, badRequest, cleanEmailInput } from '../utils.js';
 
 async function mailjetFetch(apiKey, apiSecret, path, options = {}) {
   if (!apiKey || !apiSecret) return { ok: false, error: 'Clés API Mailjet manquantes.' };
@@ -108,7 +108,7 @@ export async function saveEmailConfig(request, env) {
   const body = await request.json().catch(() => ({}));
   const apiKey = String(body.api_key ?? '').trim();
   const apiSecret = String(body.api_secret ?? '').trim();
-  const fromAddress = String(body.from_address ?? '').trim();
+  const fromAddress = cleanEmailInput(body.from_address);
   const fromName = String(body.from_name ?? '').trim();
 
   if (fromAddress && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fromAddress)) {

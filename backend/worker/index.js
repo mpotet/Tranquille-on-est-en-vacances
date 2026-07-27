@@ -10,7 +10,7 @@
  */
 
 import { isAuthenticated, createSession, clearSession, issueSessionCookie } from './auth.js';
-import { matchPath, json, notFound, unauthorized, redirect, html, badRequest } from './utils.js';
+import { matchPath, json, notFound, unauthorized, redirect, html, badRequest, cleanEmailInput } from './utils.js';
 import { safeAttr, safeText } from './helpers/html.js';
 import { hashPassword, verifyPassword } from './password.js';
 import {
@@ -934,7 +934,7 @@ export default {
       if (limit.blocked) return json({ ok: true }); // same generic response either way
 
       const body = await request.json().catch(() => ({}));
-      const email = String(body.email || '').trim();
+      const email = cleanEmailInput(body.email);
       // Generic response regardless of match (don't leak account existence).
       if (email) {
         await recordFailedAttempt(env.DB, 'forgot_password', ip);
@@ -1132,7 +1132,7 @@ export default {
           return badRequest("L'envoi d'emails n'est pas configuré. Configurez Mailjet dans l'onglet Emails avant de changer d'adresse.");
         }
         const body = await request.json().catch(() => ({}));
-        const newEmail = String(body.new_email || '').trim();
+        const newEmail = cleanEmailInput(body.new_email);
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmail)) {
           return badRequest('Adresse email invalide.');
         }

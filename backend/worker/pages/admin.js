@@ -1,4 +1,4 @@
-/**
+﻿/**
  * pages/admin.js - Admin interface HTML templates
  * Served only to authenticated users (checked in index.js before calling these).
  */
@@ -788,7 +788,7 @@ async function loadAccount() {
 }
 async function requestEmailChange() {
   const input = document.getElementById('acc-new-email');
-  const email = (input?.value || '').trim();
+  const email = cleanEmailInput(input?.value);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast('Adresse email invalide','err'); return; }
   const res = await fetch('/api/admin/request-email-change', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({new_email:email})}).catch(()=>null);
   const data = await res?.json().catch(()=>null);
@@ -850,10 +850,25 @@ async function loadEmailConfigStatus() {
   box.innerHTML = '<div class="flex items-center gap-2 flex-wrap"><strong class="text-stone-800">'+esc(data.from_address)+'</strong> '+senderStatusBadge(data.sender_verified)+'</div>' +
     (data.sender_verified===false ? '<p class="text-xs text-amber-700 mt-2"><i class="ph ph-warning"></i> Cette adresse n\\'est pas encore vérifiée sur Mailjet. Cliquez sur « Envoyer l\\'email de vérification » puis suivez le lien reçu.</p>' : '');
 }
+// Strips characters copy-paste commonly smuggles into an email field that
+// look blank but aren't ASCII space: NBSP (U+00A0), zero-width space/joiners
+// (U+200B-200D, U+FEFF). These pass through .trim() (which only trims
+// leading/trailing whitespace) but land *inside* the address and silently
+// fail the [^@\s]+ regex, which reads as "the address is invalid" even
+// though it looks correct on screen.
+var INVISIBLE_CODEPOINTS = [0x00A0, 0x200B, 0x200C, 0x200D, 0xFEFF];
+function cleanEmailInput(s) {
+  s = s || "";
+  var out = "";
+  for (var i = 0; i < s.length; i++) {
+    if (INVISIBLE_CODEPOINTS.indexOf(s.charCodeAt(i)) === -1) out += s[i];
+  }
+  return out.trim();
+}
 async function saveEmailConfig() {
   const apiKey = (document.getElementById('ec-api-key')?.value||'').trim();
   const apiSecret = (document.getElementById('ec-api-secret')?.value||'').trim();
-  const fromAddress = (document.getElementById('ec-from-address')?.value||'').trim();
+  const fromAddress = cleanEmailInput(document.getElementById('ec-from-address')?.value);
   const fromName = (document.getElementById('ec-from-name')?.value||'').trim();
   if (fromAddress && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fromAddress)) { toast('Adresse email invalide','err'); return; }
   const res = await fetch('/api/admin/email-config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:apiKey,api_secret:apiSecret,from_address:fromAddress,from_name:fromName})}).catch(()=>null);

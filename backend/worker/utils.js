@@ -42,6 +42,23 @@ export function redirect(location, status = 302) {
   return new Response(null, { status, headers: { Location: location } });
 }
 
+// Zero-width/invisible characters copy-paste commonly smuggles into a
+// pasted email address: NBSP (U+00A0), zero-width space/joiners
+// (U+200B-200D), BOM (U+FEFF). They pass through .trim() (leading/trailing
+// only) but land *inside* the address, silently failing the
+// /^[^@\s]+@[^@\s]+\.[^@\s]+$/ check even though the address looks correct.
+const INVISIBLE_CODEPOINTS = new Set([0x00A0, 0x200B, 0x200C, 0x200D, 0xFEFF]);
+
+/** Trim + strip invisible characters commonly pasted into email fields. */
+export function cleanEmailInput(value) {
+  const s = String(value || '');
+  let out = '';
+  for (const ch of s) {
+    if (!INVISIBLE_CODEPOINTS.has(ch.codePointAt(0))) out += ch;
+  }
+  return out.trim();
+}
+
 /**
  * Parse route parameters from a URL pattern.
  *
