@@ -14,7 +14,9 @@ cd frontend
 npm run build
 ```
 
-Cela crée un dossier `dist/` contenant `index.html` prêt pour le déploiement.
+Cela crée un dossier `dist/` contenant:
+- `index.html` — Votre site complet (177 KB)
+- `.htaccess` — Configuration serveur (redirections SPA)
 
 ## 🔌 Étape 2: Configurer Filezilla
 
@@ -40,18 +42,46 @@ Cela crée un dossier `dist/` contenant `index.html` prêt pour le déploiement.
    - **Mot de passe**: Votre mot de passe FTP
 4. Cliquer sur **Connecter**
 
-## 📂 Étape 3: Transférer les fichiers
+## 📂 Étape 2bis: Naviguer à la racine web
 
-Une fois connecté à Filezilla:
+Une fois connecté:
+- Vous êtes probablement dans `/`
+- Double-cliquez sur le dossier `www` pour entrer dedans
+- ✅ Vous êtes maintenant à la racine web (`/www/`)
+- C'est ici que vous mettrez **TOUS les fichiers à la racine**
 
-1. **Panneau gauche** (votre ordinateur): Naviguer vers le dossier `dist/` créé à l'étape 1
-2. **Panneau droit** (serveur FTP): 
-   - Vous devriez être dans `/www/` (c'est la racine web)
-   - Si ce n'est pas le cas, double-cliquer sur `www` pour entrer dedans
+## 📤 Étape 3: Transférer les fichiers à la racine
 
-3. **Transférer les fichiers**:
-   - Glisser-déposer `index.html` du panneau gauche vers le panneau droit
+### Accédez à la racine web (`/www/`)
+
+1. **Panneau droit** (serveur FTP):
+   - Si vous voyez d'autres dossiers/fichiers, effacez-les (optionnel)
+   - Vous êtes dans `/www/` ✅
+
+### Transfert depuis votre ordinateur
+
+2. **Panneau gauche** (votre ordinateur):
+   - Naviguer vers `dist/` (créé à l'étape 1)
+   - Vous devriez voir:
+     - `index.html` ← Le site principal
+     - `.htaccess` ← Configuration redirections
+     - `.env.local.example` ← Fichier config (optionnel)
+
+3. **Envoyer à la racine**:
+   - Sélectionner les 3 fichiers (`index.html`, `.htaccess`, `.env.local.example`)
+   - Glisser-déposer vers le panneau droit (`/www/`)
    - ✅ Attendez que le transfert soit terminé
+
+### Résultat attendu sur le serveur
+
+```
+/www/
+├─ index.html          ← Votre site
+├─ .htaccess           ← Redirections SPA
+└─ .env.local.example  ← Config (optionnel)
+```
+
+**Important**: Les fichiers doivent être **directement** dans `/www/`, **pas** dans un sous-dossier!
 
 ## ✨ Étape 4: Vérifier le déploiement
 

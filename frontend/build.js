@@ -33,6 +33,11 @@ async function build() {
 
     await fs.writeFile(path.join(distDir, 'index.html'), updatedContent);
 
+    console.log('📋 Copie du fichier .htaccess...');
+    const htaccessFile = path.join(__dirname, '.htaccess');
+    const htaccessContent = await fs.readFile(htaccessFile, 'utf-8');
+    await fs.writeFile(path.join(distDir, '.htaccess'), htaccessContent);
+
     console.log('📋 Création du fichier .env.local pour la config...');
     const envContent = `# Configuration pour le déploiement Free.fr
 VITE_API_URL=https://tranquilleonestenvacances.free.fr/api
