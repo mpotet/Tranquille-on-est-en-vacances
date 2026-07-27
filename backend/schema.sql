@@ -64,14 +64,17 @@ CREATE TABLE IF NOT EXISTS site_settings (
 -- A single site-wide "secret question" gate (stored in site_settings) is the
 -- spam filter; comments are visible immediately once the answer is correct.
 CREATE TABLE IF NOT EXISTS comments (
-  id         INTEGER  PRIMARY KEY AUTOINCREMENT,
-  article_id INTEGER  NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
-  author_name TEXT    NOT NULL,
-  body       TEXT     NOT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id             INTEGER  PRIMARY KEY AUTOINCREMENT,
+  article_id     INTEGER  NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+  parent_id      INTEGER  REFERENCES comments(id) ON DELETE CASCADE,
+  is_admin_reply INTEGER  NOT NULL DEFAULT 0,
+  author_name    TEXT     NOT NULL,
+  body           TEXT     NOT NULL,
+  created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_comments_article ON comments(article_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_comments_parent  ON comments(parent_id);
 
 -- Indexes for common query patterns
 CREATE INDEX IF NOT EXISTS idx_articles_status     ON articles(status);

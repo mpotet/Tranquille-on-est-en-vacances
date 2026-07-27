@@ -936,14 +936,17 @@ async function loadRecentComments() {
   if (!comments.length) { box.innerHTML = '<div class="text-stone-400 p-6 text-center">Aucun commentaire récent.</div>'; return; }
   box.innerHTML = comments.map(c => {
     const preview = (esc(c.body) || '').replaceAll('\\n',' ');
+    const replyBadge = c.is_admin_reply ? ' <span class="text-xs font-bold text-sky-600 uppercase">· Réponse admin</span>' : '';
+    const commentUrl = '/voyage/' + esc(c.article_slug || c.article_id) + '#comment-' + c.id;
     return '<div class="px-6 py-3.5">'
       + '<div class="flex items-start justify-between gap-4">'
       + '<div class="flex-1 min-w-0">'
-      + '<div class="text-sm font-semibold text-stone-800">' + esc(c.author_name) + ' <span class="text-xs text-stone-400">sur <a href="/voyage/' + esc(c.article_id) + '" class="text-sky-600 hover:underline">' + esc(c.article_title) + '</a></span></div>'
+      + '<div class="text-sm font-semibold text-stone-800">' + esc(c.author_name) + replyBadge + ' <span class="text-xs text-stone-400">sur <a href="' + commentUrl + '" class="text-sky-600 hover:underline">' + esc(c.article_title) + '</a></span></div>'
       + '<p class="text-sm text-stone-700 mt-1">' + preview + '</p>'
       + '<div class="text-xs text-stone-400 mt-2">' + fmtDate(c.created_at) + '</div>'
       + '</div>'
       + '<div class="flex flex-col gap-2 items-end">'
+      + '<a href="' + commentUrl + '" target="_blank" rel="noopener" class="subtle-btn" data-action="admin-view-comment">Voir</a>'
       + '<button data-id="' + c.id + '" class="subtle-btn" data-action="admin-reply">Répondre</button>'
       + '<button data-id="' + c.id + '" class="subtle-btn" data-action="admin-delete-comment" style="background:rgba(220,60,60,.08);border-color:rgba(220,60,60,.12);">Supprimer</button>'
       + '</div></div></div>';

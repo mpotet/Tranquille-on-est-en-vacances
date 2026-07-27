@@ -39,11 +39,25 @@ export async function listComments(env, slugOrId, isAdmin) {
   if (articleId == null) return notFound('Article not found');
 
   const { results } = await env.DB
-    .prepare('SELECT id, author_name, body, created_at FROM comments WHERE article_id = ? ORDER BY created_at ASC, id ASC')
+    .prepare('SELECT id, parent_id, is_admin_reply, author_name, body, created_at FROM comments WHERE article_id = ? ORDER BY created_at ASC, id ASC')
     .bind(articleId)
     .all();
 
-  return json({ comments: results || [] });
+  return json({ comments: nestComments(results || []) });
+}
+
+/** Turn a flat, chronologically-sorted list into roots with a `replies` array. */
+function nestComments(flat) {
+  const byId = new Map(flat.map(c => [c.id, { ...c, replies: [] }]));
+  const roots = [];
+  for (const c of byId.values()) {
+    if (c.parent_id && byId.has(c.parent_id)) {
+      byId.get(c.parent_id).replies.push(c);
+    } else {
+      roots.push(c);
+    }
+  }
+  return roots;
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -75,6 +89,19 @@ export async function createComment(request, env, slugOrId, isAdmin) {
   if (authorName.length > MAX_AUTHOR_LEN) return badRequest('Le nom est trop long.');
   if (commentBody.length > MAX_BODY_LEN) return badRequest(`Le commentaire dépasse ${MAX_BODY_LEN} caractères.`);
 
+  // Optional: reply to an existing comment on the same article. Flatten to
+  // one level deep — replying to a reply re-parents onto its root, so the
+  // thread never grows past root → replies.
+  let parentId = null;
+  if (body.parent_id != null) {
+    const parent = await env.DB
+      .prepare('SELECT id, article_id, parent_id FROM comments WHERE id = ?')
+      .bind(body.parent_id)
+      .first();
+    if (!parent || parent.article_id !== articleId) return badRequest('Commentaire parent introuvable.');
+    parentId = parent.parent_id || parent.id;
+  }
+
   // Validate the gate answer server-side (never trust the client).
   const setting = await env.DB
     .prepare("SELECT value FROM site_settings WHERE key = 'comment_gate_answer'")
@@ -95,12 +122,12 @@ export async function createComment(request, env, slugOrId, isAdmin) {
   await recordFailedAttempt(env.DB, 'comment_post', ip);
 
   const result = await env.DB
-    .prepare('INSERT INTO comments (article_id, author_name, body) VALUES (?, ?, ?)')
-    .bind(articleId, authorName, commentBody)
+    .prepare('INSERT INTO comments (article_id, parent_id, author_name, body) VALUES (?, ?, ?, ?)')
+    .bind(articleId, parentId, authorName, commentBody)
     .run();
 
   const comment = await env.DB
-    .prepare('SELECT id, author_name, body, created_at FROM comments WHERE id = ?')
+    .prepare('SELECT id, parent_id, is_admin_reply, author_name, body, created_at FROM comments WHERE id = ?')
     .bind(result.meta.last_row_id)
     .first();
 
@@ -113,7 +140,10 @@ export async function createComment(request, env, slugOrId, isAdmin) {
 export async function deleteComment(env, id) {
   const comment = await env.DB.prepare('SELECT id FROM comments WHERE id = ?').bind(id).first();
   if (!comment) return notFound('Comment not found');
-  await env.DB.prepare('DELETE FROM comments WHERE id = ?').bind(id).run();
+  // D1 doesn't enforce the parent_id FK's ON DELETE CASCADE, so replies must
+  // be removed explicitly or they'd be orphaned (still visible, pointing at
+  // a deleted parent_id).
+  await env.DB.prepare('DELETE FROM comments WHERE id = ? OR parent_id = ?').bind(id, id).run();
   return json({ success: true });
 }
 
@@ -122,7 +152,7 @@ export async function deleteComment(env, id) {
 // ──────────────────────────────────────────────────────────────
 export async function listRecentCommentsAdmin(env, limit = 20) {
   const { results } = await env.DB
-    .prepare(`SELECT c.id, c.article_id, a.title AS article_title, c.author_name, c.body, c.created_at
+    .prepare(`SELECT c.id, c.article_id, c.parent_id, c.is_admin_reply, a.title AS article_title, a.slug AS article_slug, c.author_name, c.body, c.created_at
               FROM comments c JOIN articles a ON a.id = c.article_id
               ORDER BY c.created_at DESC LIMIT ?`)
     .bind(limit)
@@ -131,26 +161,29 @@ export async function listRecentCommentsAdmin(env, limit = 20) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Admin: reply to a comment (creates a new comment as admin)
+// Admin: reply to a comment (creates a threaded reply as admin)
 // ──────────────────────────────────────────────────────────────
 export async function replyToComment(request, env, commentId) {
-  const orig = await env.DB.prepare('SELECT id, article_id FROM comments WHERE id = ?').bind(commentId).first();
+  const orig = await env.DB.prepare('SELECT id, article_id, parent_id FROM comments WHERE id = ?').bind(commentId).first();
   if (!orig) return notFound('Comment not found');
   const body = await request.json().catch(() => null);
   if (!body || !body.body) return badRequest('Missing reply body');
   const replyText = String(body.body).trim();
   if (!replyText) return badRequest('Empty reply body');
 
+  // Flatten to one level deep, same rule as public replies.
+  const parentId = orig.parent_id || orig.id;
+
   // Admin display name stored in site_settings.admin_display_name (fallback)
   const row = await env.DB.prepare("SELECT value FROM site_settings WHERE key = 'admin_display_name'").first();
   const adminName = row?.value || 'Damien Potet';
 
-  const res = await env.DB.prepare('INSERT INTO comments (article_id, author_name, body) VALUES (?, ?, ?)')
-    .bind(orig.article_id, adminName, replyText)
+  const res = await env.DB.prepare('INSERT INTO comments (article_id, parent_id, is_admin_reply, author_name, body) VALUES (?, ?, 1, ?, ?)')
+    .bind(orig.article_id, parentId, adminName, replyText)
     .run();
 
-  const comment = await env.DB.prepare('SELECT id, author_name, body, created_at FROM comments WHERE id = ?')
+  const comment = await env.DB.prepare('SELECT id, parent_id, is_admin_reply, author_name, body, created_at FROM comments WHERE id = ?')
     .bind(res.meta.last_row_id)
     .first();
-  return json({ comment }, 201);
+  return json({ comment, article_id: orig.article_id }, 201);
 }

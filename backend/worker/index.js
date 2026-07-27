@@ -448,6 +448,20 @@ function fmtCommentDate(d) {
   catch { return String(d || ''); }
 }
 
+/** Turn a flat, chronologically-sorted list into roots with a `replies` array. */
+function nestCommentsSSR(flat) {
+  const byId = new Map(flat.map(c => [c.id, { ...c, replies: [] }]));
+  const roots = [];
+  for (const c of byId.values()) {
+    if (c.parent_id && byId.has(c.parent_id)) {
+      byId.get(c.parent_id).replies.push(c);
+    } else {
+      roots.push(c);
+    }
+  }
+  return roots;
+}
+
 /** Render the comments list (server-side, indexable). */
 function renderCommentsList(comments, isAdmin) {
   if (!comments || !comments.length) {
@@ -459,18 +473,28 @@ function renderCommentItem(c, isAdmin) {
   const del = isAdmin
     ? `<button type="button" data-del-comment="${c.id}" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem;color:#dc3c3c" title="Supprimer ce commentaire"><i class="ph ph-trash"></i></button>`
     : '';
-  return `<article class="comment-item bg-white rounded-2xl p-4 sm:p-5" style="border:1px solid var(--line);box-shadow:var(--card-shadow)" data-comment-id="${c.id}">
+  const adminBadge = c.is_admin_reply
+    ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold uppercase tracking-wide" style="background:var(--blue-light);color:var(--blue)"><i class="ph ph-fill ph-star"></i> Réponse de l'auteur</span>`
+    : '';
+  const replies = (c.replies && c.replies.length)
+    ? `<div class="mt-3 ml-4 sm:ml-8 space-y-3" style="border-left:2px solid var(--line);padding-left:1rem">${c.replies.map(r => renderCommentItem(r, isAdmin)).join('')}</div>`
+    : '';
+  return `<article class="comment-item bg-white rounded-2xl p-4 sm:p-5" style="border:1px solid var(--line);box-shadow:var(--card-shadow);scroll-margin-top:5rem" id="comment-${c.id}" data-comment-id="${c.id}">
     <div class="flex items-start justify-between gap-3 mb-1.5">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 flex-wrap">
         <span class="inline-flex items-center justify-center rounded-full" style="width:2rem;height:2rem;background:var(--blue-light);color:var(--blue);font-weight:700;font-size:.8rem">${safeText((c.author_name || '?').trim().charAt(0).toUpperCase())}</span>
         <span class="font-bold text-sm" style="color:var(--ink)">${safeText(c.author_name)}</span>
+        ${adminBadge}
       </div>
       <div class="flex items-center gap-2">
         <span class="text-xs" style="color:var(--ink-light)">${safeText(fmtCommentDate(c.created_at))}</span>
         ${del}
       </div>
     </div>
-    <p class="text-sm sm:text-base leading-relaxed" style="color:var(--ink);white-space:pre-wrap;word-break:break-word">${safeText(c.body)}</p>
+    <p class="text-sm sm:text-base leading-relaxed mb-2" style="color:var(--ink);white-space:pre-wrap;word-break:break-word">${safeText(c.body)}</p>
+    <button type="button" data-reply-to="${c.id}" data-reply-name="${safeAttr(c.author_name)}" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem"><i class="ph ph-arrow-bend-up-left"></i> Répondre</button>
+    <div class="reply-form-slot"></div>
+    ${replies}
   </article>`;
 }
 
@@ -526,9 +550,10 @@ ${TOAST}
 
   // Comments
   const commentsRes = await env.DB
-    .prepare('SELECT id, author_name, body, created_at FROM comments WHERE article_id = ? ORDER BY created_at ASC, id ASC')
+    .prepare('SELECT id, parent_id, is_admin_reply, author_name, body, created_at FROM comments WHERE article_id = ? ORDER BY created_at ASC, id ASC')
     .bind(article.id).all();
-  const comments = commentsRes.results || [];
+  const flatComments = commentsRes.results || [];
+  const comments = nestCommentsSSR(flatComments);
 
   // Build the combined photo list (gallery photos + inline images not already listed).
   // Compare via a normalized (decoded) URL so a gallery photo and the same
@@ -569,7 +594,7 @@ ${TOAST}
 
   const commentsSection = `
     <section id="comments" class="mb-12" style="scroll-margin-top:5rem">
-      <h2 class="font-display text-2xl sm:text-3xl font-bold mb-6" style="color:var(--ink)"><i class="ph ph-chats-circle"></i> Commentaires <span id="comments-count" style="color:var(--ink-light);font-weight:400">(${comments.length})</span></h2>
+      <h2 class="font-display text-2xl sm:text-3xl font-bold mb-6" style="color:var(--ink)"><i class="ph ph-chats-circle"></i> Commentaires <span id="comments-count" style="color:var(--ink-light);font-weight:400">(${flatComments.length})</span></h2>
       <div id="comments-list" class="space-y-3 mb-8">${renderCommentsList(comments, authed)}</div>
       <div class="panel rounded-[2rem] p-6 sm:p-8">
         <h3 class="font-bold text-base mb-4" style="color:var(--ink)"><i class="ph ph-pencil-simple" style="color:var(--blue)"></i> Laisser un commentaire</h3>
@@ -658,6 +683,7 @@ ${LIGHTBOX}
 <script>
 const ARTICLE_ID = ${JSON.stringify(article.id)};
 const IS_ADMIN = ${JSON.stringify(authed)};
+const GATE_QUESTION = ${JSON.stringify(gateQuestion)};
 // Photo list for the lightbox (matches server-rendered data-photo-index order).
 window.photos = ${JSON.stringify(allPhotos.map(p => ({ url: p.url, caption: p.caption || '' })))};
 
@@ -688,16 +714,43 @@ function fmtCDate(d){try{return new Date((d||'').replace(' ','T')+'Z').toLocaleD
 function buildCommentEl(c){
   const wrap=document.createElement('article');
   wrap.className='comment-item bg-white rounded-2xl p-4 sm:p-5';
-  wrap.style.cssText='border:1px solid var(--line);box-shadow:var(--card-shadow)';
+  wrap.style.cssText='border:1px solid var(--line);box-shadow:var(--card-shadow);scroll-margin-top:5rem';
+  wrap.id='comment-'+c.id;
   wrap.setAttribute('data-comment-id', c.id);
   const initial=((c.author_name||'?').trim().charAt(0)||'?').toUpperCase();
   const del=IS_ADMIN?'<button type="button" data-del-comment="'+c.id+'" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem;color:#dc3c3c" title="Supprimer ce commentaire"><i class="ph ph-trash"></i></button>':'';
+  const badge=c.is_admin_reply?'<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold uppercase tracking-wide" style="background:var(--blue-light);color:var(--blue)"><i class="ph ph-fill ph-star"></i> Réponse de l\\'auteur</span>':'';
   wrap.innerHTML='<div class="flex items-start justify-between gap-3 mb-1.5">'+
-    '<div class="flex items-center gap-2"><span class="inline-flex items-center justify-center rounded-full" style="width:2rem;height:2rem;background:var(--blue-light);color:var(--blue);font-weight:700;font-size:.8rem">'+_escC(initial)+'</span>'+
-    '<span class="font-bold text-sm" style="color:var(--ink)">'+_escC(c.author_name)+'</span></div>'+
+    '<div class="flex items-center gap-2 flex-wrap"><span class="inline-flex items-center justify-center rounded-full" style="width:2rem;height:2rem;background:var(--blue-light);color:var(--blue);font-weight:700;font-size:.8rem">'+_escC(initial)+'</span>'+
+    '<span class="font-bold text-sm" style="color:var(--ink)">'+_escC(c.author_name)+'</span>'+badge+'</div>'+
     '<div class="flex items-center gap-2"><span class="text-xs" style="color:var(--ink-light)">'+_escC(fmtCDate(c.created_at))+'</span>'+del+'</div></div>'+
-    '<p class="text-sm sm:text-base leading-relaxed" style="color:var(--ink);white-space:pre-wrap;word-break:break-word">'+_escC(c.body)+'</p>';
+    '<p class="text-sm sm:text-base leading-relaxed mb-2" style="color:var(--ink);white-space:pre-wrap;word-break:break-word">'+_escC(c.body)+'</p>'+
+    '<button type="button" data-reply-to="'+c.id+'" data-reply-name="'+_escC(c.author_name)+'" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem"><i class="ph ph-arrow-bend-up-left"></i> Répondre</button>'+
+    '<div class="reply-form-slot"></div>';
   return wrap;
+}
+function buildReplyForm(parentId, parentName){
+  const div=document.createElement('div');
+  div.className='reply-form mt-3 p-4 rounded-xl';
+  div.style.cssText='background:var(--sand-light,rgba(0,0,0,.02));border:1px solid var(--line)';
+  div.innerHTML=
+    '<p class="text-xs font-semibold mb-2" style="color:var(--ink-muted)">Répondre à '+_escC(parentName)+'</p>'+
+    '<input type="text" class="reply-name w-full border-2 rounded-xl px-3 py-2 text-sm mb-2" placeholder="Votre prénom / nom" style="border-color:rgba(var(--blue-rgb),.18)">'+
+    '<textarea class="reply-body w-full border-2 rounded-xl px-3 py-2 text-sm resize-none mb-2" rows="2" placeholder="Votre réponse..." style="border-color:rgba(var(--blue-rgb),.18)"></textarea>'+
+    '<input type="text" class="reply-gate w-full border-2 rounded-xl px-3 py-2 text-sm mb-2" autocomplete="off" placeholder="'+_escC(GATE_QUESTION)+'" style="border-color:rgba(var(--blue-rgb),.18)">'+
+    '<p class="reply-error hidden text-xs font-semibold mb-2" style="color:#dc3c3c"></p>'+
+    '<div class="flex justify-end gap-2">'+
+    '<button type="button" class="reply-cancel ghost-btn" style="padding:.4rem .8rem;font-size:.75rem">Annuler</button>'+
+    '<button type="button" class="reply-submit action-btn-sm" style="padding:.4rem .9rem;font-size:.75rem" data-parent-id="'+parentId+'"><i class="ph ph-paper-plane-tilt"></i> Répondre</button>'+
+    '</div>';
+  return div;
+}
+async function submitComment({author_name, body, gate_answer, parent_id}){
+  const payload={author_name, body, gate_answer};
+  if(parent_id!=null) payload.parent_id=parent_id;
+  const res=await fetch('/api/articles/'+ARTICLE_ID+'/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(()=>null);
+  const data=await res?.json().catch(()=>null);
+  return {ok: !!(res&&res.ok), data};
 }
 const _cform=document.getElementById('comment-form');
 if(_cform){
@@ -706,19 +759,16 @@ if(_cform){
     const errEl=document.getElementById('comment-error');
     const btn=document.getElementById('comment-submit');
     errEl.classList.add('hidden');
-    const payload={
-      author_name:document.getElementById('c-name').value.trim(),
-      body:document.getElementById('c-body').value.trim(),
-      gate_answer:document.getElementById('c-gate').value.trim(),
-    };
-    if(!payload.author_name||!payload.body||!payload.gate_answer){
+    const author_name=document.getElementById('c-name').value.trim();
+    const body=document.getElementById('c-body').value.trim();
+    const gate_answer=document.getElementById('c-gate').value.trim();
+    if(!author_name||!body||!gate_answer){
       errEl.textContent='Merci de remplir tous les champs.'; errEl.classList.remove('hidden'); return;
     }
     btn.disabled=true;
-    const res=await fetch('/api/articles/'+ARTICLE_ID+'/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(()=>null);
+    const {ok, data}=await submitComment({author_name, body, gate_answer});
     btn.disabled=false;
-    const data=await res?.json().catch(()=>null);
-    if(!res||!res.ok){
+    if(!ok){
       errEl.textContent=(data&&data.error)||'Impossible de publier le commentaire.'; errEl.classList.remove('hidden'); return;
     }
     // Success: append the new comment, reset form
@@ -733,22 +783,89 @@ if(_cform){
     toast('Commentaire publié !','ok');
   });
 }
-// Admin: delete a comment (delegation)
+// Reply / delete (delegation, works for both root comments and nested replies)
 document.getElementById('comments')?.addEventListener('click', async (e)=>{
-  const btn=e.target.closest('[data-del-comment]');
-  if(!btn) return;
-  if(!confirm('Supprimer ce commentaire ?')) return;
-  const id=btn.getAttribute('data-del-comment');
-  const res=await fetch('/api/comments/'+id,{method:'DELETE'}).catch(()=>null);
-  if(res&&res.ok){
-    btn.closest('.comment-item')?.remove();
-    const list=document.getElementById('comments-list');
+  const delBtn=e.target.closest('[data-del-comment]');
+  if(delBtn){
+    if(!confirm('Supprimer ce commentaire ?')) return;
+    const id=delBtn.getAttribute('data-del-comment');
+    const res=await fetch('/api/comments/'+id,{method:'DELETE'}).catch(()=>null);
+    if(res&&res.ok){
+      const item=delBtn.closest('.comment-item');
+      item.remove(); // also removes nested reply elements (children of this node)
+      const list=document.getElementById('comments-list');
+      const cnt=document.getElementById('comments-count');
+      if(cnt) cnt.textContent='('+list.querySelectorAll('.comment-item').length+')';
+      if(!list.querySelector('.comment-item')) list.innerHTML='<p id="comments-empty" class="text-sm" style="color:var(--ink-light)">Aucun commentaire pour le moment. Soyez le premier à réagir !</p>';
+      toast('Commentaire supprimé','ok');
+    } else toast('Erreur','err');
+    return;
+  }
+
+  const replyBtn=e.target.closest('[data-reply-to]');
+  if(replyBtn){
+    const item=replyBtn.closest('.comment-item');
+    const slot=item.querySelector(':scope > .reply-form-slot');
+    if(slot.querySelector('.reply-form')){ slot.innerHTML=''; return; } // toggle off
+    slot.innerHTML='';
+    slot.appendChild(buildReplyForm(replyBtn.dataset.replyTo, replyBtn.dataset.replyName));
+    slot.querySelector('.reply-name')?.focus();
+    return;
+  }
+
+  const cancelBtn=e.target.closest('.reply-cancel');
+  if(cancelBtn){ cancelBtn.closest('.reply-form-slot').innerHTML=''; return; }
+
+  const submitBtn=e.target.closest('.reply-submit');
+  if(submitBtn){
+    const formEl=submitBtn.closest('.reply-form');
+    const errEl=formEl.querySelector('.reply-error');
+    const author_name=formEl.querySelector('.reply-name').value.trim();
+    const body=formEl.querySelector('.reply-body').value.trim();
+    const gate_answer=formEl.querySelector('.reply-gate').value.trim();
+    errEl.classList.add('hidden');
+    if(!author_name||!body||!gate_answer){
+      errEl.textContent='Merci de remplir tous les champs.'; errEl.classList.remove('hidden'); return;
+    }
+    submitBtn.disabled=true;
+    const {ok, data}=await submitComment({author_name, body, gate_answer, parent_id:submitBtn.dataset.parentId});
+    submitBtn.disabled=false;
+    if(!ok){
+      errEl.textContent=(data&&data.error)||'Impossible de publier la réponse.'; errEl.classList.remove('hidden'); return;
+    }
+    // Nest visually under the thread ROOT (matches server-side flattening).
+    const rootId=data.comment.parent_id||data.comment.id;
+    const rootItem=document.getElementById('comment-'+rootId);
+    let repliesWrap=rootItem?.querySelector(':scope > .replies-wrap');
+    if(rootItem && !repliesWrap){
+      repliesWrap=document.createElement('div');
+      repliesWrap.className='replies-wrap mt-3 ml-4 sm:ml-8 space-y-3';
+      repliesWrap.style.cssText='border-left:2px solid var(--line);padding-left:1rem';
+      rootItem.appendChild(repliesWrap);
+    }
+    repliesWrap?.appendChild(buildCommentEl(data.comment));
+    formEl.closest('.reply-form-slot').innerHTML='';
     const cnt=document.getElementById('comments-count');
+    const list=document.getElementById('comments-list');
     if(cnt) cnt.textContent='('+list.querySelectorAll('.comment-item').length+')';
-    if(!list.querySelector('.comment-item')) list.innerHTML='<p id="comments-empty" class="text-sm" style="color:var(--ink-light)">Aucun commentaire pour le moment. Soyez le premier à réagir !</p>';
-    toast('Commentaire supprimé','ok');
-  } else toast('Erreur','err');
+    toast('Réponse publiée !','ok');
+  }
 });
+// Deep-link: /voyage/slug#comment-123 highlights and scrolls to that comment
+(function(){
+  const hash=location.hash;
+  if(hash && hash.indexOf('#comment-')===0){
+    const target=document.querySelector(hash);
+    if(target){
+      setTimeout(()=>{
+        target.scrollIntoView({behavior:'smooth', block:'center'});
+        target.style.transition='background-color .3s ease';
+        target.style.backgroundColor='var(--blue-light)';
+        setTimeout(()=>{ target.style.backgroundColor=''; }, 2200);
+      }, 100);
+    }
+  }
+})();
 </script>
 </body></html>`);
 }

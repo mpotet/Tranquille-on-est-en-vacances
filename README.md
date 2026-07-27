@@ -8,8 +8,6 @@
 
 ```
 .
-├── demo.html                  # Démo statique single-file - testez l'UI sans serveur
-├── index.html                 # Point d'entrée GitHub Pages (redirige vers demo.html)
 ├── schema.sql                 # Schéma de la base de données Cloudflare D1
 ├── wrangler.toml              # Configuration Cloudflare Workers
 ├── worker/
@@ -29,32 +27,19 @@
 
 ---
 
-## 🎮 Tester la démo locale
-
-**Aucune installation requise.**  Ouvrez simplement `demo.html` dans votre navigateur :
+## 🎮 Développer en local
 
 ```bash
-open demo.html
-# ou double-cliquez sur le fichier dans votre explorateur
+# Terminal 1 : Worker Cloudflare (backend + rendu HTML)
+cd backend
+npm run dev        # http://localhost:8787
+
+# Terminal 2 : proxy frontend (optionnel, pour tester frontend/index.html)
+cd frontend
+npm run dev         # http://localhost:3000 → proxifie vers :8787
 ```
 
-La démo inclut :
-- ✅ Page d'accueil avec hero image et grille de voyages
-- ✅ Page liste des voyages avec filtres par dossier
-- ✅ Page détail avec galerie photos et lightbox
-- ✅ Interface admin complète (login demo : n'importe quel mot de passe)
-- ✅ Gestion des dossiers (CRUD)
-- ✅ Éditeur visuel (WYSIWYG) avec mise en forme en direct
-- ✅ Upload de photos simulé (FileReader)
-- ✅ Responsive mobile-first
-
-### Démo GitHub Pages
-
-La publication GitHub Pages repose sur le workflow `.github/workflows/pages.yml`.
-
-- `index.html` sert de point d'entrée à la racine du dépôt
-- `demo.html` reste la démo single-file source
-- le workflow publie `demo.html` comme page d'accueil Pages
+Le site (pages publiques + admin) est entièrement rendu côté serveur par le Worker — il n'y a pas de démo statique séparée.
 
 ---
 
