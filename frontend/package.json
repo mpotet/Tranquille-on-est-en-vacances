@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node proxy.js"
+    "dev": "node proxy.js",
+    "build": "node build.js"
   }
 }
