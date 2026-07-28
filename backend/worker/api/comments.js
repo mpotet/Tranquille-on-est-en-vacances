@@ -94,9 +94,14 @@ export async function createComment(request, env, slugOrId, isAdmin) {
   // thread never grows past root → replies.
   let parentId = null;
   if (body.parent_id != null) {
+    // Coerce to an integer up front: a non-scalar parent_id (object/array) or a
+    // non-numeric string bound into the query would make D1 throw → 500 on a
+    // public endpoint. Reject it as a clean 400 instead.
+    const pid = parseInt(body.parent_id, 10);
+    if (!Number.isInteger(pid)) return badRequest('Commentaire parent invalide.');
     const parent = await env.DB
       .prepare('SELECT id, article_id, parent_id FROM comments WHERE id = ?')
-      .bind(body.parent_id)
+      .bind(pid)
       .first();
     if (!parent || parent.article_id !== articleId) return badRequest('Commentaire parent introuvable.');
     parentId = parent.parent_id || parent.id;
@@ -119,12 +124,15 @@ export async function createComment(request, env, slugOrId, isAdmin) {
   if (postLimit.blocked) {
     return forbidden(`Trop de commentaires envoyés récemment. Réessayez dans ${Math.ceil(postLimit.retryAfterSeconds / 60)} min.`);
   }
-  await recordFailedAttempt(env.DB, 'comment_post', ip);
 
   const result = await env.DB
     .prepare('INSERT INTO comments (article_id, parent_id, author_name, body) VALUES (?, ?, ?, ?)')
     .bind(articleId, parentId, authorName, commentBody)
     .run();
+
+  // Count this against the post quota only once it actually succeeded, so a
+  // failed INSERT (e.g. constraint error) doesn't burn one of the 5 slots.
+  await recordFailedAttempt(env.DB, 'comment_post', ip);
 
   const comment = await env.DB
     .prepare('SELECT id, parent_id, is_admin_reply, author_name, body, created_at FROM comments WHERE id = ?')

@@ -165,9 +165,11 @@ async function send(env, { to, subject, html, emailType }) {
     if (res.status === 401 || body?.ErrorCode === 'mj-0015') friendly = 'Clés API invalides. Vérifiez-les dans l\'onglet Emails.';
     else if (errCode === 'send-0008') friendly = "Adresse expéditrice non vérifiée sur Mailjet. Ajoutez et confirmez l'adresse dans l'onglet Emails (email de vérification à cliquer).";
     console.error(`[AdminEmail] HTTP ${res.status} pour ${to}:`, body);
-    // Store the friendly message plus Mailjet body (stringified) to help debugging.
-    const debug = body ? JSON.stringify(body) : `HTTP ${res.status}`;
-    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: friendly + ' - Mailjet: ' + debug });
+    // Persist only the friendly message + a short Mailjet error code — the full
+    // response body can carry internal identifiers and doesn't belong in the DB.
+    // The complete body is available in the console log above (wrangler tail).
+    const codePart = errCode || body?.ErrorCode || `HTTP ${res.status}`;
+    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: `${friendly} (Mailjet: ${codePart})` });
     return { ok: false, status: res.status, error: friendly, mailjet: body };
   }
   await logEmailAttempt(env, { emailType, recipient: to, ok: true });

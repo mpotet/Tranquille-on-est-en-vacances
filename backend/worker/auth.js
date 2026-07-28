@@ -103,7 +103,7 @@ export async function createSession(password, adminPw, sessionSecret) {
 export async function issueSessionCookie(sessionSecret) {
   const payload = JSON.stringify({ role: 'admin', exp: Date.now() + TOKEN_TTL_MS });
   const token = await sign(payload, sessionSecret);
-  return `${COOKIE_NAME}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${TOKEN_TTL_MS / 1000}`;
+  return `${COOKIE_NAME}=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${TOKEN_TTL_MS / 1000}`;
 }
 
 /**
@@ -127,5 +127,5 @@ export async function isAuthenticated(request, sessionSecret) {
  * Return a Set-Cookie header that clears the session.
  */
 export function clearSession() {
-  return `${COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`;
+  return `${COOKIE_NAME}=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0`;
 }

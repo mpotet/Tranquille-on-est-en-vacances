@@ -37,8 +37,12 @@ export async function listArticles(request, env, isAdmin) {
   const statusParam = url.searchParams.get('status');   // 'published' | 'draft' | null (all for admin)
   const folderSlug  = url.searchParams.get('folder');
   const q           = (url.searchParams.get('q') || '').trim();
-  const page        = Math.max(1, parseInt(url.searchParams.get('page')  || '1'));
-  const limit       = Math.min(50, parseInt(url.searchParams.get('limit') || '20'));
+  // `|| fallback` catches NaN from a non-numeric ?page=abc / ?limit=xyz — an
+  // unguarded parseInt('abc') is NaN, and NaN in LIMIT/OFFSET makes the D1 bind
+  // throw (500). The clamps also stop ?limit=-5 (SQLite reads a negative LIMIT
+  // as "unlimited", which would silently dump the whole table).
+  const page        = Math.max(1, parseInt(url.searchParams.get('page')  || '1', 10) || 1);
+  const limit       = Math.min(50, Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10) || 20));
   const offset      = (page - 1) * limit;
 
   // Whitelisted sort options only — never interpolate the raw query param
@@ -84,8 +88,11 @@ export async function listArticles(request, env, isAdmin) {
       .bind(folderSlug)
       .first();
     if (folder) {
-      const ids = await getAllFolderIds(env, folder.id);
-      whereClauses.push(`a.folder_id IN (${ids.join(',')})`);
+      // Coerce to integers before interpolating — these come from folders.id
+      // (INTEGER PK) so they're already numeric, but forcing it here keeps this
+      // the only non-bound value in the query provably injection-proof.
+      const ids = (await getAllFolderIds(env, folder.id)).map(Number).filter(Number.isInteger);
+      whereClauses.push(ids.length ? `a.folder_id IN (${ids.join(',')})` : '0 = 1');
     } else {
       whereClauses.push('0 = 1');
     }
@@ -292,12 +299,19 @@ export async function deleteArticle(env, id) {
 // Helpers
 // ──────────────────────────────────────────────────────────────
 function toSlug(text) {
-  return text
+  const slug = text
     .toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s-]/g, '')
     .trim()
     .replace(/\s+/g, '-');
+  // A purely-numeric slug (title "2024", "48"...) collides with the id-based
+  // lookup: every route does `/^\d+$/.test(slug) ? id=? : slug=?`, so a numeric
+  // slug would be searched as an id and the article becomes unreachable.
+  // Prefix it so the slug is never all-digits. Empty slugs (title with no latin
+  // chars, e.g. all emoji) also fall back to a stable non-empty value.
+  if (!slug || /^\d+$/.test(slug)) return `voyage-${slug || Date.now()}`;
+  return slug;
 }
 
 async function uniqueSlug(env, base) {
@@ -353,16 +367,22 @@ function normalizeTripFields(source) {
   return { startDate, endDate, writingDays };
 }
 
-/** Return the flat list of all folder IDs in the subtree rooted at folderId. */
-async function getAllFolderIds(env, folderId) {
+/**
+ * Return the flat list of all folder IDs in the subtree rooted at folderId.
+ * `seen` guards against a parent/child cycle in the folders table (which would
+ * otherwise recurse forever and blow the stack → 500 on every /voyages request
+ * filtered by that folder).
+ */
+async function getAllFolderIds(env, folderId, seen = new Set()) {
+  if (seen.has(folderId)) return [];
+  seen.add(folderId);
   const ids = [folderId];
   const { results } = await env.DB
     .prepare('SELECT id FROM folders WHERE parent_id = ?')
     .bind(folderId)
     .all();
-  for (const row of results) {
-    const childIds = await getAllFolderIds(env, row.id);
-    ids.push(...childIds);
+  for (const row of results || []) {
+    ids.push(...await getAllFolderIds(env, row.id, seen));
   }
   return ids;
 }
@@ -431,12 +451,10 @@ export async function recordView(env, slugOrId, request, authed = false) {
     await logPageView(env, request, { articleId: article.id, path: '/voyage/' + article.slug });
   }
 
-  const updated = await env.DB
-    .prepare('SELECT view_count FROM articles WHERE id = ?')
-    .bind(article.id)
-    .first();
-
-  return json({ views: updated.view_count });
+  // We already know the pre-increment count and just added 1 — return that
+  // directly instead of a second SELECT that could race with a concurrent
+  // delete (returning null → `updated.view_count` TypeError → 500).
+  return json({ views: article.view_count + 1 });
 }
 
 export { logPageView, isBotUserAgent };

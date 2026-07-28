@@ -3,8 +3,8 @@
  *   - setup / reset  (choose-a-new-password landing, shared template)
  *   - confirm-email  (result page after clicking the confirmation link)
  *
- * These reuse the visual language of loginPage() in admin.js (stone/sky palette,
- * section-panel + majorelle-frame card). No inline event handlers.
+ * These reuse the visual language of loginPage() in admin.js (design tokens,
+ * panel card). No inline event handlers.
  */
 
 import { HEAD } from './shell.js';
@@ -16,21 +16,21 @@ function authShell(titleTag, inner) {
   return html(`<!DOCTYPE html>
 <html lang="fr">
 <head>${HEAD(titleTag)}</head>
-<body class="bg-stone-50 min-h-screen font-sans antialiased">
+<body class="min-h-screen font-sans antialiased" style="background:radial-gradient(120% 100% at 50% 0%, var(--blue-light) 0%, var(--cream) 55%)">
 <div class="min-h-screen flex items-center justify-center px-4 py-12">
   <div class="w-full max-w-md">
     <div class="text-center mb-8">
       <a href="/" class="inline-block">
-        <span class="block mb-3" style="font-size:3.5rem;color:var(--blue)"><i class="ph ph-lock-key"></i></span>
+        <span class="inline-flex items-center justify-center mb-3" style="width:4.5rem;height:4.5rem;border-radius:999px;background:var(--blue-light);border:2px solid rgba(var(--blue-rgb),.14)"><i class="ph-bold ph-lock-key" style="font-size:2rem;color:var(--blue)"></i></span>
       </a>
-      <h1 class="font-display text-3xl font-bold text-stone-900">Espace Admin</h1>
-      <p class="text-stone-500 mt-2 text-sm">Connexion réservée à la famille Potet</p>
+      <h1 class="font-display text-3xl font-bold" style="color:var(--ink)">Espace Admin</h1>
+      <p class="mt-2 text-sm" style="color:var(--ink-muted)">Connexion réservée à la famille Potet</p>
     </div>
-    <div class="section-panel majorelle-frame rounded-3xl shadow-xl p-8 border border-stone-100">
+    <div class="panel rounded-[2rem] p-8">
       ${inner}
     </div>
-    <p class="text-center text-stone-400 text-sm mt-6">
-      <a href="/" class="hover:text-sky-600 transition-colors">&lt; Retour au blog</a>
+    <p class="text-center text-sm mt-6" style="color:var(--ink-light)">
+      <a href="/" style="color:var(--ink-light)" class="hover:underline">&lt; Retour au blog</a>
     </p>
   </div>
 </div>
@@ -53,29 +53,29 @@ export function setPasswordPage(mode, token, valid) {
       <div class="mb-5 bg-red-50 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium border border-red-100">
         <i class="ph-fill ph-x-circle"></i> Ce lien est invalide ou a expiré (validité : 1 heure).
       </div>
-      <p class="text-sm text-stone-600 mb-6">Demandez un nouveau lien depuis la page de connexion (« Mot de passe oublié ? »).</p>
-      <a href="/admin" class="w-full action-btn justify-center text-base">Retour à la connexion <i class="ph ph-arrow-right"></i></a>`);
+      <p class="text-sm mb-6" style="color:var(--ink-light)">Demandez un nouveau lien depuis la page de connexion (« Mot de passe oublié ? »).</p>
+      <a href="/admin" class="w-full action-btn justify-center text-base">Retour à la connexion <i class="ph-bold ph-arrow-right"></i></a>`);
   }
 
   const heading = isSetup ? 'Choisissez votre mot de passe' : 'Choisissez un nouveau mot de passe';
   return authShell(`Admin - ${title}`, `
-    <h2 class="font-bold text-stone-800 mb-1">${safeText(heading)}</h2>
-    <p class="text-sm text-stone-500 mb-6">Minimum 8 caractères.</p>
+    <h2 class="font-bold mb-1" style="color:var(--ink)">${safeText(heading)}</h2>
+    <p class="text-sm mb-6" style="color:var(--ink-light)">Minimum 8 caractères.</p>
     <div id="err" class="hidden mb-5 bg-red-50 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium border border-red-100"></div>
     <form id="pw-form">
       <input type="hidden" id="token" value="${safeAttr(token)}">
       <div class="mb-4">
-        <label class="block text-sm font-bold text-stone-700 mb-2" for="pw">Mot de passe</label>
+        <label class="block text-sm font-bold mb-2" style="color:var(--ink)" for="pw">Mot de passe</label>
         <input type="password" id="pw" name="pw" autocomplete="new-password" minlength="8" required autofocus
                placeholder="••••••••" class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-medium">
       </div>
       <div class="mb-6">
-        <label class="block text-sm font-bold text-stone-700 mb-2" for="pw2">Confirmer le mot de passe</label>
+        <label class="block text-sm font-bold mb-2" style="color:var(--ink)" for="pw2">Confirmer le mot de passe</label>
         <input type="password" id="pw2" name="pw2" autocomplete="new-password" minlength="8" required
                placeholder="••••••••" class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-medium">
       </div>
       <button type="submit" id="submit" class="w-full action-btn justify-center text-base">
-        ${isSetup ? 'Activer mon compte' : 'Enregistrer'} <i class="ph ph-arrow-right"></i>
+        ${isSetup ? 'Activer mon compte' : 'Enregistrer'} <i class="ph-bold ph-arrow-right"></i>
       </button>
     </form>
     <script>
@@ -114,20 +114,20 @@ export function confirmEmailPage(state, newEmail = '') {
       <div class="mb-5 bg-amber-50 text-amber-800 px-4 py-3 rounded-2xl text-sm font-medium border border-amber-100">
         <i class="ph-fill ph-warning-circle"></i> Vous devez être connecté pour confirmer ce changement d'adresse.
       </div>
-      <p class="text-sm text-stone-600 mb-6">Connectez-vous, puis cliquez à nouveau sur le lien reçu par email.</p>
-      <a href="/admin" class="w-full action-btn justify-center text-base">Se connecter <i class="ph ph-arrow-right"></i></a>`);
+      <p class="text-sm mb-6" style="color:var(--ink-light)">Connectez-vous, puis cliquez à nouveau sur le lien reçu par email.</p>
+      <a href="/admin" class="w-full action-btn justify-center text-base">Se connecter <i class="ph-bold ph-arrow-right"></i></a>`);
   }
   if (state === 'invalid') {
     return authShell('Admin - Confirmation email', `
       <div class="mb-5 bg-red-50 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium border border-red-100">
         <i class="ph-fill ph-x-circle"></i> Ce lien de confirmation est invalide ou a expiré (validité : 1 heure).
       </div>
-      <a href="/admin/dashboard#settings" class="w-full action-btn justify-center text-base">Retour au tableau de bord <i class="ph ph-arrow-right"></i></a>`);
+      <a href="/admin/dashboard#settings" class="w-full action-btn justify-center text-base">Retour au tableau de bord <i class="ph-bold ph-arrow-right"></i></a>`);
   }
   return authShell('Admin - Confirmation email', `
     <div class="mb-5 bg-emerald-50 text-emerald-800 px-4 py-3 rounded-2xl text-sm font-medium border border-emerald-100">
       <i class="ph-fill ph-check-circle"></i> Adresse email mise à jour !
     </div>
-    <p class="text-sm text-stone-600 mb-6">Votre compte administrateur utilise désormais l'adresse <strong>${safeText(newEmail)}</strong>.</p>
-    <a href="/admin/dashboard#settings" class="w-full action-btn justify-center text-base">Retour au tableau de bord <i class="ph ph-arrow-right"></i></a>`);
+    <p class="text-sm mb-6" style="color:var(--ink-light)">Votre compte administrateur utilise désormais l'adresse <strong>${safeText(newEmail)}</strong>.</p>
+    <a href="/admin/dashboard#settings" class="w-full action-btn justify-center text-base">Retour au tableau de bord <i class="ph-bold ph-arrow-right"></i></a>`);
 }

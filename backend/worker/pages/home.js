@@ -169,7 +169,7 @@ function renderPopularityBars(views, minViews, maxViews) {
   const heights = [5, 8, 11, 14, 17];
   let bars = '';
   for (let i = 0; i < 5; i++) {
-    bars += '<span style="display:inline-block;width:3px;height:' + heights[i] + 'px;border-radius:1px;background:' + (i < count ? 'var(--blue)' : 'rgba(0,0,0,.12)') + '"></span>';
+    bars += '<span style="display:inline-block;width:3px;height:' + heights[i] + 'px;border-radius:1px;background:' + (i < count ? 'var(--blue)' : 'rgba(var(--ink-rgb),.12)') + '"></span>';
   }
   return '<div style="display:flex;align-items:center;gap:3px" aria-hidden="true">' + bars + '<span style="font-size:.68rem;margin-left:4px;color:var(--ink-light);line-height:1">' + views + '</span></div>';
 }
@@ -219,7 +219,7 @@ function showErrorBanner(){
 }
 function elevatedEmpty(icon, title, subtitle){
   return '<div class="col-span-3 text-center py-16" style="color:var(--ink-light)">'+
-    '<i class="ph '+icon+'" style="font-size:3.5rem;display:block;margin-bottom:1rem;color:var(--ink-light)"></i>'+
+    '<i class="ph-bold '+icon+'" style="font-size:3.5rem;display:block;margin-bottom:1rem;color:var(--ink-light)"></i>'+
     '<p class="text-lg font-semibold mb-1" style="color:var(--ink)">'+title+'</p>'+
     (subtitle?'<p class="text-sm">'+subtitle+'</p>':'')+
   '</div>';
@@ -315,11 +315,11 @@ async function homeSubscribe(){
   const msg=document.getElementById('home-sub-msg');
   const email=(input.value||'').trim();
   msg.className='hidden';
-  if(!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)){ msg.textContent='Entrez une adresse email valide.'; msg.style.color='#dc3c3c'; msg.className='text-sm mt-3 font-semibold'; return; }
+  if(!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)){ msg.textContent='Entrez une adresse email valide.'; msg.style.color='var(--danger)'; msg.className='text-sm mt-3 font-semibold'; return; }
   const res=await fetch('/api/email/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})}).catch(()=>null);
   const data=await res?.json().catch(()=>null);
   if(res&&res.ok){ msg.textContent='C\\'est noté ! On vous fait signe au prochain voyage. 🌴'; msg.style.color='var(--palm)'; input.value=''; }
-  else { msg.textContent=(data&&data.error)||'Oups, réessayez dans un instant.'; msg.style.color='#dc3c3c'; }
+  else { msg.textContent=(data&&data.error)||'Oups, réessayez dans un instant.'; msg.style.color='var(--danger)'; }
   msg.className='text-sm mt-3 font-semibold';
 }
 window.homeSubscribe=homeSubscribe;

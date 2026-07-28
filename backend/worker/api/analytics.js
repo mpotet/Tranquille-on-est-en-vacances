@@ -37,10 +37,16 @@ export async function getAnalytics(request, env) {
   const [totalRow, prevTotalRow, countryRows, dailyRows, topArticles] = await Promise.all([
     env.DB.prepare(`SELECT COUNT(*) AS n FROM page_views ${whereCurrent}`).first(),
     wherePrev ? env.DB.prepare(`SELECT COUNT(*) AS n FROM page_views ${wherePrev}`).first() : Promise.resolve(null),
+    // Grouped by city (not just country) so the dashboard can show "Paris,
+    // France" rather than just "France" — city/region/country all come from
+    // Cloudflare's edge geolocation (see page_views schema comment), no IP
+    // ever stored. Two visitors from different cities in the same country
+    // must stay distinct rows here; country-level totals are derived by
+    // summing these rows client-side in countries_distinct below.
     env.DB.prepare(`
-      SELECT COALESCE(country_code, '??') AS country_code, COUNT(*) AS n
+      SELECT COALESCE(country_code, '??') AS country_code, city, COUNT(*) AS n
       FROM page_views ${whereCurrent}
-      GROUP BY country_code
+      GROUP BY country_code, city
       ORDER BY n DESC
     `).all(),
     env.DB.prepare(`
@@ -66,16 +72,20 @@ export async function getAnalytics(request, env) {
     ? Math.round(((total - prevTotal) / prevTotal) * 100)
     : null;
 
-  const countries = (countryRows.results || []).map(r => ({ code: r.country_code, count: r.n }));
+  // One row per (city, country) pair — the client renders "Paris, France".
+  // Rows with no city (older data predating city tracking, or a request
+  // Cloudflare couldn't resolve) fall back to just the country/"Inconnu".
+  const locations = (countryRows.results || []).map(r => ({ code: r.country_code, city: r.city || null, count: r.n }));
+  const countriesDistinct = new Set(locations.filter(l => l.code !== '??').map(l => l.code)).size;
 
   return json({
     period: periodParam,
     granularity: isToday ? 'hour' : 'day',
     total,
     trend_pct: trendPct,
-    countries_distinct: countries.filter(c => c.code !== '??').length,
+    countries_distinct: countriesDistinct,
     daily: (dailyRows.results || []).map(r => ({ day: r.bucket, count: r.n })),
-    countries,
+    locations,
     top_articles: (topArticles.results || []).map(r => ({ id: r.id, title: r.title, slug: r.slug, views: r.period_views })),
   });
 }

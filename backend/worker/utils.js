@@ -78,7 +78,14 @@ export function matchPath(pattern, pathname) {
   const params = {};
   for (let i = 0; i < patParts.length; i++) {
     if (patParts[i].startsWith(':')) {
-      params[patParts[i].slice(1)] = decodeURIComponent(urlParts[i]);
+      // A malformed percent-escape (e.g. /voyage/%E0%A4) makes
+      // decodeURIComponent throw a URIError; treat it as "no match" so the
+      // router falls through to a clean 404 instead of an unhandled 500.
+      try {
+        params[patParts[i].slice(1)] = decodeURIComponent(urlParts[i]);
+      } catch {
+        return null;
+      }
     } else if (patParts[i] !== urlParts[i]) {
       return null;
     }

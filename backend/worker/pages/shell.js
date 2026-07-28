@@ -48,10 +48,13 @@ tailwind.config = {
   --palm-light:    #E6F4F1;
   --cream:         #FFFDF9;
   --ink:           #1A2B3C;
+  --ink-rgb:       26,43,60;
   --ink-muted:     #5A6A7A;
   --ink-light:     #8A9BAC;
   --danger:        #DC3C3C;
   --danger-rgb:    220,60,60;
+  --pending:       #9A5B12;   /* deep amber — "brouillon / en attente / archivé" ink */
+  --pending-rgb:   154,91,18;
   --line:          rgba(26,43,60,.10);
   --card-shadow:   0 2px 12px rgba(26,43,60,.06), 0 8px 28px rgba(26,43,60,.04);
   --hover-shadow:  0 8px 36px rgba(0,87,184,.18);
@@ -129,6 +132,11 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 }
 /* alias */
 .section-panel, .glass-panel, .majorelle-frame, .majorelle-showcase { background: rgba(255,253,249,.96)!important; border: 1px solid rgba(var(--sand-rgb), .7)!important; box-shadow: var(--card-shadow)!important; }
+/* Plain white card with a thin line border + the theme's soft shadow — the
+   pattern repeated inline for comments/prev-next cards on the voyage page.
+   No border-radius here on purpose: call sites already set their own via a
+   Tailwind rounded-* class. */
+.card-line { background: #fff; border: 1px solid var(--line); box-shadow: var(--card-shadow); }
 
 /* ── Full-bleed photo hero ──────────────────────────────────── */
 .hero-photo {
@@ -202,7 +210,7 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .badge-published { background: var(--palm-light);              color: var(--palm);      border: 1px solid rgba(var(--palm-rgb),.28); }
 .badge-draft     { background: var(--sand);                     color: var(--ink-muted); border: 1px solid var(--line); }
 .badge-archived  { background: rgba(90,106,122,.10);             color: var(--ink-muted); border: 1px solid rgba(90,106,122,.22); }
-.badge-pending   { background: rgba(var(--apricot-rgb),.20);     color: #9a5b12;          border: 1px solid rgba(var(--apricot-rgb),.5); }
+.badge-pending   { background: rgba(var(--apricot-rgb),.20);     color: var(--pending);          border: 1px solid rgba(var(--apricot-rgb),.5); }
 
 /* ── Period pills (admin analytics) ─────────────────────────── */
 .period-pill{padding:.4rem .9rem;border-radius:999px;font-size:.78rem;font-weight:700;background:#fff;border:1.5px solid var(--line);color:var(--ink-muted);cursor:pointer;transition:all .15s}
@@ -224,7 +232,7 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .status-option[data-status="published"].is-active .status-check { color: var(--palm); }
 .status-option[data-status="publish_when_online"].is-active { border-color: rgba(var(--apricot-rgb),.6); background: rgba(var(--apricot-rgb),.14); }
 .status-option[data-status="publish_when_online"].is-active .status-option-icon,
-.status-option[data-status="publish_when_online"].is-active .status-check { color: #9a5b12; }
+.status-option[data-status="publish_when_online"].is-active .status-check { color: var(--pending); }
 
 /* ── Prose (article body) ───────────────────────────────────── */
 .prose-vacation h1, .prose-vacation h2, .prose-vacation h3 { font-family: "Playfair Display", Georgia, serif; color: var(--ink); letter-spacing: -.02em; }
@@ -375,7 +383,7 @@ export const NAV = (active = '', authed = false) => `
             <a href="/admin" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph-bold ph-gauge" style="color:var(--blue)"></i> Tableau de bord</a>
             <a href="/admin/editor" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph-bold ph-plus-circle" style="color:var(--blue)"></i> Nouvel article</a>
             <form method="POST" action="/admin/logout" style="border-top:1px solid var(--line);margin-top:.25rem;padding-top:.25rem">
-              <button type="submit" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold w-full text-left transition-colors hover:bg-red-50" style="color:#dc3c3c;background:none;border:none;cursor:pointer"><i class="ph-bold ph-sign-out"></i> Déconnexion</button>
+              <button type="submit" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold w-full text-left transition-colors hover:bg-red-50" style="color:var(--danger);background:none;border:none;cursor:pointer"><i class="ph-bold ph-sign-out"></i> Déconnexion</button>
             </form>
           </div>
         </div>
@@ -401,7 +409,7 @@ export const NAV = (active = '', authed = false) => `
           <div class="flex items-center gap-1.5 px-3 pb-1 text-[.68rem] font-bold uppercase tracking-[.14em]" style="color:var(--blue)"><i class="ph-fill ph-shield-check"></i> Espace admin</div>
           <a href="/admin" class="mobile-nav-link"><i class="ph-bold ph-gauge"></i> Tableau de bord</a>
           <a href="/admin/editor" class="mobile-nav-link"><i class="ph-bold ph-plus-circle"></i> Nouvel article</a>
-          <form method="POST" action="/admin/logout"><button type="submit" class="mobile-nav-link w-full text-left" style="color:#dc3c3c;background:none;border:none;cursor:pointer"><i class="ph-bold ph-sign-out"></i> Déconnexion</button></form>
+          <form method="POST" action="/admin/logout"><button type="submit" class="mobile-nav-link w-full text-left" style="color:var(--danger);background:none;border:none;cursor:pointer"><i class="ph-bold ph-sign-out"></i> Déconnexion</button></form>
         </div>
         ` : `
         <a href="/admin" class="action-btn-sm justify-center mt-2"><i class="ph-bold ph-lock-key"></i> Admin</a>
@@ -644,7 +652,7 @@ function showSubMsg(msg, ok) {
   const el = document.getElementById('sub-msg');
   if (!el) return;
   el.textContent = msg;
-  el.style.color = ok ? 'var(--palm)' : '#dc3c3c';
+  el.style.color = ok ? 'var(--palm)' : 'var(--danger)';
   el.classList.remove('hidden');
   setTimeout(() => el.classList.add('hidden'), 4000);
 }
@@ -686,7 +694,7 @@ async function emailModalSubscribe() {
   const email = (document.getElementById('email-modal-in')?.value || '').trim();
   const msg = document.getElementById('email-modal-msg');
   if (!email) {
-    if (msg) { msg.style.display='block'; msg.style.color='#dc3c3c'; msg.textContent='Entrez votre adresse email'; }
+    if (msg) { msg.style.display='block'; msg.style.color='var(--danger)'; msg.textContent='Entrez votre adresse email'; }
     return;
   }
   const res = await fetch('/api/email/subscribe', {
@@ -697,7 +705,7 @@ async function emailModalSubscribe() {
     if (msg) { msg.style.display='block'; msg.style.color='#2E7D6B'; msg.textContent='Abonnement confirmé ! ✓'; }
     setTimeout(() => { document.getElementById('email-modal').style.display = 'none'; }, 1800);
   } else {
-    if (msg) { msg.style.display='block'; msg.style.color='#dc3c3c'; msg.textContent='Erreur, réessayez'; }
+    if (msg) { msg.style.display='block'; msg.style.color='var(--danger)'; msg.textContent='Erreur, réessayez'; }
   }
 }
 function emailModalDismiss() {
@@ -871,5 +879,5 @@ _lbVp.addEventListener('touchend',e=>{
   }
   _lbTouch=null;
 },{passive:true});
-function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:#dc3c3c;font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
+function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:var(--danger);font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
 </script>`;

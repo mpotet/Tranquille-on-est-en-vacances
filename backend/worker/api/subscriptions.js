@@ -11,6 +11,7 @@
 
 import { json, badRequest, notFound, html, cleanEmailInput } from '../utils.js';
 import { isEmailConfigured } from '../admin-email.js';
+import { checkRateLimit, recordFailedAttempt, clientKey } from '../rate-limit.js';
 
 // ── Push: VAPID public key ────────────────────────────────────────────────────
 
@@ -21,10 +22,15 @@ export function getPushConfig(env) {
 // ── Push: subscribe ───────────────────────────────────────────────────────────
 
 export async function pushSubscribe(request, env) {
+  const ip = clientKey(request);
+  const limit = await checkRateLimit(env.DB, 'push_subscribe', ip, { max: 20, windowMinutes: 10 });
+  if (limit.blocked) return badRequest('Trop de tentatives. Réessayez dans quelques minutes.');
+
   const body = await request.json().catch(() => null);
   if (!body || !body.endpoint || !body.keys?.p256dh || !body.keys?.auth) {
     return badRequest('endpoint, keys.p256dh and keys.auth are required');
   }
+  await recordFailedAttempt(env.DB, 'push_subscribe', ip);
 
   await env.DB
     .prepare('INSERT OR REPLACE INTO push_subscriptions (endpoint, p256dh, auth) VALUES (?, ?, ?)')
@@ -57,6 +63,11 @@ export async function emailSubscribe(request, env) {
   if (!(await isEmailConfigured(env))) {
     return badRequest("Les notifications par email ne sont pas disponibles pour le moment.");
   }
+
+  const ip = clientKey(request);
+  const limit = await checkRateLimit(env.DB, 'email_subscribe', ip, { max: 10, windowMinutes: 10 });
+  if (limit.blocked) return badRequest('Trop de tentatives. Réessayez dans quelques minutes.');
+  await recordFailedAttempt(env.DB, 'email_subscribe', ip);
 
   const body  = await request.json().catch(() => null);
   const email = cleanEmailInput(body?.email).toLowerCase();

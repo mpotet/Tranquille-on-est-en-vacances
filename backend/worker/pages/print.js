@@ -519,11 +519,11 @@ export function printPage(article) {
     ${coverUrl ? "<img class=\"cover-img\" src=\"" + (coverUrl.startsWith('/r2/') ? publicUrl + coverUrl : coverUrl) + "\" alt=\"\">" : '<svg class="cover-img" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0057B8;stop-opacity:1" /><stop offset="100%" style="stop-color:#003D82;stop-opacity:1" /></linearGradient><pattern id="dots" patternUnits="userSpaceOnUse" width="40" height="40"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="1200" height="800" fill="url(#grad1)"/><rect width="1200" height="800" fill="url(#dots)"/></svg>'}
     <div class="cover-overlay"></div>
     <div class="cover-body">
-      ${destination ? "<div class=\"cover-eyebrow\">✈ " + destination + "</div>" : ''}
+      ${destination ? "<div class=\"cover-eyebrow\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"currentColor\" style=\"vertical-align:-1px;margin-right:.3em\"><path d=\"M22 16.5v-2l-8.5-5V3.5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v6l-8.5 5v2l8.5-2.6V19l-2.5 1.5V22l4-1 4 1v-1.5L14 19v-5.6l8 2.6z\"/></svg> " + destination + "</div>" : ''}
       <h1 class="cover-title">${title}</h1>
       <div class="cover-meta">
-        ${dateRange ? "<span>📅 " + dateRange + "</span>" : ''}
-        ${destination ? "<span>📍 " + destination + "</span>" : ''}
+        ${dateRange ? "<span><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:-2px;margin-right:.3em\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"M16 2v4M8 2v4M3 10h18\"/></svg>" + dateRange + "</span>" : ''}
+        ${destination ? "<span><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:-2px;margin-right:.3em\"><path d=\"M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/></svg>" + destination + "</span>" : ''}
       </div>
     </div>
   </div>

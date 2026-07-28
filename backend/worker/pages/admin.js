@@ -15,7 +15,7 @@ import { safeText, safeAttr } from '../helpers/html.js';
 const ADMIN_NAV = (active = '') => `
 ${NAV(active, true)}
 <!-- Pastille état connexion : discrète, coin bas-gauche, masquée par défaut -->
-<div id="offline-bar" class="hidden fixed z-40 items-center gap-1.5 text-xs font-bold" style="bottom:1rem;left:1rem;padding:.4rem .75rem;border-radius:999px;background:#fff;border:1px solid rgba(var(--apricot-rgb),.5);box-shadow:var(--card-shadow);color:#9a5b12" role="status" aria-live="polite"></div>
+<div id="offline-bar" class="hidden fixed z-40 items-center gap-1.5 text-xs font-bold" style="bottom:1rem;left:1rem;padding:.4rem .75rem;border-radius:999px;background:#fff;border:1px solid rgba(var(--apricot-rgb),.5);box-shadow:var(--card-shadow);color:var(--pending)" role="status" aria-live="polite"></div>
 <script>
 (function(){
   const bar = document.getElementById('offline-bar');
@@ -23,7 +23,7 @@ ${NAV(active, true)}
     if (!bar) return;
     if (!navigator.onLine) {
       bar.className = 'flex fixed z-40 items-center gap-1.5 text-xs font-bold';
-      bar.style.cssText = 'bottom:1rem;left:1rem;padding:.4rem .75rem;border-radius:999px;background:#fff;border:1px solid rgba(var(--apricot-rgb),.5);box-shadow:var(--card-shadow);color:#9a5b12';
+      bar.style.cssText = 'bottom:1rem;left:1rem;padding:.4rem .75rem;border-radius:999px;background:#fff;border:1px solid rgba(var(--apricot-rgb),.5);box-shadow:var(--card-shadow);color:var(--pending)';
       bar.innerHTML = '<i class="ph-bold ph-wifi-x"></i> Hors connexion';
     } else {
       bar.className = 'hidden';
@@ -43,7 +43,7 @@ ${NAV(active, true)}
 export function loginPage(error = '', noPassword = false) {
   const safeErr = safeText(error);
   const notInitialised = `
-      <div class="mb-5 bg-amber-50 px-4 py-3 rounded-2xl text-sm font-medium border border-amber-100" style="color:#9a5b12">
+      <div class="mb-5 bg-amber-50 px-4 py-3 rounded-2xl text-sm font-medium border border-amber-100" style="color:var(--pending)">
         <i class="ph-fill ph-envelope-simple"></i> Compte non initialisé - vérifiez vos emails pour définir votre mot de passe.
       </div>
       <p class="text-sm text-stone-500">Un lien d'initialisation a été (ou sera) envoyé à l'adresse administrateur. Il est valable 1 heure.</p>`;
@@ -183,8 +183,8 @@ ${ADMIN_NAV()}
                 <div class="text-xs font-bold mt-1" style="color:var(--palm)">Publiés</div>
               </div>
               <div class="rounded-2xl p-4 text-center" style="background:rgba(var(--apricot-rgb),.18);border:1px solid rgba(var(--apricot-rgb),.4)">
-                <div id="stat-draft" class="text-2xl font-black" style="color:#9a5b12">-</div>
-                <div class="text-xs font-bold mt-1" style="color:#9a5b12">Archivés</div>
+                <div id="stat-draft" class="text-2xl font-black" style="color:var(--pending)">-</div>
+                <div class="text-xs font-bold mt-1" style="color:var(--pending)">Archivés</div>
               </div>
             </div>
           </aside>
@@ -590,7 +590,7 @@ ${TOAST}
 let _folderParentId = null;
 let _folderEditId = null;   // non-null when the folder modal is in "rename" mode
 
-function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:#dc3c3c;font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
+function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:var(--danger);font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
 function esc(s){return (s==null? '': String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function stripDataUris(html){return(html||'').replace(/\bsrc="data:[^"]*"/g,'src=""').replace(/\bsrc='data:[^']*'/g,"src=''");}
 function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
@@ -931,7 +931,7 @@ async function changePassword() {
 // ── Emails tab: Mailjet sender setup + send history ─────────────
 function senderStatusBadge(verified) {
   if (verified === true)  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#f0fdf4;color:var(--palm)"><i class="ph-bold ph-check-circle"></i> Vérifié</span>';
-  if (verified === false) return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#fef2f2;color:#dc3c3c"><i class="ph-bold ph-x-circle"></i> Non vérifié</span>';
+  if (verified === false) return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#fef2f2;color:var(--danger)"><i class="ph-bold ph-x-circle"></i> Non vérifié</span>';
   return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#f5f5f4;color:#78716c"><i class="ph-bold ph-circle-dashed"></i> Inconnu</span>';
 }
 async function loadEmailConfigStatus() {
@@ -1013,7 +1013,7 @@ async function loadEmailLog() {
   box.innerHTML = entries.map(e => {
     const ok = !!e.ok;
     return '<div class="flex items-start gap-3 px-6 py-3.5">' +
-      '<i class="ph-fill '+(ok?'ph-check-circle':'ph-x-circle')+'" style="font-size:1.15rem;color:'+(ok?'var(--palm)':'#dc3c3c')+';margin-top:.1rem;flex-shrink:0"></i>' +
+      '<i class="ph-fill '+(ok?'ph-check-circle':'ph-x-circle')+'" style="font-size:1.15rem;color:'+(ok?'var(--palm)':'var(--danger)')+';margin-top:.1rem;flex-shrink:0"></i>' +
       '<div class="flex-1 min-w-0"><div class="flex items-center justify-between gap-2"><span class="text-sm font-semibold text-stone-800">'+esc(EMAIL_TYPE_LABEL[e.email_type]||e.email_type)+'</span><span class="text-xs text-stone-400 whitespace-nowrap">'+fmtLogDate(e.created_at)+'</span></div>' +
       '<p class="text-xs text-stone-500 mt-0.5">Vers '+esc(e.recipient)+'</p>' +
       (!ok && e.error ? '<p class="text-xs text-red-500 mt-1">'+esc(e.error)+'</p>' : '') +
@@ -1116,22 +1116,27 @@ async function loadAnalytics() {
     }
   }
 
-  // Countries — top 6 + "Autres" bucket, proportional bars.
-  const countries = data.countries || [];
-  const totalViews = countries.reduce((s,c)=>s+c.count, 0) || 1;
-  const top = countries.slice(0,6);
-  const rest = countries.slice(6);
+  // Locations — top 6 cities (grouped by city+country, not country alone) +
+  // "Autres" bucket, proportional bars. Shows "Paris, France" rather than
+  // just "France" since city is what's actually useful to a curious reader.
+  const locations = data.locations || [];
+  const totalViews = locations.reduce((s,c)=>s+c.count, 0) || 1;
+  const top = locations.slice(0,6);
+  const rest = locations.slice(6);
   const restCount = rest.reduce((s,c)=>s+c.count, 0);
   const rows = [...top];
-  if (rest.length) rows.push({code:null, count:restCount, isOther:true, otherN:rest.length});
-  document.getElementById('an-countries-list').innerHTML = countries.length
+  if (rest.length) rows.push({code:null, city:null, count:restCount, isOther:true, otherN:rest.length});
+  document.getElementById('an-countries-list').innerHTML = locations.length
     ? rows.map(c => {
         const pct = Math.round(c.count/totalViews*100);
-        const name = c.isOther ? 'Autres ('+c.otherN+' pays)' : countryName(c.code);
+        let name;
+        if (c.isOther) name = 'Autres ('+c.otherN+' lieux)';
+        else if (c.city) name = c.city + ', ' + countryName(c.code);
+        else name = countryName(c.code);
         const flag = c.isOther ? '<span style="font-size:1.1rem">🌍</span>' : countryFlagImg(c.code);
         return '<div style="display:flex;align-items:center;gap:.75rem">'
           +'<span style="width:1.25rem;flex-shrink:0">'+flag+'</span>'
-          +'<span style="width:8rem;flex-shrink:0;font-size:.85rem;font-weight:600;color:var(--ink)" class="truncate">'+esc(name)+'</span>'
+          +'<span style="width:9rem;flex-shrink:0;font-size:.85rem;font-weight:600;color:var(--ink)" class="truncate">'+esc(name)+'</span>'
           +'<span style="flex:1;height:8px;border-radius:999px;background:var(--sand)"><span style="display:block;height:100%;border-radius:999px;background:var(--blue);width:'+pct+'%"></span></span>'
           +'<span style="width:3.5rem;flex-shrink:0;text-align:right;font-size:.78rem;font-weight:700;color:var(--ink-muted)">'+pct+'% <span style="color:var(--ink-light);font-weight:400">('+c.count+')</span></span>'
         +'</div>';
@@ -1306,7 +1311,7 @@ export function editorPage(articleId = null) {
   return html(`<!DOCTYPE html>
 <html lang="fr">
 <head>${HEAD(isEdit ? 'Admin - Modifier article' : 'Admin - Nouvel article')}<style>
-#e-content .img-pair{outline:2px dashed rgba(99,179,237,.35);outline-offset:3px;border-radius:.75rem}
+#e-content .img-pair{outline:2px dashed rgba(var(--blue-rgb),.35);outline-offset:3px;border-radius:.75rem}
 #e-content .img-pair figure{max-width:49%;min-width:0}
 #e-content figure{position:relative}
 #e-content .img-delete,#e-content .img-split,#e-content .img-expand{position:absolute;top:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;font-weight:700;opacity:0;transition:opacity .15s;z-index:10;padding:0}
@@ -1323,11 +1328,11 @@ export function editorPage(articleId = null) {
   #e-content .img-split{right:46px;font-size:.85rem}
   #e-content .img-expand{font-size:.85rem}
 }
-#e-content .img-pair-add{flex:1;min-width:0;max-width:49%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;border:2px dashed rgba(99,179,237,.5);border-radius:.75rem;cursor:pointer;color:rgba(56,139,202,.8);font-size:.8rem;font-weight:600;padding:1.5rem .5rem;transition:all .15s;background:rgba(99,179,237,.04)}
-#e-content .img-pair-add:hover{border-color:#63b3ed;background:rgba(99,179,237,.12);color:#2b6cb0}
+#e-content .img-pair-add{flex:1;min-width:0;max-width:49%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;border:2px dashed rgba(var(--blue-rgb),.5);border-radius:.75rem;cursor:pointer;color:rgba(var(--blue-rgb),.8);font-size:.8rem;font-weight:600;padding:1.5rem .5rem;transition:all .15s;background:rgba(var(--blue-rgb),.04)}
+#e-content .img-pair-add:hover{border-color:var(--blue);background:rgba(var(--blue-rgb),.12);color:var(--blue-dark)}
 #e-content .img-pair-add i{font-size:1.6rem}
 </style></head>
-<body class="bg-stone-50 font-sans text-stone-900 antialiased pt-14 pb-20 lg:pb-0">
+<body class="font-sans antialiased pt-14 pb-20 lg:pb-0" style="background:var(--cream);color:var(--ink)">
 ${ADMIN_NAV()}
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-8">
@@ -1338,25 +1343,25 @@ ${ADMIN_NAV()}
 
       <!-- Title -->
       <div>
-        <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide">Titre *</label>
+        <label class="block text-xs font-bold mb-2 uppercase tracking-wide" style="color:var(--ink-muted)">Titre *</label>
         <input type="text" id="e-title" placeholder="Ex: Notre été à Santorin"
-               class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-bold text-lg text-stone-800">
+               class="w-full rounded-2xl px-4 py-3 focus:outline-none transition-colors font-bold text-lg" style="border:2px solid var(--line);color:var(--ink)">
       </div>
 
       <!-- Short description -->
       <div>
-        <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide">Description courte</label>
+        <label class="block text-xs font-bold mb-2 uppercase tracking-wide" style="color:var(--ink-muted)">Description courte</label>
         <textarea id="e-desc" rows="2" placeholder="Un résumé accrocheur de 1-2 phrases..."
-                  class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors text-stone-800 resize-none text-sm"></textarea>
+                  class="w-full rounded-2xl px-4 py-3 focus:outline-none transition-colors resize-none text-sm" style="border:2px solid var(--line);color:var(--ink)"></textarea>
       </div>
 
       <!-- Rich text editor -->
       <div>
         <div class="mb-2">
-          <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Contenu</label>
+          <label class="text-xs font-bold uppercase tracking-wide" style="color:var(--ink-muted)">Contenu</label>
         </div>
-        <div class="rounded-2xl border-2 border-stone-200 focus-within:border-sky-400 transition-colors overflow-hidden">
-          <div id="editor-toolbar" class="flex flex-wrap items-center gap-0.5 p-1.5 bg-stone-50 border-b border-stone-200">
+        <div class="rounded-2xl focus-within:border-sky-400 transition-colors overflow-hidden" style="border:2px solid var(--line)">
+          <div id="editor-toolbar" class="flex flex-wrap items-center gap-0.5 p-1.5" style="background:var(--cream);border-bottom:1px solid var(--line)">
             <button type="button" class="toolbar-btn" onclick="fmt('bold')" title="Gras"><i class="ph-bold ph-text-b"></i></button>
             <button type="button" class="toolbar-btn" onclick="fmt('italic')" title="Italique"><i class="ph-bold ph-text-italic"></i></button>
             <button type="button" class="toolbar-btn" onclick="fmt('underline')" title="Souligné"><i class="ph-bold ph-text-underline"></i></button>
@@ -1385,12 +1390,12 @@ ${ADMIN_NAV()}
       <!-- Save button (desktop only - mobile uses sticky bottom bar) -->
       <div class="hidden lg:block space-y-2">
         <button onclick="saveArticle()" class="w-full action-btn text-white font-bold py-3 rounded-2xl transition-all"><i class="ph-bold ph-floppy-disk"></i> Sauvegarder</button>
-        ${isEdit ? `<a id="export-btn" href="/admin/articles/${articleId}/print" target="_blank" class="w-full flex items-center justify-center gap-2 border border-stone-200 rounded-2xl py-2.5 text-sm font-semibold text-stone-600 hover:bg-stone-50 transition-colors" style="text-decoration:none"><i class="ph-bold ph-export"></i> Exporter (PDF / Word)</a>` : ''}
+        ${isEdit ? `<a id="export-btn" href="/admin/articles/${articleId}/print" target="_blank" class="w-full flex items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-semibold transition-colors" style="border:1px solid var(--line);color:var(--ink-muted);text-decoration:none"><i class="ph-bold ph-export"></i> Exporter (PDF / Word)</a>` : ''}
       </div>
 
       <!-- Status -->
-      <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
-        <h3 class="font-bold text-stone-700 mb-3 text-sm"><i class="ph-bold ph-toggle-right"></i> Statut</h3>
+      <div class="section-panel majorelle-frame rounded-2xl p-5" style="border:1px solid var(--line);box-shadow:var(--card-shadow)">
+        <h3 class="font-bold mb-3 text-sm" style="color:var(--ink)"><i class="ph-bold ph-toggle-right"></i> Statut</h3>
         <div class="flex flex-col gap-2">
           <button type="button" id="btn-archived" data-status="archived" onclick="setStatus('archived')"
             class="status-option flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full">
@@ -1421,17 +1426,17 @@ ${ADMIN_NAV()}
           </button>
         </div>
         <input type="hidden" id="pub-status" value="archived">
-        <div id="sync-info" class="mt-3 pt-3 border-t border-stone-100 space-y-1 text-xs" style="color:var(--ink-muted)">
-          <div class="flex items-center gap-1.5"><span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#a3e635;flex-shrink:0;display:inline-block"></span><span id="sync-online-lbl">En ligne</span></div>
+        <div id="sync-info" class="mt-3 pt-3 space-y-1 text-xs" style="border-top:1px solid var(--line);color:var(--ink-muted)">
+          <div class="flex items-center gap-1.5"><span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:var(--palm);flex-shrink:0;display:inline-block"></span><span id="sync-online-lbl">En ligne</span></div>
           <div id="sync-saved-row" class="hidden flex items-center gap-1.5"><i class="ph-bold ph-floppy-disk"></i> <span id="sync-saved-lbl"></span></div>
           <div id="sync-pub-row" class="hidden flex items-center gap-1.5"><i class="ph-bold ph-check-circle" style="color:var(--palm)"></i> <span id="sync-pub-lbl"></span></div>
         </div>
       </div>
 
       <!-- Notify subscribers (shown only when status = published) -->
-      <div id="notify-section" class="hidden section-panel rounded-2xl border p-4 shadow-sm" style="background:rgba(var(--palm-rgb),.06);border-color:rgba(var(--palm-rgb),.22)">
+      <div id="notify-section" class="hidden section-panel rounded-2xl p-4" style="background:rgba(var(--palm-rgb),.06);border:1px solid rgba(var(--palm-rgb),.22);box-shadow:var(--card-shadow)">
         <label class="flex items-start gap-3 cursor-pointer select-none">
-          <input type="checkbox" id="e-notify" checked class="w-5 h-5 mt-0.5 flex-shrink-0 accent-emerald-600">
+          <input type="checkbox" id="e-notify" checked class="w-5 h-5 mt-0.5 flex-shrink-0" style="accent-color:var(--palm)">
           <div>
             <div class="font-bold text-sm" style="color:var(--palm)"><i class="ph-bold ph-bell-ringing"></i> Prévenir les abonnés</div>
             <div class="text-xs mt-0.5" style="color:var(--ink-muted)">Envoie une notification push et un email à tous les abonnés.</div>
@@ -1440,24 +1445,24 @@ ${ADMIN_NAV()}
       </div>
 
       <!-- Meta -->
-       <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
-        <h3 class="font-bold text-stone-700 mb-4 text-sm"><i class="ph-bold ph-info"></i> Informations</h3>
+       <div class="section-panel majorelle-frame rounded-2xl p-5" style="border:1px solid var(--line);box-shadow:var(--card-shadow)">
+        <h3 class="font-bold mb-4 text-sm" style="color:var(--ink)"><i class="ph-bold ph-info"></i> Informations</h3>
         <div class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph-bold ph-calendar-blank"></i> Début du voyage *</label>
-            <input type="date" id="e-start-date" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+            <label class="block text-xs font-bold mb-1.5" style="color:var(--ink-muted)"><i class="ph-bold ph-calendar-blank"></i> Début du voyage *</label>
+            <input type="date" id="e-start-date" class="w-full rounded-xl px-3 py-2 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line);color:var(--ink)">
           </div>
           <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph-bold ph-calendar-check"></i> Fin du voyage *</label>
-            <input type="date" id="e-end-date" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+            <label class="block text-xs font-bold mb-1.5" style="color:var(--ink-muted)"><i class="ph-bold ph-calendar-check"></i> Fin du voyage *</label>
+            <input type="date" id="e-end-date" class="w-full rounded-xl px-3 py-2 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line);color:var(--ink)">
           </div>
           <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph-bold ph-map-pin"></i> Destination</label>
-            <input type="text" id="e-dest" placeholder="Ex: Paris, France" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+            <label class="block text-xs font-bold mb-1.5" style="color:var(--ink-muted)"><i class="ph-bold ph-map-pin"></i> Destination</label>
+            <input type="text" id="e-dest" placeholder="Ex: Paris, France" class="w-full rounded-xl px-3 py-2 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line);color:var(--ink)">
           </div>
           <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph-bold ph-folder"></i> Dossier</label>
-            <select id="e-folder" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+            <label class="block text-xs font-bold mb-1.5" style="color:var(--ink-muted)"><i class="ph-bold ph-folder"></i> Dossier</label>
+            <select id="e-folder" class="w-full rounded-xl px-3 py-2 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line);color:var(--ink)">
               <option value="">Aucun dossier</option>
             </select>
           </div>
@@ -1465,8 +1470,8 @@ ${ADMIN_NAV()}
       </div>
 
       <!-- Cover photo -->
-       <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
-        <h3 class="font-bold text-stone-700 mb-3 text-sm"><i class="ph-bold ph-image"></i> Photo de couverture</h3>
+       <div class="section-panel majorelle-frame rounded-2xl p-5" style="border:1px solid var(--line);box-shadow:var(--card-shadow)">
+        <h3 class="font-bold mb-3 text-sm" style="color:var(--ink)"><i class="ph-bold ph-image"></i> Photo de couverture</h3>
         <input type="hidden" id="e-cover" value="">
         <div id="cover-wrap" class="hidden relative mb-2 group cursor-pointer" onclick="document.getElementById('cover-file-in').click()">
           <img id="cover-img" src="" alt="" class="w-full h-32 object-cover rounded-xl">
@@ -1474,14 +1479,14 @@ ${ADMIN_NAV()}
             <span class="text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-3 py-1.5 rounded-full"><i class="ph-bold ph-camera"></i> Changer</span>
           </div>
         </div>
-        <div id="cover-dz" class="border-2 border-dashed border-stone-300 rounded-xl p-5 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
+        <div id="cover-dz" class="border-2 border-dashed rounded-xl p-5 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer" style="border-color:var(--line)"
              onclick="document.getElementById('cover-file-in').click()"
              ondragover="event.preventDefault();this.classList.add('border-sky-400','bg-sky-50')"
              ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
              ondrop="handleCoverDrop(event)">
           <i class="ph-bold ph-image-square" style="font-size:2rem;display:block;margin-bottom:.35rem;color:var(--blue)"></i>
-          <p class="text-stone-600 font-semibold text-xs">Choisir une photo</p>
-          <p class="text-stone-400 text-xs mt-0.5">JPG, PNG, WebP</p>
+          <p class="font-semibold text-xs" style="color:var(--ink-muted)">Choisir une photo</p>
+          <p class="text-xs mt-0.5" style="color:var(--ink-light)">JPG, PNG, WebP</p>
         </div>
         <input type="file" id="cover-file-in" accept="image/*" class="hidden" onchange="handleCoverFile(this.files[0]);this.value=''">
       </div>
@@ -1489,35 +1494,35 @@ ${ADMIN_NAV()}
       <!-- Photo upload -->
       <div>
         <div class="flex items-center justify-between mb-2">
-          <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Images dans le récit</label>
-          <p class="text-xs text-sky-600 font-semibold"><i class="ph-bold ph-image"></i> Les photos s'insèrent automatiquement dans le texte</p>
+          <label class="text-xs font-bold uppercase tracking-wide" style="color:var(--ink-muted)">Images dans le récit</label>
+          <p class="text-xs font-semibold" style="color:var(--blue)"><i class="ph-bold ph-image"></i> Les photos s'insèrent automatiquement dans le texte</p>
         </div>
         <div id="dropzone"
-             class="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
+             class="border-2 border-dashed rounded-2xl p-8 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer" style="border-color:var(--line)"
              onclick="document.getElementById('file-in').click()"
              ondragover="event.preventDefault();this.classList.add('border-sky-400','bg-sky-50')"
              ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
              ondrop="handleDrop(event)">
           <i class="ph-bold ph-camera" style="font-size:2.5rem;display:block;margin-bottom:.5rem;color:var(--blue)"></i>
-          <p class="text-stone-600 font-semibold text-sm">Appuyez pour choisir des photos</p>
-          <p class="text-stone-400 text-xs mt-1">JPG, PNG, WebP · Max 10 MB</p>
+          <p class="font-semibold text-sm" style="color:var(--ink-muted)">Appuyez pour choisir des photos</p>
+          <p class="text-xs mt-1" style="color:var(--ink-light)">JPG, PNG, WebP · Max 10 MB</p>
           <input type="file" id="file-in" accept="image/*" multiple class="hidden" onchange="handleFiles(this.files)">
         </div>
         <div id="photo-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4"></div>
       </div>
 
       ${isEdit ? `
-      <div class="bg-red-50 rounded-2xl border border-red-100 p-5">
-        <h3 class="font-bold text-red-700 mb-3 text-sm"><i class="ph-bold ph-warning"></i> Zone danger</h3>
-        <button onclick="delArticle()" class="w-full bg-red-500 text-white font-bold py-2.5 rounded-xl hover:bg-red-600 transition-colors text-sm"><i class="ph-bold ph-trash"></i> Supprimer l'article</button>
+      <div class="rounded-2xl p-5" style="background:rgba(var(--danger-rgb),.06);border:1px solid rgba(var(--danger-rgb),.16)">
+        <h3 class="font-bold mb-3 text-sm" style="color:var(--danger)"><i class="ph-bold ph-warning"></i> Zone danger</h3>
+        <button onclick="delArticle()" class="w-full text-white font-bold py-2.5 rounded-xl transition-colors text-sm" style="background:var(--danger)"><i class="ph-bold ph-trash"></i> Supprimer l'article</button>
       </div>` : ''}
     </aside>
   </div>
 </div>
 
 <!-- Sticky save bar (mobile only) -->
-<div class="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-white/95 backdrop-blur-sm border-t border-stone-200 px-4 py-3 flex items-center gap-3 shadow-xl" style="padding-bottom:max(12px,env(safe-area-inset-bottom))">
-  <span id="sticky-status-lbl" class="flex-1 text-sm font-semibold text-stone-600 truncate">Archivé</span>
+<div class="fixed bottom-0 inset-x-0 z-40 lg:hidden backdrop-blur-sm px-4 py-3 flex items-center gap-3 shadow-xl" style="padding-bottom:max(12px,env(safe-area-inset-bottom));background:rgba(255,255,255,.95);border-top:1px solid var(--line)">
+  <span id="sticky-status-lbl" class="flex-1 text-sm font-semibold truncate" style="color:var(--ink-muted)">Archivé</span>
   <button onclick="saveArticle()" class="action-btn py-2.5 px-5 text-sm font-bold flex-shrink-0 whitespace-nowrap touch-manipulation">
     <i class="ph-bold ph-floppy-disk"></i> Sauvegarder
   </button>
@@ -1526,9 +1531,9 @@ ${ADMIN_NAV()}
 <!-- Insert image modal -->
 <div id="insert-img-modal" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onclick="if(event.target===this)closeInsertImg()">
   <div class="section-panel majorelle-frame rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-lg max-h-[85vh] flex flex-col">
-    <div class="flex items-center justify-between p-5 border-b border-stone-100">
-      <h3 class="font-display text-lg font-bold text-stone-900"><i class="ph-bold ph-image"></i> Insérer une image</h3>
-      <button onclick="closeInsertImg()" class="text-stone-400 hover:text-stone-600 p-1.5 rounded-lg hover:bg-stone-100 transition-colors"><i class="ph-bold ph-x text-lg"></i></button>
+    <div class="flex items-center justify-between p-5" style="border-bottom:1px solid var(--line)">
+      <h3 class="font-display text-lg font-bold" style="color:var(--ink)"><i class="ph-bold ph-image"></i> Insérer une image</h3>
+      <button onclick="closeInsertImg()" class="p-1.5 rounded-lg transition-colors hover:opacity-70" style="color:var(--ink-light)"><i class="ph-bold ph-x text-lg"></i></button>
     </div>
     <div class="px-5 pt-4 pb-2">
       <div class="flex gap-2">
@@ -1537,24 +1542,24 @@ ${ADMIN_NAV()}
       </div>
       <input type="hidden" id="iim-size" value="full">
       <div class="mt-3">
-        <label class="block text-xs font-bold text-stone-500 uppercase tracking-wide mb-1.5" for="iim-caption"><i class="ph-bold ph-text-aa"></i> Légende / texte alternatif <span class="font-normal normal-case text-stone-400">(optionnel)</span></label>
-        <input type="text" id="iim-caption" placeholder="Ex: Vue sur la baie au coucher du soleil" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
-        <p class="text-xs text-stone-400 mt-1">Affichée sous l'image et utilisée comme texte alternatif.</p>
+        <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color:var(--ink-muted)" for="iim-caption"><i class="ph-bold ph-text-aa"></i> Légende / texte alternatif <span class="font-normal normal-case" style="color:var(--ink-light)">(optionnel)</span></label>
+        <input type="text" id="iim-caption" placeholder="Ex: Vue sur la baie au coucher du soleil" class="w-full rounded-xl px-3 py-2 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line);color:var(--ink)">
+        <p class="text-xs mt-1" style="color:var(--ink-light)">Affichée sous l'image et utilisée comme texte alternatif.</p>
       </div>
     </div>
     <div class="flex-1 overflow-y-auto px-5 pb-5">
-      <p class="text-xs font-bold text-stone-500 uppercase tracking-wide mb-3 mt-2">Photos disponibles</p>
+      <p class="text-xs font-bold uppercase tracking-wide mb-3 mt-2" style="color:var(--ink-muted)">Photos disponibles</p>
       <div id="iim-gallery" class="grid grid-cols-3 gap-2"></div>
-      <p id="iim-empty" class="hidden text-stone-400 text-sm text-center py-6">Aucune photo dans la galerie.</p>
-      <div class="mt-4 pt-4 border-t border-stone-100">
-        <p class="text-xs font-bold text-stone-500 uppercase tracking-wide mb-2">Importer une nouvelle photo</p>
-        <div class="border-2 border-dashed border-stone-300 rounded-xl p-4 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
+      <p id="iim-empty" class="hidden text-sm text-center py-6" style="color:var(--ink-light)">Aucune photo dans la galerie.</p>
+      <div class="mt-4 pt-4" style="border-top:1px solid var(--line)">
+        <p class="text-xs font-bold uppercase tracking-wide mb-2" style="color:var(--ink-muted)">Importer une nouvelle photo</p>
+        <div class="border-2 border-dashed rounded-xl p-4 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer" style="border-color:var(--line)"
              onclick="document.getElementById('iim-file-in').click()"
              ondragover="event.preventDefault();this.classList.add('border-sky-400','bg-sky-50')"
              ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
              ondrop="_iimDrop(event)">
           <i class="ph-bold ph-upload-simple text-xl mb-1 block" style="color:var(--blue)"></i>
-          <span class="text-stone-600 font-semibold text-sm">Choisir ou déposer une photo</span>
+          <span class="font-semibold text-sm" style="color:var(--ink-muted)">Choisir ou déposer une photo</span>
           <input type="file" id="iim-file-in" accept="image/*" class="hidden" onchange="_iimUpload(this.files);this.value=''">
         </div>
       </div>
@@ -1571,7 +1576,7 @@ let newCoverFile = null;
 let _lastSaved = null;
 let _lastPublished = null;
 
-function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:#dc3c3c;font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
+function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:var(--danger);font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
 function esc(s){return (s==null? '': String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function stripDataUris(html){return(html||'').replace(/\bsrc="data:[^"]*"/g,'src=""').replace(/\bsrc='data:[^']*'/g,"src=''");}
 function dataUrlToFile(dataUrl,name){const arr=dataUrl.split(','),mime=arr[0].match(/:(.*?);/)[1],bstr=atob(arr[1]);let n=bstr.length;const u8=new Uint8Array(n);while(n--)u8[n]=bstr.charCodeAt(n);return new File([u8],name||'photo.jpg',{type:mime});}
@@ -1691,11 +1696,11 @@ function _showDraftBar(draft) {
   const d = new Date(draft._ts).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
   const bar = document.createElement('div');
   bar.id = 'draft-bar';
-  bar.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:39;display:flex;align-items:center;gap:.75rem;background:#EFF6FF;border-bottom:1px solid #BFDBFE;padding:.6rem 1rem;font-size:.85rem;font-weight:500;color:#1E40AF;box-shadow:0 1px 4px rgba(0,0,0,.06)';
+  bar.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:39;display:flex;align-items:center;gap:.75rem;background:var(--blue-light);border-bottom:1px solid rgba(var(--blue-rgb),.3);padding:.6rem 1rem;font-size:.85rem;font-weight:500;color:var(--blue-dark);box-shadow:0 1px 4px rgba(0,0,0,.06)';
   bar.innerHTML = \`<i class="ph-bold ph-cloud-slash" style="font-size:1.1rem;flex-shrink:0"></i>
     <span style="flex:1">Brouillon local du \${d} non synchronisé</span>
-    <button onclick="_applyDraft()" style="background:#3B82F6;color:#fff;border:none;padding:.3rem .8rem;border-radius:.5rem;font-weight:700;font-size:.78rem;cursor:pointer">Restaurer</button>
-    <button onclick="_dismissDraft()" style="color:#3B82F6;border:none;background:none;padding:.3rem .5rem;font-size:.78rem;cursor:pointer;font-weight:600">Ignorer</button>\`;
+    <button onclick="_applyDraft()" style="background:var(--blue);color:#fff;border:none;padding:.3rem .8rem;border-radius:.5rem;font-weight:700;font-size:.78rem;cursor:pointer">Restaurer</button>
+    <button onclick="_dismissDraft()" style="color:var(--blue);border:none;background:none;padding:.3rem .5rem;font-size:.78rem;cursor:pointer;font-weight:600">Ignorer</button>\`;
   document.body.appendChild(bar);
 }
 function _applyDraft() {
@@ -1738,7 +1743,7 @@ function updateSyncInfo() {
   const dot = document.getElementById('sync-dot');
   const lbl = document.getElementById('sync-online-lbl');
   const hasPending = !!document.getElementById('e-content')?.querySelector('img[src^="data:"]');
-  if (dot) dot.style.background = online ? (hasPending ? '#fbbf24' : '#a3e635') : '#f87171';
+  if (dot) dot.style.background = online ? (hasPending ? 'var(--apricot)' : 'var(--palm)') : 'var(--danger)';
   if (lbl) lbl.textContent = online ? (hasPending ? 'En ligne \u00b7 images en attente' : 'En ligne') : 'Hors ligne';
   if (_lastSaved) {
     const row = document.getElementById('sync-saved-row');
@@ -2104,7 +2109,7 @@ function openInsertImg(pairRow) {
   } else {
     empty.classList.add('hidden');
     gallery.innerHTML = allPhotos.map(p =>
-      \`<div class="aspect-square overflow-hidden rounded-xl cursor-pointer ring-2 ring-transparent hover:ring-sky-400 transition-all" data-url="\${esc(p.url)}" data-caption="\${esc(p.caption)}"><img src="\${esc(p.url)}" alt="\${esc(p.caption)}" class="w-full h-full object-cover"></div>\`
+      \`<div class="aspect-square overflow-hidden rounded-xl cursor-pointer ring-2 ring-transparent hover:ring-[var(--blue)] transition-all" data-url="\${esc(p.url)}" data-caption="\${esc(p.caption)}"><img src="\${esc(p.url)}" alt="\${esc(p.caption)}" class="w-full h-full object-cover"></div>\`
     ).join('');
   }
   setImgSize(_pairAddTarget ? 'half' : 'full');
@@ -2224,18 +2229,18 @@ function renderPhotoGrid() {
     <div class="relative aspect-square overflow-hidden rounded-xl group">
       <img src="\${esc(p.url)}" alt="\${esc(p.caption||'')}" class="w-full h-full object-cover">
       <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
-        <button data-action="insert-photo" data-url="\${esc(p.url)}" data-caption="\${esc(p.caption||'photo')}" class="bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph-bold ph-text-align-center"></i> Ré-insérer</button>
-        <button data-action="del-existing-photo" data-id="\${p.id}" data-index="\${i}" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph-bold ph-trash"></i> Supprimer</button>
+        <button data-action="insert-photo" data-url="\${esc(p.url)}" data-caption="\${esc(p.caption||'photo')}" class="text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap" style="background:var(--blue)"><i class="ph-bold ph-text-align-center"></i> Ré-insérer</button>
+        <button data-action="del-existing-photo" data-id="\${p.id}" data-index="\${i}" class="text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap" style="background:var(--danger)"><i class="ph-bold ph-trash"></i> Supprimer</button>
       </div>
     </div>\`).join('');
   const newPics = newPhotos.map((p,i)=>\`
     <div class="relative aspect-square overflow-hidden rounded-xl group">
       <img src="\${p.dataUrl}" alt="\${esc(p.name)}" class="w-full h-full object-cover">
       <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
-        <span class="bg-stone-800/80 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-center leading-tight">Insérée après<br>sauvegarde</span>
-        <button data-action="rm-new-photo" data-index="\${i}" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph-bold ph-trash"></i> Supprimer</button>
+        <span class="text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-center leading-tight" style="background:rgba(var(--ink-rgb),.8)">Insérée après<br>sauvegarde</span>
+        <button data-action="rm-new-photo" data-index="\${i}" class="text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap" style="background:var(--danger)"><i class="ph-bold ph-trash"></i> Supprimer</button>
       </div>
-      <div class="absolute bottom-1 right-1 bg-orange-500 text-white text-xs rounded-full px-1.5 font-bold">Nouveau</div>
+      <div class="absolute bottom-1 right-1 text-xs rounded-full px-1.5 font-bold" style="background:var(--apricot);color:var(--pending)">Nouveau</div>
     </div>\`).join('');
   g.innerHTML = existing + newPics;
 }
@@ -2516,7 +2521,7 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
     const isMobile = window.innerWidth < 1024;
     const keyboardH = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
     if (isMobile && keyboardH > 150) {
-      toolbar.style.cssText = 'position:fixed;bottom:'+keyboardH+'px;left:0;right:0;z-index:50;border-radius:0;border-top:1px solid #e7e5e4;border-bottom:none;box-shadow:0 -2px 8px rgba(0,0,0,.08);background:#fafaf9;padding:.35rem .75rem';
+      toolbar.style.cssText = 'position:fixed;bottom:'+keyboardH+'px;left:0;right:0;z-index:50;border-radius:0;border-top:1px solid var(--line);border-bottom:none;box-shadow:0 -2px 8px rgba(0,0,0,.08);background:var(--cream);padding:.35rem .75rem';
     } else {
       toolbar.style.cssText = '';
     }

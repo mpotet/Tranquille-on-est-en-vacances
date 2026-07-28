@@ -156,7 +156,7 @@ function renderPopularityBars(views, minViews, maxViews) {
   const heights = [5, 8, 11, 14, 17];
   let bars = '';
   for (let i = 0; i < 5; i++) {
-    bars += '<span style="display:inline-block;width:3px;height:' + heights[i] + 'px;border-radius:1px;background:' + (i < count ? 'var(--blue)' : 'rgba(0,0,0,.12)') + '"></span>';
+    bars += '<span style="display:inline-block;width:3px;height:' + heights[i] + 'px;border-radius:1px;background:' + (i < count ? 'var(--blue)' : 'rgba(var(--ink-rgb),.12)') + '"></span>';
   }
   return '<div style="display:flex;align-items:center;gap:3px">' + bars + '<span style="font-size:.68rem;margin-left:4px;color:var(--ink-light);line-height:1">' + views + '</span></div>';
 }
@@ -164,7 +164,7 @@ function renderPopularityBars(views, minViews, maxViews) {
 // and the .badge-* classes in shell.js — kept in sync deliberately.
 function statusMeta(status){
   if(status==='published') return {label:'Publié',icon:'ph-fill ph-check-circle',bg:'var(--palm)',color:'#fff'};
-  if(status==='publish_when_online') return {label:'Dès connexion',icon:'ph-bold ph-wifi-high',bg:'#9a5b12',color:'#fff'};
+  if(status==='publish_when_online') return {label:'Dès connexion',icon:'ph-bold ph-wifi-high',bg:'var(--pending)',color:'#fff'};
   return {label:'Archivé',icon:'ph-bold ph-archive',bg:'rgba(90,106,122,.85)',color:'#fff'};
 }
 function card(a, minViews=0, maxViews=0){
@@ -506,7 +506,7 @@ function popularityBarsSSR(views) {
   const heights = [5, 8, 11, 14, 17];
   let bars = '';
   for (let i = 0; i < 5; i++) {
-    bars += '<span style="display:inline-block;width:3px;height:' + heights[i] + 'px;border-radius:1px;background:' + (i < count ? 'var(--blue)' : 'rgba(0,0,0,.12)') + '"></span>';
+    bars += '<span style="display:inline-block;width:3px;height:' + heights[i] + 'px;border-radius:1px;background:' + (i < count ? 'var(--blue)' : 'rgba(var(--ink-rgb),.12)') + '"></span>';
   }
   return '<span style="display:inline-flex;align-items:flex-end;gap:2px" aria-hidden="true">' + bars + '</span>';
 }
@@ -538,15 +538,15 @@ function renderCommentsList(comments, isAdmin) {
 }
 function renderCommentItem(c, isAdmin) {
   const del = isAdmin
-    ? `<button type="button" data-del-comment="${c.id}" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem;color:#dc3c3c" title="Supprimer ce commentaire"><i class="ph-bold ph-trash"></i></button>`
+    ? `<button type="button" data-del-comment="${c.id}" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem;color:var(--danger)" title="Supprimer ce commentaire"><i class="ph-bold ph-trash"></i></button>`
     : '';
   const adminBadge = c.is_admin_reply
-    ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold uppercase tracking-wide" style="background:var(--blue-light);color:var(--blue)"><i class="ph-bold ph-fill ph-star"></i> Réponse de l'auteur</span>`
+    ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold uppercase tracking-wide" style="background:var(--blue-light);color:var(--blue)"><i class="ph-fill ph-star"></i> Réponse de l'auteur</span>`
     : '';
   const replies = (c.replies && c.replies.length)
     ? `<div class="mt-3 ml-4 sm:ml-8 space-y-3" style="border-left:2px solid var(--line);padding-left:1rem">${c.replies.map(r => renderCommentItem(r, isAdmin)).join('')}</div>`
     : '';
-  return `<article class="comment-item bg-white rounded-2xl p-4 sm:p-5" style="border:1px solid var(--line);box-shadow:var(--card-shadow);scroll-margin-top:5rem" id="comment-${c.id}" data-comment-id="${c.id}">
+  return `<article class="comment-item card-line rounded-2xl p-4 sm:p-5" style="scroll-margin-top:5rem" id="comment-${c.id}" data-comment-id="${c.id}">
     <div class="flex items-start justify-between gap-3 mb-1.5">
       <div class="flex items-center gap-2 flex-wrap">
         <span class="inline-flex items-center justify-center rounded-full" style="width:2rem;height:2rem;background:var(--blue-light);color:var(--blue);font-weight:700;font-size:.8rem">${safeText((c.author_name || '?').trim().charAt(0).toUpperCase())}</span>
@@ -647,11 +647,11 @@ ${TOAST}
 
   const prevNext = (prevRow || nextRow) ? `
     <nav class="pt-8 grid gap-3 sm:grid-cols-2" aria-label="Navigation entre voyages" style="border-top:1px solid var(--line);margin-top:1rem">
-      ${prevRow ? `<a href="/voyage/${safeAttr(prevRow.slug)}" class="group flex items-center gap-3 rounded-2xl p-4 bg-white transition-all hover:-translate-y-0.5" style="border:1px solid var(--line);box-shadow:var(--card-shadow)">
+      ${prevRow ? `<a href="/voyage/${safeAttr(prevRow.slug)}" class="group card-line flex items-center gap-3 rounded-2xl p-4 bg-white transition-all hover:-translate-y-0.5">
         <i class="ph-bold ph-arrow-left flex-shrink-0" style="color:var(--blue);font-size:1.25rem"></i>
         <span class="min-w-0"><span class="block text-xs uppercase tracking-[.16em]" style="color:var(--ink-light)">Voyage précédent</span><span class="block font-semibold text-sm truncate" style="color:var(--ink)">${safeText(prevRow.title)}</span></span>
       </a>` : '<span></span>'}
-      ${nextRow ? `<a href="/voyage/${safeAttr(nextRow.slug)}" class="group flex items-center gap-3 rounded-2xl p-4 bg-white transition-all hover:-translate-y-0.5 sm:text-right sm:justify-end" style="border:1px solid var(--line);box-shadow:var(--card-shadow)">
+      ${nextRow ? `<a href="/voyage/${safeAttr(nextRow.slug)}" class="group card-line flex items-center gap-3 rounded-2xl p-4 bg-white transition-all hover:-translate-y-0.5 sm:text-right sm:justify-end">
         <span class="min-w-0 sm:order-1"><span class="block text-xs uppercase tracking-[.16em]" style="color:var(--ink-light)">Voyage suivant</span><span class="block font-semibold text-sm truncate" style="color:var(--ink)">${safeText(nextRow.title)}</span></span>
         <i class="ph-bold ph-arrow-right flex-shrink-0 sm:order-2" style="color:var(--blue);font-size:1.25rem"></i>
       </a>` : '<span></span>'}
@@ -681,7 +681,7 @@ ${TOAST}
             <input type="text" id="c-gate" name="gate_answer" required autocomplete="off" placeholder="Votre réponse" class="w-full border-2 rounded-xl px-4 py-2.5 text-sm" style="border-color:rgba(var(--blue-rgb),.18)">
             <p class="text-xs mt-1" style="color:var(--ink-light)">Une petite question anti-spam pour vérifier que vous connaissez la famille.</p>
           </div>
-          <p id="comment-error" class="hidden text-sm font-semibold" style="color:#dc3c3c"></p>
+          <p id="comment-error" class="hidden text-sm font-semibold" style="color:var(--danger)"></p>
           <div class="flex justify-end">
             <button type="submit" id="comment-submit" class="action-btn-sm"><i class="ph-bold ph-paper-plane-tilt"></i> Publier</button>
           </div>
@@ -690,8 +690,8 @@ ${TOAST}
     </section>`;
 
   const adminFabs = authed ? `
-  <a href="/admin/editor/${article.id}" style="position:fixed;bottom:5rem;right:1.5rem;z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:#0057B8;color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,87,184,.4)"><i class="ph-bold ph-pencil-simple" style="font-size:1.1rem"></i> Modifier</a>
-  <a href="/admin/articles/${article.id}/print" target="_blank" style="position:fixed;bottom:5rem;right:calc(1.5rem + 130px + .75rem);z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:rgba(10,18,30,.82);color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.25);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.15)"><i class="ph-bold ph-export" style="font-size:1.1rem"></i> Exporter</a>` : '';
+  <a href="/admin/editor/${article.id}" style="position:fixed;bottom:5rem;right:1.5rem;z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:var(--blue);color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(var(--blue-rgb),.4)"><i class="ph-bold ph-pencil-simple" style="font-size:1.1rem"></i> Modifier</a>
+  <a href="/admin/articles/${article.id}/print" target="_blank" style="position:fixed;bottom:5rem;right:calc(1.5rem + 130px + .75rem);z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:rgba(var(--ink-rgb),.82);color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.25);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.15)"><i class="ph-bold ph-export" style="font-size:1.1rem"></i> Exporter</a>` : '';
 
   const coverUrl = safeAttr(article.cover_url || '');
   // og:image must be absolute (social crawlers don't resolve relative URLs).
@@ -714,13 +714,13 @@ ${ogImage ? `<meta property="og:image" content="${ogImage}">` : ''}
 <body class="font-sans antialiased" style="background:var(--cream)">
 ${NAV('', authed)}
 <main id="main" class="pt-16">
-  <div class="hero-photo relative overflow-hidden" style="background:#0a121e;min-height:clamp(40vh,55vw,80vh);max-height:90vh">
-    <img src="${coverUrl}" alt="" aria-hidden="true" class="hero-photo-img" style="filter:blur(28px);transform:scale(1.12);opacity:.45" onerror="this.style.display='none'">
-    <img src="${coverUrl}" alt="${safeAttr(article.title)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain" onerror="this.style.display='none'">
-    <div class="absolute bottom-0 left-0 right-0 pb-10 px-4 sm:px-6 lg:px-8" style="background:linear-gradient(to top,rgba(10,18,30,.75) 0%,transparent 100%)">
-      <div class="max-w-4xl mx-auto">
+  <div class="hero-photo relative overflow-hidden" style="min-height:clamp(50vh,60vw,72vh);max-height:88vh">
+    <img src="${coverUrl}" alt="${safeAttr(article.title)}" class="hero-photo-img" onerror="this.style.display='none'">
+    <div class="hero-photo-overlay"></div>
+    <div class="absolute bottom-0 left-0 right-0 pb-10 px-4 sm:px-6 lg:px-8" style="z-index:2">
+      <div class="max-w-4xl mx-auto hero-anim" style="--d:0ms">
         ${folderBadge}
-        <h1 class="font-display text-3xl sm:text-5xl font-bold text-white drop-shadow-lg leading-tight">${safeText(article.title)}</h1>
+        <h1 class="font-display text-3xl sm:text-5xl font-bold text-white drop-shadow-lg leading-tight hero-anim" style="--d:80ms">${safeText(article.title)}</h1>
       </div>
     </div>
   </div>
@@ -791,13 +791,13 @@ function _escC(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repla
 function fmtCDate(d){try{return new Date((d||'').replace(' ','T')+'Z').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}catch(e){return d||''}}
 function buildCommentEl(c){
   const wrap=document.createElement('article');
-  wrap.className='comment-item bg-white rounded-2xl p-4 sm:p-5';
-  wrap.style.cssText='border:1px solid var(--line);box-shadow:var(--card-shadow);scroll-margin-top:5rem';
+  wrap.className='comment-item card-line rounded-2xl p-4 sm:p-5';
+  wrap.style.cssText='scroll-margin-top:5rem';
   wrap.id='comment-'+c.id;
   wrap.setAttribute('data-comment-id', c.id);
   const initial=((c.author_name||'?').trim().charAt(0)||'?').toUpperCase();
-  const del=IS_ADMIN?'<button type="button" data-del-comment="'+c.id+'" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem;color:#dc3c3c" title="Supprimer ce commentaire"><i class="ph-bold ph-trash"></i></button>':'';
-  const badge=c.is_admin_reply?'<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold uppercase tracking-wide" style="background:var(--blue-light);color:var(--blue)"><i class="ph-bold ph-fill ph-star"></i> Réponse de l\\'auteur</span>':'';
+  const del=IS_ADMIN?'<button type="button" data-del-comment="'+c.id+'" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem;color:var(--danger)" title="Supprimer ce commentaire"><i class="ph-bold ph-trash"></i></button>':'';
+  const badge=c.is_admin_reply?'<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold uppercase tracking-wide" style="background:var(--blue-light);color:var(--blue)"><i class="ph-fill ph-star"></i> Réponse de l\\'auteur</span>':'';
   wrap.innerHTML='<div class="flex items-start justify-between gap-3 mb-1.5">'+
     '<div class="flex items-center gap-2 flex-wrap"><span class="inline-flex items-center justify-center rounded-full" style="width:2rem;height:2rem;background:var(--blue-light);color:var(--blue);font-weight:700;font-size:.8rem">'+_escC(initial)+'</span>'+
     '<span class="font-bold text-sm" style="color:var(--ink)">'+_escC(c.author_name)+'</span>'+badge+'</div>'+
@@ -816,7 +816,7 @@ function buildReplyForm(parentId, parentName){
     '<input type="text" class="reply-name w-full border-2 rounded-xl px-3 py-2 text-sm mb-2" placeholder="Votre prénom / nom" style="border-color:rgba(var(--blue-rgb),.18)">'+
     '<textarea class="reply-body w-full border-2 rounded-xl px-3 py-2 text-sm resize-none mb-2" rows="2" placeholder="Votre réponse..." style="border-color:rgba(var(--blue-rgb),.18)"></textarea>'+
     '<input type="text" class="reply-gate w-full border-2 rounded-xl px-3 py-2 text-sm mb-2" autocomplete="off" placeholder="'+_escC(GATE_QUESTION)+'" style="border-color:rgba(var(--blue-rgb),.18)">'+
-    '<p class="reply-error hidden text-xs font-semibold mb-2" style="color:#dc3c3c"></p>'+
+    '<p class="reply-error hidden text-xs font-semibold mb-2" style="color:var(--danger)"></p>'+
     '<div class="flex justify-end gap-2">'+
     '<button type="button" class="reply-cancel ghost-btn" style="padding:.4rem .8rem;font-size:.75rem">Annuler</button>'+
     '<button type="button" class="reply-submit action-btn-sm" style="padding:.4rem .9rem;font-size:.75rem" data-parent-id="'+parentId+'"><i class="ph-bold ph-paper-plane-tilt"></i> Répondre</button>'+
@@ -969,8 +969,41 @@ document.querySelector('[data-scroll-comments]')?.addEventListener('click', (e)=
 // ──────────────────────────────────────────────────────────────
 // Main fetch handler
 // ──────────────────────────────────────────────────────────────
+// Styled 500 page — served when any SSR route throws (a DB timeout, a bad
+// migration, an unhandled edge case) so a visitor gets a branded, navigable
+// page instead of a raw Cloudflare stack trace. Never leaks the error detail.
+function errorPage() {
+  return html(`<!DOCTYPE html>
+<html lang="fr">
+<head>${HEAD('Une erreur est survenue - Tranquille, on est en vacances')}</head>
+<body class="font-sans antialiased" style="background:var(--cream)">
+${NAV('', false)}
+<main class="pt-16">
+  <div class="max-w-2xl mx-auto px-4 py-32 text-center">
+    <i class="ph-bold ph-warning-circle" style="font-size:4rem;display:block;margin-bottom:1.5rem;color:var(--ink-light)"></i>
+    <h1 class="font-display text-3xl font-bold mb-4" style="color:var(--ink)">Oups, une erreur est survenue</h1>
+    <p class="mb-8" style="color:var(--ink-muted)">Quelque chose n'a pas fonctionné de notre côté. Réessayez dans un instant.</p>
+    <a href="/" class="action-btn"><i class="ph-bold ph-house"></i> Retour à l'accueil</a>
+  </div>
+</main>
+${FOOTER}
+</body></html>`, 500);
+}
+
 export default {
   async fetch(request, env, ctx) {
+    try {
+      return await this.handle(request, env, ctx);
+    } catch (err) {
+      console.error('[fetch] unhandled error:', err && err.stack || err);
+      // API requests get JSON; everything else gets the styled HTML page.
+      const p = new URL(request.url).pathname;
+      if (p.startsWith('/api/')) return json({ error: 'Erreur interne du serveur.' }, 500);
+      return errorPage();
+    }
+  },
+
+  async handle(request, env, ctx) {
     const url    = new URL(request.url);
     const path   = url.pathname;
     const method = request.method;
