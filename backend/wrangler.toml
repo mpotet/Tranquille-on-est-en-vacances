@@ -12,9 +12,9 @@ directory = "./public"
 # ── Environment variables (non-secret) ───────────────────────────────────────
 [vars]
 # Public base URL used to build photo URLs
-PUBLIC_URL = "TODO"
+PUBLIC_URL = "https://tranquille-vacances.esti-archi.workers.dev"
 # "From" address for notification emails (e.g. "Blog Potet <noreply@yourdomain.com>")
-NOTIFY_FROM_EMAIL = "TODO"
+# Left unset: falls back to Resend's onboarding@resend.dev sender (see env.production below).
 
 # ── Cloudflare D1 (SQLite) ────────────────────────────────────────────────────
 # Create with: wrangler d1 create tranquille-vacances-db

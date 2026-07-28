@@ -789,7 +789,9 @@ async function loadAccount() {
 async function requestEmailChange() {
   const input = document.getElementById('acc-new-email');
   const email = cleanEmailInput(input?.value);
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast('Adresse email invalide','err'); return; }
+  if (!email) { toast('Adresse email requise','err'); return; }
+  // Format validation left to the server (index.js: /api/admin/request-email-change) —
+  // see saveEmailConfig() above for why the client-side regex check was removed.
   const res = await fetch('/api/admin/request-email-change', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({new_email:email})}).catch(()=>null);
   const data = await res?.json().catch(()=>null);
   if (res && res.ok && data?.email_sent) {
@@ -870,7 +872,10 @@ async function saveEmailConfig() {
   const apiSecret = (document.getElementById('ec-api-secret')?.value||'').trim();
   const fromAddress = cleanEmailInput(document.getElementById('ec-from-address')?.value);
   const fromName = (document.getElementById('ec-from-name')?.value||'').trim();
-  if (fromAddress && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fromAddress)) { toast('Adresse email invalide','err'); return; }
+  // Client-side format check removed: the server (email-admin.js:saveEmailConfig)
+  // already validates and returns a clear error via badRequest(), and duplicating
+  // the check here only doubled the ways it could silently diverge from the
+  // server's rule and block a legitimately valid address before it's even sent.
   const res = await fetch('/api/admin/email-config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:apiKey,api_secret:apiSecret,from_address:fromAddress,from_name:fromName})}).catch(()=>null);
   const data = await res?.json().catch(()=>null);
   if (res && res.ok) {
