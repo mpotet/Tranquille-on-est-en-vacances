@@ -625,7 +625,7 @@ function renderArticles(arts, folders) {
           <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-stone-400">
             <span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span>
             \${a.destination ? \`<span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span>\` : ''}
-            \${a.folder_name ? \`<span>\${esc(a.folder_icon||'')} \${esc(a.folder_name)}</span>\` : ''}
+            \${a.folder_name ? \`<span class="inline-flex items-center gap-1">\${flagImg(a.folder_icon||'')} \${esc(a.folder_name)}</span>\` : ''}
             \${a.view_count ? \`<span><i class="ph ph-eye"></i> \${a.view_count} vue\${a.view_count>1?'s':''}</span>\` : ''}
           </div>
         </div>
@@ -1188,7 +1188,7 @@ ${ADMIN_NAV()}
             <i class="ph ph-wifi-high text-xl flex-shrink-0" style="color:#a8a29e"></i>
             <div class="flex-1">
               <div class="font-semibold text-sm status-btn-title" style="color:#57534e">Publier dès connexion</div>
-              <div class="text-xs text-stone-400">Publie auto quand internet rétabli</div>
+              <div class="text-xs text-stone-400">Publié auto quand internet rétabli</div>
             </div>
             <i class="ph-fill ph-check-circle status-check flex-shrink-0" style="font-size:1.1rem;display:none"></i>
           </button>
