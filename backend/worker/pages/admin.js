@@ -3,36 +3,17 @@
  * Served only to authenticated users (checked in index.js before calling these).
  */
 
-import { HEAD, TOAST } from './shell.js';
+import { HEAD, TOAST, NAV } from './shell.js';
 import { html } from '../utils.js';
 import { safeText, safeAttr } from '../helpers/html.js';
 
-// ── Admin shared nav bar ──────────────────────────────────────
-const ADMIN_NAV = (subtitle = '') => `
-<nav id="navbar" class="fixed top-0 left-0 right-0 z-50">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex items-center justify-between h-16">
-      <div class="flex items-center gap-3">
-        <a href="/" class="flex items-center gap-3 group" aria-label="Accueil">
-          <img src="/icon-192.png" width="38" height="38" alt="" aria-hidden="true" style="border-radius:.75rem;flex-shrink:0;box-shadow:0 2px 8px rgba(0,87,184,.20)">
-          <div class="leading-none">
-            <span class="brand-title font-display font-bold text-base block">Tranquille,</span>
-            <span class="brand-subtitle text-[0.68rem] font-semibold tracking-[0.20em] uppercase block mt-0.5">on est en vacances</span>
-          </div>
-        </a>
-        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[0.65rem] font-black uppercase tracking-wide" style="background:rgba(var(--blue-rgb),.10);color:var(--blue);border:1px solid rgba(var(--blue-rgb),.20)">Admin</span>
-        ${subtitle ? `<span class="hidden sm:flex items-center gap-1.5 text-sm font-medium" style="color:var(--ink-muted)"><i class="ph ph-caret-right" style="color:var(--ink-light);font-size:.8rem"></i>${subtitle}</span>` : ''}
-      </div>
-      <div class="flex items-center gap-2">
-        <a href="/" class="nav-link hidden sm:inline-flex"><i class="ph ph-house"></i> Blog</a>
-        <a href="/admin/dashboard" class="nav-link"><i class="ph ph-squares-four"></i> <span class="hidden sm:inline">Dashboard</span></a>
-        <form method="POST" action="/admin/logout" class="inline">
-          <button type="submit" class="subtle-btn !px-3 !py-2 !text-xs"><i class="ph ph-sign-out"></i> <span class="hidden sm:inline">Déconnexion</span></button>
-        </form>
-      </div>
-    </div>
-  </div>
-</nav>
+// ── Admin nav ─────────────────────────────────────────────────
+// Reuse the SAME public nav bar (in its authenticated form, with the grouped
+// admin dropdown) so the site header is identical everywhere — public pages
+// and admin pages alike. The only admin-specific addition is the offline
+// status bar below it. `active` marks which top-level tab is current.
+const ADMIN_NAV = (active = '') => `
+${NAV(active, true)}
 <!-- Barre état connexion (masquée par défaut, affichée par JS) -->
 <div id="offline-bar" class="hidden fixed top-14 inset-x-0 z-40 items-center justify-center gap-2 py-2 px-4 text-sm font-semibold shadow-md pointer-events-none" aria-live="polite"></div>
 <script>
@@ -1120,7 +1101,7 @@ export function editorPage(articleId = null) {
 #e-content .img-pair-add i{font-size:1.6rem}
 </style></head>
 <body class="bg-stone-50 font-sans text-stone-900 antialiased pt-14 pb-20 lg:pb-0">
-${ADMIN_NAV(isEdit ? 'Modifier article' : 'Nouvel article')}
+${ADMIN_NAV()}
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-8">
   <div class="flex flex-col lg:grid lg:grid-cols-3 lg:items-start gap-5 lg:gap-8">

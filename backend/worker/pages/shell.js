@@ -253,8 +253,17 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 .float-anim { animation: float 5s ease-in-out infinite; }
 @keyframes float { 0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)} }
+/* Staggered hero entrance: each element sets its own --d delay inline. */
+.hero-anim { opacity:0; animation: heroUp .6s ease-out forwards; animation-delay: var(--d, 0ms); }
+@keyframes heroUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+/* Slow Ken-Burns zoom on the hero background photo when present. */
+.hero-photo-img { animation: heroZoom 1.8s ease-out both; }
+@keyframes heroZoom { from { transform:scale(1.06); } to { transform:scale(1); } }
+.scroll-cue { animation: float 2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .page-in, .float-anim { animation: none!important; }
+  .page-in, .float-anim, .scroll-cue { animation: none!important; }
+  .hero-anim { opacity:1!important; animation:none!important; }
+  .hero-photo-img { animation:none!important; }
   .voyage-card, .card, .btn-primary, .btn-ghost, .action-btn, .subtle-btn { transition: none!important; }
   /* Lightbox zoom/pan image transform + the zoom control buttons' hover
      transitions were not covered by the rule above and kept animating even
@@ -323,9 +332,21 @@ export const NAV = (active = '', authed = false) => `
         <a href="/" class="nav-link ${active==='home'?'nav-link-active':''}"><i class="ph ph-house"></i> Accueil</a>
         <a href="/voyages" class="nav-link ${active==='voyages'?'nav-link-active':''}"><i class="ph ph-airplane-takeoff"></i> Voyages</a>
         ${authed ? `
-        <span class="inline-flex items-center gap-1.5 ml-3 px-3 py-1.5 rounded-full text-xs font-bold" style="background:rgba(var(--blue-rgb),.10);color:var(--blue);border:1px solid rgba(var(--blue-rgb),.2)" title="Vous êtes connecté en administrateur"><i class="ph ph-shield-check"></i> Admin</span>
-        <a href="/admin" class="nav-link"><i class="ph ph-gauge"></i> Tableau de bord</a>
-        <form method="POST" action="/admin/logout" class="inline"><button type="submit" class="nav-link" style="color:#dc3c3c;background:none;border:none;cursor:pointer"><i class="ph ph-sign-out"></i> Déconnexion</button></form>
+        <div class="relative ml-2" id="admin-menu-wrap">
+          <button type="button" id="admin-menu-btn" aria-haspopup="true" aria-expanded="false"
+            onclick="const m=document.getElementById('admin-menu');const o=m.classList.toggle('hidden');this.setAttribute('aria-expanded',!o)"
+            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors" style="background:rgba(var(--blue-rgb),.10);color:var(--blue);border:1px solid rgba(var(--blue-rgb),.25)">
+            <i class="ph-fill ph-shield-check"></i> Admin <i class="ph ph-caret-down" style="font-size:.7rem"></i>
+          </button>
+          <div id="admin-menu" class="hidden absolute right-0 mt-2 py-1.5 rounded-2xl shadow-xl" style="min-width:13rem;background:#fff;border:1px solid var(--line);z-index:60">
+            <div class="px-4 py-2 text-[.68rem] font-bold uppercase tracking-[.14em]" style="color:var(--ink-light);border-bottom:1px solid var(--line)">Espace admin</div>
+            <a href="/admin" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph ph-gauge" style="color:var(--blue)"></i> Tableau de bord</a>
+            <a href="/admin/editor" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph ph-plus-circle" style="color:var(--blue)"></i> Nouvel article</a>
+            <form method="POST" action="/admin/logout" style="border-top:1px solid var(--line);margin-top:.25rem;padding-top:.25rem">
+              <button type="submit" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold w-full text-left transition-colors hover:bg-red-50" style="color:#dc3c3c;background:none;border:none;cursor:pointer"><i class="ph ph-sign-out"></i> Déconnexion</button>
+            </form>
+          </div>
+        </div>
         ` : `
         <a href="/admin" class="action-btn-sm ml-3"><i class="ph ph-lock-key"></i> Admin</a>
         `}
@@ -344,16 +365,36 @@ export const NAV = (active = '', authed = false) => `
         <a href="/" class="mobile-nav-link ${active==='home'?'nav-link-active':''}"><i class="ph ph-house"></i> Accueil</a>
         <a href="/voyages" class="mobile-nav-link ${active==='voyages'?'nav-link-active':''}"><i class="ph ph-airplane-takeoff"></i> Voyages</a>
         ${authed ? `
-        <div class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold" style="background:rgba(var(--blue-rgb),.10);color:var(--blue)"><i class="ph ph-shield-check"></i> Connecté en admin</div>
-        <a href="/admin" class="mobile-nav-link"><i class="ph ph-gauge"></i> Tableau de bord</a>
-        <form method="POST" action="/admin/logout"><button type="submit" class="mobile-nav-link w-full text-left" style="color:#dc3c3c;background:none;border:none;cursor:pointer"><i class="ph ph-sign-out"></i> Déconnexion</button></form>
+        <div class="mt-2 pt-2" style="border-top:1px solid var(--line)">
+          <div class="flex items-center gap-1.5 px-3 pb-1 text-[.68rem] font-bold uppercase tracking-[.14em]" style="color:var(--blue)"><i class="ph-fill ph-shield-check"></i> Espace admin</div>
+          <a href="/admin" class="mobile-nav-link"><i class="ph ph-gauge"></i> Tableau de bord</a>
+          <a href="/admin/editor" class="mobile-nav-link"><i class="ph ph-plus-circle"></i> Nouvel article</a>
+          <form method="POST" action="/admin/logout"><button type="submit" class="mobile-nav-link w-full text-left" style="color:#dc3c3c;background:none;border:none;cursor:pointer"><i class="ph ph-sign-out"></i> Déconnexion</button></form>
+        </div>
         ` : `
         <a href="/admin" class="action-btn-sm justify-center mt-2"><i class="ph ph-lock-key"></i> Admin</a>
         `}
       </div>
     </div>
   </div>
-</nav>`;
+</nav>${authed ? `
+<script>
+// Close the admin dropdown when clicking outside it or pressing Escape.
+(function(){
+  var wrap=document.getElementById('admin-menu-wrap');
+  if(!wrap) return;
+  document.addEventListener('click',function(e){
+    var menu=document.getElementById('admin-menu'), btn=document.getElementById('admin-menu-btn');
+    if(!menu||menu.classList.contains('hidden')) return;
+    if(!wrap.contains(e.target)){ menu.classList.add('hidden'); btn.setAttribute('aria-expanded','false'); }
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Escape') return;
+    var menu=document.getElementById('admin-menu'), btn=document.getElementById('admin-menu-btn');
+    if(menu&&!menu.classList.contains('hidden')){ menu.classList.add('hidden'); btn.setAttribute('aria-expanded','false'); btn.focus(); }
+  });
+})();
+</script>` : ''}`;
 
 export const FOOTER = `
 <footer id="site-footer" class="py-14 mt-0">
