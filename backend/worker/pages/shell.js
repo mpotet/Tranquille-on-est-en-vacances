@@ -15,7 +15,7 @@ export const HEAD = (title = 'Tranquille, on est en vacances', description = "Le
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
 <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
 <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
 <script>
@@ -50,6 +50,8 @@ tailwind.config = {
   --ink:           #1A2B3C;
   --ink-muted:     #5A6A7A;
   --ink-light:     #8A9BAC;
+  --danger:        #DC3C3C;
+  --danger-rgb:    220,60,60;
   --line:          rgba(26,43,60,.10);
   --card-shadow:   0 2px 12px rgba(26,43,60,.06), 0 8px 28px rgba(26,43,60,.04);
   --hover-shadow:  0 8px 36px rgba(0,87,184,.18);
@@ -197,9 +199,27 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .nav-link-active { background: var(--blue)!important; color: #fff!important; border-color: var(--blue)!important; box-shadow: 0 4px 14px rgba(var(--blue-rgb),.26)!important; }
 
 /* ── Status badges ──────────────────────────────────────────── */
-.badge-published { background: var(--palm-light); color: var(--palm); border: 1px solid rgba(var(--palm-rgb),.28); }
-.badge-draft     { background: var(--blue-light);  color: var(--blue);  border: 1px solid rgba(var(--blue-rgb),.26); }
-.badge-pending   { background: #fffbeb;            color: #b45309;      border: 1px solid rgba(217,119,6,.28); }
+.badge-published { background: var(--palm-light);              color: var(--palm);      border: 1px solid rgba(var(--palm-rgb),.28); }
+.badge-draft     { background: var(--sand);                     color: var(--ink-muted); border: 1px solid var(--line); }
+.badge-archived  { background: rgba(90,106,122,.10);             color: var(--ink-muted); border: 1px solid rgba(90,106,122,.22); }
+.badge-pending   { background: rgba(var(--apricot-rgb),.20);     color: #9a5b12;          border: 1px solid rgba(var(--apricot-rgb),.5); }
+
+/* ── Status picker (article editor) ─────────────────────────── */
+.status-option { border-color: var(--line); background: #fff; }
+.status-option-icon { color: var(--ink-light); }
+.status-option .status-btn-title { color: var(--ink-muted); }
+.status-option .status-check { display: none; color: inherit; }
+.status-option.is-active .status-check { display: block; }
+.status-option.is-active .status-btn-title { color: var(--ink); }
+.status-option[data-status="archived"].is-active  { border-color: rgba(90,106,122,.4);      background: rgba(90,106,122,.06); }
+.status-option[data-status="archived"].is-active  .status-option-icon,
+.status-option[data-status="archived"].is-active  .status-check { color: var(--ink-muted); }
+.status-option[data-status="published"].is-active { border-color: rgba(var(--palm-rgb),.5); background: var(--palm-light); }
+.status-option[data-status="published"].is-active .status-option-icon,
+.status-option[data-status="published"].is-active .status-check { color: var(--palm); }
+.status-option[data-status="publish_when_online"].is-active { border-color: rgba(var(--apricot-rgb),.6); background: rgba(var(--apricot-rgb),.14); }
+.status-option[data-status="publish_when_online"].is-active .status-option-icon,
+.status-option[data-status="publish_when_online"].is-active .status-check { color: #9a5b12; }
 
 /* ── Prose (article body) ───────────────────────────────────── */
 .prose-vacation h1, .prose-vacation h2, .prose-vacation h3 { font-family: "Playfair Display", Georgia, serif; color: var(--ink); letter-spacing: -.02em; }
@@ -231,9 +251,9 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .img-pair figure img { width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:.75rem; }
 @media(max-width:640px){ .img-pair { flex-direction:column; } }
 /* ── Rich text editor toolbar ────────────────────────────────── */
-.toolbar-btn { display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:.5rem; font-size:1rem; cursor:pointer; background:transparent; border:none; color:#57534e; transition:background .12s,color .12s; }
-.toolbar-btn:hover { background:#e7e5e4; color:#1c1917; }
-.toolbar-btn:active { background:#d6d3d1; }
+.toolbar-btn { display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:.5rem; font-size:1rem; cursor:pointer; background:transparent; border:none; color:var(--ink-muted); transition:background .12s,color .12s; }
+.toolbar-btn:hover { background:var(--sand); color:var(--ink); }
+.toolbar-btn:active { background:var(--sand-deep); }
 .toolbar-sep { display:inline-block; width:1px; height:1.1rem; background:#d6d3d1; margin:0 .2rem; vertical-align:middle; }
 /* On touch devices (phone/tablet - no hover capability), bump the toolbar
    buttons up to the ~44px minimum recommended touch target size. The admin
@@ -294,7 +314,9 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .bg-orange-500 { background: var(--palm)!important; }
 .bg-emerald-50 { background: var(--palm-light)!important; }
 .bg-amber-50   { background: rgba(var(--apricot-rgb),.18)!important; }
-.bg-red-50     { background: rgba(220,60,60,.07)!important; }
+.bg-red-50, .hover\:bg-red-50:hover     { background: rgba(var(--danger-rgb),.07)!important; }
+.bg-red-400, .bg-red-500  { background: var(--danger)!important; }
+.text-red-400, .text-red-500, .text-red-600, .text-red-700, .hover\:text-red-500:hover { color: var(--danger)!important; }
 .bg-black\/50, .bg-black\/40 { background: rgba(26,43,60,.72)!important; }
 .text-stone-900, .text-stone-800, .text-stone-700 { color: var(--ink)!important; }
 .text-stone-600, .text-stone-500 { color: var(--ink-muted)!important; }
@@ -329,26 +351,26 @@ export const NAV = (active = '', authed = false) => `
         </div>
       </a>
       <div class="hidden md:flex items-center gap-1">
-        <a href="/" class="nav-link ${active==='home'?'nav-link-active':''}"><i class="ph ph-house"></i> Accueil</a>
-        <a href="/voyages" class="nav-link ${active==='voyages'?'nav-link-active':''}"><i class="ph ph-airplane-takeoff"></i> Voyages</a>
+        <a href="/" class="nav-link ${active==='home'?'nav-link-active':''}"><i class="ph-bold ph-house"></i> Accueil</a>
+        <a href="/voyages" class="nav-link ${active==='voyages'?'nav-link-active':''}"><i class="ph-bold ph-airplane-takeoff"></i> Voyages</a>
         ${authed ? `
         <div class="relative ml-2" id="admin-menu-wrap">
           <button type="button" id="admin-menu-btn" aria-haspopup="true" aria-expanded="false"
             onclick="const m=document.getElementById('admin-menu');const o=m.classList.toggle('hidden');this.setAttribute('aria-expanded',!o)"
             class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors" style="background:rgba(var(--blue-rgb),.10);color:var(--blue);border:1px solid rgba(var(--blue-rgb),.25)">
-            <i class="ph-fill ph-shield-check"></i> Admin <i class="ph ph-caret-down" style="font-size:.7rem"></i>
+            <i class="ph-fill ph-shield-check"></i> Admin <i class="ph-bold ph-caret-down" style="font-size:.7rem"></i>
           </button>
           <div id="admin-menu" class="hidden absolute right-0 mt-2 py-1.5 rounded-2xl shadow-xl" style="min-width:13rem;background:#fff;border:1px solid var(--line);z-index:60">
             <div class="px-4 py-2 text-[.68rem] font-bold uppercase tracking-[.14em]" style="color:var(--ink-light);border-bottom:1px solid var(--line)">Espace admin</div>
-            <a href="/admin" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph ph-gauge" style="color:var(--blue)"></i> Tableau de bord</a>
-            <a href="/admin/editor" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph ph-plus-circle" style="color:var(--blue)"></i> Nouvel article</a>
+            <a href="/admin" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph-bold ph-gauge" style="color:var(--blue)"></i> Tableau de bord</a>
+            <a href="/admin/editor" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph-bold ph-plus-circle" style="color:var(--blue)"></i> Nouvel article</a>
             <form method="POST" action="/admin/logout" style="border-top:1px solid var(--line);margin-top:.25rem;padding-top:.25rem">
-              <button type="submit" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold w-full text-left transition-colors hover:bg-red-50" style="color:#dc3c3c;background:none;border:none;cursor:pointer"><i class="ph ph-sign-out"></i> Déconnexion</button>
+              <button type="submit" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold w-full text-left transition-colors hover:bg-red-50" style="color:#dc3c3c;background:none;border:none;cursor:pointer"><i class="ph-bold ph-sign-out"></i> Déconnexion</button>
             </form>
           </div>
         </div>
         ` : `
-        <a href="/admin" class="action-btn-sm ml-3"><i class="ph ph-lock-key"></i> Admin</a>
+        <a href="/admin" class="action-btn-sm ml-3"><i class="ph-bold ph-lock-key"></i> Admin</a>
         `}
       </div>
       <button onclick="const m=document.getElementById('mobile-menu');m.classList.toggle('hidden');this.setAttribute('aria-expanded',!m.classList.contains('hidden'))"
@@ -362,17 +384,17 @@ export const NAV = (active = '', authed = false) => `
     </div>
     <div id="mobile-menu" class="hidden md:hidden pb-4">
       <div class="panel rounded-2xl p-3 flex flex-col gap-1 mt-1 shadow-lg">
-        <a href="/" class="mobile-nav-link ${active==='home'?'nav-link-active':''}"><i class="ph ph-house"></i> Accueil</a>
-        <a href="/voyages" class="mobile-nav-link ${active==='voyages'?'nav-link-active':''}"><i class="ph ph-airplane-takeoff"></i> Voyages</a>
+        <a href="/" class="mobile-nav-link ${active==='home'?'nav-link-active':''}"><i class="ph-bold ph-house"></i> Accueil</a>
+        <a href="/voyages" class="mobile-nav-link ${active==='voyages'?'nav-link-active':''}"><i class="ph-bold ph-airplane-takeoff"></i> Voyages</a>
         ${authed ? `
         <div class="mt-2 pt-2" style="border-top:1px solid var(--line)">
           <div class="flex items-center gap-1.5 px-3 pb-1 text-[.68rem] font-bold uppercase tracking-[.14em]" style="color:var(--blue)"><i class="ph-fill ph-shield-check"></i> Espace admin</div>
-          <a href="/admin" class="mobile-nav-link"><i class="ph ph-gauge"></i> Tableau de bord</a>
-          <a href="/admin/editor" class="mobile-nav-link"><i class="ph ph-plus-circle"></i> Nouvel article</a>
-          <form method="POST" action="/admin/logout"><button type="submit" class="mobile-nav-link w-full text-left" style="color:#dc3c3c;background:none;border:none;cursor:pointer"><i class="ph ph-sign-out"></i> Déconnexion</button></form>
+          <a href="/admin" class="mobile-nav-link"><i class="ph-bold ph-gauge"></i> Tableau de bord</a>
+          <a href="/admin/editor" class="mobile-nav-link"><i class="ph-bold ph-plus-circle"></i> Nouvel article</a>
+          <form method="POST" action="/admin/logout"><button type="submit" class="mobile-nav-link w-full text-left" style="color:#dc3c3c;background:none;border:none;cursor:pointer"><i class="ph-bold ph-sign-out"></i> Déconnexion</button></form>
         </div>
         ` : `
-        <a href="/admin" class="action-btn-sm justify-center mt-2"><i class="ph ph-lock-key"></i> Admin</a>
+        <a href="/admin" class="action-btn-sm justify-center mt-2"><i class="ph-bold ph-lock-key"></i> Admin</a>
         `}
       </div>
     </div>
@@ -413,8 +435,8 @@ export const FOOTER = `
       <div>
         <h3 class="font-bold mb-4 text-xs uppercase tracking-[0.18em]" style="color:var(--ink)">Explorer</h3>
         <ul class="space-y-2.5 text-sm">
-          <li><a href="/" class="transition-colors font-medium hover:underline" style="color:var(--ink-muted)"><i class="ph ph-house"></i> Accueil</a></li>
-          <li><a href="/voyages" class="transition-colors font-medium hover:underline" style="color:var(--ink-muted)"><i class="ph ph-airplane-takeoff"></i> Tous les voyages</a></li>
+          <li><a href="/" class="transition-colors font-medium hover:underline" style="color:var(--ink-muted)"><i class="ph-bold ph-house"></i> Accueil</a></li>
+          <li><a href="/voyages" class="transition-colors font-medium hover:underline" style="color:var(--ink-muted)"><i class="ph-bold ph-airplane-takeoff"></i> Tous les voyages</a></li>
         </ul>
       </div>
       <div>
@@ -423,14 +445,14 @@ export const FOOTER = `
       </div>
     </div>
     <div class="mb-8">
-      <h3 class="font-bold mb-2 text-xs uppercase tracking-[0.18em]" style="color:var(--ink)"><i class="ph ph-bell"></i> Suivre le blog</h3>
+      <h3 class="font-bold mb-2 text-xs uppercase tracking-[0.18em]" style="color:var(--ink)"><i class="ph-bold ph-bell"></i> Suivre le blog</h3>
       <p class="text-xs mb-3" style="color:var(--ink-muted)">Soyez notifié(e) à chaque nouveau récit de voyage.</p>
       <div class="flex flex-wrap gap-2 mb-2">
-        <button id="push-btn" class="hidden text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors" style="background:rgba(var(--blue-rgb),.10);color:var(--blue);border:1px solid rgba(var(--blue-rgb),.2)"><i class="ph ph-bell"></i> Activer les notifications</button>
+        <button id="push-btn" class="hidden text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors" style="background:rgba(var(--blue-rgb),.10);color:var(--blue);border:1px solid rgba(var(--blue-rgb),.2)"><i class="ph-bold ph-bell"></i> Activer les notifications</button>
       </div>
       <div class="flex gap-2">
         <input type="email" id="email-sub-in" placeholder="votre@email.com" class="flex-1 min-w-0 border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-sky-400" style="background:rgba(255,255,255,.7)">
-        <button onclick="subscribeEmail()" class="text-xs font-semibold px-3 py-2 rounded-xl text-white transition-colors" style="background:var(--palm)"><i class="ph ph-envelope"></i> S'abonner</button>
+        <button onclick="subscribeEmail()" class="text-xs font-semibold px-3 py-2 rounded-xl text-white transition-colors" style="background:var(--palm)"><i class="ph-bold ph-envelope"></i> S'abonner</button>
       </div>
       <p id="sub-msg" class="hidden text-xs mt-2 font-semibold"></p>
     </div>
@@ -445,10 +467,10 @@ export const FOOTER = `
 <div id="notif-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(26,43,60,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;box-sizing:border-box" onclick="if(event.target===this)notifModalDismiss()">
   <div style="background:#FFFDF9;border-radius:1.5rem 1.5rem 0 0;padding:2rem 1.5rem 2.5rem;max-width:480px;width:100%;box-shadow:0 -8px 40px rgba(26,43,60,.18)">
     <div style="width:3rem;height:.22rem;background:rgba(26,43,60,.14);border-radius:999px;margin:0 auto 1.75rem"></div>
-    <div style="width:3.5rem;height:3.5rem;border-radius:999px;background:#EBF2FD;border:2px solid rgba(0,87,184,.14);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem"><i class="ph ph-bell" style="font-size:1.5rem;color:#0057B8"></i></div>
+    <div style="width:3.5rem;height:3.5rem;border-radius:999px;background:#EBF2FD;border:2px solid rgba(0,87,184,.14);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem"><i class="ph-bold ph-bell" style="font-size:1.5rem;color:#0057B8"></i></div>
     <h2 style="font-family:'Playfair Display',Georgia,serif;font-size:1.25rem;font-weight:700;text-align:center;color:#1A2B3C;margin:0 0 .6rem">Suivre le blog ?</h2>
     <p style="text-align:center;color:#5A6A7A;font-size:.87rem;line-height:1.65;margin:0 0 1.75rem">Recevez une notification dès qu'un nouveau récit de voyage est publié.</p>
-    <button onclick="notifModalAccept()" style="display:block;width:100%;background:#0057B8;color:#fff;font-family:Montserrat,sans-serif;font-weight:700;font-size:.92rem;border:none;border-radius:999px;padding:.9rem;cursor:pointer;margin-bottom:.75rem;box-shadow:0 6px 22px rgba(0,87,184,.28)"><i class="ph ph-bell"></i> Activer les notifications</button>
+    <button onclick="notifModalAccept()" style="display:block;width:100%;background:#0057B8;color:#fff;font-family:Montserrat,sans-serif;font-weight:700;font-size:.92rem;border:none;border-radius:999px;padding:.9rem;cursor:pointer;margin-bottom:.75rem;box-shadow:0 6px 22px rgba(0,87,184,.28)"><i class="ph-bold ph-bell"></i> Activer les notifications</button>
     <button onclick="notifModalDismiss()" style="display:block;width:100%;background:none;color:#5A6A7A;font-family:Montserrat,sans-serif;font-weight:600;font-size:.87rem;border:none;padding:.6rem;cursor:pointer">Plus tard</button>
   </div>
 </div>
@@ -457,7 +479,7 @@ export const FOOTER = `
 <div id="email-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(26,43,60,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;box-sizing:border-box" onclick="if(event.target===this)emailModalDismiss()">
   <div style="background:#FFFDF9;border-radius:1.5rem 1.5rem 0 0;padding:2rem 1.5rem 2.5rem;max-width:480px;width:100%;box-shadow:0 -8px 40px rgba(26,43,60,.18)">
     <div style="width:3rem;height:.22rem;background:rgba(26,43,60,.14);border-radius:999px;margin:0 auto 1.75rem"></div>
-    <div style="width:3.5rem;height:3.5rem;border-radius:999px;background:#E6F4F1;border:2px solid rgba(46,125,107,.16);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem"><i class="ph ph-envelope" style="font-size:1.5rem;color:#2E7D6B"></i></div>
+    <div style="width:3.5rem;height:3.5rem;border-radius:999px;background:#E6F4F1;border:2px solid rgba(46,125,107,.16);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem"><i class="ph-bold ph-envelope" style="font-size:1.5rem;color:#2E7D6B"></i></div>
     <h2 style="font-family:'Playfair Display',Georgia,serif;font-size:1.25rem;font-weight:700;text-align:center;color:#1A2B3C;margin:0 0 .6rem">Suivre le blog</h2>
     <p style="text-align:center;color:#5A6A7A;font-size:.87rem;line-height:1.65;margin:0 0 1.25rem">Recevez un email à chaque nouveau récit de voyage de la famille Potet.</p>
     <div style="display:flex;gap:.5rem;margin-bottom:.6rem">
@@ -471,18 +493,81 @@ export const FOOTER = `
 
 <script>
 // ── Service Worker + Push notifications ──────────────────────
+// Registered on every page load, with an explicit re-check for updates each
+// time there's a network connection — this is what keeps the offline article
+// precache current (new trips) and recovers a stuck/broken SW without the
+// user having to do anything. Never block rendering on this.
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    .then(reg => { if (navigator.onLine) reg.update().catch(() => {}); })
+    .catch(() => {});
 }
 function getServiceWorkerReady() {
   if (!('serviceWorker' in navigator) || !navigator.serviceWorker?.ready) return Promise.resolve(null);
   return navigator.serviceWorker.ready.catch(() => null);
 }
-// ── Warm /admin/editor in cache for offline creation ─────────
-if (navigator.onLine && window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin/editor') {
-  getServiceWorkerReady()
-    .then(() => fetch('/admin/editor').catch(() => {}))
-    .catch(() => {});
+
+// ── "Install app" button (home page) ─────────────────────────
+// Chrome/Android/Edge fire beforeinstallprompt and let us trigger the native
+// install dialog from our own button. iOS Safari never fires it (Apple has no
+// programmatic install API) — there we show the same button but it opens
+// manual "Partager → Sur l'écran d'accueil" instructions instead. Hidden
+// entirely once the app is already running standalone (already installed).
+var _deferredInstallPrompt = null;
+function _isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+function _isIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+  var s = document.getElementById('install-section');
+  if (s && !_isStandalone()) s.classList.remove('hidden');
+});
+window.addEventListener('appinstalled', function(){
+  _deferredInstallPrompt = null;
+  var s = document.getElementById('install-section');
+  if (s) s.classList.add('hidden');
+});
+async function installApp(){
+  if (_deferredInstallPrompt) {
+    _deferredInstallPrompt.prompt();
+    try { await _deferredInstallPrompt.userChoice; } catch {}
+    _deferredInstallPrompt = null;
+    var s = document.getElementById('install-section');
+    if (s) s.classList.add('hidden');
+    return;
+  }
+  // iOS (or any browser without the native prompt): show manual steps instead.
+  var txt = document.getElementById('install-text');
+  var btn = document.getElementById('install-btn');
+  if (txt) {
+    txt.innerHTML = _isIOS()
+      ? 'Sur iPhone/iPad : appuyez sur <i class="ph-bold ph-export"></i> <strong>Partager</strong> en bas de Safari, puis <strong>« Sur l\\'écran d\\'accueil »</strong>.'
+      : 'Ouvrez le menu de votre navigateur (⋮ ou ...) puis choisissez <strong>« Installer l\\'application »</strong> ou <strong>« Ajouter à l\\'écran d\\'accueil »</strong>.';
+  }
+  if (btn) btn.style.display = 'none';
+}
+// Show the install block for iOS visitors too (no beforeinstallprompt there),
+// as long as the app isn't already running standalone.
+(function(){
+  if (_isIOS() && !_isStandalone()) {
+    var s = document.getElementById('install-section');
+    if (s) s.classList.remove('hidden');
+  }
+})();
+// ── Warm the admin shell in cache while online, so the whole admin area
+// (dashboard + new-article editor) keeps working with no signal — someone
+// travelling can still open the dashboard and start/edit an article, which
+// gets queued (publish_when_online) and synced automatically once back online.
+if (navigator.onLine && window.location.pathname.startsWith('/admin')) {
+  getServiceWorkerReady().then(() => {
+    ['/admin/dashboard', '/admin/editor'].forEach(function(p){
+      if (p !== window.location.pathname) fetch(p).catch(() => {});
+    });
+  }).catch(() => {});
 }
 function urlB64ToUint8(b) {
   const p = '='.repeat((4 - b.length % 4) % 4);
@@ -498,7 +583,7 @@ async function initPushBtn() {
   btn.classList.remove('hidden');
   const existing = await reg.pushManager.getSubscription();
   if (existing) {
-    btn.innerHTML = '<i class="ph ph-bell-slash"></i> Désactiver les notifications';
+    btn.innerHTML = '<i class="ph-bold ph-bell-slash"></i> Désactiver les notifications';
     btn.onclick = unsubscribePush;
   } else {
     btn.onclick = subscribePush;
@@ -516,7 +601,7 @@ async function subscribePush() {
     if (!res.ok) { showSubMsg("Erreur lors de l'inscription", false); return; }
     showSubMsg('Notifications activées !', true);
     const btn = document.getElementById('push-btn');
-    if (btn) { btn.innerHTML = '<i class="ph ph-bell-slash"></i> Désactiver les notifications'; btn.onclick = unsubscribePush; }
+    if (btn) { btn.innerHTML = '<i class="ph-bold ph-bell-slash"></i> Désactiver les notifications'; btn.onclick = unsubscribePush; }
   } catch (err) {
     if (err.name === 'NotAllowedError') {
       showSubMsg('Permission refusée par le navigateur', false);
@@ -536,7 +621,7 @@ async function unsubscribePush() {
   }
   showSubMsg('Notifications désactivées', true);
   const btn = document.getElementById('push-btn');
-  if (btn) { btn.innerHTML = '<i class="ph ph-bell"></i> Activer les notifications'; btn.onclick = subscribePush; }
+  if (btn) { btn.innerHTML = '<i class="ph-bold ph-bell"></i> Activer les notifications'; btn.onclick = subscribePush; }
 }
 async function subscribeEmail() {
   const email = (document.getElementById('email-sub-in')?.value || '').trim();

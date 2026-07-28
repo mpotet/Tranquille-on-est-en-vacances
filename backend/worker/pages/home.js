@@ -26,12 +26,12 @@ ${NAV('home', authed)}
           Entrez, on allait justement <em style="color:var(--apricot);font-style:normal">raconter le voyage</em>.
         </h1>
         <p id="hero-subtitle" class="text-base sm:text-xl text-white/85 leading-relaxed mb-4 font-medium mx-auto hero-anim" style="max-width:44ch;--d:160ms">
-          Depuis 2011, on part quelque part, on revient avec des histoires — et on les note ici pour ne pas les oublier (et pour vous).
+          Depuis 2011, on part quelque part, on revient avec des histoires - et on les note ici pour ne pas les oublier (et pour vous).
         </p>
         <p id="hero-badge" class="drame-badge mb-8 mx-auto hero-anim" style="border-color:rgba(255,199,138,.44);background:rgba(255,199,138,.16);color:rgba(255,255,255,.92);display:inline-block;--d:240ms">"Mais ça c'était bien avant le drame..."</p>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-3 hero-anim" style="--d:320ms">
-          <a id="hero-cta-primary" href="/voyages" style="display:inline-flex;align-items:center;justify-content:center;gap:.55rem;padding:.85rem 1.75rem;border-radius:999px;background:var(--apricot);color:var(--ink);font-weight:700;font-size:.92rem;border:2px solid var(--apricot);box-shadow:0 6px 22px rgba(255,199,138,.40);transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''"><i class="ph ph-book-open-text"></i> <span>Lire nos aventures</span></a>
-          <a href="#destinations-section" style="display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.85rem 1.6rem;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-weight:700;font-size:.92rem;border:2px solid rgba(255,255,255,.5);transition:transform .2s,background .2s" onmouseover="this.style.transform='translateY(-2px)';this.style.background='rgba(255,255,255,.24)'" onmouseout="this.style.transform='';this.style.background='rgba(255,255,255,.14)'"><i class="ph ph-map-trifold"></i> <span>Nos coins du monde</span></a>
+          <a id="hero-cta-primary" href="/voyages" style="display:inline-flex;align-items:center;justify-content:center;gap:.55rem;padding:.85rem 1.75rem;border-radius:999px;background:var(--apricot);color:var(--ink);font-weight:700;font-size:.92rem;border:2px solid var(--apricot);box-shadow:0 6px 22px rgba(255,199,138,.40);transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''"><i class="ph-bold ph-book-open-text"></i> <span>Lire nos aventures</span></a>
+          <a href="#destinations-section" style="display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.85rem 1.6rem;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-weight:700;font-size:.92rem;border:2px solid rgba(255,255,255,.5);transition:transform .2s,background .2s" onmouseover="this.style.transform='translateY(-2px)';this.style.background='rgba(255,255,255,.24)'" onmouseout="this.style.transform='';this.style.background='rgba(255,255,255,.14)'"><i class="ph-bold ph-map-trifold"></i> <span>Nos coins du monde</span></a>
         </div>
       </div>
     </div>
@@ -39,15 +39,15 @@ ${NAV('home', authed)}
     <div class="hero-stats" style="position:relative;z-index:3;background:rgba(255,253,249,.10);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.18)">
       <div class="max-w-3xl mx-auto px-6 py-5 grid grid-cols-3 text-center text-white">
         <div style="border-right:1px solid rgba(255,255,255,.22)">
-          <div id="stat-voyages" class="font-display text-3xl sm:text-4xl font-black" data-count="0">—</div>
+          <div id="stat-voyages" class="font-display text-3xl sm:text-4xl font-black" data-count="0">-</div>
           <div class="text-[.7rem] font-semibold uppercase tracking-[.16em] mt-1" style="color:rgba(255,255,255,.75)">aventures depuis 2011</div>
         </div>
         <div style="border-right:1px solid rgba(255,255,255,.22)">
-          <div id="stat-dest" class="font-display text-3xl sm:text-4xl font-black" data-count="0">—</div>
+          <div id="stat-dest" class="font-display text-3xl sm:text-4xl font-black" data-count="0">-</div>
           <div class="text-[.7rem] font-semibold uppercase tracking-[.16em] mt-1" style="color:rgba(255,255,255,.75)">pays, une seule Dacia</div>
         </div>
         <div>
-          <div id="stat-maroc" class="font-display text-3xl sm:text-4xl font-black" data-count="0">—</div>
+          <div id="stat-maroc" class="font-display text-3xl sm:text-4xl font-black" data-count="0">-</div>
           <div class="text-[.7rem] font-semibold uppercase tracking-[.16em] mt-1" style="color:rgba(255,255,255,.75)">séjours au Maroc</div>
         </div>
       </div>
@@ -80,7 +80,7 @@ ${NAV('home', authed)}
         <div>
           <div class="eyebrow mb-3">Salut, c'est nous</div>
           <p id="about-text" class="text-base sm:text-lg leading-relaxed" style="color:var(--ink)">
-            Nous, c'est la famille Potet. Tout a commencé sans le vouloir en 2011, avec un voyage à Marrakech — un tajine à 5&nbsp;euros et un nom de blog plus tard, on ne s'est plus arrêtés. Une Dacia traumatisée et pas mal de galères après, on continue de tout noter ici. Bienvenue à la maison.
+            Nous, c'est la famille Potet. Tout a commencé sans le vouloir en 2011, avec un voyage à Marrakech - un tajine à 5&nbsp;euros et un nom de blog plus tard, on ne s'est plus arrêtés. Une Dacia traumatisée et pas mal de galères après, on continue de tout noter ici. Bienvenue à la maison.
           </p>
         </div>
       </div>
@@ -104,14 +104,26 @@ ${NAV('home', authed)}
   <!-- ── Abonnement ─────────────────────────────────────────── -->
   <section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
     <div class="panel rounded-[2rem] p-8 sm:p-10 text-center">
-      <div style="width:3.25rem;height:3.25rem;border-radius:999px;background:var(--blue-light);display:inline-flex;align-items:center;justify-content:center;margin-bottom:1rem"><i class="ph ph-paper-plane-tilt" style="font-size:1.5rem;color:var(--blue)"></i></div>
+      <div style="width:3.25rem;height:3.25rem;border-radius:999px;background:var(--blue-light);display:inline-flex;align-items:center;justify-content:center;margin-bottom:1rem"><i class="ph-bold ph-paper-plane-tilt" style="font-size:1.5rem;color:var(--blue)"></i></div>
       <h2 class="font-display text-2xl sm:text-3xl font-bold mb-2" style="color:var(--ink)">On repart bientôt.</h2>
       <p class="text-sm sm:text-base mb-6 max-w-xl mx-auto" style="color:var(--ink-muted)">Laissez votre email, on vous fait signe au prochain récit. Pas de spam, juste nous.</p>
       <div class="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
         <input type="email" id="home-sub-email" placeholder="votre@email.com" class="flex-1 min-w-0 border-2 rounded-xl px-4 py-2.5 text-sm" style="border-color:rgba(var(--blue-rgb),.2)">
-        <button onclick="homeSubscribe()" class="action-btn-sm justify-center"><i class="ph ph-bell"></i> Me prévenir</button>
+        <button onclick="homeSubscribe()" class="action-btn-sm justify-center"><i class="ph-bold ph-paper-plane-tilt"></i> Me prévenir</button>
       </div>
       <p id="home-sub-msg" class="hidden text-sm mt-3 font-semibold"></p>
+    </div>
+  </section>
+
+  <!-- ── Installer l'app (masqué par défaut, affiché par JS si pertinent) ── -->
+  <section id="install-section" class="hidden max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+    <div class="panel rounded-[2rem] p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
+      <img src="/icon-192.png" width="56" height="56" alt="" aria-hidden="true" style="border-radius:1rem;flex-shrink:0;box-shadow:0 4px 14px rgba(0,87,184,.22)">
+      <div class="flex-1">
+        <h2 class="font-display text-xl font-bold mb-1" style="color:var(--ink)">Gardez le carnet sur vous</h2>
+        <p id="install-text" class="text-sm" style="color:var(--ink-muted)">Installez l'app sur votre téléphone : elle s'ouvre d'une icône, même sans réseau en voyage.</p>
+      </div>
+      <button id="install-btn" onclick="installApp()" class="action-btn-sm flex-shrink-0"><i class="ph-bold ph-download-simple"></i> Installer l'app</button>
     </div>
   </section>
 
@@ -121,7 +133,7 @@ ${NAV('home', authed)}
       <blockquote id="site-tagline" class="font-display text-2xl sm:text-3xl italic leading-relaxed" style="color:var(--ink)">
         "Mais ça c'était bien avant le drame..."
       </blockquote>
-      <p class="mt-4 font-medium text-sm" style="color:var(--ink-muted)">- Devise de la famille Potet <i class="ph ph-globe-hemisphere-west" style="color:var(--blue)"></i></p>
+      <p class="mt-4 font-medium text-sm" style="color:var(--ink-muted)">- Devise de la famille Potet <i class="ph-bold ph-globe-hemisphere-west" style="color:var(--blue)"></i></p>
     </div>
   </section>
 
@@ -146,7 +158,7 @@ function fmtDateRange(a){
   return s===e ? fmtDate(s) : fmtDate(s)+' - '+fmtDate(e);
 }
 
-// Ascending bars (signal-strength style), not equal-sized round dots — a row
+// Ascending bars (signal-strength style), not equal-sized round dots - a row
 // of same-size filled/unfilled circles reads as carousel/pagination
 // indicators ("swipe for more"), which is misleading since the card isn't
 // a slider. Bars of increasing height read as an intensity/level meter,
@@ -168,7 +180,7 @@ function renderArticleCard(article, minViews, maxViews, isAdmin) {
   const dest = safeText(article.destination);
   const desc = stripMd(article.short_description || '');
   const coverUrl = safeAttr(article.cover_url || '');
-  const editLink = isAdmin ? '<a href="/admin/editor/' + article.id + '" onclick="event.stopPropagation()" style="position:absolute;top:.75rem;right:.75rem;z-index:5;display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border-radius:999px;font-size:.73rem;font-weight:700;background:rgba(0,87,184,.92);color:#fff;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.25)"><i class="ph ph-pencil-simple"></i> Modifier</a>' : '';
+  const editLink = isAdmin ? '<a href="/admin/editor/' + article.id + '" onclick="event.stopPropagation()" style="position:absolute;top:.75rem;right:.75rem;z-index:5;display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border-radius:999px;font-size:.73rem;font-weight:700;background:rgba(0,87,184,.92);color:#fff;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.25)"><i class="ph-bold ph-pencil-simple"></i> Modifier</a>' : '';
   const folderBadge = article.folder_name ? '<div class="absolute top-3 left-3"><span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm" style="background:rgba(255,253,249,.92);color:var(--palm);border:1px solid rgba(255,255,255,.6)">' + flagImg(article.folder_icon || '') + ' ' + safeText(article.folder_name) + '</span></div>' : '';
   const popBars = renderPopularityBars(article.view_count || 0, minViews, maxViews);
   const dest2 = article.destination ? ' - ' + safeAttr(dest) : '';
@@ -181,8 +193,8 @@ function renderArticleCard(article, minViews, maxViews, isAdmin) {
     '</div>' +
     '<div class="p-5" style="display:flex;flex-direction:column;flex:1">' +
       '<div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem">' +
-        '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph ph-calendar-blank" style="color:var(--blue)"></i> ' + fmtDateCard(article) + '</span>' +
-        (dest ? '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph ph-map-pin" style="color:var(--blue)"></i> ' + dest + '</span>' : '') +
+        '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph-bold ph-calendar-blank" style="color:var(--blue)"></i> ' + fmtDateCard(article) + '</span>' +
+        (dest ? '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph-bold ph-map-pin" style="color:var(--blue)"></i> ' + dest + '</span>' : '') +
       '</div>' +
       '<h3 class="font-display font-bold" style="font-size:1.05rem;line-height:1.35;margin-bottom:.5rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink)">' + title + '</h3>' +
       '<p style="font-size:.875rem;line-height:1.55;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink-muted);margin-bottom:1rem">' + desc + '</p>' +
@@ -217,7 +229,7 @@ async function init(){
   const [settings, artData, folderData] = await Promise.all([
     _fetchJson('/api/settings', {}),
     // Fetch the full list (only ~24 rows): needed for accurate stats (Morocco
-    // count) — the grid still shows only the first 6 via slice below.
+    // count) - the grid still shows only the first 6 via slice below.
     _fetchJson('/api/articles?limit=100', {articles:[],total:0}),
     _fetchJson('/api/folders', []),
   ]);
@@ -233,7 +245,7 @@ async function init(){
   if(settings.hero_cta_primary) document.querySelector('#hero-cta-primary span').innerHTML = settings.hero_cta_primary;
   if(settings.site_tagline)   document.getElementById('site-tagline').innerHTML = settings.site_tagline;
 
-  // Stats — animated count-up (respects reduced-motion). The Maroc count is a
+  // Stats - animated count-up (respects reduced-motion). The Maroc count is a
   // deliberate wink ("la routine s'installe") rather than a generic metric.
   const nbVoyages = artData.total ?? artData.articles.length;
   const nbPays    = folderData.filter(f=>!f.parent_id).length;
@@ -293,7 +305,7 @@ async function init(){
     '</a>'
   ).join('');
 
-  // (No separate admin bar here anymore — the unified nav already shows the
+  // (No separate admin bar here anymore - the unified nav already shows the
   // grouped "Admin" menu with a link to the dashboard/settings.)
 }
 

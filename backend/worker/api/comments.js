@@ -68,7 +68,7 @@ export async function createComment(request, env, slugOrId, isAdmin) {
   if (articleId == null) return notFound('Article not found');
 
   // The gate answer is a single shared word (family trivia, not a real
-  // secret) — with no throttle it could be brute-forced in seconds, and once
+  // secret) - with no throttle it could be brute-forced in seconds, and once
   // found, used to flood every article with spam comments. Block by IP
   // before even reading the submitted answer.
   const ip = clientKey(request);
@@ -90,7 +90,7 @@ export async function createComment(request, env, slugOrId, isAdmin) {
   if (commentBody.length > MAX_BODY_LEN) return badRequest(`Le commentaire dépasse ${MAX_BODY_LEN} caractères.`);
 
   // Optional: reply to an existing comment on the same article. Flatten to
-  // one level deep — replying to a reply re-parents onto its root, so the
+  // one level deep - replying to a reply re-parents onto its root, so the
   // thread never grows past root → replies.
   let parentId = null;
   if (body.parent_id != null) {

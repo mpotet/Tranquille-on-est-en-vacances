@@ -39,7 +39,7 @@ cd frontend
 npm run dev         # http://localhost:3000 → proxifie vers :8787
 ```
 
-Le site (pages publiques + admin) est entièrement rendu côté serveur par le Worker — il n'y a pas de démo statique séparée.
+Le site (pages publiques + admin) est entièrement rendu côté serveur par le Worker - il n'y a pas de démo statique séparée.
 
 ---
 

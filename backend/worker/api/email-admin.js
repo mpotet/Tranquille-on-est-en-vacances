@@ -161,7 +161,7 @@ export async function requestSenderVerification(env) {
     // instead of showing a confusing failure for an address that likely
     // already works. Matched against the message text (not result.errorCode)
     // because Mailjet's v3 REST error payload doesn't reliably expose "MJ18"
-    // as a separate ErrorCode field — it shows up as the leading token of
+    // as a separate ErrorCode field - it shows up as the leading token of
     // ErrorMessage instead, which is what result.error actually contains.
     if (/\bMJ18\b/.test(result.error || '')) {
       return json({ ok: true, message: `${fromAddress} est déjà enregistrée chez Mailjet. Cliquez sur « Vérifier le statut » pour voir si elle est déjà validée.` });

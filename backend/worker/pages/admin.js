@@ -9,23 +9,24 @@ import { safeText, safeAttr } from '../helpers/html.js';
 
 // ── Admin nav ─────────────────────────────────────────────────
 // Reuse the SAME public nav bar (in its authenticated form, with the grouped
-// admin dropdown) so the site header is identical everywhere — public pages
+// admin dropdown) so the site header is identical everywhere - public pages
 // and admin pages alike. The only admin-specific addition is the offline
 // status bar below it. `active` marks which top-level tab is current.
 const ADMIN_NAV = (active = '') => `
 ${NAV(active, true)}
-<!-- Barre état connexion (masquée par défaut, affichée par JS) -->
-<div id="offline-bar" class="hidden fixed top-14 inset-x-0 z-40 items-center justify-center gap-2 py-2 px-4 text-sm font-semibold shadow-md pointer-events-none" aria-live="polite"></div>
+<!-- Pastille état connexion : discrète, coin bas-gauche, masquée par défaut -->
+<div id="offline-bar" class="hidden fixed z-40 items-center gap-1.5 text-xs font-bold" style="bottom:1rem;left:1rem;padding:.4rem .75rem;border-radius:999px;background:#fff;border:1px solid rgba(var(--apricot-rgb),.5);box-shadow:var(--card-shadow);color:#9a5b12" role="status" aria-live="polite"></div>
 <script>
 (function(){
   const bar = document.getElementById('offline-bar');
   function update() {
     if (!bar) return;
     if (!navigator.onLine) {
-      bar.className = 'flex fixed top-14 inset-x-0 z-40 items-center justify-center gap-2 py-2 px-4 text-sm font-semibold shadow-md bg-amber-400 text-amber-950';
-      bar.innerHTML = '<i class="ph ph-wifi-x"></i><span>Hors connexion - les sauvegardes restent sur cet appareil</span>';
+      bar.className = 'flex fixed z-40 items-center gap-1.5 text-xs font-bold';
+      bar.style.cssText = 'bottom:1rem;left:1rem;padding:.4rem .75rem;border-radius:999px;background:#fff;border:1px solid rgba(var(--apricot-rgb),.5);box-shadow:var(--card-shadow);color:#9a5b12';
+      bar.innerHTML = '<i class="ph-bold ph-wifi-x"></i> Hors connexion';
     } else {
-      bar.className = 'hidden fixed top-14 inset-x-0 z-40 items-center justify-center gap-2 py-2 px-4 text-sm font-semibold shadow-md';
+      bar.className = 'hidden';
       bar.innerHTML = '';
     }
   }
@@ -43,7 +44,7 @@ export function loginPage(error = '', noPassword = false) {
   const safeErr = safeText(error);
   const notInitialised = `
       <div class="mb-5 bg-amber-50 text-amber-800 px-4 py-3 rounded-2xl text-sm font-medium border border-amber-100">
-        <i class="ph-fill ph-envelope-simple"></i> Compte non initialisé — vérifiez vos emails pour définir votre mot de passe.
+        <i class="ph-fill ph-envelope-simple"></i> Compte non initialisé - vérifiez vos emails pour définir votre mot de passe.
       </div>
       <p class="text-sm text-stone-500">Un lien d'initialisation a été (ou sera) envoyé à l'adresse administrateur. Il est valable 1 heure.</p>`;
 
@@ -56,7 +57,7 @@ export function loginPage(error = '', noPassword = false) {
                  class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-medium">
         </div>
         <button type="submit" class="w-full action-btn justify-center text-base">
-          Se connecter <i class="ph ph-arrow-right"></i>
+          Se connecter <i class="ph-bold ph-arrow-right"></i>
         </button>
       </form>
       <div class="mt-4 text-center">
@@ -105,7 +106,7 @@ export function loginPage(error = '', noPassword = false) {
   <div class="w-full max-w-md">
     <div class="text-center mb-8">
       <a href="/" class="inline-block">
-        <span class="block mb-3" style="font-size:3.5rem;color:var(--blue)"><i class="ph ph-lock-key"></i></span>
+        <span class="inline-flex items-center justify-center mb-3" style="width:4.5rem;height:4.5rem;border-radius:999px;background:var(--blue-light);border:2px solid rgba(var(--blue-rgb),.14)"><i class="ph-bold ph-lock-key" style="font-size:2rem;color:var(--blue)"></i></span>
       </a>
       <h1 class="font-display text-3xl font-bold text-stone-900">Espace Admin</h1>
       <p class="text-stone-500 mt-2 text-sm">Connexion réservée à la famille Potet</p>
@@ -133,12 +134,12 @@ ${ADMIN_NAV()}
 <!-- Tab bar -->
 <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
   <div id="admin-tabs" role="tablist" aria-label="Sections de l'administration" class="flex flex-wrap gap-1.5 border-b border-stone-200 pb-0 mb-2">
-    <button type="button" id="admintab-articles" role="tab" data-tab="articles" class="admin-tab" aria-selected="true" aria-controls="tab-articles"><i class="ph ph-notebook"></i> Articles</button>
-    <button type="button" id="admintab-settings" role="tab" data-tab="settings" class="admin-tab" aria-selected="false" aria-controls="tab-settings" tabindex="-1"><i class="ph ph-gear"></i> Paramètres du site</button>
-    <button type="button" id="admintab-account" role="tab" data-tab="account" class="admin-tab" aria-selected="false" aria-controls="tab-account" tabindex="-1"><i class="ph ph-user-circle"></i> Compte</button>
-    <button type="button" id="admintab-emails" role="tab" data-tab="emails" class="admin-tab" aria-selected="false" aria-controls="tab-emails" tabindex="-1"><i class="ph ph-envelope"></i> Emails</button>
-    <button type="button" id="admintab-subscribers" role="tab" data-tab="subscribers" class="admin-tab" aria-selected="false" aria-controls="tab-subscribers" tabindex="-1"><i class="ph ph-users-three"></i> Abonnés</button>
-    <button type="button" id="admintab-moderation" role="tab" data-tab="moderation" class="admin-tab" aria-selected="false" aria-controls="tab-moderation" tabindex="-1"><i class="ph ph-shield-check"></i> Modération</button>
+    <button type="button" id="admintab-articles" role="tab" data-tab="articles" class="admin-tab" aria-selected="true" aria-controls="tab-articles"><i class="ph-bold ph-notebook"></i> Articles</button>
+    <button type="button" id="admintab-settings" role="tab" data-tab="settings" class="admin-tab" aria-selected="false" aria-controls="tab-settings" tabindex="-1"><i class="ph-bold ph-gear"></i> Paramètres du site</button>
+    <button type="button" id="admintab-account" role="tab" data-tab="account" class="admin-tab" aria-selected="false" aria-controls="tab-account" tabindex="-1"><i class="ph-bold ph-user-circle"></i> Compte</button>
+    <button type="button" id="admintab-emails" role="tab" data-tab="emails" class="admin-tab" aria-selected="false" aria-controls="tab-emails" tabindex="-1"><i class="ph-bold ph-envelope"></i> Emails</button>
+    <button type="button" id="admintab-subscribers" role="tab" data-tab="subscribers" class="admin-tab" aria-selected="false" aria-controls="tab-subscribers" tabindex="-1"><i class="ph-bold ph-users-three"></i> Abonnés</button>
+    <button type="button" id="admintab-moderation" role="tab" data-tab="moderation" class="admin-tab" aria-selected="false" aria-controls="tab-moderation" tabindex="-1"><i class="ph-bold ph-shield-check"></i> Modération</button>
   </div>
 </div>
 <style>
@@ -159,7 +160,7 @@ ${ADMIN_NAV()}
           <aside class="lg:col-span-1 space-y-5">
             <div class="section-panel majorelle-frame rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
               <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-100">
-                <h2 class="font-bold text-stone-700 text-sm"><i class="ph ph-folder"></i> Dossiers</h2>
+                <h2 class="font-bold text-stone-700 text-sm"><i class="ph-bold ph-folder"></i> Dossiers</h2>
                 <button onclick="openFolderModal(null)" class="text-sky-600 hover:text-sky-700 text-sm font-bold transition-colors">+ Nouveau</button>
               </div>
               <div id="folder-tree" class="p-2 max-h-80 overflow-y-auto">
@@ -192,7 +193,7 @@ ${ADMIN_NAV()}
             <div class="flex items-center justify-between mb-6">
               <h2 class="font-display text-2xl font-bold text-stone-900">Tous les articles</h2>
               <a href="/admin/editor" class="action-btn-sm">
-                <i class="ph ph-pencil-line"></i> Nouvel article
+                <i class="ph-bold ph-plus-circle"></i> Nouvel article
               </a>
             </div>
 
@@ -216,7 +217,7 @@ ${ADMIN_NAV()}
       <div id="tab-subscribers" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-subscribers">
         <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
           <div class="px-6 py-5 border-b border-stone-100">
-            <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-users-three" style="color:var(--blue)"></i> Abonnés email</h2>
+            <h2 class="font-bold text-stone-800 text-base"><i class="ph-bold ph-users-three" style="color:var(--blue)"></i> Abonnés email</h2>
             <p class="text-xs text-stone-400 mt-0.5">Liste des abonnés à la newsletter; possibilité de désabonner manuellement.</p>
           </div>
           <div class="px-6 pb-6 pt-4">
@@ -231,7 +232,7 @@ ${ADMIN_NAV()}
       <div id="tab-moderation" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-moderation">
         <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
           <div class="px-6 py-5 border-b border-stone-100">
-            <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-shield-check" style="color:var(--blue)"></i> Modération &amp; Commentaires</h2>
+            <h2 class="font-bold text-stone-800 text-base"><i class="ph-bold ph-shield-check" style="color:var(--blue)"></i> Modération &amp; Commentaires</h2>
             <p class="text-xs text-stone-400 mt-0.5">Derniers commentaires publiés; supprimer ou répondre en tant qu'admin (nom configurable).</p>
           </div>
           <div class="px-6 pb-6 pt-4">
@@ -246,19 +247,19 @@ ${ADMIN_NAV()}
   <div id="tab-settings" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-settings">
   <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
     <div class="px-6 py-5 border-b border-stone-100">
-      <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-gear" style="color:var(--blue)"></i> Contenu &amp; paramètres du site</h2>
+      <h2 class="font-bold text-stone-800 text-base"><i class="ph-bold ph-gear" style="color:var(--blue)"></i> Contenu &amp; paramètres du site</h2>
       <p class="text-xs text-stone-400 mt-0.5">Héro (image + textes), accroche, commentaires</p>
     </div>
     <div class="px-6 pb-6 pt-2">
 
       <!-- Hero image -->
       <div class="mt-5">
-        <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-image"></i> Image héro (page d'accueil)</label>
+        <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-image"></i> Image héro (page d'accueil)</label>
         <div class="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50 p-4">
           <div class="flex flex-col sm:flex-row sm:items-center gap-3">
             <input type="file" id="s-hero-img-file" accept="image/*" class="hidden" onchange="uploadHeroImageFromSettings(this.files)">
-            <button type="button" onclick="document.getElementById('s-hero-img-file').click()" class="action-btn-sm"><i class="ph ph-upload-simple"></i> Importer une image</button>
-            <button type="button" id="s-hero-img-delete-btn" onclick="deleteHeroImageFromSettings()" class="action-btn-sm" style="background:rgba(220,60,60,.92)!important;border-color:rgba(220,60,60,.92)!important;display:none"><i class="ph ph-trash"></i> Supprimer</button>
+            <button type="button" onclick="document.getElementById('s-hero-img-file').click()" class="action-btn-sm"><i class="ph-bold ph-upload-simple"></i> Importer une image</button>
+            <button type="button" id="s-hero-img-delete-btn" onclick="deleteHeroImageFromSettings()" class="action-btn-sm" style="background:rgba(220,60,60,.92)!important;border-color:rgba(220,60,60,.92)!important;display:none"><i class="ph-bold ph-trash"></i> Supprimer</button>
             <p class="text-xs text-stone-500 font-medium">L'image est stockée dans le bucket photos puis utilisée sur la page d'accueil.</p>
           </div>
           <input type="hidden" id="s-hero-img">
@@ -272,44 +273,44 @@ ${ADMIN_NAV()}
       <p class="text-xs font-black text-stone-400 uppercase tracking-wider mt-6 mb-3">Textes de la page d'accueil</p>
       <div class="grid sm:grid-cols-2 gap-5">
         <div>
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-tag"></i> Sur-titre (eyebrow)</label>
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-tag"></i> Sur-titre (eyebrow)</label>
           <input type="text" id="s-hero-eyebrow" placeholder="Carnet de bord de la famille Potet" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
         </div>
         <div>
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-seal-warning"></i> Badge (citation drame)</label>
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-seal-warning"></i> Badge (citation drame)</label>
           <input type="text" id="s-hero-badge" placeholder="&quot;Mais ça c'était bien avant le drame...&quot;" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
         </div>
         <div class="sm:col-span-2">
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-text-t"></i> Titre héro <span class="font-normal normal-case text-stone-400">(HTML autorisé : &lt;em&gt;, &lt;br&gt;)</span></label>
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-text-t"></i> Titre héro <span class="font-normal normal-case text-stone-400">(HTML autorisé : &lt;em&gt;, &lt;br&gt;)</span></label>
           <input type="text" id="s-hero-title" placeholder="Nos voyages en famille…" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
         </div>
         <div class="sm:col-span-2">
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-chat-text"></i> Sous-titre héro</label>
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-chat-text"></i> Sous-titre héro</label>
           <textarea id="s-hero-subtitle" rows="2" placeholder="Chaque article raconte un voyage vécu…" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm resize-none"></textarea>
         </div>
         <div>
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-cursor-click"></i> Bouton principal</label>
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-cursor-click"></i> Bouton principal</label>
           <input type="text" id="s-hero-cta-primary" placeholder="Explorer nos voyages" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
         </div>
         <div>
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-cursor"></i> Bouton secondaire <span class="font-normal normal-case text-stone-400">(non affiché)</span></label>
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-cursor"></i> Bouton secondaire <span class="font-normal normal-case text-stone-400">(non affiché)</span></label>
           <input type="text" id="s-hero-cta-secondary" placeholder="Parcourir le carnet" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
         </div>
         <div class="sm:col-span-2">
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-quotes"></i> Accroche du site (citation en bas de page)</label>
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-quotes"></i> Accroche du site (citation en bas de page)</label>
           <input type="text" id="s-tagline" placeholder="Le voyage en famille enrichit…" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
         </div>
       </div>
 
       <!-- Comment gate -->
-      <p class="text-xs font-black text-stone-400 uppercase tracking-wider mt-6 mb-3">Commentaires — question anti-spam</p>
+      <p class="text-xs font-black text-stone-400 uppercase tracking-wider mt-6 mb-3">Commentaires - question anti-spam</p>
       <div class="grid sm:grid-cols-2 gap-5">
         <div class="sm:col-span-2">
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-shield-check"></i> Question secrète</label>
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-shield-check"></i> Question secrète</label>
           <input type="text" id="s-gate-question" placeholder="Quel est le nom du chat roux de la famille Potet ?" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
         </div>
         <div>
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-key"></i> Réponse attendue</label>
+          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-key"></i> Réponse attendue</label>
           <input type="text" id="s-gate-answer" placeholder="wifi" autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
           <p class="text-xs text-stone-400 mt-1">Comparaison insensible à la casse et aux espaces.</p>
         </div>
@@ -317,13 +318,13 @@ ${ADMIN_NAV()}
 
       <!-- Admin display name -->
       <div class="mt-4">
-        <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph ph-user-circle-gear"></i> Nom affiché par l'admin (réponses aux commentaires)</label>
+        <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-user-circle-gear"></i> Nom affiché par l'admin (réponses aux commentaires)</label>
         <input type="text" id="s-admin-display-name" placeholder="Damien Potet" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
         <p class="text-xs text-stone-400 mt-1">Nom utilisé lors des réponses aux commentaires.</p>
       </div>
 
       <div class="mt-6 flex justify-end">
-        <button onclick="saveSettings()" class="action-btn-sm"><i class="ph ph-floppy-disk"></i> Sauvegarder les paramètres</button>
+        <button onclick="saveSettings()" class="action-btn-sm"><i class="ph-bold ph-floppy-disk"></i> Sauvegarder les paramètres</button>
       </div>
     </div>
   </div>
@@ -336,7 +337,7 @@ ${ADMIN_NAV()}
   <div id="tab-account" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-account">
   <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
     <div class="px-6 py-5 border-b border-stone-100">
-      <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-user-circle" style="color:var(--blue)"></i> Compte administrateur</h2>
+      <h2 class="font-bold text-stone-800 text-base"><i class="ph-bold ph-user-circle" style="color:var(--blue)"></i> Compte administrateur</h2>
       <p class="text-xs text-stone-400 mt-0.5">Adresse email &amp; mot de passe</p>
     </div>
     <div class="px-6 pb-6 pt-2">
@@ -349,7 +350,7 @@ ${ADMIN_NAV()}
         <div class="grid sm:grid-cols-[1fr_auto] gap-3 mt-3">
           <input type="email" id="acc-new-email" placeholder="nouvelle@adresse.fr" autocomplete="off"
                  class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
-          <button onclick="requestEmailChange()" class="action-btn-sm whitespace-nowrap"><i class="ph ph-paper-plane-tilt"></i> Demander le changement</button>
+          <button onclick="requestEmailChange()" class="action-btn-sm whitespace-nowrap"><i class="ph-bold ph-paper-plane-tilt"></i> Demander le changement</button>
         </div>
         <p class="text-xs text-stone-400 mt-2">Un email de confirmation sera envoyé à la nouvelle adresse. Le changement ne prend effet qu'après confirmation.</p>
       </div>
@@ -372,7 +373,7 @@ ${ADMIN_NAV()}
           </div>
         </div>
         <div class="mt-4 flex justify-end">
-          <button onclick="changePassword()" class="action-btn-sm"><i class="ph ph-key"></i> Modifier le mot de passe</button>
+          <button onclick="changePassword()" class="action-btn-sm"><i class="ph-bold ph-key"></i> Modifier le mot de passe</button>
         </div>
       </div>
 
@@ -387,19 +388,19 @@ ${ADMIN_NAV()}
     <!-- Mailjet sender setup -->
     <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
       <div class="px-6 py-5 border-b border-stone-100">
-        <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-paper-plane-tilt" style="color:var(--blue)"></i> Envoi des emails (Mailjet)</h2>
+        <h2 class="font-bold text-stone-800 text-base"><i class="ph-bold ph-paper-plane-tilt" style="color:var(--blue)"></i> Envoi des emails (Mailjet)</h2>
         <p class="text-xs text-stone-400 mt-0.5">Aucun nom de domaine requis : il suffit de vérifier votre propre adresse email (même @free.fr, @gmail.com...) pour pouvoir envoyer vers n'importe quelle boîte mail.</p>
       </div>
       <div class="px-6 pb-6 pt-4">
         <div id="email-config-status" class="text-sm text-stone-500 mb-5">Chargement…</div>
 
         <details class="rounded-xl border border-stone-100 bg-stone-50 mb-5">
-          <summary class="px-4 py-3 cursor-pointer list-none select-none text-sm font-bold text-stone-700 flex items-center gap-2"><i class="ph ph-lightbulb" style="color:var(--blue)"></i> Comment configurer Mailjet (5 minutes) <span class="text-stone-400 font-normal ml-auto text-xs">Cliquer pour ouvrir ▾</span></summary>
+          <summary class="px-4 py-3 cursor-pointer list-none select-none text-sm font-bold text-stone-700 flex items-center gap-2"><i class="ph-bold ph-lightbulb" style="color:var(--blue)"></i> Comment configurer Mailjet (5 minutes) <span class="text-stone-400 font-normal ml-auto text-xs">Cliquer pour ouvrir ▾</span></summary>
           <ol class="px-4 pb-4 text-sm text-stone-600 space-y-2 list-decimal list-inside">
             <li>Créez un compte gratuit sur <strong>mailjet.com</strong> (bouton "S'inscrire", gratuit jusqu'à 6000 emails/mois - 200/jour, aucune carte bancaire requise).</li>
             <li>Une fois connecté, allez dans <strong>Compte → Clés API REST</strong> (ou "API Key Management") pour récupérer votre <strong>API Key</strong> et votre <strong>Secret Key</strong>.</li>
             <li>Renseignez ci-dessous ces deux clés, l'adresse email à utiliser pour l'envoi (ex: votre adresse @free.fr) et le nom affiché, puis cliquez sur <strong>Enregistrer</strong>.</li>
-            <li>Cliquez ensuite sur <strong>Envoyer l'email de vérification</strong> ci-dessous — Mailjet envoie un lien de confirmation à cette adresse.</li>
+            <li>Cliquez ensuite sur <strong>Envoyer l'email de vérification</strong> ci-dessous - Mailjet envoie un lien de confirmation à cette adresse.</li>
             <li>Ouvrez votre boîte mail et cliquez sur le lien reçu (page "Domaines et expéditeurs" chez Mailjet).</li>
             <li>Revenez ici et cliquez sur <strong>Vérifier le statut</strong> pour confirmer que tout est actif.</li>
           </ol>
@@ -430,9 +431,9 @@ ${ADMIN_NAV()}
           </div>
         </div>
         <div class="mt-4 flex flex-wrap gap-2 justify-end">
-          <button onclick="requestSenderVerification()" class="subtle-btn text-sm"><i class="ph ph-paper-plane-tilt"></i> Envoyer l'email de vérification</button>
-          <button onclick="checkSenderStatus()" class="subtle-btn text-sm"><i class="ph ph-arrow-clockwise"></i> Vérifier le statut</button>
-          <button onclick="saveEmailConfig()" class="action-btn-sm"><i class="ph ph-floppy-disk"></i> Enregistrer</button>
+          <button onclick="requestSenderVerification()" class="subtle-btn text-sm"><i class="ph-bold ph-paper-plane-tilt"></i> Envoyer l'email de vérification</button>
+          <button onclick="checkSenderStatus()" class="subtle-btn text-sm"><i class="ph-bold ph-arrow-clockwise"></i> Vérifier le statut</button>
+          <button onclick="saveEmailConfig()" class="action-btn-sm"><i class="ph-bold ph-floppy-disk"></i> Enregistrer</button>
         </div>
       </div>
     </div>
@@ -441,10 +442,10 @@ ${ADMIN_NAV()}
     <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
       <div class="px-6 py-5 border-b border-stone-100 flex items-center justify-between">
         <div>
-          <h2 class="font-bold text-stone-800 text-base"><i class="ph ph-clock-counter-clockwise" style="color:var(--blue)"></i> Historique des envois</h2>
+          <h2 class="font-bold text-stone-800 text-base"><i class="ph-bold ph-clock-counter-clockwise" style="color:var(--blue)"></i> Historique des envois</h2>
           <p class="text-xs text-stone-400 mt-0.5">Les 50 derniers emails administrateur (setup, réinitialisation, changement d'adresse...)</p>
         </div>
-        <button onclick="loadEmailLog()" class="text-sky-600 hover:text-sky-700 text-sm font-bold transition-colors"><i class="ph ph-arrow-clockwise"></i></button>
+        <button onclick="loadEmailLog()" class="text-sky-600 hover:text-sky-700 text-sm font-bold transition-colors"><i class="ph-bold ph-arrow-clockwise"></i></button>
       </div>
       <div id="email-log-list" class="divide-y divide-stone-100">
         <div class="text-stone-400 text-sm p-6 animate-pulse text-center">Chargement…</div>
@@ -459,7 +460,7 @@ ${ADMIN_NAV()}
 <!-- Folder modal -->
 <div id="folder-modal" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" onclick="if(event.target===this)closeFolderModal()">
   <div class="section-panel majorelle-frame rounded-3xl shadow-2xl w-full max-w-sm p-6">
-    <h3 class="font-display text-xl font-bold text-stone-900 mb-5"><i class="ph ph-folder-plus"></i> Nouveau dossier</h3>
+    <h3 class="font-display text-xl font-bold text-stone-900 mb-5"><i class="ph-bold ph-folder-plus"></i> Nouveau dossier</h3>
     <div class="space-y-4 mb-6">
       <div>
         <label class="block text-xs font-bold text-stone-500 mb-1.5 uppercase tracking-wide">Nom</label>
@@ -513,7 +514,7 @@ ${ADMIN_NAV()}
     </div>
     <div class="flex gap-3">
       <button onclick="closeFolderModal()" class="flex-1 bg-stone-100 text-stone-700 font-bold py-2.5 rounded-xl hover:bg-stone-200 transition-colors text-sm">Annuler</button>
-      <button id="fm-submit-btn" onclick="submitFolder()" class="flex-1 action-btn-sm">Créer <i class="ph ph-check"></i></button>
+      <button id="fm-submit-btn" onclick="submitFolder()" class="flex-1 action-btn-sm">Créer <i class="ph-bold ph-check"></i></button>
     </div>
   </div>
 </div>
@@ -568,7 +569,7 @@ async function init() {
 function renderFolderTree(folders, parentId, depth=0) {
   const kids = folders.filter(f => f.parent_id === parentId);
   if (!kids.length) return depth===0
-    ? '<div class="text-center py-8 px-3"><i class="ph ph-folder-dashed" style="font-size:2rem;display:block;margin-bottom:.4rem;color:var(--ink-light)"></i><p class="text-sm font-semibold" style="color:var(--ink)">Aucun dossier</p><p class="text-xs text-stone-400">Créez-en un avec « + Nouveau ».</p></div>'
+    ? '<div class="text-center py-8 px-3"><i class="ph-bold ph-folder-dashed" style="font-size:2rem;display:block;margin-bottom:.4rem;color:var(--ink-light)"></i><p class="text-sm font-semibold" style="color:var(--ink)">Aucun dossier</p><p class="text-xs text-stone-400">Créez-en un avec « + Nouveau ».</p></div>'
     : '';
   return kids.map(f => \`
     <div style="padding-left:\${depth*14}px">
@@ -577,9 +578,9 @@ function renderFolderTree(folders, parentId, depth=0) {
           <span class="flex-shrink-0">\${flagImg(f.icon)}</span><span>\${esc(f.name)}</span>
         </a>
         <div class="flex items-center gap-1 ml-2">
-          <button data-action="edit-folder" data-id="\${f.id}" data-name="\${esc(f.name)}" data-icon="\${esc(f.icon)}" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center hover:bg-sky-50 transition-colors" title="Renommer ce dossier"><i class="ph ph-pencil-simple"></i></button>
-          <button data-action="open-folder-modal" data-id="\${f.id}" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center hover:bg-sky-50 transition-colors" title="Ajouter un sous-dossier"><i class="ph ph-folder-plus"></i></button>
-          <button data-action="del-folder" data-id="\${f.id}" class="text-stone-400 hover:text-red-500 active:text-red-600 p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center hover:bg-red-50 transition-colors" title="Supprimer ce dossier"><i class="ph ph-trash"></i></button>
+          <button data-action="edit-folder" data-id="\${f.id}" data-name="\${esc(f.name)}" data-icon="\${esc(f.icon)}" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center hover:bg-sky-50 transition-colors" title="Renommer ce dossier"><i class="ph-bold ph-pencil-simple"></i></button>
+          <button data-action="open-folder-modal" data-id="\${f.id}" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center hover:bg-sky-50 transition-colors" title="Ajouter un sous-dossier"><i class="ph-bold ph-folder-plus"></i></button>
+          <button data-action="del-folder" data-id="\${f.id}" class="text-stone-400 hover:text-red-500 active:text-red-600 p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center hover:bg-red-50 transition-colors" title="Supprimer ce dossier"><i class="ph-bold ph-trash"></i></button>
         </div>
       </div>
       \${renderFolderTree(folders, f.id, depth+1)}
@@ -590,27 +591,27 @@ function renderArticles(arts, folders) {
   if (!arts.length) {
     document.getElementById('articles-list').innerHTML =
       '<div class="section-panel rounded-2xl border border-stone-100 text-center py-16 px-6">' +
-      '<i class="ph ph-notebook" style="font-size:3rem;display:block;margin-bottom:.75rem;color:var(--ink-light)"></i>' +
+      '<i class="ph-bold ph-notebook" style="font-size:3rem;display:block;margin-bottom:.75rem;color:var(--ink-light)"></i>' +
       '<p class="text-base font-semibold mb-1" style="color:var(--ink)">Aucun article pour l’instant</p>' +
       '<p class="text-sm text-stone-400 mb-4">Commencez par écrire votre premier récit de voyage.</p>' +
-      '<a href="/admin/editor" class="action-btn-sm"><i class="ph ph-pencil-line"></i> Nouvel article</a>' +
+      '<a href="/admin/editor" class="action-btn-sm"><i class="ph-bold ph-plus-circle"></i> Nouvel article</a>' +
       '</div>';
     return;
   }
   const STATUS_META = {
-    published:           { label: 'Publié',                badge: 'badge-published' },
-    archived:             { label: 'Archivé',                badge: 'badge-draft' },
-    draft:                { label: 'Brouillon',              badge: 'badge-draft' },
-    publish_when_online:  { label: '⏳ Publier dès connexion', badge: 'badge-pending' },
+    published:           { label: 'Publié',                            badge: 'badge-published' },
+    archived:             { label: 'Archivé',                           badge: 'badge-archived' },
+    draft:                { label: 'Brouillon',                         badge: 'badge-draft' },
+    publish_when_online:  { label: '<i class="ph-bold ph-wifi-high"></i> Dès connexion', badge: 'badge-pending' },
   };
   document.getElementById('articles-list').innerHTML = arts.map(a => {
     const isPub = a.status === 'published';
     // The quick toggle only ever flips between published <-> archived (see
-    // patchArticleStatus server-side) — draft / publish_when_online articles
+    // patchArticleStatus server-side) - draft / publish_when_online articles
     // must be changed via the editor's status selector instead, so the
     // button reflects that rather than offering a misleading force-publish.
     const canToggle = a.status === 'published' || a.status === 'archived';
-    const toggleLabel = isPub ? '<i class="ph ph-lock-simple"></i> Archiver' : '<i class="ph ph-rocket-launch"></i> Publier';
+    const toggleLabel = isPub ? '<i class="ph-bold ph-archive"></i> Archiver' : '<i class="ph-bold ph-check-circle"></i> Publier';
     const toggleCls = isPub ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50';
     const meta = STATUS_META[a.status] || STATUS_META.archived;
     return \`
@@ -623,18 +624,18 @@ function renderArticles(arts, folders) {
             <span class="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 \${meta.badge}">\${meta.label}</span>
           </div>
           <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-stone-400">
-            <span><i class="ph ph-calendar-blank"></i> \${fmtDateRange(a)}</span>
-            \${a.destination ? \`<span><i class="ph ph-map-pin"></i> \${esc(a.destination)}</span>\` : ''}
+            <span><i class="ph-bold ph-calendar-blank"></i> \${fmtDateRange(a)}</span>
+            \${a.destination ? \`<span><i class="ph-bold ph-map-pin"></i> \${esc(a.destination)}</span>\` : ''}
             \${a.folder_name ? \`<span class="inline-flex items-center gap-1">\${flagImg(a.folder_icon||'')} \${esc(a.folder_name)}</span>\` : ''}
-            \${a.view_count ? \`<span><i class="ph ph-eye"></i> \${a.view_count} vue\${a.view_count>1?'s':''}</span>\` : ''}
+            \${a.view_count ? \`<span><i class="ph-bold ph-eye"></i> \${a.view_count} vue\${a.view_count>1?'s':''}</span>\` : ''}
           </div>
         </div>
       </div>
       <div class="border-t border-stone-50 flex items-center gap-1 px-3 py-2">
         \${canToggle ? \`<button data-action="toggle-status" data-id="\${a.id}" data-status="\${a.status}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors \${toggleCls}">\${toggleLabel}</button>\` : ''}
-        <a href="/admin/editor/\${a.id}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"><i class="ph ph-pencil"></i> Modifier</a>
-        <a href="/voyage/\${a.slug}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-400 hover:bg-stone-50 rounded-lg transition-colors"><i class="ph ph-eye"></i> Voir</a>
-        <button data-action="del-article" data-id="\${a.id}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-50 rounded-lg transition-colors ml-auto touch-manipulation"><i class="ph ph-trash"></i></button>
+        <a href="/admin/editor/\${a.id}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"><i class="ph-bold ph-pencil-simple"></i> Modifier</a>
+        <a href="/voyage/\${a.slug}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-400 hover:bg-stone-50 rounded-lg transition-colors"><i class="ph-bold ph-eye"></i> Voir</a>
+        <button data-action="del-article" data-id="\${a.id}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-50 rounded-lg transition-colors ml-auto touch-manipulation"><i class="ph-bold ph-trash"></i></button>
       </div>
     </div>\`;
   }).join('');
@@ -659,9 +660,9 @@ function openFolderModal(parentId) {
   _folderEditId = null;
   document.getElementById('fm-name').value=''; document.getElementById('fm-icon').value='📁';
   const h=document.querySelector('#folder-modal h3');
-  if(h) h.innerHTML=(parentId?'<i class="ph ph-folder-plus"></i> Nouveau sous-dossier':'<i class="ph ph-folder-plus"></i> Nouveau dossier');
+  if(h) h.innerHTML=(parentId?'<i class="ph-bold ph-folder-plus"></i> Nouveau sous-dossier':'<i class="ph-bold ph-folder-plus"></i> Nouveau dossier');
   const b=document.getElementById('fm-submit-btn');
-  if(b) b.innerHTML='Créer <i class="ph ph-check"></i>';
+  if(b) b.innerHTML='Créer <i class="ph-bold ph-check"></i>';
   document.getElementById('folder-modal').classList.remove('hidden');
   setTimeout(()=>document.getElementById('fm-name').focus(),50);
 }
@@ -671,9 +672,9 @@ function openFolderEdit(id, name, icon) {
   document.getElementById('fm-name').value = name || '';
   document.getElementById('fm-icon').value = icon || '📁';
   const h=document.querySelector('#folder-modal h3');
-  if(h) h.innerHTML='<i class="ph ph-pencil-simple"></i> Renommer le dossier';
+  if(h) h.innerHTML='<i class="ph-bold ph-pencil-simple"></i> Renommer le dossier';
   const b=document.getElementById('fm-submit-btn');
-  if(b) b.innerHTML='Enregistrer <i class="ph ph-check"></i>';
+  if(b) b.innerHTML='Enregistrer <i class="ph-bold ph-check"></i>';
   document.getElementById('folder-modal').classList.remove('hidden');
   setTimeout(()=>document.getElementById('fm-name').focus(),50);
 }
@@ -786,7 +787,7 @@ async function loadAccount() {
   const a = await fetch('/api/admin/account').then(r=>r.json()).catch(()=>null);
   if (!a) return;
   const cur = document.getElementById('acc-current-email');
-  if (cur) cur.textContent = a.email || '—';
+  if (cur) cur.textContent = a.email || '-';
   const pend = document.getElementById('acc-pending');
   const pendEmail = document.getElementById('acc-pending-email');
   if (a.pending_email) {
@@ -800,7 +801,7 @@ async function requestEmailChange() {
   const input = document.getElementById('acc-new-email');
   const email = cleanEmailInput(input?.value);
   if (!email) { toast('Adresse email requise','err'); return; }
-  // Format validation left to the server (index.js: /api/admin/request-email-change) —
+  // Format validation left to the server (index.js: /api/admin/request-email-change) -
   // see saveEmailConfig() above for why the client-side regex check was removed.
   const res = await fetch('/api/admin/request-email-change', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({new_email:email})}).catch(()=>null);
   const data = await res?.json().catch(()=>null);
@@ -839,9 +840,9 @@ async function changePassword() {
 
 // ── Emails tab: Mailjet sender setup + send history ─────────────
 function senderStatusBadge(verified) {
-  if (verified === true)  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#f0fdf4;color:var(--palm)"><i class="ph ph-check-circle"></i> Vérifié</span>';
-  if (verified === false) return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#fef2f2;color:#dc3c3c"><i class="ph ph-x-circle"></i> Non vérifié</span>';
-  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#f5f5f4;color:#78716c"><i class="ph ph-circle-dashed"></i> Inconnu</span>';
+  if (verified === true)  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#f0fdf4;color:var(--palm)"><i class="ph-bold ph-check-circle"></i> Vérifié</span>';
+  if (verified === false) return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#fef2f2;color:#dc3c3c"><i class="ph-bold ph-x-circle"></i> Non vérifié</span>';
+  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#f5f5f4;color:#78716c"><i class="ph-bold ph-circle-dashed"></i> Inconnu</span>';
 }
 async function loadEmailConfigStatus() {
   const box = document.getElementById('email-config-status');
@@ -856,11 +857,11 @@ async function loadEmailConfigStatus() {
     ? 'Clé actuellement enregistrée : ' + data.api_secret_masked + ' (laissez le champ vide pour la conserver)'
     : 'Aucune clé enregistrée pour le moment.';
   if (!data.api_key_configured || !data.from_address) {
-    box.innerHTML = '<p class="text-sm text-stone-500"><i class="ph ph-info"></i> Configuration incomplète — aucun email ne peut être envoyé tant que les clés API et l\\'adresse expéditrice ne sont pas enregistrées ci-dessous.</p>';
+    box.innerHTML = '<p class="text-sm text-stone-500"><i class="ph-bold ph-info"></i> Configuration incomplète - aucun email ne peut être envoyé tant que les clés API et l\\'adresse expéditrice ne sont pas enregistrées ci-dessous.</p>';
     return;
   }
   box.innerHTML = '<div class="flex items-center gap-2 flex-wrap"><strong class="text-stone-800">'+esc(data.from_address)+'</strong> '+senderStatusBadge(data.sender_verified)+'</div>' +
-    (data.sender_verified===false ? '<p class="text-xs text-amber-700 mt-2"><i class="ph ph-warning"></i> Cette adresse n\\'est pas encore vérifiée sur Mailjet. Cliquez sur « Envoyer l\\'email de vérification » puis suivez le lien reçu.</p>' : '');
+    (data.sender_verified===false ? '<p class="text-xs text-amber-700 mt-2"><i class="ph-bold ph-warning"></i> Cette adresse n\\'est pas encore vérifiée sur Mailjet. Cliquez sur « Envoyer l\\'email de vérification » puis suivez le lien reçu.</p>' : '');
 }
 // Strips characters copy-paste commonly smuggles into an email field that
 // look blank but aren't ASCII space: NBSP (U+00A0), zero-width space/joiners
@@ -907,7 +908,7 @@ async function checkSenderStatus() {
   const res = await fetch('/api/admin/email-config/check', {method:'POST'}).catch(()=>null);
   const data = await res?.json().catch(()=>null);
   if (res && res.ok) {
-    toast(data.sender_verified ? 'Adresse vérifiée !' : (data.found ? 'Toujours non vérifiée — cliquez le lien reçu par email.' : 'Adresse pas encore soumise — cliquez « Envoyer l\\'email de vérification » d\\'abord.'), data.sender_verified?'ok':'info');
+    toast(data.sender_verified ? 'Adresse vérifiée !' : (data.found ? 'Toujours non vérifiée - cliquez le lien reçu par email.' : 'Adresse pas encore soumise - cliquez « Envoyer l\\'email de vérification » d\\'abord.'), data.sender_verified?'ok':'info');
     loadEmailConfigStatus();
   } else toast((data&&data.error)||'Erreur','err');
 }
@@ -1088,7 +1089,7 @@ export function editorPage(articleId = null) {
 #e-content .img-expand{left:6px;font-size:.7rem}
 #e-content figure:hover .img-delete,#e-content figure:hover .img-split,#e-content figure:hover .img-expand{opacity:1}
 /* Touch devices have no :hover state, so opacity:0-until-hover would leave
-   these buttons effectively untappable — an admin on a phone could never
+   these buttons effectively untappable - an admin on a phone could never
    discover or reliably hit a 26px invisible button. Make them always visible
    and bump them to the ~44px minimum touch target size instead. */
 @media (pointer: coarse) {
@@ -1130,18 +1131,18 @@ ${ADMIN_NAV()}
         </div>
         <div class="rounded-2xl border-2 border-stone-200 focus-within:border-sky-400 transition-colors overflow-hidden">
           <div id="editor-toolbar" class="flex flex-wrap items-center gap-0.5 p-1.5 bg-stone-50 border-b border-stone-200">
-            <button type="button" class="toolbar-btn" onclick="fmt('bold')" title="Gras"><i class="ph-fill ph-text-b"></i></button>
-            <button type="button" class="toolbar-btn" onclick="fmt('italic')" title="Italique"><i class="ph ph-text-italic"></i></button>
-            <button type="button" class="toolbar-btn" onclick="fmt('underline')" title="Souligné"><i class="ph ph-text-underline"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmt('bold')" title="Gras"><i class="ph-bold ph-text-b"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmt('italic')" title="Italique"><i class="ph-bold ph-text-italic"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmt('underline')" title="Souligné"><i class="ph-bold ph-text-underline"></i></button>
             <span class="toolbar-sep"></span>
-            <button type="button" class="toolbar-btn" onclick="fmtBlock('H2')" title="Titre"><i class="ph ph-text-h-two"></i></button>
-            <button type="button" class="toolbar-btn" onclick="fmtBlock('H3')" title="Sous-titre"><i class="ph ph-text-h-three"></i></button>
-            <button type="button" class="toolbar-btn" onclick="fmtBlock('P')" title="Texte normal"><i class="ph ph-paragraph"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmtBlock('H2')" title="Titre"><i class="ph-bold ph-text-h-two"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmtBlock('H3')" title="Sous-titre"><i class="ph-bold ph-text-h-three"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmtBlock('P')" title="Texte normal"><i class="ph-bold ph-paragraph"></i></button>
             <span class="toolbar-sep"></span>
-            <button type="button" class="toolbar-btn" onclick="fmt('insertUnorderedList')" title="Liste à puces"><i class="ph ph-list-bullets"></i></button>
-            <button type="button" class="toolbar-btn" onclick="fmtBlock('BLOCKQUOTE')" title="Citation"><i class="ph ph-quotes"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmt('insertUnorderedList')" title="Liste à puces"><i class="ph-bold ph-list-bullets"></i></button>
+            <button type="button" class="toolbar-btn" onclick="fmtBlock('BLOCKQUOTE')" title="Citation"><i class="ph-bold ph-quotes"></i></button>
             <span class="toolbar-sep"></span>
-            <button type="button" class="toolbar-btn" style="color:var(--blue)" onclick="openInsertImg()" title="Insérer une image"><i class="ph ph-image"></i></button>
+            <button type="button" class="toolbar-btn" style="color:var(--blue)" onclick="openInsertImg()" title="Insérer une image"><i class="ph-bold ph-image"></i></button>
           </div>
           <div id="e-content" contenteditable="true" spellcheck="true"
                class="prose-vacation min-h-[360px] max-w-none p-5 focus:outline-none"
@@ -1157,47 +1158,47 @@ ${ADMIN_NAV()}
 
       <!-- Save button (desktop only - mobile uses sticky bottom bar) -->
       <div class="hidden lg:block space-y-2">
-        <button onclick="saveArticle()" class="w-full action-btn text-white font-bold py-3 rounded-2xl transition-all"><i class="ph ph-floppy-disk"></i> Sauvegarder</button>
-        ${isEdit ? `<a id="export-btn" href="/admin/articles/${articleId}/print" target="_blank" class="w-full flex items-center justify-center gap-2 border border-stone-200 rounded-2xl py-2.5 text-sm font-semibold text-stone-600 hover:bg-stone-50 transition-colors" style="text-decoration:none"><i class="ph ph-export"></i> Exporter (PDF / Word)</a>` : ''}
+        <button onclick="saveArticle()" class="w-full action-btn text-white font-bold py-3 rounded-2xl transition-all"><i class="ph-bold ph-floppy-disk"></i> Sauvegarder</button>
+        ${isEdit ? `<a id="export-btn" href="/admin/articles/${articleId}/print" target="_blank" class="w-full flex items-center justify-center gap-2 border border-stone-200 rounded-2xl py-2.5 text-sm font-semibold text-stone-600 hover:bg-stone-50 transition-colors" style="text-decoration:none"><i class="ph-bold ph-export"></i> Exporter (PDF / Word)</a>` : ''}
       </div>
 
       <!-- Status -->
       <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
-        <h3 class="font-bold text-stone-700 mb-3 text-sm"><i class="ph ph-toggle-right"></i> Statut</h3>
+        <h3 class="font-bold text-stone-700 mb-3 text-sm"><i class="ph-bold ph-toggle-right"></i> Statut</h3>
         <div class="flex flex-col gap-2">
-          <button type="button" id="btn-archived" onclick="setStatus('archived')"
-            class="flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full" style="border-color:#e7e5e4;background:#fff">
-            <i class="ph ph-archive text-xl flex-shrink-0" style="color:#a8a29e"></i>
+          <button type="button" id="btn-archived" data-status="archived" onclick="setStatus('archived')"
+            class="status-option flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full">
+            <i class="ph-bold ph-archive status-option-icon text-xl flex-shrink-0"></i>
             <div class="flex-1">
-              <div class="font-semibold text-sm status-btn-title" style="color:#57534e">Archivé</div>
-              <div class="text-xs text-stone-400">Non visible par les lecteurs</div>
+              <div class="font-semibold text-sm status-btn-title">Archivé</div>
+              <div class="text-xs" style="color:var(--ink-light)">Non visible par les lecteurs</div>
             </div>
-            <i class="ph-fill ph-check-circle status-check flex-shrink-0" style="font-size:1.1rem;display:none"></i>
+            <i class="ph-fill ph-check-circle status-check flex-shrink-0" style="font-size:1.1rem"></i>
           </button>
-          <button type="button" id="btn-published" onclick="setStatus('published')"
-            class="flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full" style="border-color:#e7e5e4;background:#fff">
-            <i class="ph-fill ph-check-circle text-xl flex-shrink-0" style="color:#a8a29e"></i>
+          <button type="button" id="btn-published" data-status="published" onclick="setStatus('published')"
+            class="status-option flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full">
+            <i class="ph-bold ph-check-circle status-option-icon text-xl flex-shrink-0"></i>
             <div class="flex-1">
-              <div class="font-semibold text-sm status-btn-title" style="color:#57534e">Publié</div>
-              <div class="text-xs text-stone-400">Visible par tous</div>
+              <div class="font-semibold text-sm status-btn-title">Publié</div>
+              <div class="text-xs" style="color:var(--ink-light)">Visible par tous</div>
             </div>
-            <i class="ph-fill ph-check-circle status-check flex-shrink-0" style="font-size:1.1rem;display:none"></i>
+            <i class="ph-fill ph-check-circle status-check flex-shrink-0" style="font-size:1.1rem"></i>
           </button>
-          <button type="button" id="btn-publish_when_online" onclick="setStatus('publish_when_online')"
-            class="flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full" style="border-color:#e7e5e4;background:#fff">
-            <i class="ph ph-wifi-high text-xl flex-shrink-0" style="color:#a8a29e"></i>
+          <button type="button" id="btn-publish_when_online" data-status="publish_when_online" onclick="setStatus('publish_when_online')"
+            class="status-option flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full">
+            <i class="ph-bold ph-wifi-high status-option-icon text-xl flex-shrink-0"></i>
             <div class="flex-1">
-              <div class="font-semibold text-sm status-btn-title" style="color:#57534e">Publier dès connexion</div>
-              <div class="text-xs text-stone-400">Publié auto quand internet rétabli</div>
+              <div class="font-semibold text-sm status-btn-title">Publier dès connexion</div>
+              <div class="text-xs" style="color:var(--ink-light)">Publié auto quand internet rétabli</div>
             </div>
-            <i class="ph-fill ph-check-circle status-check flex-shrink-0" style="font-size:1.1rem;display:none"></i>
+            <i class="ph-fill ph-check-circle status-check flex-shrink-0" style="font-size:1.1rem"></i>
           </button>
         </div>
         <input type="hidden" id="pub-status" value="archived">
         <div id="sync-info" class="mt-3 pt-3 border-t border-stone-100 space-y-1 text-xs" style="color:var(--ink-muted)">
           <div class="flex items-center gap-1.5"><span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#a3e635;flex-shrink:0;display:inline-block"></span><span id="sync-online-lbl">En ligne</span></div>
-          <div id="sync-saved-row" class="hidden flex items-center gap-1.5"><i class="ph ph-floppy-disk"></i> <span id="sync-saved-lbl"></span></div>
-          <div id="sync-pub-row" class="hidden flex items-center gap-1.5"><i class="ph ph-check-circle" style="color:var(--palm)"></i> <span id="sync-pub-lbl"></span></div>
+          <div id="sync-saved-row" class="hidden flex items-center gap-1.5"><i class="ph-bold ph-floppy-disk"></i> <span id="sync-saved-lbl"></span></div>
+          <div id="sync-pub-row" class="hidden flex items-center gap-1.5"><i class="ph-bold ph-check-circle" style="color:var(--palm)"></i> <span id="sync-pub-lbl"></span></div>
         </div>
       </div>
 
@@ -1206,7 +1207,7 @@ ${ADMIN_NAV()}
         <label class="flex items-start gap-3 cursor-pointer select-none">
           <input type="checkbox" id="e-notify" checked class="w-5 h-5 mt-0.5 flex-shrink-0 accent-emerald-600">
           <div>
-            <div class="font-bold text-sm" style="color:var(--palm)"><i class="ph ph-bell-ringing"></i> Prévenir les abonnés</div>
+            <div class="font-bold text-sm" style="color:var(--palm)"><i class="ph-bold ph-bell-ringing"></i> Prévenir les abonnés</div>
             <div class="text-xs mt-0.5" style="color:var(--ink-muted)">Envoie une notification push et un email à tous les abonnés.</div>
           </div>
         </label>
@@ -1214,22 +1215,22 @@ ${ADMIN_NAV()}
 
       <!-- Meta -->
        <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
-        <h3 class="font-bold text-stone-700 mb-4 text-sm"><i class="ph ph-info"></i> Informations</h3>
+        <h3 class="font-bold text-stone-700 mb-4 text-sm"><i class="ph-bold ph-info"></i> Informations</h3>
         <div class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph ph-calendar-blank"></i> Début du voyage *</label>
+            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph-bold ph-calendar-blank"></i> Début du voyage *</label>
             <input type="date" id="e-start-date" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
           </div>
           <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph ph-calendar-check"></i> Fin du voyage *</label>
+            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph-bold ph-calendar-check"></i> Fin du voyage *</label>
             <input type="date" id="e-end-date" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
           </div>
           <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph ph-map-pin"></i> Destination</label>
+            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph-bold ph-map-pin"></i> Destination</label>
             <input type="text" id="e-dest" placeholder="Ex: Paris, France" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
           </div>
           <div>
-            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph ph-folder"></i> Dossier</label>
+            <label class="block text-xs font-bold text-stone-500 mb-1.5"><i class="ph-bold ph-folder"></i> Dossier</label>
             <select id="e-folder" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
               <option value="">Aucun dossier</option>
             </select>
@@ -1239,12 +1240,12 @@ ${ADMIN_NAV()}
 
       <!-- Cover photo -->
        <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 p-5 shadow-sm">
-        <h3 class="font-bold text-stone-700 mb-3 text-sm"><i class="ph ph-image"></i> Photo de couverture</h3>
+        <h3 class="font-bold text-stone-700 mb-3 text-sm"><i class="ph-bold ph-image"></i> Photo de couverture</h3>
         <input type="hidden" id="e-cover" value="">
         <div id="cover-wrap" class="hidden relative mb-2 group cursor-pointer" onclick="document.getElementById('cover-file-in').click()">
           <img id="cover-img" src="" alt="" class="w-full h-32 object-cover rounded-xl">
           <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all rounded-xl flex items-center justify-center pointer-events-none">
-            <span class="text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-3 py-1.5 rounded-full"><i class="ph ph-camera"></i> Changer</span>
+            <span class="text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-3 py-1.5 rounded-full"><i class="ph-bold ph-camera"></i> Changer</span>
           </div>
         </div>
         <div id="cover-dz" class="border-2 border-dashed border-stone-300 rounded-xl p-5 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
@@ -1252,7 +1253,7 @@ ${ADMIN_NAV()}
              ondragover="event.preventDefault();this.classList.add('border-sky-400','bg-sky-50')"
              ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
              ondrop="handleCoverDrop(event)">
-          <i class="ph ph-image-square" style="font-size:2rem;display:block;margin-bottom:.35rem;color:var(--blue)"></i>
+          <i class="ph-bold ph-image-square" style="font-size:2rem;display:block;margin-bottom:.35rem;color:var(--blue)"></i>
           <p class="text-stone-600 font-semibold text-xs">Choisir une photo</p>
           <p class="text-stone-400 text-xs mt-0.5">JPG, PNG, WebP</p>
         </div>
@@ -1263,7 +1264,7 @@ ${ADMIN_NAV()}
       <div>
         <div class="flex items-center justify-between mb-2">
           <label class="text-xs font-bold text-stone-500 uppercase tracking-wide">Images dans le récit</label>
-          <p class="text-xs text-sky-600 font-semibold"><i class="ph ph-image"></i> Les photos s'insèrent automatiquement dans le texte</p>
+          <p class="text-xs text-sky-600 font-semibold"><i class="ph-bold ph-image"></i> Les photos s'insèrent automatiquement dans le texte</p>
         </div>
         <div id="dropzone"
              class="border-2 border-dashed border-stone-300 rounded-2xl p-8 text-center hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer"
@@ -1271,7 +1272,7 @@ ${ADMIN_NAV()}
              ondragover="event.preventDefault();this.classList.add('border-sky-400','bg-sky-50')"
              ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
              ondrop="handleDrop(event)">
-          <i class="ph ph-camera" style="font-size:2.5rem;display:block;margin-bottom:.5rem;color:var(--blue)"></i>
+          <i class="ph-bold ph-camera" style="font-size:2.5rem;display:block;margin-bottom:.5rem;color:var(--blue)"></i>
           <p class="text-stone-600 font-semibold text-sm">Appuyez pour choisir des photos</p>
           <p class="text-stone-400 text-xs mt-1">JPG, PNG, WebP · Max 10 MB</p>
           <input type="file" id="file-in" accept="image/*" multiple class="hidden" onchange="handleFiles(this.files)">
@@ -1281,8 +1282,8 @@ ${ADMIN_NAV()}
 
       ${isEdit ? `
       <div class="bg-red-50 rounded-2xl border border-red-100 p-5">
-        <h3 class="font-bold text-red-700 mb-3 text-sm"><i class="ph ph-warning"></i> Zone danger</h3>
-        <button onclick="delArticle()" class="w-full bg-red-500 text-white font-bold py-2.5 rounded-xl hover:bg-red-600 transition-colors text-sm"><i class="ph ph-trash"></i> Supprimer l'article</button>
+        <h3 class="font-bold text-red-700 mb-3 text-sm"><i class="ph-bold ph-warning"></i> Zone danger</h3>
+        <button onclick="delArticle()" class="w-full bg-red-500 text-white font-bold py-2.5 rounded-xl hover:bg-red-600 transition-colors text-sm"><i class="ph-bold ph-trash"></i> Supprimer l'article</button>
       </div>` : ''}
     </aside>
   </div>
@@ -1292,7 +1293,7 @@ ${ADMIN_NAV()}
 <div class="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-white/95 backdrop-blur-sm border-t border-stone-200 px-4 py-3 flex items-center gap-3 shadow-xl" style="padding-bottom:max(12px,env(safe-area-inset-bottom))">
   <span id="sticky-status-lbl" class="flex-1 text-sm font-semibold text-stone-600 truncate">Archivé</span>
   <button onclick="saveArticle()" class="action-btn py-2.5 px-5 text-sm font-bold flex-shrink-0 whitespace-nowrap touch-manipulation">
-    <i class="ph ph-floppy-disk"></i> Sauvegarder
+    <i class="ph-bold ph-floppy-disk"></i> Sauvegarder
   </button>
 </div>
 
@@ -1300,17 +1301,17 @@ ${ADMIN_NAV()}
 <div id="insert-img-modal" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onclick="if(event.target===this)closeInsertImg()">
   <div class="section-panel majorelle-frame rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-lg max-h-[85vh] flex flex-col">
     <div class="flex items-center justify-between p-5 border-b border-stone-100">
-      <h3 class="font-display text-lg font-bold text-stone-900"><i class="ph ph-image"></i> Insérer une image</h3>
-      <button onclick="closeInsertImg()" class="text-stone-400 hover:text-stone-600 p-1.5 rounded-lg hover:bg-stone-100 transition-colors"><i class="ph ph-x text-lg"></i></button>
+      <h3 class="font-display text-lg font-bold text-stone-900"><i class="ph-bold ph-image"></i> Insérer une image</h3>
+      <button onclick="closeInsertImg()" class="text-stone-400 hover:text-stone-600 p-1.5 rounded-lg hover:bg-stone-100 transition-colors"><i class="ph-bold ph-x text-lg"></i></button>
     </div>
     <div class="px-5 pt-4 pb-2">
       <div class="flex gap-2">
-        <button type="button" id="iim-btn-full" onclick="setImgSize('full')" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-sky-400 bg-sky-50 text-sky-700 text-sm font-bold transition-all"><i class="ph ph-arrows-horizontal"></i> Pleine largeur</button>
-        <button type="button" id="iim-btn-half" onclick="setImgSize('half')" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-stone-200 bg-white text-stone-600 text-sm font-bold transition-all"><i class="ph ph-square-half"></i> Demi-largeur</button>
+        <button type="button" id="iim-btn-full" onclick="setImgSize('full')" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-sky-400 bg-sky-50 text-sky-700 text-sm font-bold transition-all"><i class="ph-bold ph-arrows-horizontal"></i> Pleine largeur</button>
+        <button type="button" id="iim-btn-half" onclick="setImgSize('half')" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-stone-200 bg-white text-stone-600 text-sm font-bold transition-all"><i class="ph-bold ph-square-half"></i> Demi-largeur</button>
       </div>
       <input type="hidden" id="iim-size" value="full">
       <div class="mt-3">
-        <label class="block text-xs font-bold text-stone-500 uppercase tracking-wide mb-1.5" for="iim-caption"><i class="ph ph-text-aa"></i> Légende / texte alternatif <span class="font-normal normal-case text-stone-400">(optionnel)</span></label>
+        <label class="block text-xs font-bold text-stone-500 uppercase tracking-wide mb-1.5" for="iim-caption"><i class="ph-bold ph-text-aa"></i> Légende / texte alternatif <span class="font-normal normal-case text-stone-400">(optionnel)</span></label>
         <input type="text" id="iim-caption" placeholder="Ex: Vue sur la baie au coucher du soleil" class="w-full border-2 border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 transition-colors text-sm">
         <p class="text-xs text-stone-400 mt-1">Affichée sous l'image et utilisée comme texte alternatif.</p>
       </div>
@@ -1326,7 +1327,7 @@ ${ADMIN_NAV()}
              ondragover="event.preventDefault();this.classList.add('border-sky-400','bg-sky-50')"
              ondragleave="this.classList.remove('border-sky-400','bg-sky-50')"
              ondrop="_iimDrop(event)">
-          <i class="ph ph-upload-simple text-xl mb-1 block" style="color:var(--blue)"></i>
+          <i class="ph-bold ph-upload-simple text-xl mb-1 block" style="color:var(--blue)"></i>
           <span class="text-stone-600 font-semibold text-sm">Choisir ou déposer une photo</span>
           <input type="file" id="iim-file-in" accept="image/*" class="hidden" onchange="_iimUpload(this.files);this.value=''">
         </div>
@@ -1381,6 +1382,59 @@ function loadDraftLocal() {
 }
 function clearDraftLocal() { localStorage.removeItem(DRAFT_KEY); }
 
+// ── Offline sync queue (IndexedDB) ──────────────────────────────
+// localStorage isn't reachable from the Service Worker, so a save made while
+// offline is *also* written here — the SW reads this store and replays each
+// entry (POST/PUT) via Background Sync once the network is back, even if
+// nobody has the app open at that moment. See public/sw.js for the replay side.
+function _openOfflineDB() {
+  return new Promise((resolve, reject) => {
+    if (!('indexedDB' in window)) { reject(new Error('no indexedDB')); return; }
+    const req = indexedDB.open('tranquille-offline', 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains('pending-articles')) {
+        req.result.createObjectStore('pending-articles', { keyPath: 'localId' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function queueOfflineArticleSave(method, url, payload) {
+  const db = await _openOfflineDB();
+  const localId = 'draft-' + (ARTICLE_ID || 'new') + '-' + Date.now();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction('pending-articles', 'readwrite');
+    tx.objectStore('pending-articles').put({ localId, method, url, payload, queuedAt: Date.now() });
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+  if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.sync.register('tranquille-sync-articles');
+    } catch { /* Background Sync unsupported/denied — the 'online' event fallback in sw.js still covers it */ }
+  }
+}
+// The SW tells every open page when a queued save actually goes through, so
+// the sticky status label doesn't keep saying "waiting" once it has synced.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'article-synced' && event.data.ok) {
+      const lbl = document.getElementById('sticky-status-lbl');
+      if (lbl) lbl.textContent = '✓ Synchronisé';
+      toast('Article envoyé automatiquement 🌴', 'ok');
+    }
+  });
+}
+// Fallback ping for browsers without Background Sync (notably iOS Safari):
+// ask the SW to retry as soon as this page itself observes the network
+// coming back, in case it's the only chance the sync gets before the app
+// closes again.
+window.addEventListener('online', () => {
+  navigator.serviceWorker?.controller?.postMessage('sync-now');
+});
+
 function fillFromDraft(d) {
   if (d.title)             document.getElementById('e-title').value = d.title;
   if (d.short_description) document.getElementById('e-desc').value = d.short_description;
@@ -1412,7 +1466,7 @@ function _showDraftBar(draft) {
   const bar = document.createElement('div');
   bar.id = 'draft-bar';
   bar.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:39;display:flex;align-items:center;gap:.75rem;background:#EFF6FF;border-bottom:1px solid #BFDBFE;padding:.6rem 1rem;font-size:.85rem;font-weight:500;color:#1E40AF;box-shadow:0 1px 4px rgba(0,0,0,.06)';
-  bar.innerHTML = \`<i class="ph ph-cloud-slash" style="font-size:1.1rem;flex-shrink:0"></i>
+  bar.innerHTML = \`<i class="ph-bold ph-cloud-slash" style="font-size:1.1rem;flex-shrink:0"></i>
     <span style="flex:1">Brouillon local du \${d} non synchronisé</span>
     <button onclick="_applyDraft()" style="background:#3B82F6;color:#fff;border:none;padding:.3rem .8rem;border-radius:.5rem;font-weight:700;font-size:.78rem;cursor:pointer">Restaurer</button>
     <button onclick="_dismissDraft()" style="color:#3B82F6;border:none;background:none;padding:.3rem .5rem;font-size:.78rem;cursor:pointer;font-weight:600">Ignorer</button>\`;
@@ -1510,8 +1564,8 @@ async function uploadPhotoFile(articleId, file, { onProgress } = {}) {
 }
 function uploadErrorMessage(error) {
   if (error === 'rejected') return 'Format de photo non pris en charge (essayez JPEG, PNG, WebP)';
-  if (error === 'timeout') return 'Upload trop lent, connexion instable — réessayez';
-  if (error === 'network') return 'Connexion perdue pendant l’upload — réessayez';
+  if (error === 'timeout') return 'Upload trop lent, connexion instable - réessayez';
+  if (error === 'network') return 'Connexion perdue pendant l’upload - réessayez';
   return 'Erreur upload';
 }
 
@@ -1717,7 +1771,7 @@ function _makeImgFigure(url, caption, size) {
   if (size === 'full') {
     const split = document.createElement('button');
     split.type = 'button'; split.className = 'img-split'; split.title = 'Mettre en demi-largeur';
-    split.innerHTML = '<i class="ph ph-columns"></i>';
+    split.innerHTML = '<i class="ph-bold ph-columns"></i>';
     split.onclick = function(e) { e.stopPropagation(); _splitToHalf(figure); };
     figure.appendChild(split);
   }
@@ -1750,14 +1804,14 @@ function _refreshImgPairSlot(row) {
     const slot = document.createElement('div');
     slot.className = 'img-pair-add';
     slot.setAttribute('contenteditable', 'false');
-    slot.innerHTML = '<i class="ph ph-plus-circle"></i><span>Ajouter</span>';
+    slot.innerHTML = '<i class="ph-bold ph-plus-circle"></i><span>Ajouter</span>';
     slot.onclick = function() { openInsertImg(row); };
     row.appendChild(slot);
     // Expand-to-full button on the lone figure
     figures.forEach(fig => {
       const exp = document.createElement('button');
       exp.type = 'button'; exp.className = 'img-expand'; exp.title = 'Repasser en pleine largeur';
-      exp.innerHTML = '<i class="ph ph-arrows-out-simple"></i>';
+      exp.innerHTML = '<i class="ph-bold ph-arrows-out-simple"></i>';
       exp.onclick = function(e) { e.stopPropagation(); _expandToFull(fig); };
       fig.appendChild(exp);
     });
@@ -1771,7 +1825,7 @@ function _expandToFull(figure) {
   // Restore the split button for full-width figures
   const split = document.createElement('button');
   split.type = 'button'; split.className = 'img-split'; split.title = 'Mettre en demi-largeur';
-  split.innerHTML = '<i class="ph ph-columns"></i>';
+  split.innerHTML = '<i class="ph-bold ph-columns"></i>';
   split.onclick = function(e) { e.stopPropagation(); _splitToHalf(figure); };
   figure.appendChild(split);
   row.parentNode.insertBefore(figure, row);
@@ -1944,8 +1998,8 @@ function renderPhotoGrid() {
     <div class="relative aspect-square overflow-hidden rounded-xl group">
       <img src="\${esc(p.url)}" alt="\${esc(p.caption||'')}" class="w-full h-full object-cover">
       <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
-        <button data-action="insert-photo" data-url="\${esc(p.url)}" data-caption="\${esc(p.caption||'photo')}" class="bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-text-align-center"></i> Ré-insérer</button>
-        <button data-action="del-existing-photo" data-id="\${p.id}" data-index="\${i}" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-trash"></i> Supprimer</button>
+        <button data-action="insert-photo" data-url="\${esc(p.url)}" data-caption="\${esc(p.caption||'photo')}" class="bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph-bold ph-text-align-center"></i> Ré-insérer</button>
+        <button data-action="del-existing-photo" data-id="\${p.id}" data-index="\${i}" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph-bold ph-trash"></i> Supprimer</button>
       </div>
     </div>\`).join('');
   const newPics = newPhotos.map((p,i)=>\`
@@ -1953,7 +2007,7 @@ function renderPhotoGrid() {
       <img src="\${p.dataUrl}" alt="\${esc(p.name)}" class="w-full h-full object-cover">
       <div class="absolute inset-0 bg-black/0 group-hover:bg-black/55 transition-all flex flex-col items-center justify-center gap-1.5 p-1">
         <span class="bg-stone-800/80 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-center leading-tight">Insérée après<br>sauvegarde</span>
-        <button data-action="rm-new-photo" data-index="\${i}" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph ph-trash"></i> Supprimer</button>
+        <button data-action="rm-new-photo" data-index="\${i}" class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg whitespace-nowrap"><i class="ph-bold ph-trash"></i> Supprimer</button>
       </div>
       <div class="absolute bottom-1 right-1 bg-orange-500 text-white text-xs rounded-full px-1.5 font-bold">Nouveau</div>
     </div>\`).join('');
@@ -1991,7 +2045,7 @@ function handleFiles(files) {
           toast(uploaded.length === 1 ? 'Photo insérée !' : uploaded.length + ' photos insérées !','ok');
         }
         // Every file failed magic-byte validation (e.g. HEIC/HEIF or another
-        // unsupported format) — don't show a false "success" toast for 0 photos.
+        // unsupported format) - don't show a false "success" toast for 0 photos.
         if (rejected.length) {
           toast(rejected.length + ' photo(s) au format non pris en charge (essayez JPEG, PNG, WebP)', 'err');
         }
@@ -2014,30 +2068,15 @@ async function delExistingPhoto(photoId, i) {
 // ── Status selector ───────────────────────────────────────────
 function setStatus(val) {
   document.getElementById('pub-status').value = val;
-  const styles = {
-    archived:            { border:'#d6d3d1', bg:'#fafaf9', icon:'#a8a29e', text:'#57534e' },
-    published:           { border:'#6ee7b7', bg:'#f0fdf4', icon:'var(--palm)', text:'var(--palm)' },
-    publish_when_online: { border:'#fcd34d', bg:'#fffbeb', icon:'#d97706', text:'#b45309' },
-  };
   ['archived','published','publish_when_online'].forEach(s => {
     const btn = document.getElementById('btn-' + s);
-    if (!btn) return;
-    const active = s === val;
-    const c = styles[s];
-    btn.style.borderColor = active ? c.border : '#e7e5e4';
-    btn.style.backgroundColor = active ? c.bg : '#fff';
-    const icon = btn.querySelector('i');
-    const title = btn.querySelector('.status-btn-title');
-    if (icon) icon.style.color = active ? c.icon : '#a8a29e';
-    if (title) title.style.color = active ? c.text : '#57534e';
-    const check = btn.querySelector('.status-check');
-    if (check) { check.style.display = active ? 'block' : 'none'; check.style.color = active ? c.icon : '#a8a29e'; }
+    if (btn) btn.classList.toggle('is-active', s === val);
   });
   const notifySection = document.getElementById('notify-section');
   if (notifySection) notifySection.classList.toggle('hidden', val !== 'published' && val !== 'publish_when_online');
   const lbl = document.getElementById('sticky-status-lbl');
   if (lbl) {
-    const labels = { archived:'Archivé', published:'✓ Publié', publish_when_online:'⏳ Publier dès connexion' };
+    const labels = { archived:'Archivé', published:'Publié', publish_when_online:'Dès connexion' };
     lbl.textContent = labels[val] || val;
   }
 }
@@ -2066,13 +2105,21 @@ function enforceOfflineStatus() {
 
 // ── Save article ──────────────────────────────────────────────
 async function saveArticle() {
-  // ── Offline : sauvegarde locale ───────────────────────────
+  // ── Offline : sauvegarde locale + file d'attente de synchro ───
   if (!navigator.onLine) {
     saveDraftLocal();
+    const title = document.getElementById('e-title')?.value.trim();
+    if (title) {
+      const payload = _draftPayload();
+      payload.notify = false; // never auto-notify subscribers for a sync that happens unattended
+      try {
+        await queueOfflineArticleSave(ARTICLE_ID ? 'PUT' : 'POST', ARTICLE_ID ? ('/api/articles/'+ARTICLE_ID) : '/api/articles', payload);
+      } catch (e) { /* IndexedDB unavailable — the local draft above is still the fallback */ }
+    }
     updateSyncInfo();
-    toast('Sauvegardé sur l’appareil 📴', 'ok');
+    toast('Sauvegardé - sera envoyé dès que possible 📴', 'ok');
     const lbl = document.getElementById('sticky-status-lbl');
-    if (lbl) lbl.textContent = '📴 Sauvegardé';
+    if (lbl) lbl.textContent = '📴 En attente de connexion';
     return;
   }
 
@@ -2084,7 +2131,7 @@ async function saveArticle() {
   if (endDate < startDate) { toast('La fin doit être après le début','err'); return; }
 
   const status = getStatus();
-  // Send the status honestly to the server — it used to be silently rewritten
+  // Send the status honestly to the server - it used to be silently rewritten
   // to 'published' here, which meant choosing "publier dès connexion" while
   // actually online force-published the article immediately regardless of
   // the admin's intent. The server now stores publish_when_online as its own
@@ -2139,7 +2186,7 @@ async function saveArticle() {
       if (uploaded.length) {
         const editor = document.getElementById('e-content');
         // Match each uploaded photo back to its source File by original
-        // filename rather than by array index — if any file was rejected
+        // filename rather than by array index - if any file was rejected
         // (e.g. HEIC), 'uploaded' is shorter than 'newPhotos' and a
         // positional match would silently pair the wrong caption/dataUrl
         // with the wrong uploaded photo.

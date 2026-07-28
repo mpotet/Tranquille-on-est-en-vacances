@@ -133,7 +133,7 @@ CREATE TABLE IF NOT EXISTS admin_account (
 );
 
 -- ── Rate limiting (brute-force protection) ───────────────────────────────────
--- Tracks failed attempts per (scope, key) — e.g. scope='login', key=<client IP>,
+-- Tracks failed attempts per (scope, key) - e.g. scope='login', key=<client IP>,
 -- or scope='comment_gate', key=<client IP>. A sliding window is enforced in
 -- application code (worker/rate-limit.js) by counting rows newer than N
 -- minutes; old rows are pruned opportunistically on each check.

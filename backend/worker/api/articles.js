@@ -53,7 +53,7 @@ export async function listArticles(request, env, isAdmin) {
   }
 
   // Free-text search across title, destination and short description
-  // (not the full content — keeps it fast and results relevant to headings).
+  // (not the full content - keeps it fast and results relevant to headings).
   if (q) {
     const term = `%${deaccent(q).toLowerCase()}%`;
     whereClauses.push(`(${sqlNorm('a.title')} LIKE ? OR ${sqlNorm('a.destination')} LIKE ? OR ${sqlNorm('a.short_description')} LIKE ?)`);
@@ -61,7 +61,7 @@ export async function listArticles(request, env, isAdmin) {
   }
 
   // Filter by folder (all articles in the folder tree). An unknown/stale
-  // slug must force zero results, not silently drop the filter — otherwise
+  // slug must force zero results, not silently drop the filter - otherwise
   // /voyages?folder=deleted-slug would return ALL published articles instead
   // of an empty state.
   if (folderSlug) {
@@ -245,7 +245,7 @@ export async function patchArticleStatus(env, id, ctx) {
 
   // A plain published/archived toggle only makes sense between those two
   // states. An article deliberately left as 'draft' or 'publish_when_online'
-  // should not be silently force-published by this quick toggle — that would
+  // should not be silently force-published by this quick toggle - that would
   // discard the admin's explicit "not ready yet" / "wait for connectivity"
   // choice. Those statuses must be changed via the editor's status selector.
   const newStatus = article.status === 'published' ? 'archived'
@@ -379,7 +379,7 @@ export async function recordView(env, slugOrId, request) {
 
   if (!article) return notFound('Article not found');
 
-  // Don't count bots/crawlers/link-preview fetchers as real readers — still
+  // Don't count bots/crawlers/link-preview fetchers as real readers - still
   // return the current count so the client's fetch resolves normally.
   if (isBotUserAgent(request)) {
     return json({ views: article.view_count });

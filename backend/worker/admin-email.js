@@ -167,7 +167,7 @@ async function send(env, { to, subject, html, emailType }) {
     console.error(`[AdminEmail] HTTP ${res.status} pour ${to}:`, body);
     // Store the friendly message plus Mailjet body (stringified) to help debugging.
     const debug = body ? JSON.stringify(body) : `HTTP ${res.status}`;
-    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: friendly + ' — Mailjet: ' + debug });
+    await logEmailAttempt(env, { emailType, recipient: to, ok: false, error: friendly + ' - Mailjet: ' + debug });
     return { ok: false, status: res.status, error: friendly, mailjet: body };
   }
   await logEmailAttempt(env, { emailType, recipient: to, ok: true });

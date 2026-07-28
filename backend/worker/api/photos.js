@@ -23,14 +23,14 @@
 import { json, notFound, badRequest } from '../utils.js';
 
 // ──────────────────────────────────────────────────────────────
-// Image type validation (magic bytes) — never trust the client-supplied
+// Image type validation (magic bytes) - never trust the client-supplied
 // File.type/filename for the stored R2 Content-Type. An attacker-controlled
 // Content-Type (e.g. image/svg+xml or text/html) served back verbatim by
 // serveR2Object() from the same origin would be a stored XSS vector, since
 // SVG/HTML can embed executable <script>. Only a small allowlist of real
-// raster image formats — verified by their leading bytes — is accepted.
+// raster image formats - verified by their leading bytes - is accepted.
 // ──────────────────────────────────────────────────────────────
-// HEIC/HEIF (ISOBMFF container) brand codes seen from real devices — iPhone's
+// HEIC/HEIF (ISOBMFF container) brand codes seen from real devices - iPhone's
 // native Camera app shoots HEIC by default (unless the user opted into "Most
 // Compatible" in Settings > Camera > Formats), so admins editing from a phone
 // while travelling will very often be uploading this format.
@@ -83,7 +83,7 @@ export async function uploadPhotos(request, env, articleId) {
 
   const formData = await request.formData();
   const uploaded = [];
-  const rejected = []; // filenames that failed magic-byte validation — surfaced to the client instead of silently vanishing
+  const rejected = []; // filenames that failed magic-byte validation - surfaced to the client instead of silently vanishing
 
   // Count existing photos to set initial sort_order
   const countRow = await env.DB
@@ -125,7 +125,7 @@ export async function uploadPhotos(request, env, articleId) {
       url:        publicUrl,
       caption:    '',
       // The client submits multiple files per request and needs to map each
-      // uploaded result back to its source File — array position alone isn't
+      // uploaded result back to its source File - array position alone isn't
       // reliable once some files are rejected, so echo back the original name.
       source_name: file.name || '',
       sort_order: sortOrder - 1,
@@ -198,7 +198,7 @@ export async function uploadCover(request, env, articleId) {
   const detected = detectImageType(arrayBuf);
   if (!detected) return badRequest('Fichier image invalide.');
 
-  // Only delete the old cover once the new file is confirmed valid — deleting
+  // Only delete the old cover once the new file is confirmed valid - deleting
   // first would leave the article with no cover if validation failed below.
   if (article.cover_r2_key) {
     await env.PHOTOS.delete(article.cover_r2_key).catch(() => {});
@@ -210,7 +210,7 @@ export async function uploadCover(request, env, articleId) {
 
   await env.PHOTOS.put(r2Key, arrayBuf, { httpMetadata: { contentType: detected.contentType } });
 
-  const publicUrl = `/r2/${r2Key}`; // root-relative — domain-independent (see uploadPhotos)
+  const publicUrl = `/r2/${r2Key}`; // root-relative - domain-independent (see uploadPhotos)
   await env.DB
     .prepare('UPDATE articles SET cover_url=?, cover_r2_key=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
     .bind(publicUrl, r2Key, articleId)
@@ -236,7 +236,7 @@ export async function uploadHeroImage(request, env) {
   const detected = detectImageType(arrayBuf);
   if (!detected) return badRequest('Fichier image invalide.');
 
-  // Only delete the old hero image once the new file is confirmed valid —
+  // Only delete the old hero image once the new file is confirmed valid -
   // deleting first would leave the site with no hero image if validation failed.
   if (currentSettings.hero_image_r2_key) {
     await env.PHOTOS.delete(currentSettings.hero_image_r2_key).catch(() => {});
@@ -247,7 +247,7 @@ export async function uploadHeroImage(request, env) {
   const r2Key = `hero/${year}/${uuid}.${detected.ext}`;
 
   await env.PHOTOS.put(r2Key, arrayBuf, { httpMetadata: { contentType: detected.contentType } });
-  const publicUrl = `/r2/${r2Key}`; // root-relative — domain-independent (see uploadPhotos)
+  const publicUrl = `/r2/${r2Key}`; // root-relative - domain-independent (see uploadPhotos)
 
   const stmt = env.DB.prepare("INSERT OR REPLACE INTO site_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))");
   await stmt.bind('hero_image_url', publicUrl).run();

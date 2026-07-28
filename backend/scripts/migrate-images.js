@@ -20,7 +20,7 @@ const REMOTE = process.argv.includes('--remote');
 const LOCAL_FLAG = REMOTE ? '--remote' : '--local';
 const DB      = 'tranquille-vacances-db';
 const BUCKET  = 'tranquille-vacances-photos';
-const DELAY   = 400; // ms between downloads — be kind to canalblog CDN
+const DELAY   = 400; // ms between downloads - be kind to canalblog CDN
 
 // Matches a canalblog URL embedded in markdown image/link syntax:
 // ![alt](url) or [text](url). CanalBlog's image proxy URLs contain parentheses
@@ -185,7 +185,7 @@ async function main() {
   console.log(`\n\nDownloaded: ${ok} ✓   Failed: ${fail} ✗\n`);
   if (!urlMap.size) { console.log('No images uploaded, stopping.'); return; }
 
-  // 4. Update articles — write one SQL file per article to avoid size limits
+  // 4. Update articles - write one SQL file per article to avoid size limits
   let updated = 0;
   const articlesToUpdate = articles.filter(art => {
     let content = art.content || '';

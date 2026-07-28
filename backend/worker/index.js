@@ -61,7 +61,7 @@ ${NAV('voyages', authed)}
   <!-- En-tête -->
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-4">
     <div class="eyebrow mb-5">Carnet de bord des Potet</div>
-    <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3" style="color:var(--ink)"><i class="ph ph-airplane-takeoff"></i> Tous nos voyages</h1>
+    <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3" style="color:var(--ink)"><i class="ph-bold ph-airplane-takeoff"></i> Tous nos voyages</h1>
     <p id="subtitle" class="text-lg" style="color:var(--ink-muted)">Chargement...</p>
   </div>
   <!-- Filtres -->
@@ -81,7 +81,7 @@ ${NAV('voyages', authed)}
 <!-- Public folder-creation modal (admin only, styled like the dashboard modal) -->
 <div id="pub-folder-modal" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" onclick="if(event.target===this)closePublicFolderModal()">
   <div class="section-panel majorelle-frame rounded-3xl shadow-2xl w-full max-w-sm p-6" style="background:var(--cream);border:1px solid var(--line)">
-    <h3 id="pfm-title" class="font-display text-xl font-bold mb-1" style="color:var(--ink)"><i class="ph ph-folder-plus"></i> Nouveau sous-dossier</h3>
+    <h3 id="pfm-title" class="font-display text-xl font-bold mb-1" style="color:var(--ink)"><i class="ph-bold ph-folder-plus"></i> Nouveau sous-dossier</h3>
     <p id="pfm-sub" class="text-sm mb-5" style="color:var(--ink-muted)"></p>
     <div class="mb-6">
       <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)" for="pfm-name">Nom du sous-dossier</label>
@@ -89,7 +89,7 @@ ${NAV('voyages', authed)}
     </div>
     <div class="flex gap-3">
       <button type="button" onclick="closePublicFolderModal()" class="flex-1 font-bold py-2.5 rounded-xl text-sm" style="background:var(--sand);color:var(--ink)">Annuler</button>
-      <button type="button" onclick="submitPublicFolder()" class="flex-1 action-btn-sm">Créer <i class="ph ph-check"></i></button>
+      <button type="button" onclick="submitPublicFolder()" class="flex-1 action-btn-sm">Créer <i class="ph-bold ph-check"></i></button>
     </div>
   </div>
 </div>
@@ -111,19 +111,24 @@ function safeAttr(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').
 function safeText(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function fmtDateCard(a){const s=a.start_date||a.date,e=a.end_date||a.date;if(!s)return'';const opt={month:'short',year:'numeric'};const ms=new Date(s).toLocaleDateString('fr-FR',opt);const me=new Date(e).toLocaleDateString('fr-FR',opt);return ms===me?ms:ms+' - '+me;}
 function stripMd(s){return(s||'').replace(/!\\[[^\\]]*\\]\\([^)]*\\)/g,'').replace(/\\*\\*([^*\\n]+)\\*\\*/g,'$1').replace(/\\*([^*\\n]+)\\*/g,'$1').replace(/^#{1,6}\\s+/gm,'').replace(/\\s+/g,' ').trim();}
+// Ascending bars (signal-strength style), matching home.js/popularityBarsSSR —
+// equal-sized dots read as carousel/pagination indicators, misleading here.
 function renderPopularityBars(views, minViews, maxViews) {
   const range = maxViews - minViews || 1;
   const count = Math.max(1, Math.ceil((views - minViews) / range * 5));
-  let dots = '';
+  const heights = [5, 8, 11, 14, 17];
+  let bars = '';
   for (let i = 0; i < 5; i++) {
-    dots += '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + (i < count ? 'var(--blue)' : 'rgba(0,0,0,.10)') + '"></span>';
+    bars += '<span style="display:inline-block;width:3px;height:' + heights[i] + 'px;border-radius:1px;background:' + (i < count ? 'var(--blue)' : 'rgba(0,0,0,.12)') + '"></span>';
   }
-  return '<div style="display:flex;align-items:center;gap:3px">' + dots + '<span style="font-size:.68rem;margin-left:4px;color:var(--ink-light);line-height:1">' + views + '</span></div>';
+  return '<div style="display:flex;align-items:center;gap:3px">' + bars + '<span style="font-size:.68rem;margin-left:4px;color:var(--ink-light);line-height:1">' + views + '</span></div>';
 }
+// Same status palette/icons as the admin dashboard (STATUS_META in admin.js)
+// and the .badge-* classes in shell.js — kept in sync deliberately.
 function statusMeta(status){
-  if(status==='published') return {label:'Publie',icon:'ph-fill ph-check-circle',bg:'rgba(18,145,102,.92)',color:'#fff'};
-  if(status==='publish_when_online') return {label:'En attente',icon:'ph ph-clock-countdown',bg:'rgba(217,119,6,.92)',color:'#fff'};
-  return {label:'Archive',icon:'ph ph-archive',bg:'rgba(87,83,78,.9)',color:'#fff'};
+  if(status==='published') return {label:'Publié',icon:'ph-fill ph-check-circle',bg:'var(--palm)',color:'#fff'};
+  if(status==='publish_when_online') return {label:'Dès connexion',icon:'ph-bold ph-wifi-high',bg:'#9a5b12',color:'#fff'};
+  return {label:'Archivé',icon:'ph-bold ph-archive',bg:'rgba(90,106,122,.85)',color:'#fff'};
 }
 function card(a, minViews=0, maxViews=0){
   const slug = safeAttr(a.slug || '');
@@ -137,7 +142,7 @@ function card(a, minViews=0, maxViews=0){
   let eb='';
   if(IS_ADMIN){
     const editUrl = '/admin/editor/' + String(a.id);
-    eb='<a href="' + safeAttr(editUrl) + '" onclick="event.stopPropagation()" style="position:absolute;top:.75rem;right:.75rem;z-index:5;display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border-radius:999px;font-size:.73rem;font-weight:700;background:rgba(0,87,184,.92);color:#fff;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.25)"><i class="ph ph-pencil-simple"></i> Modifier</a>';
+    eb='<a href="' + safeAttr(editUrl) + '" onclick="event.stopPropagation()" style="position:absolute;top:.75rem;right:.75rem;z-index:5;display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border-radius:999px;font-size:.73rem;font-weight:700;background:rgba(0,87,184,.92);color:#fff;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.25)"><i class="ph-bold ph-pencil-simple"></i> Modifier</a>';
   }
 
   let sb='';
@@ -161,8 +166,8 @@ function card(a, minViews=0, maxViews=0){
     '</div>' +
     '<div class="p-5" style="display:flex;flex-direction:column;flex:1">' +
       '<div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem">' +
-        '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph ph-calendar-blank" style="color:var(--blue)"></i> ' + fmtDateCard(a) + '</span>' +
-        (dest ? '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph ph-map-pin" style="color:var(--blue)"></i> ' + dest + '</span>' : '') +
+        '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph-bold ph-calendar-blank" style="color:var(--blue)"></i> ' + fmtDateCard(a) + '</span>' +
+        (dest ? '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph-bold ph-map-pin" style="color:var(--blue)"></i> ' + dest + '</span>' : '') +
       '</div>' +
       '<h3 class="font-display font-bold" style="font-size:1.05rem;line-height:1.35;margin-bottom:.5rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink)">' + title + '</h3>' +
       '<p style="font-size:.875rem;line-height:1.55;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink-muted);margin-bottom:1rem">' + desc + '</p>' +
@@ -178,7 +183,7 @@ function folderCard(f){
   // "Destination" badge, a tinted card background, a dashed accent border and a
   // stacked-folder motif, so they read as sub-destinations at a glance.
   return '<article class="voyage-card folder-tile cursor-pointer group" style="position:relative;background:linear-gradient(160deg,rgba(0,87,184,.06),rgba(255,199,138,.10));border:1px solid rgba(0,87,184,.20);border-style:dashed" data-folder-slug="' + slug + '" role="link" tabindex="0" aria-label="Ouvrir la destination ' + name + '">' +
-    '<div class="absolute top-3 left-3 z-10"><span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-[.12em] shadow-sm" style="background:var(--blue);color:#fff"><i class="ph ph-folders"></i> Destination</span></div>' +
+    '<div class="absolute top-3 left-3 z-10"><span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-[.12em] shadow-sm" style="background:var(--blue);color:#fff"><i class="ph-bold ph-folders"></i> Destination</span></div>' +
     '<div class="relative overflow-hidden flex items-center justify-center" style="height:15rem;border-radius:1.5rem 1.5rem 0 0;background:linear-gradient(135deg,rgba(0,87,184,.14),rgba(255,199,138,.20))">' +
       '<div class="text-center px-6">' +
         '<div class="mx-auto mb-4 flex items-center justify-center rounded-2xl" style="width:4.75rem;height:4.75rem;background:rgba(255,255,255,.82);box-shadow:0 8px 20px rgba(0,0,0,.10);font-size:1.75rem">' + flagImg(f.icon || '📁') + '</div>' +
@@ -186,7 +191,7 @@ function folderCard(f){
       '</div>' +
     '</div>' +
     '<div class="p-5">' +
-      '<h3 class="font-display font-bold text-lg leading-snug mb-2" style="color:var(--ink)"><i class="ph ph-folder-notch" style="color:var(--blue);font-size:.95em"></i> ' + name + '</h3>' +
+      '<h3 class="font-display font-bold text-lg leading-snug mb-2" style="color:var(--ink)"><i class="ph-bold ph-folder-notch" style="color:var(--blue);font-size:.95em"></i> ' + name + '</h3>' +
       '<p class="text-sm leading-relaxed mb-4" style="color:var(--ink-muted)">Ouvrir cette destination et voir ses voyages.</p>' +
       '<span class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--blue)">Ouvrir <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></span>' +
     '</div>' +
@@ -209,8 +214,8 @@ function renderAdminFolderActions(activeFolder){
         '<p class="text-sm mt-1" style="color:var(--ink-muted)">'+parentHint+'</p>'+
       '</div>'+
       '<div class="flex flex-wrap gap-2">'+
-        '<a href="' + safeAttr(editorUrl) + '" class="action-btn-sm"><i class="ph ph-pencil-line"></i> Nouveau voyage</a>'+
-        '<button type="button" class="subtle-btn" data-folder-id="' + activeFolder.id + '" data-folder-name="' + safeAttr(activeFolder.name || '') + '"><i class="ph ph-folder-plus"></i> Nouveau sous-dossier</button>'+
+        '<a href="' + safeAttr(editorUrl) + '" class="action-btn-sm"><i class="ph-bold ph-plus-circle"></i> Nouveau voyage</a>'+
+        '<button type="button" class="subtle-btn" data-folder-id="' + activeFolder.id + '" data-folder-name="' + safeAttr(activeFolder.name || '') + '"><i class="ph-bold ph-folder-plus"></i> Nouveau sous-dossier</button>'+
       '</div>'+
     '</div>'+
   '</div>';
@@ -263,7 +268,7 @@ async function init(){
   ]);
   const activeF=folder?folders.find(f=>f.slug===folder):null;
   // Walk the FULL ancestor chain (not just one level up) so folders nested
-  // 3+ levels deep still get a correct breadcrumb/parent — a folder tree of
+  // 3+ levels deep still get a correct breadcrumb/parent - a folder tree of
   // arbitrary depth can already be created via the admin UI.
   const ancestorsOf=(f)=>{
     const chain=[];
@@ -296,7 +301,7 @@ async function init(){
   const bc=document.getElementById('breadcrumb');
   if(bc){
     if(activeF){
-      const sep='<span class="mx-1 opacity-40"><i class="ph ph-caret-right"></i></span>';
+      const sep='<span class="mx-1 opacity-40"><i class="ph-bold ph-caret-right"></i></span>';
       let crumbs='<a href="/voyages" style="color:var(--ink-muted);text-decoration:none;white-space:nowrap" class="hover:underline">Tous les voyages</a>';
       // Render one crumb per ancestor (root → immediate parent), then the
       // active folder as the non-clickable current crumb. Supports any
@@ -330,7 +335,7 @@ async function init(){
       : base+' text-white" style="background:var(--blue);border-color:var(--blue)';
     return base+' bg-white" style="border-color:var(--line);color:var(--ink-muted)';
   };
-  let btns='<a href="/voyages" class="'+pill(!folder,false)+'"><i class="ph ph-globe-hemisphere-west"></i> Tous</a>';
+  let btns='<a href="/voyages" class="'+pill(!folder,false)+'"><i class="ph-bold ph-globe-hemisphere-west"></i> Tous</a>';
   roots.forEach(f=>{
     // Highlight the root pill whenever the active folder is this root itself
     // or anywhere in its subtree (any nesting depth), not just a direct child.
@@ -347,7 +352,7 @@ async function init(){
   const gridItems=[...childFolders.map(folderCard),...artData.articles.map(a=>card(a,minV,maxV))];
   document.getElementById('grid').innerHTML=gridItems.length
     ?gridItems.join('')
-    :'<div class="col\\-span-3 text-center py-20" style="color:var(--ink-light)"><i class="ph ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1rem;color:var(--ink-light)"></i><p class="text-xl font-semibold mb-1" style="color:var(--ink)">Pas encore de voyage ici</p></div>';
+    :'<div class="col\\-span-3 text-center py-20" style="color:var(--ink-light)"><i class="ph-bold ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1rem;color:var(--ink-light)"></i><p class="text-xl font-semibold mb-1" style="color:var(--ink)">Pas encore de voyage ici</p></div>';
   if(_voyFetchFailed) showVoyErrorBanner();
 
   // Event delegation for card clicks
@@ -428,7 +433,7 @@ function fmtDateRangeSSR(a) {
   if (!s) return 'Dates non définies';
   return s === e ? fmtDateSSR(s) : fmtDateSSR(s) + ' - ' + fmtDateSSR(e);
 }
-// Ascending bars (like a signal-strength icon), not equal-sized round dots —
+// Ascending bars (like a signal-strength icon), not equal-sized round dots -
 // a row of same-size filled/unfilled circles reads visually as carousel/
 // pagination indicators ("swipe for more"), which is misleading here since
 // there's nothing to page through. Bars of increasing height read instead as
@@ -471,10 +476,10 @@ function renderCommentsList(comments, isAdmin) {
 }
 function renderCommentItem(c, isAdmin) {
   const del = isAdmin
-    ? `<button type="button" data-del-comment="${c.id}" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem;color:#dc3c3c" title="Supprimer ce commentaire"><i class="ph ph-trash"></i></button>`
+    ? `<button type="button" data-del-comment="${c.id}" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem;color:#dc3c3c" title="Supprimer ce commentaire"><i class="ph-bold ph-trash"></i></button>`
     : '';
   const adminBadge = c.is_admin_reply
-    ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold uppercase tracking-wide" style="background:var(--blue-light);color:var(--blue)"><i class="ph ph-fill ph-star"></i> Réponse de l'auteur</span>`
+    ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold uppercase tracking-wide" style="background:var(--blue-light);color:var(--blue)"><i class="ph-bold ph-fill ph-star"></i> Réponse de l'auteur</span>`
     : '';
   const replies = (c.replies && c.replies.length)
     ? `<div class="mt-3 ml-4 sm:ml-8 space-y-3" style="border-left:2px solid var(--line);padding-left:1rem">${c.replies.map(r => renderCommentItem(r, isAdmin)).join('')}</div>`
@@ -492,7 +497,7 @@ function renderCommentItem(c, isAdmin) {
       </div>
     </div>
     <p class="text-sm sm:text-base leading-relaxed mb-2" style="color:var(--ink);white-space:pre-wrap;word-break:break-word">${safeText(c.body)}</p>
-    <button type="button" data-reply-to="${c.id}" data-reply-name="${safeAttr(c.author_name)}" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem"><i class="ph ph-arrow-bend-up-left"></i> Répondre</button>
+    <button type="button" data-reply-to="${c.id}" data-reply-name="${safeAttr(c.author_name)}" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem"><i class="ph-bold ph-arrow-bend-up-left"></i> Répondre</button>
     <div class="reply-form-slot"></div>
     ${replies}
   </article>`;
@@ -516,10 +521,10 @@ async function voyagePage(env, slug, authed = false, origin = '') {
 ${NAV('', authed)}
 <main class="pt-16">
   <div class="max-w-2xl mx-auto px-4 py-32 text-center">
-    <i class="ph ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1.5rem;color:var(--ink-light)"></i>
+    <i class="ph-bold ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1.5rem;color:var(--ink-light)"></i>
     <h1 class="font-display text-3xl font-bold mb-4" style="color:var(--ink)">Voyage introuvable</h1>
     <p class="mb-8" style="color:var(--ink-muted)">Ce voyage n'existe pas ou n'est pas encore publié.</p>
-    <a href="/voyages" class="action-btn"><i class="ph ph-arrow-left"></i> Retour aux voyages</a>
+    <a href="/voyages" class="action-btn"><i class="ph-bold ph-arrow-left"></i> Retour aux voyages</a>
   </div>
 </main>
 ${FOOTER}
@@ -579,12 +584,12 @@ ${TOAST}
   const prevNext = (prevRow || nextRow) ? `
     <nav class="pt-8 grid gap-3 sm:grid-cols-2" aria-label="Navigation entre voyages" style="border-top:1px solid var(--line);margin-top:1rem">
       ${prevRow ? `<a href="/voyage/${safeAttr(prevRow.slug)}" class="group flex items-center gap-3 rounded-2xl p-4 bg-white transition-all hover:-translate-y-0.5" style="border:1px solid var(--line);box-shadow:var(--card-shadow)">
-        <i class="ph ph-arrow-left flex-shrink-0" style="color:var(--blue);font-size:1.25rem"></i>
+        <i class="ph-bold ph-arrow-left flex-shrink-0" style="color:var(--blue);font-size:1.25rem"></i>
         <span class="min-w-0"><span class="block text-xs uppercase tracking-[.16em]" style="color:var(--ink-light)">Voyage précédent</span><span class="block font-semibold text-sm truncate" style="color:var(--ink)">${safeText(prevRow.title)}</span></span>
       </a>` : '<span></span>'}
       ${nextRow ? `<a href="/voyage/${safeAttr(nextRow.slug)}" class="group flex items-center gap-3 rounded-2xl p-4 bg-white transition-all hover:-translate-y-0.5 sm:text-right sm:justify-end" style="border:1px solid var(--line);box-shadow:var(--card-shadow)">
         <span class="min-w-0 sm:order-1"><span class="block text-xs uppercase tracking-[.16em]" style="color:var(--ink-light)">Voyage suivant</span><span class="block font-semibold text-sm truncate" style="color:var(--ink)">${safeText(nextRow.title)}</span></span>
-        <i class="ph ph-arrow-right flex-shrink-0 sm:order-2" style="color:var(--blue);font-size:1.25rem"></i>
+        <i class="ph-bold ph-arrow-right flex-shrink-0 sm:order-2" style="color:var(--blue);font-size:1.25rem"></i>
       </a>` : '<span></span>'}
     </nav>` : '';
 
@@ -594,10 +599,10 @@ ${TOAST}
 
   const commentsSection = `
     <section id="comments" class="mb-12" style="scroll-margin-top:5rem">
-      <h2 class="font-display text-2xl sm:text-3xl font-bold mb-6" style="color:var(--ink)"><i class="ph ph-chats-circle"></i> Commentaires <span id="comments-count" style="color:var(--ink-light);font-weight:400">(${flatComments.length})</span></h2>
+      <h2 class="font-display text-2xl sm:text-3xl font-bold mb-6" style="color:var(--ink)"><i class="ph-bold ph-chats-circle"></i> Commentaires <span id="comments-count" style="color:var(--ink-light);font-weight:400">(${flatComments.length})</span></h2>
       <div id="comments-list" class="space-y-3 mb-8">${renderCommentsList(comments, authed)}</div>
       <div class="panel rounded-[2rem] p-6 sm:p-8">
-        <h3 class="font-bold text-base mb-4" style="color:var(--ink)"><i class="ph ph-pencil-simple" style="color:var(--blue)"></i> Laisser un commentaire</h3>
+        <h3 class="font-bold text-base mb-4" style="color:var(--ink)"><i class="ph-bold ph-pencil-simple" style="color:var(--blue)"></i> Laisser un commentaire</h3>
         <form id="comment-form" class="space-y-4">
           <div>
             <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)" for="c-name">Votre prénom / nom</label>
@@ -608,21 +613,21 @@ ${TOAST}
             <textarea id="c-body" name="body" rows="3" maxlength="2000" required placeholder="Partagez votre réaction, un souvenir, une question..." class="w-full border-2 rounded-xl px-4 py-2.5 text-sm resize-none" style="border-color:rgba(var(--blue-rgb),.18)"></textarea>
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)" for="c-gate"><i class="ph ph-shield-check" style="color:var(--palm)"></i> ${safeText(gateQuestion)}</label>
+            <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)" for="c-gate"><i class="ph-bold ph-shield-check" style="color:var(--palm)"></i> ${safeText(gateQuestion)}</label>
             <input type="text" id="c-gate" name="gate_answer" required autocomplete="off" placeholder="Votre réponse" class="w-full border-2 rounded-xl px-4 py-2.5 text-sm" style="border-color:rgba(var(--blue-rgb),.18)">
             <p class="text-xs mt-1" style="color:var(--ink-light)">Une petite question anti-spam pour vérifier que vous connaissez la famille.</p>
           </div>
           <p id="comment-error" class="hidden text-sm font-semibold" style="color:#dc3c3c"></p>
           <div class="flex justify-end">
-            <button type="submit" id="comment-submit" class="action-btn-sm"><i class="ph ph-paper-plane-tilt"></i> Publier</button>
+            <button type="submit" id="comment-submit" class="action-btn-sm"><i class="ph-bold ph-paper-plane-tilt"></i> Publier</button>
           </div>
         </form>
       </div>
     </section>`;
 
   const adminFabs = authed ? `
-  <a href="/admin/editor/${article.id}" style="position:fixed;bottom:5rem;right:1.5rem;z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:#0057B8;color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,87,184,.4)"><i class="ph ph-pencil-simple" style="font-size:1.1rem"></i> Modifier</a>
-  <a href="/admin/articles/${article.id}/print" target="_blank" style="position:fixed;bottom:5rem;right:calc(1.5rem + 130px + .75rem);z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:rgba(10,18,30,.82);color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.25);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.15)"><i class="ph ph-export" style="font-size:1.1rem"></i> Exporter</a>` : '';
+  <a href="/admin/editor/${article.id}" style="position:fixed;bottom:5rem;right:1.5rem;z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:#0057B8;color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,87,184,.4)"><i class="ph-bold ph-pencil-simple" style="font-size:1.1rem"></i> Modifier</a>
+  <a href="/admin/articles/${article.id}/print" target="_blank" style="position:fixed;bottom:5rem;right:calc(1.5rem + 130px + .75rem);z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:rgba(10,18,30,.82);color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.25);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.15)"><i class="ph-bold ph-export" style="font-size:1.1rem"></i> Exporter</a>` : '';
 
   const coverUrl = safeAttr(article.cover_url || '');
   // og:image must be absolute (social crawlers don't resolve relative URLs).
@@ -661,12 +666,12 @@ ${NAV('', authed)}
     </a>
     <div class="panel rounded-[2rem] p-6 sm:p-8 mb-6">
       <div class="flex flex-wrap gap-2">
-        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph ph-calendar-blank" style="color:var(--blue);flex-shrink:0"></i>${safeText(fmtDateRangeSSR(article))}</span>
-        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph ph-map-pin" style="color:var(--blue);flex-shrink:0"></i>${safeText(article.destination)}</span>
-        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph ph-camera" style="color:var(--blue);flex-shrink:0"></i>${allPhotos.length} photo${allPhotos.length !== 1 ? 's' : ''}</span>
-        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph ph-eye" style="color:var(--blue);flex-shrink:0"></i>${article.view_count || 0} lecture${(article.view_count || 0) !== 1 ? 's' : ''}&ensp;${popularityBarsSSR(article.view_count || 0)}</span>
-        <a href="#comments" data-scroll-comments class="subtle-btn text-sm" style="padding:.35rem .85rem"><i class="ph ph-chat-circle-text"></i> Commenter${flatComments.length ? ` (${flatComments.length})` : ''}</a>
-        <button data-share-btn class="subtle-btn text-sm" style="padding:.35rem .85rem"><i class="ph ph-share-network"></i> Partager</button>
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph-bold ph-calendar-blank" style="color:var(--blue);flex-shrink:0"></i>${safeText(fmtDateRangeSSR(article))}</span>
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph-bold ph-map-pin" style="color:var(--blue);flex-shrink:0"></i>${safeText(article.destination)}</span>
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph-bold ph-camera" style="color:var(--blue);flex-shrink:0"></i>${allPhotos.length} photo${allPhotos.length !== 1 ? 's' : ''}</span>
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph-bold ph-eye" style="color:var(--blue);flex-shrink:0"></i>${article.view_count || 0} lecture${(article.view_count || 0) !== 1 ? 's' : ''}&ensp;${popularityBarsSSR(article.view_count || 0)}</span>
+        <a href="#comments" data-scroll-comments class="subtle-btn text-sm" style="padding:.35rem .85rem"><i class="ph-bold ph-chat-circle-text"></i> Commenter${flatComments.length ? ` (${flatComments.length})` : ''}</a>
+        <button data-share-btn class="subtle-btn text-sm" style="padding:.35rem .85rem"><i class="ph-bold ph-share-network"></i> Partager</button>
       </div>
     </div>
     <div class="panel rounded-[2rem] p-6 sm:p-8 mb-10" style="border-left:4px solid rgba(var(--blue-rgb),.22)">
@@ -680,7 +685,7 @@ ${NAV('', authed)}
       <a href="/voyages" class="inline-flex items-center gap-2 font-semibold text-sm hover:underline" style="color:var(--blue)">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Tous les voyages
       </a>
-      <button data-share-btn class="subtle-btn"><i class="ph ph-share-network"></i> Partager</button>
+      <button data-share-btn class="subtle-btn"><i class="ph-bold ph-share-network"></i> Partager</button>
     </div>
     ${prevNext}
   </div>
@@ -727,14 +732,14 @@ function buildCommentEl(c){
   wrap.id='comment-'+c.id;
   wrap.setAttribute('data-comment-id', c.id);
   const initial=((c.author_name||'?').trim().charAt(0)||'?').toUpperCase();
-  const del=IS_ADMIN?'<button type="button" data-del-comment="'+c.id+'" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem;color:#dc3c3c" title="Supprimer ce commentaire"><i class="ph ph-trash"></i></button>':'';
-  const badge=c.is_admin_reply?'<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold uppercase tracking-wide" style="background:var(--blue-light);color:var(--blue)"><i class="ph ph-fill ph-star"></i> Réponse de l\\'auteur</span>':'';
+  const del=IS_ADMIN?'<button type="button" data-del-comment="'+c.id+'" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem;color:#dc3c3c" title="Supprimer ce commentaire"><i class="ph-bold ph-trash"></i></button>':'';
+  const badge=c.is_admin_reply?'<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold uppercase tracking-wide" style="background:var(--blue-light);color:var(--blue)"><i class="ph-bold ph-fill ph-star"></i> Réponse de l\\'auteur</span>':'';
   wrap.innerHTML='<div class="flex items-start justify-between gap-3 mb-1.5">'+
     '<div class="flex items-center gap-2 flex-wrap"><span class="inline-flex items-center justify-center rounded-full" style="width:2rem;height:2rem;background:var(--blue-light);color:var(--blue);font-weight:700;font-size:.8rem">'+_escC(initial)+'</span>'+
     '<span class="font-bold text-sm" style="color:var(--ink)">'+_escC(c.author_name)+'</span>'+badge+'</div>'+
     '<div class="flex items-center gap-2"><span class="text-xs" style="color:var(--ink-light)">'+_escC(fmtCDate(c.created_at))+'</span>'+del+'</div></div>'+
     '<p class="text-sm sm:text-base leading-relaxed mb-2" style="color:var(--ink);white-space:pre-wrap;word-break:break-word">'+_escC(c.body)+'</p>'+
-    '<button type="button" data-reply-to="'+c.id+'" data-reply-name="'+_escC(c.author_name)+'" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem"><i class="ph ph-arrow-bend-up-left"></i> Répondre</button>'+
+    '<button type="button" data-reply-to="'+c.id+'" data-reply-name="'+_escC(c.author_name)+'" class="ghost-btn" style="padding:.3rem .6rem;font-size:.72rem"><i class="ph-bold ph-arrow-bend-up-left"></i> Répondre</button>'+
     '<div class="reply-form-slot"></div>';
   return wrap;
 }
@@ -750,7 +755,7 @@ function buildReplyForm(parentId, parentName){
     '<p class="reply-error hidden text-xs font-semibold mb-2" style="color:#dc3c3c"></p>'+
     '<div class="flex justify-end gap-2">'+
     '<button type="button" class="reply-cancel ghost-btn" style="padding:.4rem .8rem;font-size:.75rem">Annuler</button>'+
-    '<button type="button" class="reply-submit action-btn-sm" style="padding:.4rem .9rem;font-size:.75rem" data-parent-id="'+parentId+'"><i class="ph ph-paper-plane-tilt"></i> Répondre</button>'+
+    '<button type="button" class="reply-submit action-btn-sm" style="padding:.4rem .9rem;font-size:.75rem" data-parent-id="'+parentId+'"><i class="ph-bold ph-paper-plane-tilt"></i> Répondre</button>'+
     '</div>';
   return div;
 }
@@ -863,7 +868,7 @@ document.getElementById('comments')?.addEventListener('click', async (e)=>{
 // "Commenter" button: lazy-loaded images above the comments section have zero
 // height until scrolled into view, so a plain #comments anchor jumps short and
 // lands mid-article. Force every image to load, wait for them (with a cap),
-// then scroll — re-scrolling once heights settle so we land on the section.
+// then scroll - re-scrolling once heights settle so we land on the section.
 document.querySelector('[data-scroll-comments]')?.addEventListener('click', (e)=>{
   e.preventDefault();
   const target=document.getElementById('comments');
@@ -915,7 +920,7 @@ export default {
     // ── Auth endpoints ────────────────────────────────────────
     if (path === '/admin/login' && method === 'POST') {
       const ip = clientKey(request);
-      // 8 attempts per 15 minutes per IP — generous for a real admin who
+      // 8 attempts per 15 minutes per IP - generous for a real admin who
       // mistypes a password, but stops an automated brute force from making
       // more than a handful of guesses before being locked out.
       const limit = await checkRateLimit(env.DB, 'login', ip, { max: 8, windowMinutes: 15 });
@@ -1130,7 +1135,7 @@ export default {
       if (path === '/api/admin/account' && method === 'GET') {
         if (!authed) return unauthorized();
         const acc = await getAdminAccount(env.DB);
-        // Only expose non-sensitive fields — never password_hash/token.
+        // Only expose non-sensitive fields - never password_hash/token.
         return json({ email: acc?.email || '', pending_email: acc?.pending_email || null });
       }
 
@@ -1337,7 +1342,7 @@ export default {
     // 404
     return html(`<!DOCTYPE html><html lang="fr"><head><title>404 - Page introuvable</title></head>
 <body style="font-family:sans-serif;text-align:center;padding:4rem">
-  <h1 style="font-size:3rem"><i class="ph ph-map-trifold"></i></h1>
+  <h1 style="font-size:3rem"><i class="ph-bold ph-map-trifold"></i></h1>
   <h2>Page introuvable</h2>
   <p><a href="/">< Retour à l'accueil</a></p>
 </body></html>`, 404);

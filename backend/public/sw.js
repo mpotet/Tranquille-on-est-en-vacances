@@ -9,12 +9,19 @@
  * - API publique en lecture (GET /api/articles, /api/folders, /api/settings) :
  *   stale-while-revalidate, pour que le contenu déjà consulté reste lisible hors ligne
  *   (les pages voyage/:slug chargent leur contenu via ces endpoints en client-side).
- * - Mutations (POST/PUT/DELETE) et tout /admin/* : toujours réseau, jamais de cache.
+ * - Admin (dashboard, éditeur) : mêmes pages HTML mises en cache que le public,
+ *   pour rester utilisable hors connexion (créer/modifier un article). Seules
+ *   les routes d'auth (/admin/login, /admin/logout) et l'API admin JSON
+ *   (/api/admin/*) forcent toujours le réseau.
+ * - Mutations (POST/PUT/DELETE) : jamais mises en cache (comportement natif du SW,
+ *   qui n'intercepte que les GET) — mais un article sauvegardé hors ligne est mis
+ *   en file d'attente (IndexedDB) et rejoué automatiquement via Background Sync
+ *   dès que le réseau revient, même si l'app/l'onglet a été fermé entre-temps.
  * - Retour de connexion : aucune action utilisateur requise, la prochaine requête
  *   revalide silencieusement le cache.
  */
 
-const VERSION = 'v9';
+const VERSION = 'v11';
 const PAGES_CACHE = `tranquille-pages-${VERSION}`;
 const ASSETS_CACHE = `tranquille-assets-${VERSION}`;
 const API_CACHE = `tranquille-api-${VERSION}`;
@@ -27,6 +34,7 @@ const PRECACHE_ASSETS = [
   '/icon-512.png',
 ];
 
+// Always precached, regardless of article list (the app shell + entry points).
 const PRECACHE_PAGES = [
   '/',
   '/voyages',
@@ -42,7 +50,24 @@ function isPublicApiGet(url) {
   return PUBLIC_API_PREFIXES.some(p => url.pathname.startsWith(p));
 }
 
-// ── Installation : pré-cache du shell et des pages clés ───────
+// Fetch every published article's slug and precache its full page, so a trip
+// nobody has opened yet on this device is still readable offline — critical
+// for someone travelling with no signal who never manually visited every
+// article beforehand. Each fetch is independent and failures are swallowed:
+// one broken article must never abort caching the rest.
+async function precacheAllArticlePages(pagesCache) {
+  try {
+    const res = await fetch('/api/articles?status=published&limit=100');
+    if (!res.ok) return;
+    const data = await res.json();
+    const slugs = (data.articles || []).map(a => a.slug).filter(Boolean);
+    await Promise.all(slugs.map(slug =>
+      fetch('/voyage/' + slug).then(r => { if (r.ok) return pagesCache.put('/voyage/' + slug, r); }).catch(() => {})
+    ));
+  } catch { /* offline at install time, or API unreachable — precache what we can elsewhere */ }
+}
+
+// ── Installation : pré-cache du shell, des pages clés et de tous les récits ──
 self.addEventListener('install', event => {
   event.waitUntil(
     (async () => {
@@ -55,22 +80,41 @@ self.addEventListener('install', event => {
           fetch(url).then(r => { if (r.ok) return pagesCache.put(url, r); }).catch(() => {})
         )
       );
+      await precacheAllArticlePages(pagesCache);
 
       self.skipWaiting();
     })()
   );
 });
 
-// ── Activation : suppression des anciens caches ───────────────
+// ── Activation : suppression des anciens caches + re-précache en tâche de fond ──
 self.addEventListener('activate', event => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
       await Promise.all(keys.filter(k => !CACHES.includes(k)).map(k => caches.delete(k)));
       await clients.claim();
+      // Refresh the article precache on every activation (new deploy, or
+      // browser waking the SW back up) — keeps offline coverage current as
+      // new trips get published, without waiting for the user to visit them.
+      const pagesCache = await caches.open(PAGES_CACHE);
+      precacheAllArticlePages(pagesCache);
     })()
   );
 });
+
+// Some browsers hibernate/kill the SW between app launches on mobile without
+// ever firing activate again for a long time. A periodic background sync (if
+// supported) or this manual "keep it fresh" ping on each fetch event is the
+// closest thing to a heartbeat — cheap, and only actually re-fetches if the
+// cache is stale (browser HTTP cache still applies).
+let _lastRefresh = 0;
+function maybeRefreshPrecache() {
+  const now = Date.now();
+  if (now - _lastRefresh < 6 * 60 * 60 * 1000) return; // at most every 6h
+  _lastRefresh = now;
+  caches.open(PAGES_CACHE).then(precacheAllArticlePages);
+}
 
 // ── Fetch ───────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
@@ -79,12 +123,34 @@ self.addEventListener('fetch', event => {
   if (!req.url.startsWith('http')) return;
 
   const url = new URL(req.url);
-  if (url.pathname.startsWith('/admin')) return;
+
+  // Auth actions (login/logout) must always hit the network — never cached,
+  // never served stale (a stale login page could mask a session that expired
+  // server-side, or replay a stale CSRF-relevant form).
+  if (url.pathname === '/admin' || url.pathname === '/admin/' || url.pathname === '/admin/login' || url.pathname === '/admin/logout') return;
+
+  // Admin JSON API: always fresh, same reasoning as the public API's
+  // cache-control no-cache override above, but unconditional here — admin
+  // screens must never silently show stale data as if it were current.
+  if (url.pathname.startsWith('/api/admin/')) return;
+
+  // Admin HTML pages (dashboard, editor) are GET navigations behind a login
+  // cookie: cache them the same way as public pages so the whole admin stays
+  // usable offline (create/edit articles while offline, synced later via
+  // publish_when_online + background sync). The server sends Cache-Control:
+  // no-store on these to stop the browser's own HTTP cache from serving a
+  // stale authenticated page across different users/devices — that doesn't
+  // apply to this app-controlled cache on a single person's own device, so we
+  // intentionally do not honour it here.
+  if (url.pathname.startsWith('/admin/')) {
+    event.respondWith(staleWhileRevalidate(event, req, PAGES_CACHE));
+    return;
+  }
 
   if (url.pathname.startsWith('/api/')) {
     // Admin views need fresh data (e.g. the folder tree right after creating a
     // folder). They send `cache: 'no-store'`, which surfaces here as a
-    // no-cache request header — honour it by going straight to the network
+    // no-cache request header - honour it by going straight to the network
     // instead of serving the stale-while-revalidate cached copy.
     const wantsFresh = (req.headers.get('cache-control') || '').includes('no-cache');
     if (isPublicApiGet(url) && !wantsFresh) {
@@ -94,6 +160,7 @@ self.addEventListener('fetch', event => {
   }
 
   if (req.mode === 'navigate' || req.headers.get('accept')?.includes('text/html')) {
+    maybeRefreshPrecache();
     event.respondWith(staleWhileRevalidate(event, req, PAGES_CACHE));
   } else {
     event.respondWith(cacheFirst(req, ASSETS_CACHE));
@@ -101,6 +168,11 @@ self.addEventListener('fetch', event => {
 });
 
 // Réponse immédiate depuis le cache si dispo, revalidation réseau en tâche de fond.
+// Never surface a blank/error screen for a navigation: if the exact page was
+// never cached (e.g. a brand-new article published after the last precache
+// run, or a cache entry evicted by the OS), fall back to the app shell ('/')
+// rather than an offline error — the person can still reach every other page
+// from there instead of hitting a dead end mid-trip with no signal.
 async function staleWhileRevalidate(event, req, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(req);
@@ -117,6 +189,9 @@ async function staleWhileRevalidate(event, req, cacheName) {
 
   const fresh = await revalidate;
   if (fresh) return fresh;
+
+  const shell = await cache.match('/');
+  if (shell) return shell;
 
   return new Response(offlineFallbackHtml(), {
     status: 200,
@@ -185,9 +260,10 @@ function offlineFallbackHtml() {
 <body>
   <div class="card">
     <div class="ico">📡</div>
-    <h1>Page non disponible hors connexion</h1>
-    <p>Cette page n'a pas encore été consultée avec une connexion active.<br>Elle sera disponible hors connexion après une première visite.</p>
+    <h1>Connexion introuvable</h1>
+    <p>Cette page précise n'est pas encore en mémoire sur cet appareil.<br>Reconnectez-vous une fois pour la mettre en cache, ou réessayez.</p>
     <button onclick="location.reload()">Réessayer</button>
+    <button onclick="location.href='/'" style="background:transparent;color:#0057B8;box-shadow:none;margin-top:.5rem">Retour à l'accueil</button>
   </div>
 </body>
 </html>`;
@@ -230,4 +306,96 @@ self.addEventListener('notificationclick', event => {
         if (clients.openWindow) return clients.openWindow(url);
       })
   );
+});
+
+// ── Background sync : articles sauvegardés hors ligne ─────────────────────
+// The editor page (admin.js) writes queued saves to IndexedDB (see
+// queueOfflineArticleSave() there) instead of just localStorage, specifically
+// so the Service Worker — which has no access to localStorage — can read and
+// replay them here, independently of whether the tab/app is even open.
+const SYNC_TAG = 'tranquille-sync-articles';
+const DB_NAME = 'tranquille-offline';
+const STORE = 'pending-articles';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(STORE)) {
+        req.result.createObjectStore(STORE, { keyPath: 'localId' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getAllPending() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deletePending(localId) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).delete(localId);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function notifyClients(message) {
+  const list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+  for (const c of list) c.postMessage(message);
+}
+
+// Replays every queued article save in order. Each entry is either a POST
+// (new article, no id yet) or a PUT (editing an existing one). Successes are
+// removed from the queue and the open app (if any) is told to refresh; a
+// failure that isn't a plain network error (e.g. the server rejected the
+// payload) also removes it — retrying a request the server has already
+// explicitly refused forever would just loop silently.
+async function syncPendingArticles() {
+  let pending;
+  try { pending = await getAllPending(); } catch { return; }
+  for (const item of pending) {
+    try {
+      const res = await fetch(item.url, {
+        method: item.method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item.payload),
+      });
+      if (res.ok || res.status < 500) {
+        // 2xx = saved; 4xx = server permanently rejected it (bad payload,
+        // deleted article, etc.) — either way, stop retrying it.
+        await deletePending(item.localId);
+        const data = await res.json().catch(() => null);
+        await notifyClients({ type: 'article-synced', ok: res.ok, localId: item.localId, data });
+      }
+      // 5xx / thrown network error: leave it queued, will retry on next sync.
+    } catch {
+      // Still offline or request failed — keep it queued for the next sync event.
+    }
+  }
+}
+
+self.addEventListener('sync', event => {
+  if (event.tag === SYNC_TAG) event.waitUntil(syncPendingArticles());
+});
+
+// Background Sync isn't available at all on iOS Safari / WebKit, and even
+// where supported the browser decides when to actually fire it. As a
+// fallback that works everywhere, also retry whenever the SW itself observes
+// the network coming back (covers the case where the app gets reopened).
+self.addEventListener('online', () => { syncPendingArticles(); });
+// Let an open page ask the SW to try immediately (e.g. right after the admin
+// UI detects `navigator.onLine` flip back to true).
+self.addEventListener('message', event => {
+  if (event.data === 'sync-now') event.waitUntil(syncPendingArticles());
 });

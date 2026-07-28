@@ -4,11 +4,11 @@
  * Cloudflare Workers have no shared in-memory state across instances, so
  * counters must live somewhere durable. There's no KV/Durable Object binding
  * in this project, so a small D1 table (rate_limit_attempts) is used instead
- * — cheap enough at this traffic volume (a family blog, not a public SaaS).
+ * - cheap enough at this traffic volume (a family blog, not a public SaaS).
  *
  * Usage: call `checkRateLimit` before doing the sensitive check (password
  * verify, gate-answer compare). If it returns blocked=true, reject the
- * request immediately without even looking at the submitted credential —
+ * request immediately without even looking at the submitted credential -
  * that's what actually stops a brute force, not just recording the failure
  * after the fact.
  */
@@ -45,10 +45,10 @@ export async function checkRateLimit(db, scope, key, { max, windowMinutes }) {
   return { blocked: false, retryAfterSeconds: 0 };
 }
 
-/** Record a failed attempt. Call only on failure — successful auth doesn't count against the limit. */
+/** Record a failed attempt. Call only on failure - successful auth doesn't count against the limit. */
 export async function recordFailedAttempt(db, scope, key) {
   await db.prepare('INSERT INTO rate_limit_attempts (scope, attempt_key) VALUES (?, ?)').bind(scope, key).run();
-  // Opportunistic cleanup so the table doesn't grow unbounded — cheap, and
+  // Opportunistic cleanup so the table doesn't grow unbounded - cheap, and
   // only needs to run occasionally (1-in-20 chance per call is enough).
   if (Math.random() < 0.05) {
     await db.prepare("DELETE FROM rate_limit_attempts WHERE created_at < datetime('now', '-1 day')").run().catch(() => {});

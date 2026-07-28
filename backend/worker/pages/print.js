@@ -32,7 +32,7 @@ function imageDimensions(bytes) {
       i += 2 + ((b[i + 2] << 8) | b[i + 3]);
     }
   }
-  // WebP (RIFF….WEBP): VP8/VP8L/VP8X — fall back to a default aspect if unparsed.
+  // WebP (RIFF….WEBP): VP8/VP8L/VP8X - fall back to a default aspect if unparsed.
   return { w: 0, h: 0, type: 'jpg' };
 }
 
@@ -200,7 +200,7 @@ function parseBlocks(content) {
 function blockToParagraphs(block, resolvedImg) {
   if (block.type === 'image') {
     if (!resolvedImg || !resolvedImg.data) {
-      // Image couldn't be loaded — degrade to a caption placeholder.
+      // Image couldn't be loaded - degrade to a caption placeholder.
       const label = block.text ? `[Photo : ${block.text}]` : '[Photo]';
       return [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 160 }, children: [new TextRun({ text: label, italics: true, color: '888888', size: 20 })] })];
     }
@@ -308,7 +308,7 @@ export function printPage(article) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${title} — Export</title>
+<title>${title} - Export</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
