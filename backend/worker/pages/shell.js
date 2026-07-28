@@ -308,7 +308,7 @@ input:focus, textarea:focus, select:focus { border-color: rgba(var(--blue-rgb),.
 </style>
 `;
 
-export const NAV = (active = '') => `
+export const NAV = (active = '', authed = false) => `
 <nav id="navbar" class="fixed top-0 left-0 right-0 z-50">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-16">
@@ -322,7 +322,13 @@ export const NAV = (active = '') => `
       <div class="hidden md:flex items-center gap-1">
         <a href="/" class="nav-link ${active==='home'?'nav-link-active':''}"><i class="ph ph-house"></i> Accueil</a>
         <a href="/voyages" class="nav-link ${active==='voyages'?'nav-link-active':''}"><i class="ph ph-airplane-takeoff"></i> Voyages</a>
+        ${authed ? `
+        <span class="inline-flex items-center gap-1.5 ml-3 px-3 py-1.5 rounded-full text-xs font-bold" style="background:rgba(var(--blue-rgb),.10);color:var(--blue);border:1px solid rgba(var(--blue-rgb),.2)" title="Vous êtes connecté en administrateur"><i class="ph ph-shield-check"></i> Admin</span>
+        <a href="/admin" class="nav-link"><i class="ph ph-gauge"></i> Tableau de bord</a>
+        <form method="POST" action="/admin/logout" class="inline"><button type="submit" class="nav-link" style="color:#dc3c3c;background:none;border:none;cursor:pointer"><i class="ph ph-sign-out"></i> Déconnexion</button></form>
+        ` : `
         <a href="/admin" class="action-btn-sm ml-3"><i class="ph ph-lock-key"></i> Admin</a>
+        `}
       </div>
       <button onclick="const m=document.getElementById('mobile-menu');m.classList.toggle('hidden');this.setAttribute('aria-expanded',!m.classList.contains('hidden'))"
               class="md:hidden p-2 rounded-xl transition-colors"
@@ -337,7 +343,13 @@ export const NAV = (active = '') => `
       <div class="panel rounded-2xl p-3 flex flex-col gap-1 mt-1 shadow-lg">
         <a href="/" class="mobile-nav-link ${active==='home'?'nav-link-active':''}"><i class="ph ph-house"></i> Accueil</a>
         <a href="/voyages" class="mobile-nav-link ${active==='voyages'?'nav-link-active':''}"><i class="ph ph-airplane-takeoff"></i> Voyages</a>
+        ${authed ? `
+        <div class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold" style="background:rgba(var(--blue-rgb),.10);color:var(--blue)"><i class="ph ph-shield-check"></i> Connecté en admin</div>
+        <a href="/admin" class="mobile-nav-link"><i class="ph ph-gauge"></i> Tableau de bord</a>
+        <form method="POST" action="/admin/logout"><button type="submit" class="mobile-nav-link w-full text-left" style="color:#dc3c3c;background:none;border:none;cursor:pointer"><i class="ph ph-sign-out"></i> Déconnexion</button></form>
+        ` : `
         <a href="/admin" class="action-btn-sm justify-center mt-2"><i class="ph ph-lock-key"></i> Admin</a>
+        `}
       </div>
     </div>
   </div>
@@ -383,7 +395,7 @@ export const FOOTER = `
     </div>
     <div class="divider mb-6"></div>
     <div class="text-center text-sm" style="color:var(--ink-light)">
-      &copy; ${new Date().getFullYear()} Famille Potet
+      &copy; <span id="footer-year">2026</span> Famille Potet
     </div>
   </div>
 </footer>
@@ -561,6 +573,7 @@ else { initPushBtn(); initNotifPrompt(); }
 // ── Footer destinations ───────────────────────────────────────
 function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
 fetch('/api/folders').then(r=>r.json()).then(data=>{const roots=data.filter(f=>!f.parent_id);const el=document.getElementById('footer-dest');if(el)el.innerHTML=roots.length?roots.map(f=>\`<li><a href="/voyages?folder=\${f.slug}" style="color:var(--ink-muted)" class="hover:underline transition-colors flex items-center gap-1.5">\${flagImg(f.icon)}<span>\${f.name}</span></a></li>\`).join(''):'';}).catch(()=>{const el=document.getElementById('footer-dest');if(el)el.innerHTML='';});
+(function(){var y=document.getElementById('footer-year');if(y)y.textContent=new Date().getFullYear();})();
 </script>`;
 
 export const TOAST = `

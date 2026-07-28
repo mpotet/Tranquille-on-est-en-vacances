@@ -29,11 +29,11 @@ export function forbidden(msg = 'Forbidden') {
   return json({ error: msg }, 403);
 }
 
-/** HTML response helper */
-export function html(content, status = 200) {
+/** HTML response helper. `extraHeaders` lets callers add e.g. Cache-Control. */
+export function html(content, status = 200, extraHeaders = {}) {
   return new Response(content, {
     status,
-    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    headers: { 'Content-Type': 'text/html; charset=utf-8', ...extraHeaders },
   });
 }
 

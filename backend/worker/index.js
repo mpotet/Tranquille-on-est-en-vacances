@@ -56,7 +56,7 @@ function voyagesPage(authed=false) {
 <html lang="fr">
 <head>${HEAD('Voyages - Tranquille, on est en vacances')}</head>
 <body class="font-sans antialiased" style="background:var(--cream)">
-${NAV('voyages')}
+${NAV('voyages', authed)}
 <main class="pt-16">
   <!-- En-tête -->
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-4">
@@ -498,7 +498,7 @@ function renderCommentItem(c, isAdmin) {
   </article>`;
 }
 
-async function voyagePage(env, slug, authed = false) {
+async function voyagePage(env, slug, authed = false, origin = '') {
   // ── Fetch the article server-side ──────────────────────────
   const isNumericId = /^\d+$/.test(String(slug));
   const article = await env.DB.prepare(`
@@ -513,7 +513,7 @@ async function voyagePage(env, slug, authed = false) {
 <html lang="fr">
 <head>${HEAD('Voyage introuvable - Tranquille, on est en vacances')}</head>
 <body class="font-sans antialiased" style="background:var(--cream)">
-${NAV()}
+${NAV('', authed)}
 <main class="pt-16">
   <div class="max-w-2xl mx-auto px-4 py-32 text-center">
     <i class="ph ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1.5rem;color:var(--ink-light)"></i>
@@ -625,6 +625,14 @@ ${TOAST}
   <a href="/admin/articles/${article.id}/print" target="_blank" style="position:fixed;bottom:5rem;right:calc(1.5rem + 130px + .75rem);z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:rgba(10,18,30,.82);color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.25);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.15)"><i class="ph ph-export" style="font-size:1.1rem"></i> Exporter</a>` : '';
 
   const coverUrl = safeAttr(article.cover_url || '');
+  // og:image must be absolute (social crawlers don't resolve relative URLs).
+  // cover_url is stored root-relative (/r2/…); prefix the request origin, or
+  // fall back to PUBLIC_URL for the rare caller with no origin.
+  const base = (origin || env.PUBLIC_URL || '').replace(/\/$/, '');
+  const rawCover = article.cover_url || '';
+  const ogImage = rawCover
+    ? safeAttr(/^https?:\/\//i.test(rawCover) ? rawCover : base + rawCover)
+    : '';
 
   return html(`<!DOCTYPE html>
 <html lang="fr">
@@ -632,10 +640,10 @@ ${TOAST}
 <meta property="og:title" content="${safeAttr(article.title)}">
 <meta property="og:description" content="${safeAttr(metaDescription)}">
 <meta property="og:type" content="article">
-${article.cover_url ? `<meta property="og:image" content="${coverUrl}">` : ''}
+${ogImage ? `<meta property="og:image" content="${ogImage}">` : ''}
 </head>
 <body class="font-sans antialiased" style="background:var(--cream)">
-${NAV()}
+${NAV('', authed)}
 <main id="main" class="pt-16">
   <div class="hero-photo relative overflow-hidden" style="background:#0a121e;min-height:clamp(40vh,55vw,80vh);max-height:90vh">
     <img src="${coverUrl}" alt="" aria-hidden="true" class="hero-photo-img" style="filter:blur(28px);transform:scale(1.12);opacity:.45" onerror="this.style.display='none'">
@@ -657,6 +665,7 @@ ${NAV()}
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph ph-map-pin" style="color:var(--blue);flex-shrink:0"></i>${safeText(article.destination)}</span>
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph ph-camera" style="color:var(--blue);flex-shrink:0"></i>${allPhotos.length} photo${allPhotos.length !== 1 ? 's' : ''}</span>
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph ph-eye" style="color:var(--blue);flex-shrink:0"></i>${article.view_count || 0} lecture${(article.view_count || 0) !== 1 ? 's' : ''}&ensp;${popularityBarsSSR(article.view_count || 0)}</span>
+        <a href="#comments" data-scroll-comments class="subtle-btn text-sm" style="padding:.35rem .85rem"><i class="ph ph-chat-circle-text"></i> Commenter${flatComments.length ? ` (${flatComments.length})` : ''}</a>
         <button data-share-btn class="subtle-btn text-sm" style="padding:.35rem .85rem"><i class="ph ph-share-network"></i> Partager</button>
       </div>
     </div>
@@ -851,6 +860,24 @@ document.getElementById('comments')?.addEventListener('click', async (e)=>{
     toast('Réponse publiée !','ok');
   }
 });
+// "Commenter" button: lazy-loaded images above the comments section have zero
+// height until scrolled into view, so a plain #comments anchor jumps short and
+// lands mid-article. Force every image to load, wait for them (with a cap),
+// then scroll — re-scrolling once heights settle so we land on the section.
+document.querySelector('[data-scroll-comments]')?.addEventListener('click', (e)=>{
+  e.preventDefault();
+  const target=document.getElementById('comments');
+  if(!target) return;
+  const imgs=[...document.querySelectorAll('#article-body img, main img')].filter(im=>!im.complete);
+  imgs.forEach(im=>{ im.loading='eager'; if(im.dataset.src && !im.src) im.src=im.dataset.src; });
+  const doScroll=()=>target.scrollIntoView({behavior:'smooth', block:'start'});
+  doScroll();
+  if(imgs.length){
+    let done=0; const finish=()=>{ if(++done>=imgs.length) setTimeout(doScroll,80); };
+    imgs.forEach(im=>{ im.addEventListener('load',finish,{once:true}); im.addEventListener('error',finish,{once:true}); });
+    setTimeout(doScroll, 1200); // hard fallback if some image never loads
+  }
+});
 // Deep-link: /voyage/slug#comment-123 highlights and scrolls to that comment
 (function(){
   const hash=location.hash;
@@ -1032,17 +1059,26 @@ export default {
       if (authed) return redirect('/admin/dashboard');
       const account = await getAdminAccount(env.DB);
       const noPassword = !account || !account.password_hash;
-      return loginPage('', noPassword);
+      const resp = loginPage('', noPassword);
+      try { resp.headers.set('Cache-Control', 'no-store, must-revalidate'); } catch {}
+      return resp;
     }
     if (path.startsWith('/admin/')) {
       const authed = await isAuthenticated(request, env.SESSION_SECRET);
       if (!authed) {
         return new Response(null, { status: 302, headers: { Location: '/admin' } });
       }
-      if (path === '/admin/dashboard') return dashboardPage();
-      if (path === '/admin/editor')    return editorPage(null);
+      // Admin pages carry authenticated, user-specific state and must never be
+      // served from any cache (browser back/forward, or a proxy). Tag every
+      // HTML page response below with no-store.
+      const noStore = (resp) => {
+        try { resp.headers.set('Cache-Control', 'no-store, must-revalidate'); } catch {}
+        return resp;
+      };
+      if (path === '/admin/dashboard') return noStore(dashboardPage());
+      if (path === '/admin/editor')    return noStore(editorPage(null));
       const editorMatch = matchPath('/admin/editor/:id', path);
-      if (editorMatch) return editorPage(parseInt(editorMatch.id));
+      if (editorMatch) return noStore(editorPage(parseInt(editorMatch.id)));
       const printMatch = matchPath('/admin/articles/:id/print', path);
       if (printMatch) {
         const art = await env.DB.prepare(
@@ -1050,7 +1086,7 @@ export default {
         ).bind(parseInt(printMatch.id)).first();
         if (!art) return notFound();
         art.publicUrl = env.PUBLIC_URL || '';
-        return printPage(art);
+        return noStore(printPage(art));
       }
       const wordMatch = matchPath('/admin/articles/:id/export-word', path);
       if (wordMatch) {
@@ -1058,11 +1094,17 @@ export default {
           'SELECT * FROM articles WHERE id = ?'
         ).bind(parseInt(wordMatch.id)).first();
         if (!art) return notFound();
-        const docBuffer = await exportWordDocx(art);
+        const docBuffer = await exportWordDocx(art, env);
+        // Build a readable, filesystem-safe filename that keeps accents via
+        // the RFC 5987 filename* form, with an ASCII fallback for old clients.
+        const safeName = (art.title || 'export')
+          .replace(/[\\/:*?"<>|]/g, '')   // strip characters illegal in filenames
+          .replace(/\s+/g, ' ').trim().substring(0, 80);
+        const asciiName = safeName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7e]/g, '') || 'export';
         return new Response(docBuffer, {
           headers: {
             'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'Content-Disposition': `attachment; filename="${art.title.replace(/[^a-z0-9]/gi, '').substring(0, 50)}.docx"`
+            'Content-Disposition': `attachment; filename="${asciiName}.docx"; filename*=UTF-8''${encodeURIComponent(safeName)}.docx`,
           }
         });
       }
@@ -1290,7 +1332,7 @@ export default {
     if (path === '/' || path === '') return homePage(publicAuthed);
     if (path === '/voyages')         return voyagesPage(publicAuthed);
     const voyageMatch = matchPath('/voyage/:slug', path);
-    if (voyageMatch) return voyagePage(env, voyageMatch.slug, publicAuthed);
+    if (voyageMatch) return voyagePage(env, voyageMatch.slug, publicAuthed, new URL(request.url).origin);
 
     // 404
     return html(`<!DOCTYPE html><html lang="fr"><head><title>404 - Page introuvable</title></head>

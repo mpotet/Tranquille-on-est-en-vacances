@@ -16,10 +16,27 @@ import { notifySubscribers } from '../notifications.js';
 // ──────────────────────────────────────────────────────────────
 // List
 // ──────────────────────────────────────────────────────────────
+// Strip French accents so a search for "egypte" matches "Égypte". Applied to
+// both the query term (in JS) and the DB columns (via nested REPLACE below).
+function deaccent(s) {
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+// SQL fragment that lowercases + de-accents a column, so LIKE is accent- and
+// case-insensitive. SQLite's LOWER only handles ASCII, but de-accenting first
+// reduces the accented letters to their ASCII base, so LOWER then suffices.
+function sqlNorm(col) {
+  let e = col;
+  for (const [a, b] of [['à','a'],['â','a'],['ä','a'],['á','a'],['ã','a'],['é','e'],['è','e'],['ê','e'],['ë','e'],['î','i'],['ï','i'],['í','i'],['ô','o'],['ö','o'],['ó','o'],['õ','o'],['ù','u'],['û','u'],['ü','u'],['ú','u'],['ç','c'],['ñ','n']]) {
+    e = `REPLACE(${e}, '${a}', '${b}')`;
+  }
+  return `LOWER(${e})`;
+}
+
 export async function listArticles(request, env, isAdmin) {
   const url = new URL(request.url);
   const statusParam = url.searchParams.get('status');   // 'published' | 'draft' | null (all for admin)
   const folderSlug  = url.searchParams.get('folder');
+  const q           = (url.searchParams.get('q') || '').trim();
   const page        = Math.max(1, parseInt(url.searchParams.get('page')  || '1'));
   const limit       = Math.min(50, parseInt(url.searchParams.get('limit') || '20'));
   const offset      = (page - 1) * limit;
@@ -33,6 +50,14 @@ export async function listArticles(request, env, isAdmin) {
   } else if (statusParam) {
     whereClauses.push('a.status = ?');
     bindings.push(statusParam);
+  }
+
+  // Free-text search across title, destination and short description
+  // (not the full content — keeps it fast and results relevant to headings).
+  if (q) {
+    const term = `%${deaccent(q).toLowerCase()}%`;
+    whereClauses.push(`(${sqlNorm('a.title')} LIKE ? OR ${sqlNorm('a.destination')} LIKE ? OR ${sqlNorm('a.short_description')} LIKE ?)`);
+    bindings.push(term, term, term);
   }
 
   // Filter by folder (all articles in the folder tree). An unknown/stale

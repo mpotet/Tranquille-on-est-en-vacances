@@ -73,10 +73,30 @@ export async function updateFolder(request, env, id) {
 // Delete
 // ──────────────────────────────────────────────────────────────
 export async function deleteFolder(env, id) {
-  const folder = await env.DB.prepare('SELECT id FROM folders WHERE id = ?').bind(id).first();
+  const folder = await env.DB.prepare('SELECT id, parent_id FROM folders WHERE id = ?').bind(id).first();
   if (!folder) return notFound('Folder not found');
+
+  // D1 doesn't enforce the self-referential FK, so deleting a folder would
+  // otherwise orphan its child folders (parent_id → missing row) and its
+  // articles (folder_id → missing row), breaking the tree display. Re-home the
+  // children onto this folder's own parent (they move up one level) and detach
+  // the articles (folder_id → NULL) so nothing is left dangling.
+  const movedChildren = await env.DB
+    .prepare('UPDATE folders SET parent_id = ? WHERE parent_id = ?')
+    .bind(folder.parent_id ?? null, id)
+    .run();
+  const detachedArticles = await env.DB
+    .prepare('UPDATE articles SET folder_id = NULL WHERE folder_id = ?')
+    .bind(id)
+    .run();
+
   await env.DB.prepare('DELETE FROM folders WHERE id = ?').bind(id).run();
-  return json({ success: true });
+
+  return json({
+    success: true,
+    moved_children: movedChildren.meta?.changes ?? 0,
+    detached_articles: detachedArticles.meta?.changes ?? 0,
+  });
 }
 
 // ──────────────────────────────────────────────────────────────

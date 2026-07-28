@@ -14,7 +14,7 @@
  *   revalide silencieusement le cache.
  */
 
-const VERSION = 'v8';
+const VERSION = 'v9';
 const PAGES_CACHE = `tranquille-pages-${VERSION}`;
 const ASSETS_CACHE = `tranquille-assets-${VERSION}`;
 const API_CACHE = `tranquille-api-${VERSION}`;
@@ -82,7 +82,12 @@ self.addEventListener('fetch', event => {
   if (url.pathname.startsWith('/admin')) return;
 
   if (url.pathname.startsWith('/api/')) {
-    if (isPublicApiGet(url)) {
+    // Admin views need fresh data (e.g. the folder tree right after creating a
+    // folder). They send `cache: 'no-store'`, which surfaces here as a
+    // no-cache request header — honour it by going straight to the network
+    // instead of serving the stale-while-revalidate cached copy.
+    const wantsFresh = (req.headers.get('cache-control') || '').includes('no-cache');
+    if (isPublicApiGet(url) && !wantsFresh) {
       event.respondWith(staleWhileRevalidateJson(event, req, API_CACHE));
     }
     return;

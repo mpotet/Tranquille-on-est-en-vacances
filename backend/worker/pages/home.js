@@ -11,7 +11,7 @@ export function homePage(authed=false) {
 <html lang="fr">
 <head>${HEAD('Tranquille, on est en vacances')}</head>
 <body class="bg-stone-50 font-sans text-stone-900 antialiased">
-${NAV('home')}
+${NAV('home', authed)}
 
 <main class="pt-16">
 

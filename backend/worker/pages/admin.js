@@ -532,7 +532,7 @@ ${ADMIN_NAV()}
     </div>
     <div class="flex gap-3">
       <button onclick="closeFolderModal()" class="flex-1 bg-stone-100 text-stone-700 font-bold py-2.5 rounded-xl hover:bg-stone-200 transition-colors text-sm">Annuler</button>
-      <button onclick="submitFolder()" class="flex-1 action-btn-sm">Créer <i class="ph ph-check"></i></button>
+      <button id="fm-submit-btn" onclick="submitFolder()" class="flex-1 action-btn-sm">Créer <i class="ph ph-check"></i></button>
     </div>
   </div>
 </div>
@@ -540,6 +540,7 @@ ${ADMIN_NAV()}
 ${TOAST}
 <script>
 let _folderParentId = null;
+let _folderEditId = null;   // non-null when the folder modal is in "rename" mode
 
 function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:#dc3c3c;font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
 function esc(s){return (s==null? '': String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
@@ -556,8 +557,8 @@ function fmtDateRange(a){
 // ── Load dashboard data ───────────────────────────────────────
 async function init() {
   const [folders, artData] = await Promise.all([
-    fetch('/api/folders').then(r=>r.json()).catch(()=>[]),
-    fetch('/api/articles?limit=100').then(r=>r.json()).catch(()=>({articles:[]})),
+    fetch('/api/folders', {cache:'no-store'}).then(r=>r.json()).catch(()=>[]),
+    fetch('/api/articles?limit=100', {cache:'no-store'}).then(r=>r.json()).catch(()=>({articles:[]})),
   ]);
 
   document.getElementById('folder-tree').innerHTML = renderFolderTree(folders, null);
@@ -595,6 +596,7 @@ function renderFolderTree(folders, parentId, depth=0) {
           <span class="flex-shrink-0">\${flagImg(f.icon)}</span><span>\${esc(f.name)}</span>
         </a>
         <div class="flex items-center gap-1 ml-2">
+          <button data-action="edit-folder" data-id="\${f.id}" data-name="\${esc(f.name)}" data-icon="\${esc(f.icon)}" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center hover:bg-sky-50 transition-colors" title="Renommer ce dossier"><i class="ph ph-pencil-simple"></i></button>
           <button data-action="open-folder-modal" data-id="\${f.id}" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center hover:bg-sky-50 transition-colors" title="Ajouter un sous-dossier"><i class="ph ph-folder-plus"></i></button>
           <button data-action="del-folder" data-id="\${f.id}" class="text-stone-400 hover:text-red-500 active:text-red-600 p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center hover:bg-red-50 transition-colors" title="Supprimer ce dossier"><i class="ph ph-trash"></i></button>
         </div>
@@ -673,9 +675,24 @@ async function delArticle(id) {
 // Folder modal
 function openFolderModal(parentId) {
   _folderParentId = parentId;
-  document.getElementById('fm-name').value=''; document.getElementById('fm-icon').value='';
+  _folderEditId = null;
+  document.getElementById('fm-name').value=''; document.getElementById('fm-icon').value='📁';
   const h=document.querySelector('#folder-modal h3');
   if(h) h.innerHTML=(parentId?'<i class="ph ph-folder-plus"></i> Nouveau sous-dossier':'<i class="ph ph-folder-plus"></i> Nouveau dossier');
+  const b=document.getElementById('fm-submit-btn');
+  if(b) b.innerHTML='Créer <i class="ph ph-check"></i>';
+  document.getElementById('folder-modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('fm-name').focus(),50);
+}
+function openFolderEdit(id, name, icon) {
+  _folderEditId = id;
+  _folderParentId = null;
+  document.getElementById('fm-name').value = name || '';
+  document.getElementById('fm-icon').value = icon || '📁';
+  const h=document.querySelector('#folder-modal h3');
+  if(h) h.innerHTML='<i class="ph ph-pencil-simple"></i> Renommer le dossier';
+  const b=document.getElementById('fm-submit-btn');
+  if(b) b.innerHTML='Enregistrer <i class="ph ph-check"></i>';
   document.getElementById('folder-modal').classList.remove('hidden');
   setTimeout(()=>document.getElementById('fm-name').focus(),50);
 }
@@ -684,14 +701,26 @@ async function submitFolder() {
   const name=document.getElementById('fm-name').value.trim();
   const icon=document.getElementById('fm-icon').value.trim()||'📁';
   if(!name){toast('Nom requis','err');return;}
-  const res = await fetch('/api/folders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,icon,parent_id:_folderParentId})});
-  if(res.ok){closeFolderModal();toast('Dossier créé !','ok');init();}
-  else toast('Erreur','err');
+  let res;
+  if(_folderEditId != null){
+    res = await fetch('/api/folders/'+_folderEditId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,icon})});
+  } else {
+    res = await fetch('/api/folders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,icon,parent_id:_folderParentId})});
+  }
+  if(res.ok){closeFolderModal();toast(_folderEditId!=null?'Dossier renommé !':'Dossier créé !','ok');init();}
+  else { const d=await res.json().catch(()=>null); toast((d&&d.error)||'Erreur','err'); }
 }
 async function delFolder(id) {
-  if(!confirm('Supprimer ce dossier ?')) return;
+  if(!confirm('Supprimer ce dossier ?\\n\\nSes sous-dossiers remonteront d\\'un niveau et ses articles seront détachés (non supprimés).')) return;
   const res = await fetch('/api/folders/'+id,{method:'DELETE'});
-  if(res.ok){toast('Dossier supprimé','ok');init();}else toast('Erreur','err');
+  if(res.ok){
+    const d = await res.json().catch(()=>({}));
+    var parts = [];
+    if(d.moved_children) parts.push(d.moved_children+' sous-dossier'+(d.moved_children>1?'s déplacés':' déplacé'));
+    if(d.detached_articles) parts.push(d.detached_articles+' article'+(d.detached_articles>1?'s détachés':' détaché'));
+    toast('Dossier supprimé'+(parts.length?' ('+parts.join(', ')+')':''),'ok');
+    init();
+  } else toast('Erreur','err');
 }
 
 // ── Site settings ─────────────────────────────────────────────
@@ -1038,6 +1067,7 @@ document.addEventListener('click', e => {
   const id = parseInt(btn.dataset.id);
   switch (btn.dataset.action) {
     case 'open-folder-modal': openFolderModal(id); break;
+    case 'edit-folder': openFolderEdit(id, btn.dataset.name, btn.dataset.icon); break;
     case 'del-folder': delFolder(id); break;
     case 'toggle-status': toggleStatus(id, btn.dataset.status); break;
     case 'del-article': delArticle(id); break;
@@ -1551,7 +1581,7 @@ window.addEventListener('online', async () => {
 // ── Init ──────────────────────────────────────────────────────
 async function init() {
   // Load folders for the selector
-  const folders = await fetch('/api/folders').then(r=>r.json()).catch(()=>[]);
+  const folders = await fetch('/api/folders', {cache:'no-store'}).then(r=>r.json()).catch(()=>[]);
   populateFolderSelect(folders, null, 0);
 
   const createParams = new URLSearchParams(location.search);

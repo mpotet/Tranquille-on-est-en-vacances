@@ -109,7 +109,10 @@ export async function uploadPhotos(request, env, articleId) {
 
     // Build the public URL.  If the R2 bucket has a custom domain configured
     // via Cloudflare, replace PUBLIC_URL accordingly.
-    const publicUrl = `${env.PUBLIC_URL}/r2/${r2Key}`;
+    // Store a ROOT-RELATIVE url (`/r2/<key>`), not an absolute one: it stays
+    // valid regardless of the site's domain, and the browser resolves it
+    // against the current origin. The worker serves /r2/* from the same origin.
+    const publicUrl = `/r2/${r2Key}`;
 
     const result = await env.DB
       .prepare('INSERT INTO photos (article_id, r2_key, url, caption, sort_order) VALUES (?, ?, ?, ?, ?)')
@@ -207,7 +210,7 @@ export async function uploadCover(request, env, articleId) {
 
   await env.PHOTOS.put(r2Key, arrayBuf, { httpMetadata: { contentType: detected.contentType } });
 
-  const publicUrl = `${env.PUBLIC_URL}/r2/${r2Key}`;
+  const publicUrl = `/r2/${r2Key}`; // root-relative — domain-independent (see uploadPhotos)
   await env.DB
     .prepare('UPDATE articles SET cover_url=?, cover_r2_key=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
     .bind(publicUrl, r2Key, articleId)
@@ -244,7 +247,7 @@ export async function uploadHeroImage(request, env) {
   const r2Key = `hero/${year}/${uuid}.${detected.ext}`;
 
   await env.PHOTOS.put(r2Key, arrayBuf, { httpMetadata: { contentType: detected.contentType } });
-  const publicUrl = `${env.PUBLIC_URL}/r2/${r2Key}`;
+  const publicUrl = `/r2/${r2Key}`; // root-relative — domain-independent (see uploadPhotos)
 
   const stmt = env.DB.prepare("INSERT OR REPLACE INTO site_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))");
   await stmt.bind('hero_image_url', publicUrl).run();
