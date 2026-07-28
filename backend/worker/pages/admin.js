@@ -43,7 +43,7 @@ ${NAV(active, true)}
 export function loginPage(error = '', noPassword = false) {
   const safeErr = safeText(error);
   const notInitialised = `
-      <div class="mb-5 bg-amber-50 text-amber-800 px-4 py-3 rounded-2xl text-sm font-medium border border-amber-100">
+      <div class="mb-5 bg-amber-50 px-4 py-3 rounded-2xl text-sm font-medium border border-amber-100" style="color:#9a5b12">
         <i class="ph-fill ph-envelope-simple"></i> Compte non initialisé - vérifiez vos emails pour définir votre mot de passe.
       </div>
       <p class="text-sm text-stone-500">Un lien d'initialisation a été (ou sera) envoyé à l'adresse administrateur. Il est valable 1 heure.</p>`;
@@ -52,7 +52,7 @@ export function loginPage(error = '', noPassword = false) {
       ${error ? `<div class="mb-5 bg-red-50 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium border border-red-100"><i class="ph-fill ph-x-circle"></i> ${safeErr}</div>` : ''}
       <form method="POST" action="/admin/login" id="login-form">
         <div class="mb-6">
-          <label class="block text-sm font-bold text-stone-700 mb-2" for="password">Mot de passe</label>
+          <label class="block text-sm font-bold mb-2" style="color:var(--ink)" for="password">Mot de passe</label>
           <input type="password" id="password" name="password" placeholder="••••••••" autofocus required
                  class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-medium">
         </div>
@@ -61,16 +61,16 @@ export function loginPage(error = '', noPassword = false) {
         </button>
       </form>
       <div class="mt-4 text-center">
-        <button type="button" id="forgot-link" class="text-sm text-stone-500 hover:text-sky-600 transition-colors underline">Mot de passe oublié ?</button>
+        <button type="button" id="forgot-link" class="text-sm hover:underline transition-colors" style="color:var(--ink-light)">Mot de passe oublié ?</button>
       </div>
 
       <!-- Forgot-password panel (hidden until toggled) -->
       <div id="forgot-panel" class="hidden mt-5 pt-5 border-t border-stone-100">
-        <div id="forgot-done" class="hidden bg-emerald-50 text-emerald-800 px-4 py-3 rounded-2xl text-sm font-medium border border-emerald-100">
+        <div id="forgot-done" class="hidden bg-emerald-50 px-4 py-3 rounded-2xl text-sm font-medium border border-emerald-100" style="color:var(--palm)">
           <i class="ph-fill ph-check-circle"></i> Si cette adresse est reconnue, un email a été envoyé.
         </div>
         <form id="forgot-form">
-          <label class="block text-sm font-bold text-stone-700 mb-2" for="forgot-email">Votre adresse email</label>
+          <label class="block text-sm font-bold mb-2" style="color:var(--ink)" for="forgot-email">Votre adresse email</label>
           <input type="email" id="forgot-email" name="email" required placeholder="vous@exemple.fr"
                  class="w-full border-2 border-stone-200 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-400 transition-colors font-medium mb-3">
           <button type="submit" id="forgot-submit" class="w-full action-btn-sm justify-center">Envoyer le lien de réinitialisation</button>
@@ -101,21 +101,21 @@ export function loginPage(error = '', noPassword = false) {
   return html(`<!DOCTYPE html>
 <html lang="fr">
 <head>${HEAD('Admin - Connexion')}</head>
-<body class="bg-stone-50 min-h-screen font-sans antialiased">
+<body class="min-h-screen font-sans antialiased" style="background:radial-gradient(120% 100% at 50% 0%, var(--blue-light) 0%, var(--cream) 55%)">
 <div class="min-h-screen flex items-center justify-center px-4 py-12">
   <div class="w-full max-w-md">
     <div class="text-center mb-8">
       <a href="/" class="inline-block">
         <span class="inline-flex items-center justify-center mb-3" style="width:4.5rem;height:4.5rem;border-radius:999px;background:var(--blue-light);border:2px solid rgba(var(--blue-rgb),.14)"><i class="ph-bold ph-lock-key" style="font-size:2rem;color:var(--blue)"></i></span>
       </a>
-      <h1 class="font-display text-3xl font-bold text-stone-900">Espace Admin</h1>
-      <p class="text-stone-500 mt-2 text-sm">Connexion réservée à la famille Potet</p>
+      <h1 class="font-display text-3xl font-bold" style="color:var(--ink)">Espace Admin</h1>
+      <p class="mt-2 text-sm" style="color:var(--ink-muted)">Connexion réservée à la famille Potet</p>
     </div>
-    <div class="section-panel majorelle-frame rounded-3xl shadow-xl p-8 border border-stone-100">
+    <div class="panel rounded-[2rem] p-8">
       ${noPassword ? notInitialised : loginForm}
     </div>
-    <p class="text-center text-stone-400 text-sm mt-6">
-      <a href="/" class="hover:text-sky-600 transition-colors">< Retour au blog</a>
+    <p class="text-center text-sm mt-6" style="color:var(--ink-light)">
+      <a href="/" style="color:var(--ink-light)" class="hover:underline">← Retour au blog</a>
     </p>
   </div>
 </div>
@@ -135,6 +135,7 @@ ${ADMIN_NAV()}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
   <div id="admin-tabs" role="tablist" aria-label="Sections de l'administration" class="flex flex-wrap gap-1.5 border-b border-stone-200 pb-0 mb-2">
     <button type="button" id="admintab-articles" role="tab" data-tab="articles" class="admin-tab" aria-selected="true" aria-controls="tab-articles"><i class="ph-bold ph-notebook"></i> Articles</button>
+    <button type="button" id="admintab-analytics" role="tab" data-tab="analytics" class="admin-tab" aria-selected="false" aria-controls="tab-analytics" tabindex="-1"><i class="ph-bold ph-chart-line"></i> Visites</button>
     <button type="button" id="admintab-settings" role="tab" data-tab="settings" class="admin-tab" aria-selected="false" aria-controls="tab-settings" tabindex="-1"><i class="ph-bold ph-gear"></i> Paramètres du site</button>
     <button type="button" id="admintab-account" role="tab" data-tab="account" class="admin-tab" aria-selected="false" aria-controls="tab-account" tabindex="-1"><i class="ph-bold ph-user-circle"></i> Compte</button>
     <button type="button" id="admintab-emails" role="tab" data-tab="emails" class="admin-tab" aria-selected="false" aria-controls="tab-emails" tabindex="-1"><i class="ph-bold ph-envelope"></i> Emails</button>
@@ -169,32 +170,40 @@ ${ADMIN_NAV()}
             </div>
 
             <div class="grid grid-cols-2 gap-3" id="stats-grid">
-              <div class="bg-white rounded-2xl p-4 text-center border border-stone-100">
-                <div id="stat-total" class="text-2xl font-black text-stone-800">-</div>
-                <div class="text-xs font-bold text-stone-500 mt-1">Articles</div>
+              <div class="rounded-2xl p-4 text-center" style="background:#fff;border:1px solid var(--line)">
+                <div id="stat-total" class="text-2xl font-black" style="color:var(--ink)">-</div>
+                <div class="text-xs font-bold mt-1" style="color:var(--ink-muted)">Articles</div>
               </div>
-              <div class="bg-sky-50 rounded-2xl p-4 text-center border border-sky-100">
-                <div id="stat-views" class="text-2xl font-black text-sky-600">-</div>
-                <div class="text-xs font-bold text-sky-700 mt-1">Vues</div>
+              <div class="rounded-2xl p-4 text-center" style="background:var(--blue-light);border:1px solid rgba(var(--blue-rgb),.16)">
+                <div id="stat-views" class="text-2xl font-black" style="color:var(--blue)">-</div>
+                <div class="text-xs font-bold mt-1" style="color:var(--blue-dark)">Vues</div>
               </div>
-              <div class="bg-emerald-50 rounded-2xl p-4 text-center border border-emerald-100">
-                <div id="stat-pub" class="text-2xl font-black text-emerald-600">-</div>
-                <div class="text-xs font-bold text-emerald-700 mt-1">Publiés</div>
+              <div class="rounded-2xl p-4 text-center" style="background:var(--palm-light);border:1px solid rgba(var(--palm-rgb),.16)">
+                <div id="stat-pub" class="text-2xl font-black" style="color:var(--palm)">-</div>
+                <div class="text-xs font-bold mt-1" style="color:var(--palm)">Publiés</div>
               </div>
-              <div class="bg-amber-50 rounded-2xl p-4 text-center border border-amber-100">
-                <div id="stat-draft" class="text-2xl font-black text-amber-600">-</div>
-                <div class="text-xs font-bold text-amber-700 mt-1">Archivés</div>
+              <div class="rounded-2xl p-4 text-center" style="background:rgba(var(--apricot-rgb),.18);border:1px solid rgba(var(--apricot-rgb),.4)">
+                <div id="stat-draft" class="text-2xl font-black" style="color:#9a5b12">-</div>
+                <div class="text-xs font-bold mt-1" style="color:#9a5b12">Archivés</div>
               </div>
             </div>
           </aside>
 
           <!-- Articles list -->
           <main class="lg:col-span-3">
-            <div class="flex items-center justify-between mb-6">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
               <h2 class="font-display text-2xl font-bold text-stone-900">Tous les articles</h2>
-              <a href="/admin/editor" class="action-btn-sm">
-                <i class="ph-bold ph-plus-circle"></i> Nouvel article
-              </a>
+              <div class="flex items-center gap-2">
+                <select id="admin-sort-select" class="border-2 rounded-xl px-3 py-1.5 text-sm font-semibold" style="border-color:rgba(var(--blue-rgb),.18);background:#fff;color:var(--ink)">
+                  <option value="date_desc">Plus récents</option>
+                  <option value="date_asc">Plus anciens</option>
+                  <option value="views_desc">Les plus lus</option>
+                  <option value="title_asc">Titre (A→Z)</option>
+                </select>
+                <a href="/admin/editor" class="action-btn-sm">
+                  <i class="ph-bold ph-plus-circle"></i> Nouvel article
+                </a>
+              </div>
             </div>
 
             <div id="articles-list" class="space-y-3">
@@ -210,6 +219,63 @@ ${ADMIN_NAV()}
             </div>
           </main>
 
+        </div>
+      </div>
+
+      <!-- Tab Analytics -->
+      <div id="tab-analytics" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-analytics">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div>
+            <h2 class="font-display text-2xl font-bold" style="color:var(--ink)">Qui lit le carnet ?</h2>
+            <p class="text-sm mt-0.5" style="color:var(--ink-muted)">Aucune IP n'est jamais enregistrée — juste le pays/ville fourni par le réseau, pour voir d'où viennent les lecteurs.</p>
+          </div>
+          <div class="flex gap-1.5 flex-wrap" role="group" aria-label="Période">
+            <button type="button" class="period-pill" data-period="today">Aujourd'hui</button>
+            <button type="button" class="period-pill" data-period="7">7 jours</button>
+            <button type="button" class="period-pill is-active" data-period="30">30 jours</button>
+            <button type="button" class="period-pill" data-period="90">90 jours</button>
+            <button type="button" class="period-pill" data-period="all">Tout</button>
+          </div>
+        </div>
+
+        <div id="analytics-content">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+            <div class="rounded-2xl p-4 text-center" style="background:var(--blue-light);border:1px solid rgba(var(--blue-rgb),.16)">
+              <div id="an-total" class="text-2xl font-black" style="color:var(--blue)">-</div>
+              <div class="text-xs font-bold mt-1" style="color:var(--blue-dark)">Visites</div>
+            </div>
+            <div class="rounded-2xl p-4 text-center" style="background:var(--palm-light);border:1px solid rgba(var(--palm-rgb),.16)">
+              <div id="an-trend" class="text-2xl font-black" style="color:var(--palm)">-</div>
+              <div class="text-xs font-bold mt-1" style="color:var(--palm)">vs période précédente</div>
+            </div>
+            <div class="rounded-2xl p-4 text-center" style="background:#fff;border:1px solid var(--line)">
+              <div id="an-countries" class="text-2xl font-black" style="color:var(--ink)">-</div>
+              <div class="text-xs font-bold mt-1" style="color:var(--ink-muted)">Pays distincts</div>
+            </div>
+          </div>
+
+          <div class="section-panel majorelle-frame rounded-2xl p-5 mb-6" style="box-shadow:var(--card-shadow);border:1px solid var(--line)">
+            <div class="flex flex-wrap items-baseline justify-between gap-2 mb-4">
+              <h3 id="an-daily-title" class="font-bold text-sm" style="color:var(--ink)"><i class="ph-bold ph-chart-bar"></i> Visites par jour</h3>
+              <span id="an-daily-summary" class="text-xs font-semibold" style="color:var(--ink-muted)"></span>
+            </div>
+            <div style="position:relative">
+              <div id="an-tooltip" class="hidden" style="position:fixed;z-index:80;pointer-events:none;background:var(--ink);color:#fff;font-size:.72rem;font-weight:700;padding:.35rem .6rem;border-radius:.5rem;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.25);transform:translate(-50%,-100%)"></div>
+              <div id="an-daily-chart" style="display:flex;align-items:flex-end;gap:2px;height:90px"></div>
+            </div>
+            <div id="an-daily-labels" class="flex justify-between text-xs mt-2" style="color:var(--ink-light)"></div>
+          </div>
+
+          <div class="grid lg:grid-cols-2 gap-6">
+            <div class="section-panel majorelle-frame rounded-2xl p-5" style="box-shadow:var(--card-shadow);border:1px solid var(--line)">
+              <h3 class="font-bold text-sm mb-4" style="color:var(--ink)"><i class="ph-bold ph-globe-hemisphere-west"></i> D'où viennent les lecteurs</h3>
+              <div id="an-countries-list" class="space-y-2.5"><div class="text-sm text-center py-6" style="color:var(--ink-light)">Chargement…</div></div>
+            </div>
+            <div class="section-panel majorelle-frame rounded-2xl p-5" style="box-shadow:var(--card-shadow);border:1px solid var(--line)">
+              <h3 class="font-bold text-sm mb-4" style="color:var(--ink)"><i class="ph-bold ph-fire"></i> Les plus lus sur la période</h3>
+              <div id="an-top-articles" class="space-y-2.5"><div class="text-sm text-center py-6" style="color:var(--ink-light)">Chargement…</div></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -528,6 +594,11 @@ function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=do
 function esc(s){return (s==null? '': String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function stripDataUris(html){return(html||'').replace(/\bsrc="data:[^"]*"/g,'src=""').replace(/\bsrc='data:[^']*'/g,"src=''");}
 function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
+// analytics: country_code from Cloudflare (request.cf.country) is already a
+// 2-letter ISO code, so this skips flagImg's emoji-decoding step entirely.
+function countryFlagImg(code){if(!code||code==='??')return '<span style="font-size:1.1rem">🌍</span>';return '<img src="https://flagcdn.com/w20/'+code.toLowerCase()+'.png" width="20" height="15" alt="'+code+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}
+const COUNTRY_NAMES={FR:'France',BE:'Belgique',CH:'Suisse',CA:'Canada',DE:'Allemagne',ES:'Espagne',IT:'Italie',GB:'Royaume-Uni',US:'États-Unis',MA:'Maroc',TN:'Tunisie',DZ:'Algérie',PT:'Portugal',NL:'Pays-Bas',LU:'Luxembourg',SN:'Sénégal',CI:"Côte d'Ivoire",OM:'Oman',JO:'Jordanie',EG:'Égypte',MR:'Mauritanie'};
+function countryName(code){if(!code||code==='??')return 'Inconnu';return COUNTRY_NAMES[code]||code;}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
 function fmtDateRange(a){
   const start = a.start_date || a.date;
@@ -537,18 +608,37 @@ function fmtDateRange(a){
 }
 
 // ── Load dashboard data ───────────────────────────────────────
+// Sort options mirror the public API's whitelist (api/articles.js SORT_OPTIONS),
+// applied client-side here since the dashboard already fetches the full list.
+const ADMIN_SORTERS = {
+  date_desc:  (a,b) => new Date(b.date||b.start_date||0) - new Date(a.date||a.start_date||0),
+  date_asc:   (a,b) => new Date(a.date||a.start_date||0) - new Date(b.date||b.start_date||0),
+  views_desc: (a,b) => (b.view_count||0) - (a.view_count||0),
+  title_asc:  (a,b) => (a.title||'').localeCompare(b.title||'', 'fr', {sensitivity:'base'}),
+};
+let _allArticles = [];
+let _allFolders = [];
+function applyArticleSort() {
+  const key = document.getElementById('admin-sort-select')?.value || 'date_desc';
+  const sorted = [..._allArticles].sort(ADMIN_SORTERS[key] || ADMIN_SORTERS.date_desc);
+  renderArticles(sorted, _allFolders);
+}
+
 async function init() {
   const [folders, artData] = await Promise.all([
     fetch('/api/folders', {cache:'no-store'}).then(r=>r.json()).catch(()=>[]),
     fetch('/api/articles?limit=100', {cache:'no-store'}).then(r=>r.json()).catch(()=>({articles:[]})),
   ]);
+  _allArticles = artData.articles;
+  _allFolders = folders;
 
   document.getElementById('folder-tree').innerHTML = renderFolderTree(folders, null);
   document.getElementById('stat-total').textContent = artData.articles.length;
   document.getElementById('stat-pub').textContent = artData.articles.filter(a=>a.status==='published').length;
   document.getElementById('stat-draft').textContent = artData.articles.filter(a=>a.status==='draft'||a.status==='archived').length;
   document.getElementById('stat-views').textContent = artData.articles.reduce((s,a)=>s+(a.view_count||0),0);
-  renderArticles(artData.articles, folders);
+  applyArticleSort();
+  document.getElementById('admin-sort-select')?.addEventListener('change', applyArticleSort);
 
   // Pré-chargement en cache de l'éditeur pour tous les articles < 1 an (édition hors-ligne)
   if (navigator.onLine) {
@@ -957,6 +1047,142 @@ document.addEventListener('click', async (e) => {
   }
 });
 
+// ── Analytics / visits dashboard (admin) ────────────────────────
+let _analyticsPeriod = '30';
+async function loadAnalytics() {
+  const data = await fetch('/api/admin/analytics?period=' + encodeURIComponent(_analyticsPeriod), {cache:'no-store'}).then(r=>r.json()).catch(()=>null);
+  if (!data) {
+    document.getElementById('analytics-content').innerHTML = '<p class="text-sm text-center py-10" style="color:var(--ink-light)">Impossible de charger les statistiques.</p>';
+    return;
+  }
+
+  document.getElementById('an-total').textContent = data.total;
+  const trendEl = document.getElementById('an-trend');
+  if (data.trend_pct === null) {
+    trendEl.textContent = '—';
+    trendEl.style.color = 'var(--ink-light)';
+  } else {
+    const up = data.trend_pct >= 0;
+    trendEl.innerHTML = '<i class="ph-bold ph-arrow-' + (up?'up':'down') + '-right"></i> ' + (up?'+':'') + data.trend_pct + '%';
+    trendEl.style.color = up ? 'var(--palm)' : 'var(--ink-muted)';
+  }
+  document.getElementById('an-countries').textContent = data.countries_distinct;
+
+  // Daily/hourly bar chart — bars proportional to the bucket's max. Only the
+  // peak bucket gets a permanent number above its bar (keeps the chart
+  // readable at any period length); every bar shows its exact label + count
+  // via a real JS tooltip that follows the pointer (see an-tooltip below),
+  // not the native title attribute (slow to appear, invisible on touch).
+  const daily = data.daily || [];
+  const isHourly = data.granularity === 'hour';
+  const bucketLabel = b => isHourly
+    ? new Date(b).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})
+    : new Date(b+'T00:00:00').toLocaleDateString('fr-FR', {day:'numeric', month:'short'});
+  const unitWord = isHourly ? 'heure' : 'jour';
+  const titleEl = document.getElementById('an-daily-title');
+  if (titleEl) titleEl.innerHTML = '<i class="ph-bold ph-chart-bar"></i> Visites par ' + unitWord;
+  const maxN = Math.max(1, ...daily.map(d=>d.count));
+  const chart = document.getElementById('an-daily-chart');
+  chart.innerHTML = daily.length
+    ? daily.map(d => {
+        const pct = Math.max(4, Math.round(d.count/maxN*100));
+        const label = bucketLabel(d.day);
+        const isPeak = d.count === maxN && maxN > 0;
+        const numberEl = isPeak
+          ? '<span style="font-size:.68rem;font-weight:700;color:var(--blue);margin-bottom:.25rem;white-space:nowrap">'+d.count+'</span>'
+          : '';
+        return '<div class="an-bar-wrap" data-label="'+label+'" data-count="'+d.count+'" style="flex:1;min-width:3px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;cursor:default">'
+          +numberEl
+          +'<div style="width:100%;height:'+pct+'%;background:var(--blue);border-radius:2px 2px 0 0;min-height:2px;transition:background .1s"></div>'
+        +'</div>';
+      }).join('')
+    : '<p class="text-sm w-full text-center self-center" style="color:var(--ink-light)">Pas encore de données pour cette période.</p>';
+  const labelsEl = document.getElementById('an-daily-labels');
+  if (daily.length >= 2) {
+    labelsEl.innerHTML = '<span>'+bucketLabel(daily[0].day)+'</span><span>'+bucketLabel(daily[daily.length-1].day)+'</span>';
+  } else {
+    labelsEl.innerHTML = '';
+  }
+  // Summary line: always visible regardless of period length, so the key
+  // numbers never depend on hovering a tiny bar.
+  const summaryEl = document.getElementById('an-daily-summary');
+  if (summaryEl) {
+    if (daily.length) {
+      const avg = Math.round(daily.reduce((s,d)=>s+d.count,0) / daily.length * 10) / 10;
+      const peak = daily.reduce((best,d)=> d.count > best.count ? d : best, daily[0]);
+      summaryEl.textContent = 'Moyenne : ' + avg + ' visite' + (avg>1?'s':'') + '/' + unitWord + ' · Pic : ' + peak.count + ' à ' + bucketLabel(peak.day);
+    } else {
+      summaryEl.textContent = '';
+    }
+  }
+
+  // Countries — top 6 + "Autres" bucket, proportional bars.
+  const countries = data.countries || [];
+  const totalViews = countries.reduce((s,c)=>s+c.count, 0) || 1;
+  const top = countries.slice(0,6);
+  const rest = countries.slice(6);
+  const restCount = rest.reduce((s,c)=>s+c.count, 0);
+  const rows = [...top];
+  if (rest.length) rows.push({code:null, count:restCount, isOther:true, otherN:rest.length});
+  document.getElementById('an-countries-list').innerHTML = countries.length
+    ? rows.map(c => {
+        const pct = Math.round(c.count/totalViews*100);
+        const name = c.isOther ? 'Autres ('+c.otherN+' pays)' : countryName(c.code);
+        const flag = c.isOther ? '<span style="font-size:1.1rem">🌍</span>' : countryFlagImg(c.code);
+        return '<div style="display:flex;align-items:center;gap:.75rem">'
+          +'<span style="width:1.25rem;flex-shrink:0">'+flag+'</span>'
+          +'<span style="width:8rem;flex-shrink:0;font-size:.85rem;font-weight:600;color:var(--ink)" class="truncate">'+esc(name)+'</span>'
+          +'<span style="flex:1;height:8px;border-radius:999px;background:var(--sand)"><span style="display:block;height:100%;border-radius:999px;background:var(--blue);width:'+pct+'%"></span></span>'
+          +'<span style="width:3.5rem;flex-shrink:0;text-align:right;font-size:.78rem;font-weight:700;color:var(--ink-muted)">'+pct+'% <span style="color:var(--ink-light);font-weight:400">('+c.count+')</span></span>'
+        +'</div>';
+      }).join('')
+    : '<p class="text-sm text-center py-6" style="color:var(--ink-light)">Aucune visite sur cette période.</p>';
+
+  // Top articles — reuse the same ascending-bars popularity pattern as the
+  // public site (renderPopularityBars in home.js/index.js), scoped to this
+  // period's view count rather than the article's lifetime total.
+  const topArts = data.top_articles || [];
+  const maxV = Math.max(1, ...topArts.map(a=>a.views));
+  document.getElementById('an-top-articles').innerHTML = topArts.length
+    ? topArts.map((a,i) => {
+        const pct = Math.round(a.views/maxV*100);
+        return '<a href="/voyage/'+esc(a.slug)+'" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:.75rem;text-decoration:none">'
+          +'<span style="width:1.25rem;flex-shrink:0;font-size:.78rem;font-weight:700;color:var(--ink-light)">'+(i+1)+'</span>'
+          +'<span style="flex:1;min-width:0;font-size:.85rem;font-weight:600;color:var(--ink)" class="truncate">'+esc(a.title)+'</span>'
+          +'<span style="width:4rem;flex-shrink:0;height:6px;border-radius:999px;background:var(--sand)"><span style="display:block;height:100%;border-radius:999px;background:var(--apricot);width:'+pct+'%"></span></span>'
+          +'<span style="width:2.5rem;flex-shrink:0;text-align:right;font-size:.78rem;font-weight:700;color:var(--ink-muted)">'+a.views+'</span>'
+        +'</a>';
+      }).join('')
+    : '<p class="text-sm text-center py-6" style="color:var(--ink-light)">Aucune vue d\\'article sur cette période.</p>';
+}
+document.querySelectorAll('.period-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.period-pill').forEach(b => b.classList.remove('is-active'));
+    btn.classList.add('is-active');
+    _analyticsPeriod = btn.dataset.period;
+    loadAnalytics();
+  });
+});
+// Real-time tooltip for the daily/hourly chart: follows the pointer while
+// hovering a bar, shown/positioned via mousemove so it tracks in real time
+// rather than appearing at a fixed spot. Delegated on the chart container
+// (stable across loadAnalytics() re-renders) so it works for every bar
+// without re-attaching listeners each time the chart's innerHTML changes.
+(function(){
+  const chartEl = document.getElementById('an-daily-chart');
+  const tip = document.getElementById('an-tooltip');
+  if (!chartEl || !tip) return;
+  chartEl.addEventListener('mousemove', e => {
+    const bar = e.target.closest('.an-bar-wrap');
+    if (!bar) { tip.classList.add('hidden'); return; }
+    tip.textContent = bar.dataset.label + ' : ' + bar.dataset.count + ' visite' + (bar.dataset.count>1?'s':'');
+    tip.style.left = e.clientX + 'px';
+    tip.style.top = (e.clientY - 10) + 'px';
+    tip.classList.remove('hidden');
+  });
+  chartEl.addEventListener('mouseleave', () => tip.classList.add('hidden'));
+})();
+
 // ── Moderation / comments (admin) ─────────────────────────────
 async function loadRecentComments() {
   const box = document.getElementById('recent-comments-list');
@@ -1004,14 +1230,14 @@ document.addEventListener('click', async (e) => {
 
 // ── Tab switching ───────────────────────────────────────────────
 const TAB_LOADERS = {
+  analytics: () => { loadAnalytics(); },
   emails: () => { loadEmailConfigStatus(); loadEmailLog(); },
   subscribers: () => { loadSubscribers(); },
   moderation: () => { loadRecentComments(); },
 };
 const _loadedTabs = new Set(['articles']);
-const TAB_NAMES = ['articles','settings','account','emails','subscribers','moderation'];
+const TAB_NAMES = ['articles','analytics','settings','account','emails','subscribers','moderation'];
 function switchTab(name, focusTab) {
-  console.log('switchTab:', name, document.getElementById('tab-' + name));
   document.querySelectorAll('.admin-tab').forEach(b => {
     const selected = b.dataset.tab === name;
     b.setAttribute('aria-selected', String(selected));

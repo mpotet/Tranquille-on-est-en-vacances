@@ -84,6 +84,28 @@ CREATE INDEX IF NOT EXISTS idx_articles_views      ON articles(view_count DESC);
 CREATE INDEX IF NOT EXISTS idx_photos_article      ON photos(article_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_folders_parent      ON folders(parent_id);
 
+-- ── Analytics: detailed, timestamped visit log ───────────────────────────────
+-- Powers the admin analytics dashboard (period breakdowns, per-country/city
+-- charts). articles.view_count stays as the fast running total for "most
+-- read" sorting; this table adds the historical detail. No IP address is
+-- ever stored — city/region/country come straight from Cloudflare's edge
+-- geolocation (request.cf.*), resolved server-side without the IP touching
+-- the database.
+CREATE TABLE IF NOT EXISTS page_views (
+  id             INTEGER  PRIMARY KEY AUTOINCREMENT,
+  article_id     INTEGER  REFERENCES articles(id) ON DELETE SET NULL,
+  path           TEXT     NOT NULL,
+  country_code   TEXT,
+  region         TEXT,
+  city           TEXT,
+  referrer_host  TEXT,
+  created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_page_views_created ON page_views(created_at);
+CREATE INDEX IF NOT EXISTS idx_page_views_article  ON page_views(article_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_page_views_country  ON page_views(country_code);
+
 -- ── Push notification subscriptions (Web Push API) ──────────────────────────
 -- Endpoint + ECDH keys sent by the browser when user accepts notifications
 CREATE TABLE IF NOT EXISTS push_subscriptions (

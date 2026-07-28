@@ -29,10 +29,11 @@ import {
 
 // API handlers
 import { listFolders, createFolder, updateFolder, deleteFolder } from './api/folders.js';
-import { listArticles, getArticle, createArticle, updateArticle, patchArticleStatus, deleteArticle, recordView } from './api/articles.js';
+import { listArticles, getArticle, createArticle, updateArticle, patchArticleStatus, deleteArticle, recordView, logPageView, isBotUserAgent } from './api/articles.js';
 import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, deleteHeroImage, serveR2Object } from './api/photos.js';
 import { getSettings, updateSettings } from './api/settings.js';
 import { listComments, createComment, deleteComment, listRecentCommentsAdmin, replyToComment } from './api/comments.js';
+import { getAnalytics } from './api/analytics.js';
 import {
   listEmailLog, getEmailConfigStatus, saveEmailConfig, checkEmailSenderStatus, requestSenderVerification,
 } from './api/email-admin.js';
@@ -51,6 +52,21 @@ import { printPage, exportWordDocx } from './pages/print.js';
 // ──────────────────────────────────────────────────────────────
 import { HEAD, NAV, FOOTER, TOAST, LIGHTBOX } from './pages/shell.js';
 
+// Matches skeletonCards() in pages/home.js — kept identical so the loading
+// state reads the same whether you land here from the home grid or directly.
+function skeletonVoyageCards(n) {
+  return Array.from({length:n}).map(()=>`
+    <div class="bg-white rounded-3xl overflow-hidden" style="border:1px solid var(--line);box-shadow:var(--card-shadow)">
+      <div class="h-56 animate-pulse" style="background:var(--sand)"></div>
+      <div class="p-5 space-y-3">
+        <div class="h-3 animate-pulse rounded-full w-1/2" style="background:var(--sand)"></div>
+        <div class="h-5 animate-pulse rounded-full w-4/5" style="background:var(--sand)"></div>
+        <div class="h-3 animate-pulse rounded-full w-full" style="background:var(--sand)"></div>
+        <div class="h-3 animate-pulse rounded-full w-3/4" style="background:var(--sand)"></div>
+      </div>
+    </div>`).join('');
+}
+
 function voyagesPage(authed=false) {
   return html(`<!DOCTYPE html>
 <html lang="fr">
@@ -58,22 +74,43 @@ function voyagesPage(authed=false) {
 <body class="font-sans antialiased" style="background:var(--cream)">
 ${NAV('voyages', authed)}
 <main class="pt-16">
-  <!-- En-tête -->
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-4">
-    <div class="eyebrow mb-5">Carnet de bord des Potet</div>
-    <h1 class="font-display text-4xl sm:text-5xl font-bold mb-3" style="color:var(--ink)"><i class="ph-bold ph-airplane-takeoff"></i> Tous nos voyages</h1>
-    <p id="subtitle" class="text-lg" style="color:var(--ink-muted)">Chargement...</p>
+  <!-- ── Mini-hero ───────────────────────────────────────────── -->
+  <section class="hero-photo" style="min-height:clamp(13rem,26vh,18rem);display:flex;flex-direction:column;justify-content:flex-end">
+    <div class="hero-photo-overlay"></div>
+    <div class="hero-photo-content w-full pb-8 pt-16">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div id="breadcrumb" class="hidden mb-2"></div>
+        <div id="hero-eyebrow-wrap" class="eyebrow mb-3 hero-anim" style="background:rgba(255,199,138,.22);border-color:rgba(255,199,138,.5);color:#fff;--d:0ms">Carnet de bord des Potet</div>
+        <h1 id="voyages-title" class="font-display text-3xl sm:text-5xl font-bold mb-3 text-white drop-shadow-lg hero-anim" style="--d:80ms">Tous nos voyages</h1>
+        <span id="subtitle" class="drame-badge hero-anim" style="border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;display:inline-block;margin-bottom:.5rem;--d:160ms">Chargement…</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Dock filtres + tri (chevauche le hero) ─────────────────── -->
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" style="margin-top:-1rem;position:relative;z-index:3">
+    <div class="panel rounded-[1.75rem] p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
+      <div id="filters" class="flex flex-wrap gap-2" role="navigation" aria-label="Filtrer par destination"></div>
+      <div id="sort-wrap" class="relative flex-shrink-0">
+        <button type="button" id="sort-btn" onclick="const m=document.getElementById('sort-menu');const o=m.classList.toggle('hidden');this.setAttribute('aria-expanded',!o)" aria-haspopup="true" aria-expanded="false" class="subtle-btn text-sm" style="padding:.6rem 1.1rem">
+          <i class="ph-bold ph-sort-ascending"></i> <span id="sort-label">Plus récents</span> <i class="ph-bold ph-caret-down" style="font-size:.7rem"></i>
+        </button>
+        <div id="sort-menu" class="hidden absolute right-0 mt-2 py-1.5 rounded-2xl shadow-xl" style="min-width:11rem;background:#fff;border:1px solid var(--line);z-index:60">
+          <button type="button" data-sort="date_desc" class="sort-opt flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold w-full text-left transition-colors hover:bg-blue-50" style="color:var(--ink)">Plus récents</button>
+          <button type="button" data-sort="date_asc" class="sort-opt flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold w-full text-left transition-colors hover:bg-blue-50" style="color:var(--ink)">Plus anciens</button>
+          <button type="button" data-sort="views_desc" class="sort-opt flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold w-full text-left transition-colors hover:bg-blue-50" style="color:var(--ink)">Les plus lus</button>
+          <button type="button" data-sort="title_asc" class="sort-opt flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold w-full text-left transition-colors hover:bg-blue-50" style="color:var(--ink)">Titre (A→Z)</button>
+        </div>
+      </div>
+    </div>
   </div>
-  <!-- Filtres -->
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    <div id="filters" class="flex flex-wrap gap-2" role="navigation" aria-label="Filtrer par destination"></div>
-  </div>
-  <!-- Fil d'ariane -->
-  <div id="breadcrumb" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-2 hidden"></div>
+
+  <div class="luxe-divider max-w-6xl mx-auto mt-10 mb-2 opacity-60"></div>
+
   <!-- Grille -->
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
     <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-      ${Array.from({length:6}).map(()=>`<div class="bg-white rounded-3xl overflow-hidden" style="border:1px solid var(--line);box-shadow:var(--card-shadow)"><div class="h-56 animate-pulse" style="background:var(--sand)"></div><div class="p-5 space-y-3"><div class="h-3 rounded-full animate-pulse w-1/2" style="background:var(--sand)"></div><div class="h-5 rounded-full animate-pulse w-4/5" style="background:var(--sand)"></div></div></div>`).join('')}
+      ${skeletonVoyageCards(6)}
     </div>
   </div>
 </main>
@@ -259,12 +296,20 @@ function showVoyErrorBanner(){
   b.innerHTML='<i class="ph-fill ph-warning-circle" style="font-size:1.1rem"></i> Impossible de charger le contenu, réessayez.';
   document.body.appendChild(b);
 }
+const SORT_OPTIONS=['date_desc','date_asc','views_desc','title_asc'];
+const SORT_LABELS={date_desc:'Plus récents',date_asc:'Plus anciens',views_desc:'Les plus lus',title_asc:'Titre (A→Z)'};
 async function init(){
   const params=new URLSearchParams(location.search);
   const folder=params.get('folder');
+  const sort=SORT_OPTIONS.includes(params.get('sort'))?params.get('sort'):'date_desc';
+  const sortLbl=document.getElementById('sort-label');
+  if(sortLbl) sortLbl.textContent=SORT_LABELS[sort];
+  const qs=new URLSearchParams();
+  if(folder) qs.set('folder',folder);
+  if(sort!=='date_desc') qs.set('sort',sort);
   const [folders,artData]=await Promise.all([
     _voyFetch('/api/folders',[]),
-    _voyFetch('/api/articles'+(folder?'?folder='+encodeURIComponent(folder):''),{articles:[],total:0}),
+    _voyFetch('/api/articles'+(qs.toString()?'?'+qs.toString():''),{articles:[],total:0}),
   ]);
   const activeF=folder?folders.find(f=>f.slug===folder):null;
   // Walk the FULL ancestor chain (not just one level up) so folders nested
@@ -286,34 +331,34 @@ async function init(){
   const rootF=ancestors.length?ancestors[0]:activeF;
   const totalCount=(artData.total??artData.articles.length);
   const plural=totalCount!==1?'s':'';
-  let destLabel='';
-  if(rootF){
-    const rootName = safeText(rootF.name || '');
-    destLabel=' - <strong style="color:var(--palm)">'+flagImg(rootF.icon||'')+' '+rootName;
-    if(activeF && activeF.id!==rootF.id){
-      const activeName = safeText(activeF.name || '');
-      destLabel+=' / '+flagImg(activeF.icon||'')+' '+activeName;
-    }
-    destLabel+='</strong>';
+
+  // Title reflects the active folder; badge is a short itinerary count only
+  // (the destination is already named in the title + breadcrumb above it).
+  const titleEl=document.getElementById('voyages-title');
+  if(titleEl){
+    titleEl.innerHTML=activeF
+      ? flagImg(activeF.icon||'')+' '+safeText(activeF.name||'')
+      : 'Tous nos voyages';
   }
-  document.getElementById('subtitle').innerHTML='<strong style="color:var(--blue)">'+totalCount+'</strong> itinéraire'+plural+' documenté'+destLabel;
-  // Fil d'ariane
+  document.getElementById('subtitle').textContent=totalCount+' itinéraire'+plural+' documenté'+plural;
+
+  // Fil d'ariane (dans le hero, palette blanche translucide)
   const bc=document.getElementById('breadcrumb');
   if(bc){
     if(activeF){
-      const sep='<span class="mx-1 opacity-40"><i class="ph-bold ph-caret-right"></i></span>';
-      let crumbs='<a href="/voyages" style="color:var(--ink-muted);text-decoration:none;white-space:nowrap" class="hover:underline">Tous les voyages</a>';
+      const sep='<span class="mx-1" style="opacity:.5"><i class="ph-bold ph-caret-right"></i></span>';
+      let crumbs='<a href="/voyages" style="color:rgba(255,255,255,.75);text-decoration:none;white-space:nowrap" class="hover:underline">Tous les voyages</a>';
       // Render one crumb per ancestor (root → immediate parent), then the
       // active folder as the non-clickable current crumb. Supports any
       // folder nesting depth, not just a single parent level.
       ancestors.forEach(f=>{
         const fSlug = safeAttr(f.slug || '');
         const fName = safeText(f.name || '');
-        crumbs+=sep+'<a href="/voyages?folder=' + fSlug + '" style="color:var(--ink-muted);text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap" class="hover:underline">'+flagImg(f.icon||'')+' '+fName+'</a>';
+        crumbs+=sep+'<a href="/voyages?folder=' + fSlug + '" style="color:rgba(255,255,255,.75);text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap" class="hover:underline">'+flagImg(f.icon||'')+' '+fName+'</a>';
       });
       const activeName = safeText(activeF.name || '');
-      crumbs+=sep+'<span style="color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap">'+flagImg(activeF.icon||'')+' '+activeName+'</span>';
-      bc.innerHTML='<nav class="flex items-center flex-wrap gap-0.5 text-sm py-1" style="color:var(--ink-muted)">'+crumbs+'</nav>';
+      crumbs+=sep+'<span style="color:#fff;font-weight:600;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap">'+flagImg(activeF.icon||'')+' '+activeName+'</span>';
+      bc.innerHTML='<nav class="flex items-center flex-wrap gap-0.5 text-sm py-1" style="color:rgba(255,255,255,.75)">'+crumbs+'</nav>';
       bc.classList.remove('hidden');
     }else{
       bc.classList.add('hidden');
@@ -329,10 +374,10 @@ async function init(){
   const roots=folders.filter(f=>!f.parent_id);
   const kids=pid=>folders.filter(f=>f.parent_id===pid);
   const pill=(active,sub)=>{
-    const base='inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-semibold text-sm border-2 transition-all';
+    const base='inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-semibold text-sm border-2 transition-all hover:-translate-y-0.5';
     if(active) return sub
-      ? base+' border-palm text-white" style="background:var(--palm);border-color:var(--palm)'
-      : base+' text-white" style="background:var(--blue);border-color:var(--blue)';
+      ? base+' text-white" style="background:var(--palm);border-color:var(--palm);box-shadow:0 6px 18px rgba(var(--palm-rgb),.30)'
+      : base+' text-white" style="background:var(--blue);border-color:var(--blue);box-shadow:0 6px 18px rgba(var(--blue-rgb),.30)';
     return base+' bg-white" style="border-color:var(--line);color:var(--ink-muted)';
   };
   let btns='<a href="/voyages" class="'+pill(!folder,false)+'"><i class="ph-bold ph-globe-hemisphere-west"></i> Tous</a>';
@@ -352,7 +397,11 @@ async function init(){
   const gridItems=[...childFolders.map(folderCard),...artData.articles.map(a=>card(a,minV,maxV))];
   document.getElementById('grid').innerHTML=gridItems.length
     ?gridItems.join('')
-    :'<div class="col\\-span-3 text-center py-20" style="color:var(--ink-light)"><i class="ph-bold ph-map-trifold" style="font-size:4rem;display:block;margin-bottom:1rem;color:var(--ink-light)"></i><p class="text-xl font-semibold mb-1" style="color:var(--ink)">Pas encore de voyage ici</p></div>';
+    :'<div class="col\\-span-3 text-center py-20" style="color:var(--ink-light)">'
+      +(activeF?'<div style="font-size:3rem;display:block;margin-bottom:1rem">'+flagImg(activeF.icon||'')+'</div>':'<i class="ph-bold ph-map-trifold" style="font-size:3.5rem;display:block;margin-bottom:1rem;color:var(--ink-light)"></i>')
+      +'<p class="text-xl font-semibold mb-1" style="color:var(--ink)">Pas encore posé nos valises ici…</p>'
+      +'<p class="text-sm">Ce coin du monde attend son premier récit.</p>'
+    +'</div>';
   if(_voyFetchFailed) showVoyErrorBanner();
 
   // Event delegation for card clicks
@@ -407,6 +456,19 @@ async function init(){
   if (pfmInput) pfmInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); submitPublicFolder(); }
     if (e.key === 'Escape') { e.preventDefault(); closePublicFolderModal(); }
+  });
+  document.querySelectorAll('.sort-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = new URLSearchParams(location.search);
+      const val = btn.dataset.sort;
+      if (val === 'date_desc') p.delete('sort'); else p.set('sort', val);
+      location.search = p.toString();
+    });
+  });
+  document.addEventListener('click', (e) => {
+    const menu = document.getElementById('sort-menu'), btn = document.getElementById('sort-btn');
+    if (!menu || menu.classList.contains('hidden')) return;
+    if (!e.target.closest('#sort-wrap')) { menu.classList.add('hidden'); btn?.setAttribute('aria-expanded','false'); }
   });
 }
 init();
@@ -538,18 +600,20 @@ ${TOAST}
   })();
 
   // Photos + prev/next in parallel
-  const orderClause = 'ORDER BY a.date DESC, a.created_at DESC';
+  // Ordered by start_date, not the legacy `date` column — `date` has drifted
+  // out of sync with start_date on many existing rows (bulk-import artifact).
   const [photosRes, prevRow, nextRow] = await Promise.all([
     env.DB.prepare('SELECT * FROM photos WHERE article_id = ? ORDER BY sort_order, id').bind(article.id).all(),
     // Previous = older article (earlier date). Next = newer article.
     // Tie-break on id as a final fallback: bulk imports can insert several
-    // rows in the same transaction with identical (date, created_at), which
-    // would otherwise make every article in that tie group silently lose its
-    // prev/next links (both '<' comparisons on an equal created_at are false).
-    env.DB.prepare(`SELECT slug, title FROM articles a WHERE a.status='published' AND (a.date < ? OR (a.date = ? AND a.created_at < ?) OR (a.date = ? AND a.created_at = ? AND a.id < ?)) ORDER BY a.date DESC, a.created_at DESC, a.id DESC LIMIT 1`)
-      .bind(article.date, article.date, article.created_at, article.date, article.created_at, article.id).first(),
-    env.DB.prepare(`SELECT slug, title FROM articles a WHERE a.status='published' AND (a.date > ? OR (a.date = ? AND a.created_at > ?) OR (a.date = ? AND a.created_at = ? AND a.id > ?)) ORDER BY a.date ASC, a.created_at ASC, a.id ASC LIMIT 1`)
-      .bind(article.date, article.date, article.created_at, article.date, article.created_at, article.id).first(),
+    // rows in the same transaction with identical (start_date, created_at),
+    // which would otherwise make every article in that tie group silently
+    // lose its prev/next links (both '<' comparisons on an equal created_at
+    // are false).
+    env.DB.prepare(`SELECT slug, title FROM articles a WHERE a.status='published' AND (a.start_date < ? OR (a.start_date = ? AND a.created_at < ?) OR (a.start_date = ? AND a.created_at = ? AND a.id < ?)) ORDER BY a.start_date DESC, a.created_at DESC, a.id DESC LIMIT 1`)
+      .bind(article.start_date, article.start_date, article.created_at, article.start_date, article.created_at, article.id).first(),
+    env.DB.prepare(`SELECT slug, title FROM articles a WHERE a.status='published' AND (a.start_date > ? OR (a.start_date = ? AND a.created_at > ?) OR (a.start_date = ? AND a.created_at = ? AND a.id > ?)) ORDER BY a.start_date ASC, a.created_at ASC, a.id ASC LIMIT 1`)
+      .bind(article.start_date, article.start_date, article.created_at, article.start_date, article.created_at, article.id).first(),
   ]);
   const photos = (photosRes.results || []).map(p => ({ ...p, url: p.url, caption: p.caption || '' }));
 
@@ -1236,6 +1300,12 @@ export default {
         return adminUnsubscribeById(request, env, parseInt(subsMatch.id));
       }
 
+      // Admin: visits analytics dashboard
+      if (path === '/api/admin/analytics' && method === 'GET') {
+        if (!authed) return unauthorized();
+        return getAnalytics(request, env);
+      }
+
       // Admin: recent comments across site and reply
       if (path === '/api/admin/comments/recent' && method === 'GET') {
         if (!authed) return unauthorized();
@@ -1315,7 +1385,7 @@ export default {
       const viewMatch = matchPath('/api/articles/:id/view', path);
       if (viewMatch && method === 'POST') {
         const id = parseInt(viewMatch.id);
-        return !isNaN(id) ? recordView(env, id, request) : recordView(env, viewMatch.id, request);
+        return !isNaN(id) ? recordView(env, id, request, authed) : recordView(env, viewMatch.id, request, authed);
       }
 
       // Photos
@@ -1334,6 +1404,13 @@ export default {
 
     // ── Public HTML pages ─────────────────────────────────────
     const publicAuthed = await isAuthenticated(request, env.SESSION_SECRET);
+    // Log page views for the analytics dashboard — skip the admin's own
+    // browsing (publicAuthed) and bots, same filter as recordView() for
+    // article pages. Fire-and-forget via waitUntil so it never delays the
+    // response the visitor is waiting for.
+    if (!publicAuthed && !isBotUserAgent(request) && (path === '/' || path === '' || path === '/voyages')) {
+      ctx.waitUntil(logPageView(env, request, { path: path || '/' }));
+    }
     if (path === '/' || path === '') return homePage(publicAuthed);
     if (path === '/voyages')         return voyagesPage(publicAuthed);
     const voyageMatch = matchPath('/voyage/:slug', path);

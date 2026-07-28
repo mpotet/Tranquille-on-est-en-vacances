@@ -41,6 +41,20 @@ export async function listArticles(request, env, isAdmin) {
   const limit       = Math.min(50, parseInt(url.searchParams.get('limit') || '20'));
   const offset      = (page - 1) * limit;
 
+  // Whitelisted sort options only — never interpolate the raw query param
+  // into ORDER BY (SQL injection). Default: most recent trip first, everywhere.
+  // Sorts by start_date, not the legacy `date` column — `date` was meant to
+  // mirror start_date but has drifted out of sync on many existing rows
+  // (bulk-import artifact), which silently broke "most recent first".
+  const SORT_OPTIONS = {
+    date_desc:  'a.start_date DESC, a.created_at DESC',
+    date_asc:   'a.start_date ASC, a.created_at ASC',
+    views_desc: 'a.view_count DESC, a.start_date DESC',
+    title_asc:  'a.title COLLATE NOCASE ASC',
+  };
+  const sortKey   = url.searchParams.get('sort');
+  const orderBy   = SORT_OPTIONS[sortKey] || SORT_OPTIONS.date_desc;
+
   let whereClauses = [];
   const bindings   = [];
 
@@ -91,7 +105,7 @@ export async function listArticles(request, env, isAdmin) {
       FROM   articles a
       LEFT JOIN folders f ON f.id = a.folder_id
       ${where}
-      ORDER BY a.date DESC, a.created_at DESC
+      ORDER BY ${orderBy}
       LIMIT ? OFFSET ?
     `)
     .bind(...bindings, limit, offset)
@@ -367,13 +381,32 @@ function isBotUserAgent(request) {
   return !ua || BOT_UA_RE.test(ua);
 }
 
+/**
+ * Log one visit into page_views for the analytics dashboard. Never stores an
+ * IP — city/region/country come straight from Cloudflare's edge geolocation
+ * (request.cf), already resolved server-side. Best-effort: a logging failure
+ * must never break the page/view-count response it's attached to.
+ */
+async function logPageView(env, request, { articleId = null, path }) {
+  try {
+    const cf = request?.cf || {};
+    let referrerHost = null;
+    const ref = request?.headers?.get('Referer');
+    if (ref) { try { referrerHost = new URL(ref).hostname || null; } catch {} }
+    await env.DB
+      .prepare('INSERT INTO page_views (article_id, path, country_code, region, city, referrer_host) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(articleId, path, cf.country || null, cf.region || null, cf.city || null, referrerHost)
+      .run();
+  } catch { /* analytics must never break the request it's attached to */ }
+}
+
 // ──────────────────────────────────────────────────────────────
 // Record a view for an article
 // ──────────────────────────────────────────────────────────────
-export async function recordView(env, slugOrId, request) {
+export async function recordView(env, slugOrId, request, authed = false) {
   const isNumericId = /^\d+$/.test(String(slugOrId));
   const article = await env.DB
-    .prepare(`SELECT id, view_count FROM articles WHERE ${isNumericId ? 'id = ?' : 'slug = ?'}`)
+    .prepare(`SELECT id, slug, view_count FROM articles WHERE ${isNumericId ? 'id = ?' : 'slug = ?'}`)
     .bind(isNumericId ? parseInt(slugOrId) : slugOrId)
     .first();
 
@@ -390,6 +423,14 @@ export async function recordView(env, slugOrId, request) {
     .bind(article.id)
     .run();
 
+  // Only log the detailed analytics event for real (non-admin) visitors — the
+  // dashboard is meant to show who's reading the blog, not the admin's own
+  // browsing while managing it. view_count above still increments either way
+  // (unchanged prior behaviour), this only affects the page_views history.
+  if (!authed) {
+    await logPageView(env, request, { articleId: article.id, path: '/voyage/' + article.slug });
+  }
+
   const updated = await env.DB
     .prepare('SELECT view_count FROM articles WHERE id = ?')
     .bind(article.id)
@@ -397,3 +438,5 @@ export async function recordView(env, slugOrId, request) {
 
   return json({ views: updated.view_count });
 }
+
+export { logPageView, isBotUserAgent };

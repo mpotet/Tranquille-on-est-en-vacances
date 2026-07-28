@@ -204,6 +204,11 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .badge-archived  { background: rgba(90,106,122,.10);             color: var(--ink-muted); border: 1px solid rgba(90,106,122,.22); }
 .badge-pending   { background: rgba(var(--apricot-rgb),.20);     color: #9a5b12;          border: 1px solid rgba(var(--apricot-rgb),.5); }
 
+/* ── Period pills (admin analytics) ─────────────────────────── */
+.period-pill{padding:.4rem .9rem;border-radius:999px;font-size:.78rem;font-weight:700;background:#fff;border:1.5px solid var(--line);color:var(--ink-muted);cursor:pointer;transition:all .15s}
+.period-pill:hover{border-color:rgba(var(--blue-rgb),.3);color:var(--blue)}
+.period-pill.is-active{background:var(--blue);border-color:var(--blue);color:#fff}
+
 /* ── Status picker (article editor) ─────────────────────────── */
 .status-option { border-color: var(--line); background: #fff; }
 .status-option-icon { color: var(--ink-light); }
@@ -307,6 +312,11 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 
 /* ── Tailwind colour overrides (keep light theme coherent) ── */
 .bg-white   { background: #fff!important; }
+/* Tailwind's shadow-sm reads flat/generic (hard grey) next to the theme's
+   softer double-diffuse .panel/.card shadow — used throughout admin.js for
+   ordinary content cards, so this one override carries most of that visual
+   gap without touching every call site individually. */
+.shadow-sm  { box-shadow: var(--card-shadow)!important; }
 .bg-stone-50, .bg-stone-100 { background: var(--cream)!important; }
 .bg-stone-200, .hover\:bg-stone-200:hover { background: var(--sand-deep)!important; }
 .bg-sky-50, .hover\:bg-sky-50:hover, .hover\:bg-sky-100:hover { background: var(--blue-light)!important; }
