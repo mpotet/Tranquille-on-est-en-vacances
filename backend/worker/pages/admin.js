@@ -1272,7 +1272,7 @@ async function loadAnalytics() {
         const flag = c.isOther ? '<span style="font-size:1.1rem">🌍</span>' : countryFlagImg(c.code);
         return '<div style="display:flex;align-items:center;gap:.75rem">'
           +'<span style="width:1.25rem;flex-shrink:0">'+flag+'</span>'
-          +'<span style="width:9rem;flex-shrink:0;font-size:.85rem;font-weight:600;color:var(--ink)" class="truncate">'+esc(name)+'</span>'
+          +'<span style="width:9rem;flex-shrink:0;font-size:.85rem;font-weight:600;color:var(--ink);cursor:help" class="truncate" title="'+esc(name)+'">'+esc(name)+'</span>'
           +'<span style="flex:1;height:8px;border-radius:999px;background:var(--sand)"><span style="display:block;height:100%;border-radius:999px;background:var(--blue);width:'+pct+'%"></span></span>'
           +'<span style="width:3.5rem;flex-shrink:0;text-align:right;font-size:.78rem;font-weight:700;color:var(--ink-muted)">'+pct+'% <span style="color:var(--ink-light);font-weight:400">('+c.count+')</span></span>'
         +'</div>';
@@ -1289,7 +1289,7 @@ async function loadAnalytics() {
         const pct = Math.round(a.views/maxV*100);
         return '<a href="/voyage/'+esc(a.slug)+'" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:.75rem;text-decoration:none">'
           +'<span style="width:1.25rem;flex-shrink:0;font-size:.78rem;font-weight:700;color:var(--ink-light)">'+(i+1)+'</span>'
-          +'<span style="flex:1;min-width:0;font-size:.85rem;font-weight:600;color:var(--ink)" class="truncate">'+esc(a.title)+'</span>'
+          +'<span style="flex:1;min-width:0;font-size:.85rem;font-weight:600;color:var(--ink)" class="truncate" title="'+esc(a.title)+'">'+esc(a.title)+'</span>'
           +'<span style="width:4rem;flex-shrink:0;height:6px;border-radius:999px;background:var(--sand)"><span style="display:block;height:100%;border-radius:999px;background:var(--apricot);width:'+pct+'%"></span></span>'
           +'<span style="width:2.5rem;flex-shrink:0;text-align:right;font-size:.78rem;font-weight:700;color:var(--ink-muted)">'+a.views+'</span>'
         +'</a>';
