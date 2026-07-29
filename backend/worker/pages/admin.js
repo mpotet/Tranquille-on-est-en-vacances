@@ -15,7 +15,7 @@ import { safeText, safeAttr } from '../helpers/html.js';
 const ADMIN_NAV = (active = '') => `
 ${NAV(active, true)}
 <!-- Pastille état connexion : discrète, coin bas-gauche, masquée par défaut -->
-<div id="offline-bar" class="hidden fixed z-40 items-center gap-1.5 text-xs font-bold" style="bottom:1rem;left:1rem;padding:.4rem .75rem;border-radius:999px;background:#fff;border:1px solid rgba(var(--apricot-rgb),.5);box-shadow:var(--card-shadow);color:var(--pending)" role="status" aria-live="polite"></div>
+<div id="offline-bar" class="hidden fixed z-40 items-center gap-1.5 text-xs font-bold" style="bottom:1rem;left:1rem;padding:.4rem .75rem;border-radius:999px;background:var(--cream);border:1px solid rgba(var(--apricot-rgb),.5);box-shadow:var(--card-shadow);color:var(--pending)" role="status" aria-live="polite"></div>
 <script>
 (function(){
   const bar = document.getElementById('offline-bar');
@@ -23,7 +23,7 @@ ${NAV(active, true)}
     if (!bar) return;
     if (!navigator.onLine) {
       bar.className = 'flex fixed z-40 items-center gap-1.5 text-xs font-bold';
-      bar.style.cssText = 'bottom:1rem;left:1rem;padding:.4rem .75rem;border-radius:999px;background:#fff;border:1px solid rgba(var(--apricot-rgb),.5);box-shadow:var(--card-shadow);color:var(--pending)';
+      bar.style.cssText = 'bottom:1rem;left:1rem;padding:.4rem .75rem;border-radius:999px;background:var(--cream);border:1px solid rgba(var(--apricot-rgb),.5);box-shadow:var(--card-shadow);color:var(--pending)';
       bar.innerHTML = '<i class="ph-bold ph-wifi-x"></i> Hors connexion';
     } else {
       bar.className = 'hidden';
@@ -170,7 +170,7 @@ ${ADMIN_NAV()}
             </div>
 
             <div class="grid grid-cols-2 gap-3" id="stats-grid">
-              <div class="rounded-2xl p-4 text-center" style="background:#fff;border:1px solid var(--line)">
+              <div class="rounded-2xl p-4 text-center" style="background:var(--cream);border:1px solid var(--line)">
                 <div id="stat-total" class="text-2xl font-black" style="color:var(--ink)">-</div>
                 <div class="text-xs font-bold mt-1" style="color:var(--ink-muted)">Articles</div>
               </div>
@@ -194,7 +194,7 @@ ${ADMIN_NAV()}
             <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
               <h2 class="font-display text-2xl font-bold text-stone-900">Tous les articles</h2>
               <div class="flex items-center gap-2">
-                <select id="admin-sort-select" class="border-2 rounded-xl px-3 py-1.5 text-sm font-semibold" style="border-color:rgba(var(--blue-rgb),.18);background:#fff;color:var(--ink)">
+                <select id="admin-sort-select" class="border-2 rounded-xl px-3 py-1.5 text-sm font-semibold" style="border-color:rgba(var(--blue-rgb),.18);background:var(--cream);color:var(--ink)">
                   <option value="date_desc">Plus récents</option>
                   <option value="date_asc">Plus anciens</option>
                   <option value="views_desc">Les plus lus</option>
@@ -248,7 +248,7 @@ ${ADMIN_NAV()}
               <div id="an-trend" class="text-2xl font-black" style="color:var(--palm)">-</div>
               <div class="text-xs font-bold mt-1" style="color:var(--palm)">vs période précédente</div>
             </div>
-            <div class="rounded-2xl p-4 text-center" style="background:#fff;border:1px solid var(--line)">
+            <div class="rounded-2xl p-4 text-center" style="background:var(--cream);border:1px solid var(--line)">
               <div id="an-countries" class="text-2xl font-black" style="color:var(--ink)">-</div>
               <div class="text-xs font-bold mt-1" style="color:var(--ink-muted)">Pays distincts</div>
             </div>
@@ -1066,9 +1066,9 @@ async function changePassword() {
 
 // ── Emails tab: Mailjet sender setup + send history ─────────────
 function senderStatusBadge(verified) {
-  if (verified === true)  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#f0fdf4;color:var(--palm)"><i class="ph-bold ph-check-circle"></i> Vérifié</span>';
-  if (verified === false) return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#fef2f2;color:var(--danger)"><i class="ph-bold ph-x-circle"></i> Non vérifié</span>';
-  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:#f5f5f4;color:#78716c"><i class="ph-bold ph-circle-dashed"></i> Inconnu</span>';
+  if (verified === true)  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:rgba(var(--palm-rgb),.12);color:var(--palm)"><i class="ph-bold ph-check-circle"></i> Vérifié</span>';
+  if (verified === false) return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:rgba(var(--danger-rgb),.10);color:var(--danger)"><i class="ph-bold ph-x-circle"></i> Non vérifié</span>';
+  return '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" style="background:var(--sand);color:var(--ink-muted)"><i class="ph-bold ph-circle-dashed"></i> Inconnu</span>';
 }
 async function loadEmailConfigStatus() {
   const box = document.getElementById('email-config-status');
@@ -1221,7 +1221,13 @@ async function loadAnalytics() {
   const chart = document.getElementById('an-daily-chart');
   chart.innerHTML = daily.length
     ? daily.map(d => {
-        const pct = Math.max(4, Math.round(d.count/maxN*100));
+        // A true zero must read as "no visits", not as a small blue bar - at
+        // minimum height + brand color it was visually indistinguishable from
+        // a bucket that actually had 1-2 visits. Empty buckets get a flat,
+        // neutral sliver instead so the eye reads them as "nothing happened"
+        // rather than "a little happened".
+        const isEmpty = d.count === 0;
+        const pct = isEmpty ? 2 : Math.max(4, Math.round(d.count/maxN*100));
         const label = bucketLabel(d.day);
         const isPeak = d.count === maxN && maxN > 0;
         const numberEl = isPeak
@@ -1229,7 +1235,7 @@ async function loadAnalytics() {
           : '';
         return '<div class="an-bar-wrap" data-label="'+label+'" data-count="'+d.count+'" style="flex:1;min-width:3px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;cursor:default">'
           +numberEl
-          +'<div style="width:100%;height:'+pct+'%;background:var(--blue);border-radius:2px 2px 0 0;min-height:2px;transition:background .1s"></div>'
+          +'<div style="width:100%;height:'+pct+'%;background:'+(isEmpty ? 'var(--line)' : 'var(--blue)')+';border-radius:2px 2px 0 0;min-height:2px;transition:background .1s"></div>'
         +'</div>';
       }).join('')
     : '<p class="text-sm w-full text-center self-center" style="color:var(--ink-light)">Pas encore de données pour cette période.</p>';

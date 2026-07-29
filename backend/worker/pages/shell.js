@@ -2,32 +2,63 @@
  * pages/shell.js - Shared HTML shell (head + nav + footer) injected into every page.
  */
 
-export const HEAD = (title = 'Tranquille, on est en vacances', description = "Le carnet de bord des voyages de la famille Potet") => `
+// Every page's <head>, including Open Graph / Twitter Card social preview tags
+// so a shared link (WhatsApp, iMessage, Facebook...) shows a real title/image
+// instead of a bare URL. `opts` lets a specific page (an article) override the
+// defaults with its own cover photo / canonical URL / og:type; callers that
+// pass nothing still get sane site-wide defaults, so this is safe everywhere.
+export const HEAD = (
+  title = 'Tranquille, on est en vacances',
+  description = "Le carnet de bord des voyages de la famille Potet",
+  opts = {}
+) => {
+  const {
+    image = 'https://tranquille-vacances.esti-archi.workers.dev/icon-512.png',
+    url = '',
+    type = 'website',
+  } = opts;
+  return `
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="${description}">
 <meta name="theme-color" content="#0057B8">
 <title>${title}</title>
+<script>
+// Applied before any CSS/paint so a saved dark-mode preference doesn't flash
+// light-then-dark on load. Reads localStorage only - if unset, the
+// prefers-color-scheme media query in the stylesheet takes over on its own.
+(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
 <link rel="icon" href="/icon-192.png" type="image/png">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<script src="https://cdn.tailwindcss.com"></script>
+${url ? `<link rel="canonical" href="${url}">` : ''}
+<link rel="alternate" type="application/rss+xml" title="Tranquille, on est en vacances" href="/feed.xml">
+<!-- Open Graph -->
+<meta property="og:site_name" content="Tranquille, on est en vacances">
+<meta property="og:type" content="${type}">
+<meta property="og:title" content="${title}">
+<meta property="og:description" content="${description}">
+<meta property="og:image" content="${image}">
+${url ? `<meta property="og:url" content="${url}">` : ''}
+<meta property="og:locale" content="fr_FR">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${title}">
+<meta name="twitter:description" content="${description}">
+<meta name="twitter:image" content="${image}">
+<!-- Pre-built, purged Tailwind stylesheet (see tailwind.config.js / npm run
+     build:css) — replaces the cdn.tailwindcss.com <script>, which shipped the
+     full JIT compiler to every visitor and recompiled all classes in-browser
+     on every single page load. This static file is generated once at build
+     time and is a fraction of the size. -->
+<link rel="stylesheet" href="/tailwind.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
 <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
 <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
-<script>
-tailwind.config = {
-  theme: { extend: {
-    fontFamily: {
-      sans:    ['Montserrat','ui-sans-serif','system-ui','sans-serif'],
-      display: ['"Playfair Display"','Georgia','serif'],
-    }
-  }}
-}
-</script>
 <style>
 /* ── Design tokens ─────────────────────────────────────────── */
 :root {
@@ -47,6 +78,7 @@ tailwind.config = {
   --palm-rgb:      46,125,107;
   --palm-light:    #E6F4F1;
   --cream:         #FFFDF9;
+  --cream-rgb:     255,253,249;
   --ink:           #1A2B3C;
   --ink-rgb:       26,43,60;
   --ink-muted:     #5A6A7A;
@@ -60,9 +92,66 @@ tailwind.config = {
   --hover-shadow:  0 8px 36px rgba(0,87,184,.18);
 }
 
+/* ── Dark mode ─────────────────────────────────────────────────
+   Every color in the site is already a var(--token) reference (design system
+   built that way from the start), so a dark theme is just re-pointing the
+   base surface/text/line tokens - no component CSS below needs to change.
+   Brand accents (--blue, --palm, --apricot, --danger…) stay the same in both
+   themes; only what changes is what's a "page background" vs "ink" here.
+   Activated either by the OS preference or by #theme-toggle writing
+   data-theme to <html> (see the script at the bottom of NAV()). */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --cream:      #14202E;
+  --cream-rgb:  20,32,46;
+  --sand:       #1C2C3D;
+  --sand-rgb:   28,44,61;
+  --sand-deep:  #24384D;
+  --ink:        #F1F5F9;
+  --ink-rgb:    241,245,249;
+  --ink-muted:  #AEBDCC;
+  --ink-light:  #7C8CA0;
+  --line:       rgba(241,245,249,.12);
+  --card-shadow: 0 2px 12px rgba(0,0,0,.28), 0 8px 28px rgba(0,0,0,.22);
+  --blue-light: rgba(0,87,184,.18);
+  --palm-light: rgba(46,125,107,.16);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --cream:      #14202E;
+    --cream-rgb:  20,32,46;
+    --sand:       #1C2C3D;
+    --sand-rgb:   28,44,61;
+    --sand-deep:  #24384D;
+    --ink:        #F1F5F9;
+    --ink-rgb:    241,245,249;
+    --ink-muted:  #AEBDCC;
+    --ink-light:  #7C8CA0;
+    --line:       rgba(241,245,249,.12);
+    --card-shadow: 0 2px 12px rgba(0,0,0,.28), 0 8px 28px rgba(0,0,0,.22);
+    --blue-light: rgba(0,87,184,.18);
+    --palm-light: rgba(46,125,107,.16);
+  }
+}
+
 /* ── Base ──────────────────────────────────────────────────── */
 html { scroll-behavior: smooth; background: var(--cream); }
 body { min-height: 100vh; background: var(--cream); color: var(--ink); font-family: Montserrat, sans-serif; }
+/* Plain white surfaces (Tailwind's bg-white utility, and native form controls
+   which browsers render white regardless of page CSS) still need an explicit
+   flip in dark mode - unlike .panel/.section-panel below, these aren't part of
+   the token system, so a rule swap is the correct fix here (not a token). */
+[data-theme="dark"] .bg-white, [data-theme="dark"] input,
+[data-theme="dark"] textarea, [data-theme="dark"] select {
+  background: var(--sand) !important;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .bg-white, :root:not([data-theme="light"]) input,
+  :root:not([data-theme="light"]) textarea, :root:not([data-theme="light"]) select {
+    background: var(--sand) !important;
+  }
+}
 
 /* ── Typography ────────────────────────────────────────────── */
 .font-display, h1, h2, h3 { font-family: "Playfair Display", Georgia, serif; }
@@ -93,7 +182,7 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .btn-ghost {
   display: inline-flex; align-items: center; justify-content: center; gap: .55rem;
   padding: .82rem 1.6rem; border-radius: 999px;
-  background: rgba(255,255,255,.9); color: var(--blue); font-weight: 700; font-size: .92rem;
+  background: rgba(var(--cream-rgb),.9); color: var(--blue); font-weight: 700; font-size: .92rem;
   border: 2px solid rgba(var(--blue-rgb), .28);
   transition: transform .2s, box-shadow .2s, background .2s, border-color .2s;
 }
@@ -104,21 +193,21 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .action-btn:hover  { background:var(--blue-dark)!important;border-color:var(--blue-dark)!important;transform:translateY(-2px);box-shadow:0 10px 32px rgba(var(--blue-rgb),.38); }
 .action-btn-sm { display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.58rem 1.15rem;border-radius:999px;background:var(--blue)!important;color:#fff!important;font-weight:700;font-size:.82rem;border:2px solid var(--blue)!important;box-shadow:0 4px 14px rgba(var(--blue-rgb),.22);transition:transform .2s,box-shadow .2s,background .2s; }
 .action-btn-sm:hover { background:var(--blue-dark)!important;border-color:var(--blue-dark)!important;transform:translateY(-2px); }
-.subtle-btn    { display:inline-flex;align-items:center;justify-content:center;gap:.55rem;padding:.82rem 1.6rem;border-radius:999px;background:rgba(255,255,255,.9);color:var(--blue);font-weight:700;font-size:.92rem;border:2px solid rgba(var(--blue-rgb),.28);transition:transform .2s,box-shadow .2s,background .2s,border-color .2s; }
+.subtle-btn    { display:inline-flex;align-items:center;justify-content:center;gap:.55rem;padding:.82rem 1.6rem;border-radius:999px;background:rgba(var(--cream-rgb),.9);color:var(--blue);font-weight:700;font-size:.92rem;border:2px solid rgba(var(--blue-rgb),.28);transition:transform .2s,box-shadow .2s,background .2s,border-color .2s; }
 .subtle-btn:hover { background:var(--blue-light);border-color:var(--blue);transform:translateY(-2px); }
 .ghost-btn { display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.56rem .9rem;border-radius:999px;background:transparent;color:var(--ink-muted);font-size:.82rem;font-weight:600;border:1px solid var(--line);transition:color .2s,background .2s; }
 .ghost-btn:hover { color:var(--blue);background:var(--blue-light); }
 
 /* ── Cards ─────────────────────────────────────────────────── */
 .card {
-  background: #fff; border: 1px solid var(--line);
+  background: var(--cream); border: 1px solid var(--line);
   box-shadow: var(--card-shadow); border-radius: 1.5rem;
   transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
 }
 .card:hover { transform: translateY(-5px); box-shadow: var(--hover-shadow); border-color: rgba(var(--blue-rgb), .18); }
 
 .voyage-card {
-  background: #fff; border: 1px solid var(--line);
+  background: var(--cream); border: 1px solid var(--line);
   box-shadow: var(--card-shadow); border-radius: 1.5rem; overflow: hidden;
   transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
 }
@@ -127,16 +216,16 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 
 /* ── Panel (frosted surface) ───────────────────────────────── */
 .panel {
-  background: rgba(255,253,249,.96); border: 1px solid rgba(var(--sand-rgb), .7);
+  background: rgba(var(--cream-rgb),.96); border: 1px solid rgba(var(--sand-rgb), .7);
   border-radius: 1.5rem; box-shadow: var(--card-shadow);
 }
 /* alias */
-.section-panel, .glass-panel, .majorelle-frame, .majorelle-showcase { background: rgba(255,253,249,.96)!important; border: 1px solid rgba(var(--sand-rgb), .7)!important; box-shadow: var(--card-shadow)!important; }
+.section-panel, .glass-panel, .majorelle-frame, .majorelle-showcase { background: rgba(var(--cream-rgb),.96)!important; border: 1px solid rgba(var(--sand-rgb), .7)!important; box-shadow: var(--card-shadow)!important; }
 /* Plain white card with a thin line border + the theme's soft shadow - the
    pattern repeated inline for comments/prev-next cards on the voyage page.
    No border-radius here on purpose: call sites already set their own via a
    Tailwind rounded-* class. */
-.card-line { background: #fff; border: 1px solid var(--line); box-shadow: var(--card-shadow); }
+.card-line { background: var(--cream); border: 1px solid var(--line); box-shadow: var(--card-shadow); }
 
 /* ── Full-bleed photo hero ──────────────────────────────────── */
 .hero-photo {
@@ -159,8 +248,8 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .hero-photo-content { position: relative; z-index: 2; }
 
 /* ── Section panel used in admin ───────────────────────────── */
-.metric-card { background: linear-gradient(135deg,#fff 0%,var(--sand) 100%)!important; border: 1px solid rgba(var(--sand-rgb),.8)!important; box-shadow: var(--card-shadow)!important; border-radius: 1.25rem; }
-.majorelle-stat { background: linear-gradient(135deg,#fff 0%,var(--sand) 100%)!important; border: 1px solid rgba(var(--sand-rgb),.8)!important; box-shadow: var(--card-shadow)!important; }
+.metric-card { background: linear-gradient(135deg,var(--cream) 0%,var(--sand) 100%)!important; border: 1px solid rgba(var(--sand-rgb),.8)!important; box-shadow: var(--card-shadow)!important; border-radius: 1.25rem; }
+.majorelle-stat { background: linear-gradient(135deg,var(--cream) 0%,var(--sand) 100%)!important; border: 1px solid rgba(var(--sand-rgb),.8)!important; box-shadow: var(--card-shadow)!important; }
 
 /* ── Quote block ───────────────────────────────────────────── */
 .quote-block {
@@ -213,12 +302,12 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .badge-pending   { background: rgba(var(--apricot-rgb),.20);     color: var(--pending);          border: 1px solid rgba(var(--apricot-rgb),.5); }
 
 /* ── Period pills (admin analytics) ─────────────────────────── */
-.period-pill{padding:.4rem .9rem;border-radius:999px;font-size:.78rem;font-weight:700;background:#fff;border:1.5px solid var(--line);color:var(--ink-muted);cursor:pointer;transition:all .15s}
+.period-pill{padding:.4rem .9rem;border-radius:999px;font-size:.78rem;font-weight:700;background:var(--cream);border:1.5px solid var(--line);color:var(--ink-muted);cursor:pointer;transition:all .15s}
 .period-pill:hover{border-color:rgba(var(--blue-rgb),.3);color:var(--blue)}
 .period-pill.is-active{background:var(--blue);border-color:var(--blue);color:#fff}
 
 /* ── Status picker (article editor) ─────────────────────────── */
-.status-option { border-color: var(--line); background: #fff; }
+.status-option { border-color: var(--line); background: var(--cream); }
 .status-option-icon { color: var(--ink-light); }
 .status-option .status-btn-title { color: var(--ink-muted); }
 .status-option .status-check { display: none; color: inherit; }
@@ -267,7 +356,7 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .toolbar-btn { display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:.5rem; font-size:1rem; cursor:pointer; background:transparent; border:none; color:var(--ink-muted); transition:background .12s,color .12s; }
 .toolbar-btn:hover { background:var(--sand); color:var(--ink); }
 .toolbar-btn:active { background:var(--sand-deep); }
-.toolbar-sep { display:inline-block; width:1px; height:1.1rem; background:#d6d3d1; margin:0 .2rem; vertical-align:middle; }
+.toolbar-sep { display:inline-block; width:1px; height:1.1rem; background:var(--line); margin:0 .2rem; vertical-align:middle; }
 /* On touch devices (phone/tablet - no hover capability), bump the toolbar
    buttons up to the ~44px minimum recommended touch target size. The admin
    writes articles from their phone while travelling, so mis-taps here (e.g.
@@ -276,7 +365,7 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 @media (pointer: coarse) {
   .toolbar-btn { width:2.75rem; height:2.75rem; font-size:1.15rem; }
 }
-#e-content[data-placeholder]:empty:before { content:attr(data-placeholder); color:#a8a29e; pointer-events:none; display:block; }
+#e-content[data-placeholder]:empty:before { content:attr(data-placeholder); color:var(--ink-light); pointer-events:none; display:block; }
 
 /* ── Lightbox ───────────────────────────────────────────────── */
 .lightbox-bg { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
@@ -319,7 +408,7 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 ::-webkit-scrollbar-thumb:hover { background: rgba(var(--blue-rgb),.50); }
 
 /* ── Tailwind colour overrides (keep light theme coherent) ── */
-.bg-white   { background: #fff!important; }
+.bg-white   { background: var(--cream)!important; }
 /* Tailwind's shadow-sm reads flat/generic (hard grey) next to the theme's
    softer double-diffuse .panel/.card shadow - used throughout admin.js for
    ordinary content cards, so this one override carries most of that visual
@@ -328,6 +417,7 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .bg-stone-50, .bg-stone-100 { background: var(--cream)!important; }
 .bg-stone-200, .hover\:bg-stone-200:hover { background: var(--sand-deep)!important; }
 .bg-sky-50, .hover\:bg-sky-50:hover, .hover\:bg-sky-100:hover { background: var(--blue-light)!important; }
+.bg-blue-50, .hover\:bg-blue-50:hover { background: var(--blue-light)!important; }
 .bg-sky-500, .hover\:bg-sky-600:hover { background: var(--blue)!important; }
 .bg-orange-500 { background: var(--palm)!important; }
 .bg-emerald-50 { background: var(--palm-light)!important; }
@@ -347,15 +437,37 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .border-sky-400, .focus\:border-sky-400:focus, .hover\:border-sky-300:hover { border-color: rgba(var(--blue-rgb),.30)!important; }
 .border-sky-500 { border-color: var(--blue)!important; }
 .border-orange-500 { border-color: var(--palm)!important; }
-input, textarea, select { background: #fff!important; color: var(--ink)!important; border-color: rgba(var(--blue-rgb),.18)!important; }
+input, textarea, select { background: var(--cream)!important; color: var(--ink)!important; border-color: rgba(var(--blue-rgb),.18)!important; }
 input::placeholder, textarea::placeholder { color: var(--ink-light); }
 input:focus, textarea:focus, select:focus { border-color: rgba(var(--blue-rgb),.4)!important; box-shadow: 0 0 0 3px rgba(var(--blue-rgb),.10)!important; }
 #dropzone { background: var(--blue-light)!important; border-color: rgba(var(--blue-rgb),.22)!important; }
-#navbar { background: rgba(255,253,249,.94)!important; border-bottom: 1px solid rgba(var(--blue-rgb),.08)!important; box-shadow: 0 2px 14px rgba(26,43,60,.06)!important; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+#navbar { background: rgba(var(--cream-rgb),.94)!important; border-bottom: 1px solid rgba(var(--blue-rgb),.08)!important; box-shadow: 0 2px 14px rgba(26,43,60,.06)!important; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 #site-footer { background: linear-gradient(180deg, var(--cream) 0%, var(--sand) 100%)!important; border-top: 1px solid rgba(var(--sand-rgb),.8)!important; }
+/* ── Easter egg : scène saharienne (voir tvPlayCamel dans NAV) ── */
+/* Fond doux dans la palette du blog : ciel bleu de jour ensoleillé qui descend
+   vers le sable chaud à l'horizon. Ambiance vacances, pas de couchant kitch. */
+.tv-sahara{position:fixed;inset:0;z-index:9998;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .6s ease;
+  background:linear-gradient(180deg,#6db6e0 0%,#a9d6ec 30%,#e8ecd8 52%,#ffe6bf 66%,#f4e8d3 78%,#ecdcbc 100%)}
+.tv-sahara.tv-show{opacity:1}
+.tv-sun{position:absolute;left:50%;top:30%;width:180px;height:180px;margin:-90px 0 0 -90px;border-radius:50%;
+  background:radial-gradient(circle,#fffef8 0%,#fff3d4 45%,#ffe6bf 62%,rgba(255,230,191,0) 74%);
+  box-shadow:0 0 100px 40px rgba(255,224,160,.5)}
+.tv-dune{position:absolute;left:-5%;width:110%}
+.tv-dune1{bottom:0;height:16vh;background:#d9c199;border-radius:60% 40% 0 0/100% 100% 0 0;transform:scaleX(1.5)}
+.tv-dune2{bottom:0;height:22vh;background:#e8d5b8;border-radius:55% 45% 0 0/100% 100% 0 0;left:-15%;width:70%}
+.tv-dune3{bottom:0;height:18vh;background:#e0cba8;border-radius:50% 50% 0 0/100% 100% 0 0;left:45%;width:75%}
+.tv-camel{position:absolute;bottom:11vh;left:-320px;width:240px;z-index:5;will-change:transform;
+  animation:tvcross 9s linear forwards;filter:drop-shadow(0 6px 8px rgba(90,58,26,.25))}
+@keyframes tvcross{to{transform:translateX(calc(100vw + 360px))}}
+/* Balancement doux et nonchalant (fiable, garde le dromadaire fidèle). */
+.tv-bob{animation:tvbob .55s ease-in-out infinite;transform-origin:center bottom}
+@keyframes tvbob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-7px) rotate(1deg)}}
+@media (prefers-reduced-motion: reduce){ .tv-camel{animation-duration:.01ms} .tv-bob{animation:none} }
+
 .gradient-text { color: var(--blue); }
 </style>
 `;
+};
 
 export const NAV = (active = '', authed = false) => `
 <nav id="navbar" class="fixed top-0 left-0 right-0 z-50">
@@ -371,6 +483,9 @@ export const NAV = (active = '', authed = false) => `
       <div class="hidden md:flex items-center gap-1">
         <a href="/" class="nav-link ${active==='home'?'nav-link-active':''}"><i class="ph-bold ph-house"></i> Accueil</a>
         <a href="/voyages" class="nav-link ${active==='voyages'?'nav-link-active':''}"><i class="ph-bold ph-airplane-takeoff"></i> Voyages</a>
+        <button type="button" id="theme-toggle" onclick="toggleTheme()" class="p-2 rounded-full transition-colors" style="color:var(--ink-muted)" aria-label="Changer le thème clair/sombre" title="Thème clair/sombre">
+          <i class="ph-bold ph-moon" id="theme-toggle-icon"></i>
+        </button>
         ${authed ? `
         <div class="relative ml-2" id="admin-menu-wrap">
           <button type="button" id="admin-menu-btn" aria-haspopup="true" aria-expanded="false"
@@ -378,7 +493,7 @@ export const NAV = (active = '', authed = false) => `
             class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors" style="background:rgba(var(--blue-rgb),.10);color:var(--blue);border:1px solid rgba(var(--blue-rgb),.25)">
             <i class="ph-fill ph-shield-check"></i> Admin <i class="ph-bold ph-caret-down" style="font-size:.7rem"></i>
           </button>
-          <div id="admin-menu" class="hidden absolute right-0 mt-2 py-1.5 rounded-2xl shadow-xl" style="min-width:13rem;background:#fff;border:1px solid var(--line);z-index:60">
+          <div id="admin-menu" class="hidden absolute right-0 mt-2 py-1.5 rounded-2xl shadow-xl" style="min-width:13rem;background:var(--cream);border:1px solid var(--line);z-index:60">
             <div class="px-4 py-2 text-[.68rem] font-bold uppercase tracking-[.14em]" style="color:var(--ink-light);border-bottom:1px solid var(--line)">Espace admin</div>
             <a href="/admin" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph-bold ph-gauge" style="color:var(--blue)"></i> Tableau de bord</a>
             <a href="/admin/editor" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph-bold ph-plus-circle" style="color:var(--blue)"></i> Nouvel article</a>
@@ -404,6 +519,9 @@ export const NAV = (active = '', authed = false) => `
       <div class="panel rounded-2xl p-3 flex flex-col gap-1 mt-1 shadow-lg">
         <a href="/" class="mobile-nav-link ${active==='home'?'nav-link-active':''}"><i class="ph-bold ph-house"></i> Accueil</a>
         <a href="/voyages" class="mobile-nav-link ${active==='voyages'?'nav-link-active':''}"><i class="ph-bold ph-airplane-takeoff"></i> Voyages</a>
+        <button type="button" onclick="toggleTheme()" class="mobile-nav-link w-full text-left" style="background:none;border:none;cursor:pointer">
+          <i class="ph-bold ph-moon" id="theme-toggle-icon-mobile"></i> <span id="theme-toggle-label-mobile">Thème sombre</span>
+        </button>
         ${authed ? `
         <div class="mt-2 pt-2" style="border-top:1px solid var(--line)">
           <div class="flex items-center gap-1.5 px-3 pb-1 text-[.68rem] font-bold uppercase tracking-[.14em]" style="color:var(--blue)"><i class="ph-fill ph-shield-check"></i> Espace admin</div>
@@ -417,7 +535,99 @@ export const NAV = (active = '', authed = false) => `
       </div>
     </div>
   </div>
-</nav>${authed ? `
+</nav>
+<script>
+// Dark mode toggle: flips <html data-theme>, persists the explicit choice in
+// localStorage, and syncs the moon/sun icon on every page (the inline script
+// in HEAD() already applied any saved preference before first paint).
+function _themeIsDark(){
+  var t=document.documentElement.getAttribute('data-theme');
+  if(t==='dark') return true;
+  if(t==='light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function _syncThemeIcon(){
+  var dark=_themeIsDark();
+  ['theme-toggle-icon','theme-toggle-icon-mobile'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.className='ph-bold '+(dark?'ph-sun':'ph-moon');
+  });
+  var lbl=document.getElementById('theme-toggle-label-mobile');
+  if(lbl) lbl.textContent=dark?'Thème clair':'Thème sombre';
+}
+function toggleTheme(){
+  var next=_themeIsDark()?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  try{localStorage.setItem('theme',next);}catch(e){}
+  _syncThemeIcon();
+}
+_syncThemeIcon();
+</script>
+<script>
+/* ── Easter egg : caravane saharienne ─────────────────────────
+   Tapez "maroc" ou "sahara" (hors champ de saisie) et un chameau
+   traverse l'écran dans une ambiance coucher de soleil du désert.
+   Sur mobile (pas de clavier), un secours : 5 tics rapides sur le
+   palmier de la citation en bas d'accueil. Respecte reduced-motion. */
+(function(){
+  var running=false, buf='';
+  var WORDS=['maroc','sahara'];
+  function reduced(){return window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;}
+  function typingTarget(el){
+    if(!el) return false;
+    var t=(el.tagName||'').toLowerCase();
+    return t==='input'||t==='textarea'||t==='select'||el.isContentEditable;
+  }
+  function playCamel(){
+    if(running) return; running=true;
+    if(reduced()){ running=false; return; } /* pas d'anim si l'utilisateur a désactivé les animations */
+    var s=document.createElement('div');
+    s.setAttribute('aria-hidden','true');
+    s.className='tv-sahara';
+    s.innerHTML=''+
+      '<div class="tv-sun"></div>'+
+      '<div class="tv-dune tv-dune2"></div>'+
+      '<div class="tv-dune tv-dune3"></div>'+
+      '<div class="tv-dune tv-dune1"></div>'+
+      '<div class="tv-camel"><div class="tv-bob">'+
+        '<svg width="240" height="240" viewBox="0 0 512 512">'+
+          '<defs><linearGradient id="tvbody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8ac54"></stop><stop offset="0.6" stop-color="#d4933c"></stop><stop offset="1" stop-color="#bd7f2c"></stop></linearGradient></defs>'+
+          '<path fill="url(#tvbody)" d="M420.8 26.91c-11.4.76-23.7 4.65-33.6 10.29-5.3-4.86-13.5-10.52-19.3-6.11-12.5 9.46-2.4 20.76 6.8 27.94 5.5 35.86 20.7 93.17-9.8 105.97C317 183.1 308.4 36.14 241 37.94c-40.4 1.08-22.6 59.65-62.6 61.65-29.5 1.51-27.3-54.51-51.9-55.36-25.9-.9-44.62 18.9-57.71 86.97-25.63-.1-35.73 20.1-47.42 59.2-11.686 39-3 115.6 1.2 162.4l7.87-76.3c2.43 12 6.19 24.1 11.91 36.7 3.91 18.7 5.44 37.4 5.81 56-8.2 10.2-8.8 26.2-.42 35.5-.92 26.8-2.67 53.5-1.68 80.3 34.48.5 66.04-1 99.54 0 1.8-11.9-14.9-20.4-34.3-30.3.3-13.7.2-30.5 0-47.5 8.8-10.2 9-28.1-.2-36.8.1-21.3.8-38.6 3.3-43.9 8-17.1 20.6-31.9 29.1-47.2 28.7 5.3 59.7 2.9 91.9-4.7l.7 85.5c-7.7 11.3-8 27.7.3 37.8 4.7 29 .6 58.1.8 87.1h58c2.3-15-22.5-23.1-34.6-30.1 0-22.1-3.9-38.8-.4-60.3 5-9.9 5.3-21.5.4-30.8.9-33 3.3-66 10.7-99 1.6-.6 7.9-3.7 9.3-5.3l10.9 98.4c-5.6 11.9-4.4 27.3 4 36.7 6.6 30.1 4.5 59.5 7.9 89.6l61.2.8c.3-12.3-29.1-20-40.3-25.5-6.4-21.4-5.7-43.1-6.7-64.9 8-12.1 7.6-28.9-1.1-39.5.5-38.3 5.5-76.8 18.4-114.6 106.6-5.9 96.2-72 99.3-133.2 1.4-27.24 55.5 1.7 60-11.61 2.4-6.92 3.6-13.89 0-21.84-8.6-19.29-23.9-20.32-36.7-20.63-12.3-7.36-22.6-25.96-35.5-26.31zm6.7 19.58c4.9 2.64 3.8 7.47 2.7 10.11-6.6 1.96-16.3-1.08-20.8-4.59 3.9-2.99 12.2-5.39 18.1-5.52zM80.6 302.3c3.05 7.8 5.74 15.6 7.35 23.2 3.22 15.3 4.91 30.7 5.72 46.2-7.48 10.3-7.78 26.1.59 35-.25 21.6-1.3 43.2-1.52 64.7-4.54-7.5-12.92-14-24.94-17.1.16-14.4-.44-32.4-1.08-50.6 6.91-10.2 7.01-25.6-1.11-34.3-.67-27-.34-49.4 3.78-54.1 3.95-4.5 7.67-8.8 11.21-13z"></path>'+
+        '</svg>'+
+      '</div></div>';
+        document.body.appendChild(s);
+    /* fade-in du ciel */
+    requestAnimationFrame(function(){ s.classList.add('tv-show'); });
+    /* le chameau traverse en 7s ; on laisse un petit fondu de sortie après */
+    var total=7000;
+    setTimeout(function(){ s.classList.remove('tv-show'); }, total-600);
+    setTimeout(function(){ if(s.parentNode) s.parentNode.removeChild(s); running=false; }, total);
+  }
+  window.tvPlayCamel=playCamel;
+  /* déclencheur clavier */
+  document.addEventListener('keydown',function(e){
+    if(typingTarget(e.target)) { buf=''; return; }      /* jamais dans un champ */
+    if(e.key&&e.key.length===1){
+      buf=(buf+e.key.toLowerCase()).slice(-8);
+      for(var i=0;i<WORDS.length;i++){ if(buf.indexOf(WORDS[i])!==-1){ buf=''; playCamel(); break; } }
+    }
+  });
+  /* secours tactile : le palmier 🌴 de la citation (accueil), 5 tics en <3s */
+  document.addEventListener('DOMContentLoaded',function(){
+    var tag=document.getElementById('site-tagline');
+    if(!tag) return;
+    var host=tag.parentNode; if(!host) return;
+    var n=0,t0=0;
+    host.addEventListener('click',function(){
+      var now=Date.now();
+      if(now-t0>3000) n=0;
+      t0=now; n++;
+      if(n>=5){ n=0; playCamel(); }
+    });
+  });
+})();
+</script>
+${authed ? `
 <script>
 // Close the admin dropdown when clicking outside it or pressing Escape.
 (function(){
@@ -469,7 +679,7 @@ export const FOOTER = `
         <button id="push-btn" class="hidden text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors" style="background:rgba(var(--blue-rgb),.10);color:var(--blue);border:1px solid rgba(var(--blue-rgb),.2)"><i class="ph-bold ph-bell"></i> Activer les notifications</button>
       </div>
       <div class="flex gap-2">
-        <input type="email" id="email-sub-in" placeholder="votre@email.com" class="flex-1 min-w-0 border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-sky-400" style="background:rgba(255,255,255,.7)">
+        <input type="email" id="email-sub-in" placeholder="votre@email.com" class="flex-1 min-w-0 border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-sky-400" style="background:rgba(var(--cream-rgb),.7)">
         <button onclick="subscribeEmail()" class="text-xs font-semibold px-3 py-2 rounded-xl text-white transition-colors" style="background:var(--palm)"><i class="ph-bold ph-envelope"></i> S'abonner</button>
       </div>
       <p id="sub-msg" class="hidden text-xs mt-2 font-semibold"></p>
@@ -482,30 +692,30 @@ export const FOOTER = `
 </footer>
 
 <!-- ── Notification prompt modal (PWA first-visit) ───────── -->
-<div id="notif-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(26,43,60,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;box-sizing:border-box" onclick="if(event.target===this)notifModalDismiss()">
-  <div style="background:#FFFDF9;border-radius:1.5rem 1.5rem 0 0;padding:2rem 1.5rem 2.5rem;max-width:480px;width:100%;box-shadow:0 -8px 40px rgba(26,43,60,.18)">
-    <div style="width:3rem;height:.22rem;background:rgba(26,43,60,.14);border-radius:999px;margin:0 auto 1.75rem"></div>
-    <div style="width:3.5rem;height:3.5rem;border-radius:999px;background:#EBF2FD;border:2px solid rgba(0,87,184,.14);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem"><i class="ph-bold ph-bell" style="font-size:1.5rem;color:#0057B8"></i></div>
-    <h2 style="font-family:'Playfair Display',Georgia,serif;font-size:1.25rem;font-weight:700;text-align:center;color:#1A2B3C;margin:0 0 .6rem">Suivre le blog ?</h2>
-    <p style="text-align:center;color:#5A6A7A;font-size:.87rem;line-height:1.65;margin:0 0 1.75rem">Recevez une notification dès qu'un nouveau récit de voyage est publié.</p>
-    <button onclick="notifModalAccept()" style="display:block;width:100%;background:#0057B8;color:#fff;font-family:Montserrat,sans-serif;font-weight:700;font-size:.92rem;border:none;border-radius:999px;padding:.9rem;cursor:pointer;margin-bottom:.75rem;box-shadow:0 6px 22px rgba(0,87,184,.28)"><i class="ph-bold ph-bell"></i> Activer les notifications</button>
-    <button onclick="notifModalDismiss()" style="display:block;width:100%;background:none;color:#5A6A7A;font-family:Montserrat,sans-serif;font-weight:600;font-size:.87rem;border:none;padding:.6rem;cursor:pointer">Plus tard</button>
+<div id="notif-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;box-sizing:border-box" onclick="if(event.target===this)notifModalDismiss()">
+  <div style="background:var(--cream);border-radius:1.5rem 1.5rem 0 0;padding:2rem 1.5rem 2.5rem;max-width:480px;width:100%;box-shadow:0 -8px 40px rgba(0,0,0,.28)">
+    <div style="width:3rem;height:.22rem;background:var(--line);border-radius:999px;margin:0 auto 1.75rem"></div>
+    <div style="width:3.5rem;height:3.5rem;border-radius:999px;background:var(--blue-light);border:2px solid rgba(var(--blue-rgb),.14);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem"><i class="ph-bold ph-bell" style="font-size:1.5rem;color:var(--blue)"></i></div>
+    <h2 style="font-family:'Playfair Display',Georgia,serif;font-size:1.25rem;font-weight:700;text-align:center;color:var(--ink);margin:0 0 .6rem">Suivre le blog ?</h2>
+    <p style="text-align:center;color:var(--ink-muted);font-size:.87rem;line-height:1.65;margin:0 0 1.75rem">Recevez une notification dès qu'un nouveau récit de voyage est publié.</p>
+    <button onclick="notifModalAccept()" style="display:block;width:100%;background:var(--blue);color:#fff;font-family:Montserrat,sans-serif;font-weight:700;font-size:.92rem;border:none;border-radius:999px;padding:.9rem;cursor:pointer;margin-bottom:.75rem;box-shadow:0 6px 22px rgba(var(--blue-rgb),.28)"><i class="ph-bold ph-bell"></i> Activer les notifications</button>
+    <button onclick="notifModalDismiss()" style="display:block;width:100%;background:none;color:var(--ink-muted);font-family:Montserrat,sans-serif;font-weight:600;font-size:.87rem;border:none;padding:.6rem;cursor:pointer">Plus tard</button>
   </div>
 </div>
 
 <!-- ── Email subscription modal (web first-visit) ─────────── -->
-<div id="email-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(26,43,60,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;box-sizing:border-box" onclick="if(event.target===this)emailModalDismiss()">
-  <div style="background:#FFFDF9;border-radius:1.5rem 1.5rem 0 0;padding:2rem 1.5rem 2.5rem;max-width:480px;width:100%;box-shadow:0 -8px 40px rgba(26,43,60,.18)">
-    <div style="width:3rem;height:.22rem;background:rgba(26,43,60,.14);border-radius:999px;margin:0 auto 1.75rem"></div>
-    <div style="width:3.5rem;height:3.5rem;border-radius:999px;background:#E6F4F1;border:2px solid rgba(46,125,107,.16);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem"><i class="ph-bold ph-envelope" style="font-size:1.5rem;color:#2E7D6B"></i></div>
-    <h2 style="font-family:'Playfair Display',Georgia,serif;font-size:1.25rem;font-weight:700;text-align:center;color:#1A2B3C;margin:0 0 .6rem">Suivre le blog</h2>
-    <p style="text-align:center;color:#5A6A7A;font-size:.87rem;line-height:1.65;margin:0 0 1.25rem">Recevez un email à chaque nouveau récit de voyage de la famille Potet.</p>
+<div id="email-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;box-sizing:border-box" onclick="if(event.target===this)emailModalDismiss()">
+  <div style="background:var(--cream);border-radius:1.5rem 1.5rem 0 0;padding:2rem 1.5rem 2.5rem;max-width:480px;width:100%;box-shadow:0 -8px 40px rgba(0,0,0,.28)">
+    <div style="width:3rem;height:.22rem;background:var(--line);border-radius:999px;margin:0 auto 1.75rem"></div>
+    <div style="width:3.5rem;height:3.5rem;border-radius:999px;background:var(--palm-light);border:2px solid rgba(var(--palm-rgb),.16);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem"><i class="ph-bold ph-envelope" style="font-size:1.5rem;color:var(--palm)"></i></div>
+    <h2 style="font-family:'Playfair Display',Georgia,serif;font-size:1.25rem;font-weight:700;text-align:center;color:var(--ink);margin:0 0 .6rem">Suivre le blog</h2>
+    <p style="text-align:center;color:var(--ink-muted);font-size:.87rem;line-height:1.65;margin:0 0 1.25rem">Recevez un email à chaque nouveau récit de voyage de la famille Potet.</p>
     <div style="display:flex;gap:.5rem;margin-bottom:.6rem">
-      <input type="email" id="email-modal-in" placeholder="votre@email.com" style="flex:1;min-width:0;border:1.5px solid rgba(0,87,184,.18);border-radius:.75rem;padding:.75rem .9rem;font-size:.87rem;color:#1A2B3C;background:#fff;outline:none;font-family:Montserrat,sans-serif">
-      <button onclick="emailModalSubscribe()" style="background:#2E7D6B;color:#fff;font-family:Montserrat,sans-serif;font-weight:700;font-size:.82rem;border:none;border-radius:.75rem;padding:.75rem 1rem;cursor:pointer;white-space:nowrap;flex-shrink:0">S'abonner</button>
+      <input type="email" id="email-modal-in" placeholder="votre@email.com" style="flex:1;min-width:0;border:1.5px solid rgba(var(--blue-rgb),.18);border-radius:.75rem;padding:.75rem .9rem;font-size:.87rem;color:var(--ink);background:var(--sand);outline:none;font-family:Montserrat,sans-serif">
+      <button onclick="emailModalSubscribe()" style="background:var(--palm);color:#fff;font-family:Montserrat,sans-serif;font-weight:700;font-size:.82rem;border:none;border-radius:.75rem;padding:.75rem 1rem;cursor:pointer;white-space:nowrap;flex-shrink:0">S'abonner</button>
     </div>
     <p id="email-modal-msg" style="display:none;font-size:.8rem;font-weight:600;text-align:center;margin:0 0 .5rem"></p>
-    <button onclick="emailModalDismiss()" style="display:block;width:100%;background:none;color:#5A6A7A;font-family:Montserrat,sans-serif;font-weight:600;font-size:.85rem;border:none;padding:.6rem;cursor:pointer">Non merci</button>
+    <button onclick="emailModalDismiss()" style="display:block;width:100%;background:none;color:var(--ink-muted);font-family:Montserrat,sans-serif;font-weight:600;font-size:.85rem;border:none;padding:.6rem;cursor:pointer">Non merci</button>
   </div>
 </div>
 
@@ -702,7 +912,7 @@ async function emailModalSubscribe() {
   }).catch(() => null);
   if (res?.ok) {
     localStorage.setItem('email-prompt-seen', '1');
-    if (msg) { msg.style.display='block'; msg.style.color='#2E7D6B'; msg.textContent='Abonnement confirmé ! ✓'; }
+    if (msg) { msg.style.display='block'; msg.style.color='var(--palm)'; msg.textContent='Abonnement confirmé ! ✓'; }
     setTimeout(() => { document.getElementById('email-modal').style.display = 'none'; }, 1800);
   } else {
     if (msg) { msg.style.display='block'; msg.style.color='var(--danger)'; msg.textContent='Erreur, réessayez'; }

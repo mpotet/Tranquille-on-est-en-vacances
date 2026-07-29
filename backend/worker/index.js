@@ -52,6 +52,12 @@ import { printPage, exportWordDocx } from './pages/print.js';
 // ──────────────────────────────────────────────────────────────
 import { HEAD, NAV, FOOTER, TOAST, LIGHTBOX } from './pages/shell.js';
 
+// Canonical production origin — used for canonical/og:url tags, sitemap.xml
+// and the RSS feed (all need an absolute URL, and there's exactly one
+// deployed origin for this site, so a fixed constant is simpler and more
+// reliable than threading `request.url` through every page function).
+const SITE_URL = 'https://tranquille-vacances.esti-archi.workers.dev';
+
 // Matches skeletonCards() in pages/home.js - kept identical so the loading
 // state reads the same whether you land here from the home grid or directly.
 function skeletonVoyageCards(n) {
@@ -70,7 +76,7 @@ function skeletonVoyageCards(n) {
 function voyagesPage(authed=false) {
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD('Voyages - Tranquille, on est en vacances')}</head>
+<head>${HEAD('Voyages - Tranquille, on est en vacances', 'Tous nos récits de voyage en famille, classés par destination.', { url: SITE_URL + '/voyages' })}</head>
 <body class="font-sans antialiased" style="background:var(--cream)">
 ${NAV('voyages', authed)}
 <main class="pt-16">
@@ -95,7 +101,7 @@ ${NAV('voyages', authed)}
         <button type="button" id="sort-btn" onclick="const m=document.getElementById('sort-menu');const o=m.classList.toggle('hidden');this.setAttribute('aria-expanded',!o)" aria-haspopup="true" aria-expanded="false" class="subtle-btn text-sm" style="padding:.6rem 1.1rem">
           <i class="ph-bold ph-sort-ascending"></i> <span id="sort-label">Plus récents</span> <i class="ph-bold ph-caret-down" style="font-size:.7rem"></i>
         </button>
-        <div id="sort-menu" class="hidden absolute right-0 mt-2 py-1.5 rounded-2xl shadow-xl" style="min-width:11rem;background:#fff;border:1px solid var(--line);z-index:60">
+        <div id="sort-menu" class="hidden absolute right-0 mt-2 py-1.5 rounded-2xl shadow-xl" style="min-width:11rem;background:var(--cream);border:1px solid var(--line);z-index:60">
           <button type="button" data-sort="date_desc" class="sort-opt flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold w-full text-left transition-colors hover:bg-blue-50" style="color:var(--ink)">Plus récents</button>
           <button type="button" data-sort="date_asc" class="sort-opt flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold w-full text-left transition-colors hover:bg-blue-50" style="color:var(--ink)">Plus anciens</button>
           <button type="button" data-sort="views_desc" class="sort-opt flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold w-full text-left transition-colors hover:bg-blue-50" style="color:var(--ink)">Les plus lus</button>
@@ -292,7 +298,7 @@ function showVoyErrorBanner(){
   const b=document.createElement('div');
   b.id='voy-error-banner';
   b.setAttribute('role','alert');
-  b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:1.25rem;z-index:120;display:flex;align-items:center;gap:.6rem;background:#fff;border:1px solid rgba(220,60,60,.35);color:#b91c1c;padding:.7rem 1.1rem;border-radius:999px;box-shadow:0 8px 28px rgba(26,43,60,.14);font-size:.85rem;font-weight:600';
+  b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:1.25rem;z-index:120;display:flex;align-items:center;gap:.6rem;background:var(--cream);border:1px solid rgba(220,60,60,.35);color:#b91c1c;padding:.7rem 1.1rem;border-radius:999px;box-shadow:0 8px 28px rgba(26,43,60,.14);font-size:.85rem;font-weight:600';
   b.innerHTML='<i class="ph-fill ph-warning-circle" style="font-size:1.1rem"></i> Impossible de charger le contenu, réessayez.';
   document.body.appendChild(b);
 }
@@ -694,22 +700,39 @@ ${TOAST}
   <a href="/admin/articles/${article.id}/print" target="_blank" style="position:fixed;bottom:5rem;right:calc(1.5rem + 130px + .75rem);z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:rgba(var(--ink-rgb),.82);color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.25);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.15)"><i class="ph-bold ph-export" style="font-size:1.1rem"></i> Exporter</a>` : '';
 
   const coverUrl = safeAttr(article.cover_url || '');
-  // og:image must be absolute (social crawlers don't resolve relative URLs).
-  // cover_url is stored root-relative (/r2/…); prefix the request origin, or
-  // fall back to PUBLIC_URL for the rare caller with no origin.
+  // og:image/og:url must be absolute (social crawlers don't resolve relative
+  // URLs). cover_url is stored root-relative (/r2/…); prefix the request
+  // origin, or fall back to PUBLIC_URL for the rare caller with no origin.
   const base = (origin || env.PUBLIC_URL || '').replace(/\/$/, '');
   const rawCover = article.cover_url || '';
   const ogImage = rawCover
     ? safeAttr(/^https?:\/\//i.test(rawCover) ? rawCover : base + rawCover)
     : '';
+  const canonicalUrl = base + '/voyage/' + article.slug;
+
+  // schema.org BlogPosting — powers rich results (article card, date,
+  // author) in Google search rather than a bare blue link.
+  // Escape '<' so a title/description containing "</script>" can't break out
+  // of the JSON-LD script tag (same class of issue as unescaped user content
+  // in inline <script> anywhere else - JSON.stringify alone doesn't protect
+  // against this since '<' is valid inside a JSON string).
+  const jsonLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: article.title,
+    description: metaDescription,
+    image: ogImage || undefined,
+    datePublished: article.start_date || article.created_at,
+    dateModified: article.updated_at || article.start_date,
+    author: { '@type': 'Organization', name: 'Famille Potet' },
+    publisher: { '@type': 'Organization', name: 'Tranquille, on est en vacances' },
+    mainEntityOfPage: canonicalUrl,
+  }).replace(/</g, '\\u003c');
 
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD(pageTitle, metaDescription)}
-<meta property="og:title" content="${safeAttr(article.title)}">
-<meta property="og:description" content="${safeAttr(metaDescription)}">
-<meta property="og:type" content="article">
-${ogImage ? `<meta property="og:image" content="${ogImage}">` : ''}
+<head>${HEAD(pageTitle, metaDescription, { image: ogImage, url: canonicalUrl, type: 'article' })}
+<script type="application/ld+json">${jsonLd}</script>
 </head>
 <body class="font-sans antialiased" style="background:var(--cream)">
 ${NAV('', authed)}
@@ -967,6 +990,88 @@ document.querySelector('[data-scroll-comments]')?.addEventListener('click', (e)=
 }
 
 // ──────────────────────────────────────────────────────────────
+// SEO: robots.txt, sitemap.xml, RSS feed
+// ──────────────────────────────────────────────────────────────
+function robotsTxt() {
+  const body = `User-agent: *
+Allow: /
+Disallow: /admin/
+
+Sitemap: ${SITE_URL}/sitemap.xml
+`;
+  return new Response(body, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' } });
+}
+
+// XML doesn't have HTML's entity set (no &nbsp;, &eacute;, ...) - only these
+// five characters are special and must be escaped in element text/attributes.
+function xmlEsc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
+async function sitemapXml(env) {
+  const { results } = await env.DB
+    .prepare("SELECT slug, updated_at, start_date FROM articles WHERE status = 'published' ORDER BY start_date DESC")
+    .all();
+
+  const staticUrls = [
+    { loc: '/', priority: '1.0' },
+    { loc: '/voyages', priority: '0.8' },
+  ];
+  const articleUrls = (results || []).map(a => ({
+    loc: '/voyage/' + a.slug,
+    lastmod: (a.updated_at || a.start_date || '').slice(0, 10),
+    priority: '0.6',
+  }));
+
+  const entries = [...staticUrls, ...articleUrls].map(u => `  <url>
+    <loc>${xmlEsc(SITE_URL + u.loc)}</loc>
+    ${u.lastmod ? `<lastmod>${xmlEsc(u.lastmod)}</lastmod>` : ''}
+    <priority>${u.priority}</priority>
+  </url>`).join('\n');
+
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${entries}
+</urlset>
+`;
+  return new Response(body, { headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' } });
+}
+
+async function rssFeed(env) {
+  const { results } = await env.DB
+    .prepare("SELECT title, slug, short_description, cover_url, start_date, updated_at FROM articles WHERE status = 'published' ORDER BY start_date DESC LIMIT 30")
+    .all();
+
+  const items = (results || []).map(a => {
+    const link = SITE_URL + '/voyage/' + a.slug;
+    const pubDate = a.start_date ? new Date(a.start_date + 'T12:00:00Z').toUTCString() : '';
+    return `  <item>
+    <title>${xmlEsc(a.title)}</title>
+    <link>${xmlEsc(link)}</link>
+    <guid isPermaLink="true">${xmlEsc(link)}</guid>
+    ${pubDate ? `<pubDate>${pubDate}</pubDate>` : ''}
+    <description>${xmlEsc(a.short_description || '')}</description>
+  </item>`;
+  }).join('\n');
+
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+  <title>Tranquille, on est en vacances</title>
+  <link>${xmlEsc(SITE_URL)}</link>
+  <description>Le carnet de bord des voyages de la famille Potet</description>
+  <language>fr-fr</language>
+  <atom:link xmlns:atom="http://www.w3.org/2005/Atom" href="${xmlEsc(SITE_URL + '/feed.xml')}" rel="self" type="application/rss+xml"/>
+${items}
+</channel>
+</rss>
+`;
+  return new Response(body, { headers: { 'Content-Type': 'application/rss+xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' } });
+}
+
+// ──────────────────────────────────────────────────────────────
 // Main fetch handler
 // ──────────────────────────────────────────────────────────────
 // Styled 500 page - served when any SSR route throws (a DB timeout, a bad
@@ -1013,6 +1118,11 @@ export default {
       const key = path.slice(4); // strip leading '/r2/'
       return serveR2Object(env, key);
     }
+
+    // ── SEO: robots.txt, sitemap.xml, RSS feed ─────────────────
+    if (path === '/robots.txt') return robotsTxt();
+    if (path === '/sitemap.xml') return sitemapXml(env);
+    if (path === '/feed.xml' || path === '/rss.xml') return rssFeed(env);
 
     // ── Auth endpoints ────────────────────────────────────────
     if (path === '/admin/login' && method === 'POST') {

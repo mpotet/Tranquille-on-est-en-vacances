@@ -6,10 +6,12 @@ import { HEAD, NAV, FOOTER, TOAST, LIGHTBOX } from './shell.js';
 import { html } from '../utils.js';
 import { safeAttr, safeText } from '../helpers/html.js';
 
+const SITE_URL = 'https://tranquille-vacances.esti-archi.workers.dev';
+
 export function homePage(authed=false) {
   return html(`<!DOCTYPE html>
 <html lang="fr">
-<head>${HEAD('Tranquille, on est en vacances')}</head>
+<head>${HEAD('Tranquille, on est en vacances', undefined, { url: SITE_URL + '/' })}</head>
 <body class="bg-stone-50 font-sans text-stone-900 antialiased">
 ${NAV('home', authed)}
 
@@ -213,7 +215,7 @@ function showErrorBanner(){
   const b=document.createElement('div');
   b.id='home-error-banner';
   b.setAttribute('role','alert');
-  b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:1.25rem;z-index:120;display:flex;align-items:center;gap:.6rem;background:#fff;border:1px solid rgba(220,60,60,.35);color:#b91c1c;padding:.7rem 1.1rem;border-radius:999px;box-shadow:0 8px 28px rgba(26,43,60,.14);font-size:.85rem;font-weight:600';
+  b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:1.25rem;z-index:120;display:flex;align-items:center;gap:.6rem;background:var(--cream);border:1px solid rgba(220,60,60,.35);color:#b91c1c;padding:.7rem 1.1rem;border-radius:999px;box-shadow:0 8px 28px rgba(26,43,60,.14);font-size:.85rem;font-weight:600';
   b.innerHTML='<i class="ph-fill ph-warning-circle" style="font-size:1.1rem"></i> Impossible de charger le contenu, réessayez.';
   document.body.appendChild(b);
 }

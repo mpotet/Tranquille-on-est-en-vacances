@@ -21,7 +21,7 @@
  *   revalide silencieusement le cache.
  */
 
-const VERSION = 'v14';
+const VERSION = 'v20';
 const PAGES_CACHE = `tranquille-pages-${VERSION}`;
 const ASSETS_CACHE = `tranquille-assets-${VERSION}`;
 const API_CACHE = `tranquille-api-${VERSION}`;
@@ -32,6 +32,7 @@ const PRECACHE_ASSETS = [
   '/icon.svg',
   '/icon-192.png',
   '/icon-512.png',
+  '/tailwind.css',
 ];
 
 // Always precached, regardless of article list (the app shell + entry points).

@@ -78,13 +78,54 @@ export async function getAnalytics(request, env) {
   const locations = (countryRows.results || []).map(r => ({ code: r.country_code, city: r.city || null, count: r.n }));
   const countriesDistinct = new Set(locations.filter(l => l.code !== '??').map(l => l.code)).size;
 
+  // The GROUP BY above only emits a bucket when it has at least one visit, so
+  // e.g. hours 19:00 and 21:00 could sit right next to each other in the array
+  // with no trace of the empty 20:00 between them - the chart then draws them
+  // as adjacent bars, misleadingly implying they're consecutive. Fill in every
+  // expected bucket (all 24 hours for "today", every calendar day for a fixed
+  // period, every day from the first-ever visit to today for "all") with 0
+  // where there's no data, so gaps render as visible empty bars instead of
+  // being silently skipped.
+  const dailyMap = new Map((dailyRows.results || []).map(r => [r.bucket, r.n]));
+  let daily;
+  if (isToday) {
+    // 24 rolling hourly buckets ending at the current UTC hour.
+    const now = new Date();
+    now.setUTCMinutes(0, 0, 0);
+    daily = [];
+    for (let i = 23; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 3600_000);
+      const bucket = d.toISOString().slice(0, 13) + ':00:00';
+      daily.push({ day: bucket, count: dailyMap.get(bucket) || 0 });
+    }
+  } else {
+    // Fixed period: exactly `days` calendar days ending today. "all": span
+    // from the earliest recorded visit to today (falls back to just today if
+    // there's no data yet at all).
+    const todayUTC = new Date();
+    todayUTC.setUTCHours(0, 0, 0, 0);
+    let spanDays = days;
+    if (!spanDays) {
+      const firstBucket = (dailyRows.results || [])[0]?.bucket;
+      spanDays = firstBucket
+        ? Math.floor((todayUTC - new Date(firstBucket + 'T00:00:00Z')) / 86_400_000) + 1
+        : 1;
+    }
+    daily = [];
+    for (let i = spanDays - 1; i >= 0; i--) {
+      const d = new Date(todayUTC.getTime() - i * 86_400_000);
+      const bucket = d.toISOString().slice(0, 10);
+      daily.push({ day: bucket, count: dailyMap.get(bucket) || 0 });
+    }
+  }
+
   return json({
     period: periodParam,
     granularity: isToday ? 'hour' : 'day',
     total,
     trend_pct: trendPct,
     countries_distinct: countriesDistinct,
-    daily: (dailyRows.results || []).map(r => ({ day: r.bucket, count: r.n })),
+    daily,
     locations,
     top_articles: (topArticles.results || []).map(r => ({ id: r.id, title: r.title, slug: r.slug, views: r.period_views })),
   });

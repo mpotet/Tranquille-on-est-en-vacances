@@ -8,8 +8,8 @@
     "dev:wrangler": "wrangler dev --local --ip 0.0.0.0",
     "dev:remote": "wrangler dev",
     "tunnel": "npx cloudflared tunnel --url http://localhost:8787",
-    "deploy": "wrangler deploy",
-    "deploy:prod": "wrangler deploy --env production",
+    "deploy": "npm run build:css && wrangler deploy",
+    "deploy:prod": "npm run build:css && wrangler deploy --env production",
     "db:migrate": "wrangler d1 execute tranquille-vacances-db --local --file=schema.sql",
     "db:migrate:remote": "wrangler d1 execute tranquille-vacances-db --file=schema.sql",
     "db:studio": "wrangler d1 studio tranquille-vacances-db --local",
@@ -18,10 +18,14 @@
     "admin:send-setup-email": "node scripts/send-admin-setup-email.js",
     "admin:send-setup-email:remote": "node scripts/send-admin-setup-email.js --remote",
     "vapid:generate": "node scripts/generate-vapid.js",
-    "tail": "wrangler tail"
+    "tail": "wrangler tail",
+    "build:css": "tailwindcss -i ./src/tailwind-input.css -o ./public/tailwind.css --minify",
+    "watch:css": "tailwindcss -i ./src/tailwind-input.css -o ./public/tailwind.css --watch"
   },
   "devDependencies": {
+    "playwright": "^1.62.0",
     "sharp": "^0.34.5",
+    "tailwindcss": "^3.4.19",
     "wrangler": "^4.94.0"
   },
   "dependencies": {
