@@ -19,15 +19,39 @@ export async function getAnalytics(request, env) {
   const isToday = periodParam === 'today';
   const days = isToday ? null : (PERIOD_DAYS[periodParam] ?? null); // null = 'all' (or 'today', handled separately)
 
-  // SQLite datetime('now') is UTC; page_views.created_at is also UTC
-  // (CURRENT_TIMESTAMP default), so comparing them directly is consistent.
-  // 'today' compares against the last 24h (rolling), not local calendar
-  // midnight - the server has no notion of the visitor's timezone.
-  const sinceExpr = isToday ? `datetime('now', '-1 day')` : (days ? `datetime('now', '-${days} days')` : null);
-  const prevSinceExpr = isToday ? `datetime('now', '-2 days')` : (days ? `datetime('now', '-${days * 2} days')` : null);
+  // Timestamps computed in JS (not SQL date-modifier chains) so the "same
+  // elapsed portion of yesterday" comparison stays easy to read and test.
+  // page_views.created_at is UTC (CURRENT_TIMESTAMP default), and the server
+  // has no notion of the visitor's timezone, so UTC midnight is the closest
+  // available proxy for "today". SQLite compares ISO 8601 strings lexically
+  // in chronological order, so plain string literals work directly.
+  const now = new Date();
+  const todayMidnightUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const sql = (d) => d.toISOString().replace('T', ' ').replace('Z', '');
+
+  let sinceExpr, prevSinceExpr, prevUntilExpr;
+  if (isToday) {
+    // "Aujourd'hui" = UTC midnight -> now (the calendar day so far), not a
+    // rolling last-24h window.
+    sinceExpr = `'${sql(todayMidnightUTC)}'`;
+    // "vs previous period": comparing a partial today against a complete
+    // yesterday would always look like a drop, so compare the same elapsed
+    // portion of yesterday (00:00 -> the same time-of-day) instead of all
+    // 24h of it.
+    const yesterdayMidnight = new Date(todayMidnightUTC.getTime() - 86_400_000);
+    const yesterdaySameTime = new Date(yesterdayMidnight.getTime() + (now.getTime() - todayMidnightUTC.getTime()));
+    prevSinceExpr = `'${sql(yesterdayMidnight)}'`;
+    prevUntilExpr = `'${sql(yesterdaySameTime)}'`;
+  } else if (days) {
+    sinceExpr = `datetime('now', '-${days} days')`;
+    prevSinceExpr = `datetime('now', '-${days * 2} days')`;
+    prevUntilExpr = `datetime('now', '-${days} days')`;
+  } else {
+    sinceExpr = null; prevSinceExpr = null; prevUntilExpr = null; // 'all'
+  }
 
   const whereCurrent = sinceExpr ? `WHERE created_at >= ${sinceExpr}` : '';
-  const wherePrev = sinceExpr ? `WHERE created_at >= ${prevSinceExpr} AND created_at < ${sinceExpr}` : null;
+  const wherePrev = prevSinceExpr ? `WHERE created_at >= ${prevSinceExpr} AND created_at < ${prevUntilExpr}` : null;
 
   // 'today' groups by hour (one bar per hour of the rolling last 24h) since a
   // single day has nothing to show grouped by day; every other period groups
@@ -89,12 +113,16 @@ export async function getAnalytics(request, env) {
   const dailyMap = new Map((dailyRows.results || []).map(r => [r.bucket, r.n]));
   let daily;
   if (isToday) {
-    // 24 rolling hourly buckets ending at the current UTC hour.
-    const now = new Date();
-    now.setUTCMinutes(0, 0, 0);
+    // Hourly buckets from UTC midnight through the current hour - matches
+    // "Aujourd'hui" now meaning the calendar day so far, not a rolling 24h
+    // window (a rolling window would show hours from *yesterday* under a
+    // "today" label once past hour 0).
+    const currentHour = new Date(now);
+    currentHour.setUTCMinutes(0, 0, 0);
+    const hoursSoFar = Math.round((currentHour - todayMidnightUTC) / 3600_000);
     daily = [];
-    for (let i = 23; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 3600_000);
+    for (let i = 0; i <= hoursSoFar; i++) {
+      const d = new Date(todayMidnightUTC.getTime() + i * 3600_000);
       const bucket = d.toISOString().slice(0, 13) + ':00:00';
       daily.push({ day: bucket, count: dailyMap.get(bucket) || 0 });
     }

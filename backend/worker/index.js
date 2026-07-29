@@ -44,6 +44,7 @@ import {
 
 // Page templates
 import { homePage }     from './pages/home.js';
+import { showcasePage } from './pages/showcase.js';
 import { loginPage, dashboardPage, editorPage } from './pages/admin.js';
 import { printPage, exportWordDocx } from './pages/print.js';
 
@@ -1018,6 +1019,7 @@ async function sitemapXml(env) {
   const staticUrls = [
     { loc: '/', priority: '1.0' },
     { loc: '/voyages', priority: '0.8' },
+    { loc: '/creer-mon-carnet', priority: '0.5' },
   ];
   const articleUrls = (results || []).map(a => ({
     loc: '/voyage/' + a.slug,
@@ -1567,6 +1569,10 @@ export default {
     if (path === '/voyages')         return withVisitorCookie(voyagesPage(publicAuthed));
     const voyageMatch = matchPath('/voyage/:slug', path);
     if (voyageMatch) return voyagePage(env, voyageMatch.slug, publicAuthed, new URL(request.url).origin);
+    if (path === '/creer-mon-carnet') {
+      const contactRow = await env.DB.prepare("SELECT value FROM site_settings WHERE key = 'contact_email'").first();
+      return showcasePage(publicAuthed, contactRow?.value);
+    }
 
     // 404
     return html(`<!DOCTYPE html><html lang="fr"><head><title>404 - Page introuvable</title></head>

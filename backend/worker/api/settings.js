@@ -37,6 +37,8 @@ const ALLOWED_KEYS = [
   ...HOME_CONTENT_KEYS,
   'comment_gate_question', 'comment_gate_answer',
   'admin_display_name',
+  'easter_egg_word',
+  'contact_email',
 ];
 
 // Allow-list of keys safe to expose to anonymous visitors. Anything NOT listed
@@ -47,6 +49,13 @@ const PUBLIC_KEYS = new Set([
   ...HOME_CONTENT_KEYS,
   'comment_gate_question',
   'admin_display_name',
+  // Public because the client-side keydown listener (see NAV's script in
+  // shell.js) needs the current trigger word to know what to match against -
+  // it's a fun easter egg, not a secret, so exposing it is fine.
+  'easter_egg_word',
+  // Public because it's displayed as a mailto: link in the footer and the
+  // "créer mon carnet" showcase page - it's meant to be found, not hidden.
+  'contact_email',
 ]);
 
 export async function getSettings(env, isAdmin = false) {

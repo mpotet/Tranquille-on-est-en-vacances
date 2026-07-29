@@ -146,8 +146,13 @@ export async function emailUnsubscribe(request, env) {
 // Admin: list all email subscribers
 // ──────────────────────────────────────────────────────────────
 export async function listEmailSubscribersAdmin(env) {
+  // Only active subscribers - "Désabonner" in the admin UI deactivates a row
+  // (keeps history, prevents a bounced/complained address from silently
+  // resubscribing) rather than hard-deleting it, so the list must filter on
+  // active=1 or a deactivated row stays visible forever, looking like the
+  // unsubscribe action did nothing.
   const { results } = await env.DB
-    .prepare('SELECT id, email, active, created_at FROM email_subscriptions ORDER BY created_at DESC')
+    .prepare('SELECT id, email, active, created_at FROM email_subscriptions WHERE active = 1 ORDER BY created_at DESC')
     .all();
   return json({ subscribers: results || [] });
 }

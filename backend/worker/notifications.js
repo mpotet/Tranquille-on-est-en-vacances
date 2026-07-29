@@ -21,6 +21,10 @@ import { sendWebPush } from './vapid.js';
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
+function esc(s) {
+  return (s == null ? '' : String(s)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function fmtDate(d) {
   if (!d) return '';
   return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -37,8 +41,8 @@ function fmtDateRange(a) {
 
 function buildEmailHtml(article, articleUrl, unsubUrl, isUpdate = false, changes = []) {
   const dates = fmtDateRange(article);
-  const dest  = article.destination ? ` · 📍 ${article.destination}` : '';
-  const desc  = article.short_description || (isUpdate ? 'Le récit de voyage a été mis à jour.' : 'Un nouveau récit de voyage vient d\'être publié sur le blog !');
+  const dest  = article.destination ? ` · 📍 ${esc(article.destination)}` : '';
+  const desc  = esc(article.short_description) || (isUpdate ? 'Le récit de voyage a été mis à jour.' : 'Un nouveau récit de voyage vient d\'être publié sur le blog !');
 
   const badge = isUpdate
     ? `<div style="font-size:11px;font-weight:700;color:#7C5CBF;text-transform:uppercase;letter-spacing:.15em;margin-bottom:12px">✏️ Récit mis à jour</div>`
@@ -47,7 +51,7 @@ function buildEmailHtml(article, articleUrl, unsubUrl, isUpdate = false, changes
   const changesHtml = isUpdate && changes.length
     ? `<div style="margin:14px 0;padding:12px 16px;background:#F5F3FF;border-radius:12px;border-left:3px solid #7C5CBF">
         <div style="font-size:11px;font-weight:700;color:#7C5CBF;margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em">Ce qui a changé</div>
-        ${changes.map(c => `<div style="font-size:13px;color:#4A3B6A;line-height:1.6">• ${c}</div>`).join('')}
+        ${changes.map(c => `<div style="font-size:13px;color:#4A3B6A;line-height:1.6">• ${esc(c)}</div>`).join('')}
       </div>`
     : '';
 
@@ -56,7 +60,7 @@ function buildEmailHtml(article, articleUrl, unsubUrl, isUpdate = false, changes
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${article.title}</title>
+<title>${esc(article.title)}</title>
 </head>
 <body style="margin:0;padding:0;background:#FFFDF9;font-family:ui-sans-serif,system-ui,sans-serif;color:#1A2B3C">
 <div style="max-width:600px;margin:0 auto;padding:28px 20px">
@@ -71,7 +75,7 @@ function buildEmailHtml(article, articleUrl, unsubUrl, isUpdate = false, changes
   <!-- Article card -->
   <div style="background:#ffffff;border-radius:20px;padding:28px 24px;border:1px solid rgba(26,43,60,.10);box-shadow:0 2px 12px rgba(26,43,60,.06)">
     ${badge}
-    <h1 style="font-size:23px;font-weight:700;color:#1A2B3C;margin:0 0 10px;line-height:1.25;font-family:Georgia,serif">${article.title}</h1>
+    <h1 style="font-size:23px;font-weight:700;color:#1A2B3C;margin:0 0 10px;line-height:1.25;font-family:Georgia,serif">${esc(article.title)}</h1>
     ${dates ? `<div style="font-size:13px;color:#8A9BAC;margin-bottom:14px">📅 ${dates}${dest}</div>` : ''}
     ${changesHtml}
     <p style="font-size:15px;color:#5A6A7A;line-height:1.72;margin:0 0 22px">${desc}</p>

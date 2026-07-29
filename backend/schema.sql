@@ -99,12 +99,18 @@ CREATE TABLE IF NOT EXISTS page_views (
   region         TEXT,
   city           TEXT,
   referrer_host  TEXT,
+  visitor_id     TEXT,
   created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_page_views_created ON page_views(created_at);
 CREATE INDEX IF NOT EXISTS idx_page_views_article  ON page_views(article_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_page_views_country  ON page_views(country_code);
+
+-- One visit per (visitor_id, path) per calendar day - see migrations/007.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_page_views_unique_daily
+  ON page_views(visitor_id, path, date(created_at))
+  WHERE visitor_id IS NOT NULL;
 
 -- ── Push notification subscriptions (Web Push API) ──────────────────────────
 -- Endpoint + ECDH keys sent by the browser when user accepts notifications

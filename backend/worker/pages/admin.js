@@ -239,18 +239,18 @@ ${ADMIN_NAV()}
         </div>
 
         <div id="analytics-content">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-            <div class="rounded-2xl p-4 text-center" style="background:var(--blue-light);border:1px solid rgba(var(--blue-rgb),.16)">
-              <div id="an-total" class="text-2xl font-black" style="color:var(--blue)">-</div>
-              <div class="text-xs font-bold mt-1" style="color:var(--blue-dark)">Visites</div>
+          <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
+            <div class="rounded-2xl p-2.5 sm:p-4 text-center" style="background:var(--blue-light);border:1px solid rgba(var(--blue-rgb),.16)">
+              <div id="an-total" class="text-lg sm:text-2xl font-black" style="color:var(--blue)">-</div>
+              <div class="text-[.65rem] sm:text-xs font-bold mt-1 leading-tight" style="color:var(--blue-dark)">Visites</div>
             </div>
-            <div class="rounded-2xl p-4 text-center" style="background:var(--palm-light);border:1px solid rgba(var(--palm-rgb),.16)">
-              <div id="an-trend" class="text-2xl font-black" style="color:var(--palm)">-</div>
-              <div class="text-xs font-bold mt-1" style="color:var(--palm)">vs période précédente</div>
+            <div class="rounded-2xl p-2.5 sm:p-4 text-center" style="background:var(--palm-light);border:1px solid rgba(var(--palm-rgb),.16)">
+              <div id="an-trend" class="text-lg sm:text-2xl font-black" style="color:var(--palm)">-</div>
+              <div class="text-[.65rem] sm:text-xs font-bold mt-1 leading-tight" style="color:var(--palm)">vs période préc.</div>
             </div>
-            <div class="rounded-2xl p-4 text-center" style="background:var(--cream);border:1px solid var(--line)">
-              <div id="an-countries" class="text-2xl font-black" style="color:var(--ink)">-</div>
-              <div class="text-xs font-bold mt-1" style="color:var(--ink-muted)">Pays distincts</div>
+            <div class="rounded-2xl p-2.5 sm:p-4 text-center" style="background:var(--cream);border:1px solid var(--line)">
+              <div id="an-countries" class="text-lg sm:text-2xl font-black" style="color:var(--ink)">-</div>
+              <div class="text-[.65rem] sm:text-xs font-bold mt-1 leading-tight" style="color:var(--ink-muted)">Pays distincts</div>
             </div>
           </div>
 
@@ -296,13 +296,32 @@ ${ADMIN_NAV()}
 
       <!-- Tab Moderation -->
       <div id="tab-moderation" class="admin-tab-panel" role="tabpanel" aria-labelledby="admintab-moderation">
-        <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
-          <div class="px-6 py-5 border-b border-stone-100">
-            <h2 class="font-bold text-stone-800 text-base"><i class="ph-bold ph-shield-check" style="color:var(--blue)"></i> Modération &amp; Commentaires</h2>
-            <p class="text-xs text-stone-400 mt-0.5">Derniers commentaires publiés; supprimer ou répondre en tant qu'admin (nom configurable).</p>
+        <!-- Stat tiles -->
+        <div class="grid grid-cols-3 gap-3 mb-5">
+          <div class="rounded-2xl p-4 text-center" style="background:var(--cream);border:1px solid var(--line)">
+            <div id="mod-stat-total" class="text-2xl font-black" style="color:var(--ink)">-</div>
+            <div class="text-xs font-bold mt-1" style="color:var(--ink-muted)">Commentaires</div>
           </div>
-          <div class="px-6 pb-6 pt-4">
-            <div id="recent-comments-list" class="divide-y divide-stone-100 text-sm text-stone-700">
+          <div class="rounded-2xl p-4 text-center" style="background:var(--cream);border:1px solid var(--line)">
+            <div id="mod-stat-week" class="text-2xl font-black" style="color:var(--blue)">-</div>
+            <div class="text-xs font-bold mt-1" style="color:var(--ink-muted)">Cette semaine</div>
+          </div>
+          <div class="rounded-2xl p-4 text-center" style="background:var(--cream);border:1px solid var(--line)">
+            <div id="mod-stat-replies" class="text-2xl font-black" style="color:var(--palm)">-</div>
+            <div class="text-xs font-bold mt-1" style="color:var(--ink-muted)">Vos réponses</div>
+          </div>
+        </div>
+
+        <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+          <div class="px-6 py-5 border-b border-stone-100 flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h2 class="font-bold text-stone-800 text-base"><i class="ph-bold ph-chats-circle" style="color:var(--blue)"></i> Commentaires récents</h2>
+              <p class="text-xs text-stone-400 mt-0.5">Les 20 derniers, tous voyages confondus. Répondez en tant qu'admin ou supprimez un message inapproprié.</p>
+            </div>
+            <button type="button" onclick="loadRecentComments()" class="ghost-btn" style="padding:.4rem .8rem;font-size:.78rem" title="Actualiser"><i class="ph-bold ph-arrow-clockwise"></i> Actualiser</button>
+          </div>
+          <div class="px-4 sm:px-6 pb-6 pt-4">
+            <div id="recent-comments-list" class="space-y-3">
               <div class="text-stone-400 p-6 text-center">Chargement...</div>
             </div>
           </div>
@@ -487,6 +506,22 @@ ${ADMIN_NAV()}
         <p class="text-xs text-stone-400 mt-1">Nom utilisé lors des réponses aux commentaires.</p>
       </div>
 
+      <!-- Contact -->
+      <p class="text-xs font-black text-stone-400 uppercase tracking-wider mt-6 mb-3">Contact</p>
+      <div class="mt-1">
+        <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-envelope-simple"></i> Adresse email de contact</label>
+        <input type="email" id="s-contact-email" placeholder="tranquilleonestenvacances@free.fr" autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+        <p class="text-xs text-stone-400 mt-1">Affichée dans le pied de page du site et sur la page "Créer mon carnet" pour que les visiteurs puissent vous contacter.</p>
+      </div>
+
+      <!-- Easter egg -->
+      <p class="text-xs font-black text-stone-400 uppercase tracking-wider mt-6 mb-3">Easter egg - dromadaire 🐪</p>
+      <div class="mt-1">
+        <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-keyboard"></i> Mot déclencheur</label>
+        <input type="text" id="s-easter-egg-word" placeholder="maroc" autocomplete="off" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+        <p class="text-xs text-stone-400 mt-1">Tapez ce mot sur le site (en dehors d'un champ de saisie) pour faire apparaître le dromadaire. "maroc" par défaut.</p>
+      </div>
+
       <div class="mt-6 flex justify-end">
         <button onclick="saveSettings()" class="action-btn-sm"><i class="ph-bold ph-floppy-disk"></i> Sauvegarder les paramètres</button>
       </div>
@@ -594,10 +629,10 @@ ${ADMIN_NAV()}
             </div>
           </div>
         </div>
-        <div class="mt-4 flex flex-wrap gap-2 justify-end">
-          <button onclick="requestSenderVerification()" class="subtle-btn text-sm"><i class="ph-bold ph-paper-plane-tilt"></i> Envoyer l'email de vérification</button>
-          <button onclick="checkSenderStatus()" class="subtle-btn text-sm"><i class="ph-bold ph-arrow-clockwise"></i> Vérifier le statut</button>
-          <button onclick="saveEmailConfig()" class="action-btn-sm"><i class="ph-bold ph-floppy-disk"></i> Enregistrer</button>
+        <div class="mt-4 flex flex-col sm:flex-row flex-wrap gap-2 sm:justify-end">
+          <button onclick="requestSenderVerification()" class="subtle-btn text-sm justify-center whitespace-nowrap"><i class="ph-bold ph-paper-plane-tilt"></i> Envoyer l'email de vérification</button>
+          <button onclick="checkSenderStatus()" class="subtle-btn text-sm justify-center whitespace-nowrap"><i class="ph-bold ph-arrow-clockwise"></i> Vérifier le statut</button>
+          <button onclick="saveEmailConfig()" class="action-btn-sm justify-center whitespace-nowrap"><i class="ph-bold ph-floppy-disk"></i> Enregistrer</button>
         </div>
       </div>
     </div>
@@ -683,12 +718,36 @@ ${ADMIN_NAV()}
   </div>
 </div>
 
+<!-- Reply-to-comment modal (replaces prompt()) -->
+<div id="reply-modal" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" onclick="if(event.target===this)closeReplyModal()">
+  <div class="section-panel majorelle-frame rounded-3xl shadow-2xl w-full max-w-md p-6">
+    <h3 class="font-display text-xl font-bold text-stone-900 mb-1"><i class="ph-bold ph-arrow-bend-up-left"></i> Répondre au commentaire</h3>
+    <div id="reply-context" class="rounded-xl p-3 mb-4 text-sm" style="background:var(--sand);color:var(--ink-muted)"></div>
+    <textarea id="reply-body" rows="4" placeholder="Votre réponse (publiée sous votre nom d'admin)…" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm resize-none mb-5"></textarea>
+    <div class="flex gap-3">
+      <button onclick="closeReplyModal()" class="flex-1 bg-stone-100 text-stone-700 font-bold py-2.5 rounded-xl hover:bg-stone-200 transition-colors text-sm">Annuler</button>
+      <button id="reply-submit-btn" onclick="submitReply()" class="flex-1 action-btn-sm">Publier <i class="ph-bold ph-paper-plane-tilt"></i></button>
+    </div>
+  </div>
+</div>
+
 ${TOAST}
 <script>
 let _folderParentId = null;
 let _folderEditId = null;   // non-null when the folder modal is in "rename" mode
 
-function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:var(--danger);font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
+function toast(msg,type='ok',persist=false){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:var(--danger);font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el.onclick=persist?(()=>el.classList.add('hidden')):null;el.style.cursor=persist?'pointer':'';if(!persist)el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
+// Surfaced here too (not just in the editor) so the warning still reaches the
+// admin if the dashboard tab is the one open when a queued offline save/photo
+// fails to sync due to an expired session - see the matching listener in
+// editorPage() for why the item itself is never lost.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'auth-expired') {
+      toast('Session expirée - reconnectez-vous pour envoyer ce qui est en attente (rien n\\'est perdu)', 'err', true);
+    }
+  });
+}
 function esc(s){return (s==null? '': String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function stripDataUris(html){return(html||'').replace(/\bsrc="data:[^"]*"/g,'src=""').replace(/\bsrc='data:[^']*'/g,"src=''");}
 function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
@@ -724,8 +783,8 @@ function applyArticleSort() {
 
 async function init() {
   const [folders, artData] = await Promise.all([
-    fetch('/api/folders', {cache:'no-store'}).then(r=>r.json()).catch(()=>[]),
-    fetch('/api/articles?limit=100', {cache:'no-store'}).then(r=>r.json()).catch(()=>({articles:[]})),
+    fetch('/api/folders', {cache:'no-store', headers:{'Cache-Control':'no-cache'}}).then(r=>r.json()).catch(()=>[]),
+    fetch('/api/articles?limit=100', {cache:'no-store', headers:{'Cache-Control':'no-cache'}}).then(r=>r.json()).catch(()=>({articles:[]})),
   ]);
   _allArticles = artData.articles;
   _allFolders = folders;
@@ -894,41 +953,77 @@ async function delFolder(id) {
 }
 
 // ── Site settings ─────────────────────────────────────────────
+// The real text shown on the public site when a setting has never been
+// customized - not placeholder hints, the actual live copy (see home.js).
+// Pre-filling the fields with this (rather than leaving them empty behind a
+// greyed-out placeholder) means what the admin sees IS what's published, and
+// editing it "starts from" the real text instead of a blank field.
+const SETTINGS_DEFAULTS = {
+  hero_eyebrow: 'Le carnet des Potet',
+  hero_title: 'Entrez, on allait justement <em>raconter le voyage</em>.',
+  hero_subtitle: "Depuis 2011, on part quelque part, on revient avec des histoires - et on les note ici pour ne pas les oublier (et pour vous).",
+  hero_badge: '"Mais ça c\\'était bien avant le drame..."',
+  hero_cta_primary: 'Lire nos aventures',
+  hero_cta_secondary: 'Nos coins du monde',
+  stat_voyages_label: 'aventures depuis 2011',
+  stat_dest_label: 'pays, une seule Dacia',
+  stat_maroc_label: 'séjours au Maroc',
+  recent_eyebrow: 'Sélection maison',
+  recent_title: 'Nos derniers voyages',
+  recent_subtitle: 'Les récits les plus récents de nos vacances, avec nos coups de cœur, nos galères et nos meilleures trouvailles.',
+  about_eyebrow: "Salut, c'est nous",
+  about_text: "Nous, c'est la famille Potet. Tout a commencé sans le vouloir en 2011, avec un voyage à Marrakech - un tajine à 5 euros et un nom de blog plus tard, on ne s'est plus arrêtés. Une Dacia traumatisée et pas mal de galères après, on continue de tout noter ici. Bienvenue à la maison.",
+  dest_eyebrow: 'Où on a traîné nos valises',
+  dest_title: 'Nos coins du monde',
+  dest_subtitle: "Choisissez un pays, on vous ressort les photos, les histoires et ce qu'on referait (ou pas).",
+  sub_title: 'On repart bientôt.',
+  sub_subtitle: 'Laissez votre email, on vous fait signe au prochain récit. Pas de spam, juste nous.',
+  install_title: 'Gardez le carnet sur vous',
+  install_text: "Installez l'app sur votre téléphone : elle s'ouvre d'une icône, même sans réseau en voyage.",
+  site_tagline: '"Mais ça c\\'était bien avant le drame..."',
+  tagline_author: 'Devise de la famille Potet',
+  admin_display_name: 'Damien Potet',
+  easter_egg_word: 'maroc',
+  contact_email: 'tranquilleonestenvacances@free.fr',
+};
 async function loadSettings() {
   const s = await fetch('/api/settings').then(r=>r.json()).catch(()=>({}));
+  const val = (key) => (s[key] != null && s[key] !== '') ? s[key] : (SETTINGS_DEFAULTS[key] || '');
   document.getElementById('s-hero-img').value       = s.hero_image_url    || '';
-  document.getElementById('s-hero-eyebrow').value   = s.hero_eyebrow      || '';
-  document.getElementById('s-hero-badge').value     = s.hero_badge        || '';
-  document.getElementById('s-hero-title').value     = s.hero_title        || '';
-  document.getElementById('s-hero-subtitle').value  = s.hero_subtitle     || '';
-  document.getElementById('s-hero-cta-primary').value   = s.hero_cta_primary   || '';
-  document.getElementById('s-hero-cta-secondary').value = s.hero_cta_secondary || '';
+  document.getElementById('s-hero-eyebrow').value   = val('hero_eyebrow');
+  document.getElementById('s-hero-badge').value     = val('hero_badge');
+  document.getElementById('s-hero-title').value     = val('hero_title');
+  document.getElementById('s-hero-subtitle').value  = val('hero_subtitle');
+  document.getElementById('s-hero-cta-primary').value   = val('hero_cta_primary');
+  document.getElementById('s-hero-cta-secondary').value = val('hero_cta_secondary');
   // Stats
-  document.getElementById('s-stat-voyages').value = s.stat_voyages_label || '';
-  document.getElementById('s-stat-dest').value    = s.stat_dest_label    || '';
-  document.getElementById('s-stat-maroc').value   = s.stat_maroc_label   || '';
+  document.getElementById('s-stat-voyages').value = val('stat_voyages_label');
+  document.getElementById('s-stat-dest').value    = val('stat_dest_label');
+  document.getElementById('s-stat-maroc').value   = val('stat_maroc_label');
   // Section "Nos derniers voyages"
-  document.getElementById('s-recent-eyebrow').value  = s.recent_eyebrow  || '';
-  document.getElementById('s-recent-title').value    = s.recent_title    || '';
-  document.getElementById('s-recent-subtitle').value = s.recent_subtitle || '';
+  document.getElementById('s-recent-eyebrow').value  = val('recent_eyebrow');
+  document.getElementById('s-recent-title').value    = val('recent_title');
+  document.getElementById('s-recent-subtitle').value = val('recent_subtitle');
   // Section "Le mot des Potet"
-  document.getElementById('s-about-eyebrow').value = s.about_eyebrow || '';
-  document.getElementById('s-about-text').value    = s.about_text    || '';
+  document.getElementById('s-about-eyebrow').value = val('about_eyebrow');
+  document.getElementById('s-about-text').value    = val('about_text');
   // Section "Nos coins du monde"
-  document.getElementById('s-dest-eyebrow').value  = s.dest_eyebrow  || '';
-  document.getElementById('s-dest-title').value    = s.dest_title    || '';
-  document.getElementById('s-dest-subtitle').value = s.dest_subtitle || '';
+  document.getElementById('s-dest-eyebrow').value  = val('dest_eyebrow');
+  document.getElementById('s-dest-title').value    = val('dest_title');
+  document.getElementById('s-dest-subtitle').value = val('dest_subtitle');
   // Abonnement + install
-  document.getElementById('s-sub-title').value     = s.sub_title     || '';
-  document.getElementById('s-sub-subtitle').value  = s.sub_subtitle  || '';
-  document.getElementById('s-install-title').value = s.install_title || '';
-  document.getElementById('s-install-text').value  = s.install_text  || '';
+  document.getElementById('s-sub-title').value     = val('sub_title');
+  document.getElementById('s-sub-subtitle').value  = val('sub_subtitle');
+  document.getElementById('s-install-title').value = val('install_title');
+  document.getElementById('s-install-text').value  = val('install_text');
   // Citation
-  document.getElementById('s-tagline').value        = s.site_tagline      || '';
-  document.getElementById('s-tagline-author').value = s.tagline_author    || '';
+  document.getElementById('s-tagline').value        = val('site_tagline');
+  document.getElementById('s-tagline-author').value = val('tagline_author');
   document.getElementById('s-gate-question').value  = s.comment_gate_question || '';
   document.getElementById('s-gate-answer').value    = s.comment_gate_answer   || '';
-  document.getElementById('s-admin-display-name').value = s.admin_display_name || 'Damien Potet';
+  document.getElementById('s-admin-display-name').value = val('admin_display_name');
+  document.getElementById('s-easter-egg-word').value = val('easter_egg_word');
+  document.getElementById('s-contact-email').value = val('contact_email');
   previewHeroImg(s.hero_image_url || '');
 }
 function previewHeroImg(url) {
@@ -1002,6 +1097,8 @@ async function saveSettings() {
     comment_gate_question: document.getElementById('s-gate-question').value.trim(),
     comment_gate_answer:   document.getElementById('s-gate-answer').value.trim(),
     admin_display_name:    document.getElementById('s-admin-display-name').value.trim(),
+    easter_egg_word:       document.getElementById('s-easter-egg-word').value.trim().toLowerCase(),
+    contact_email:         document.getElementById('s-contact-email').value.trim(),
   };
   const res = await fetch('/api/settings', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
   if (res.ok) toast('Paramètres sauvegardés !','ok');
@@ -1331,41 +1428,80 @@ document.querySelectorAll('.period-pill').forEach(btn => {
 })();
 
 // ── Moderation / comments (admin) ─────────────────────────────
+// Renders a comment the same visual language as the public thread (avatar
+// initial, admin-reply badge) so moderation reads as "the same comments",
+// not a disconnected raw log - plus the actions an admin actually needs:
+// jump to it in context, reply as the site's voice, or remove it.
+function renderModComment(c) {
+  const initial = esc((c.author_name || '?').trim().charAt(0).toUpperCase());
+  const replyBadge = c.is_admin_reply
+    ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold uppercase tracking-wide" style="background:var(--blue-light);color:var(--blue)"><i class="ph-fill ph-star"></i> Réponse admin</span>'
+    : '';
+  const commentUrl = '/voyage/' + esc(c.article_slug || c.article_id) + '#comment-' + c.id;
+  const preview = esc(c.body || '');
+  return '<article class="card-line rounded-2xl p-4" data-comment-row="' + c.id + '">'
+    + '<div class="flex items-start justify-between gap-3 mb-1.5 flex-wrap">'
+      + '<div class="flex items-center gap-2 flex-wrap">'
+        + '<span class="inline-flex items-center justify-center rounded-full flex-shrink-0" style="width:1.75rem;height:1.75rem;background:var(--blue-light);color:var(--blue);font-weight:700;font-size:.72rem">' + initial + '</span>'
+        + '<span class="font-bold text-sm" style="color:var(--ink)">' + esc(c.author_name) + '</span>'
+        + replyBadge
+      + '</div>'
+      + '<span class="text-xs" style="color:var(--ink-light)">' + esc(fmtDate(c.created_at)) + '</span>'
+    + '</div>'
+    + '<p class="text-sm leading-relaxed mb-1" style="color:var(--ink);white-space:pre-wrap;word-break:break-word">' + preview + '</p>'
+    + '<p class="text-xs mb-3" style="color:var(--ink-light)">sur <a href="' + commentUrl + '" target="_blank" rel="noopener" class="hover:underline" style="color:var(--blue)">' + esc(c.article_title) + '</a></p>'
+    + '<div class="flex items-center gap-2 flex-wrap">'
+      + '<a href="' + commentUrl + '" target="_blank" rel="noopener" class="ghost-btn" style="padding:.35rem .75rem;font-size:.75rem"><i class="ph-bold ph-arrow-square-out"></i> Voir en contexte</a>'
+      + (c.is_admin_reply ? '' : '<button data-id="' + c.id + '" data-name="' + esc(c.author_name) + '" class="ghost-btn" style="padding:.35rem .75rem;font-size:.75rem" data-action="admin-reply"><i class="ph-bold ph-arrow-bend-up-left"></i> Répondre</button>')
+      + '<button data-id="' + c.id + '" class="ghost-btn" style="padding:.35rem .75rem;font-size:.75rem;color:var(--danger)" data-action="admin-delete-comment"><i class="ph-bold ph-trash"></i> Supprimer</button>'
+    + '</div>'
+  + '</article>';
+}
 async function loadRecentComments() {
   const box = document.getElementById('recent-comments-list');
   if (!box) return;
   box.innerHTML = '<div class="text-stone-400 p-6 text-center">Chargement…</div>';
   const data = await fetch('/api/admin/comments/recent').then(r=>r.json()).catch(()=>null);
   const comments = data?.comments || [];
-  if (!comments.length) { box.innerHTML = '<div class="text-stone-400 p-6 text-center">Aucun commentaire récent.</div>'; return; }
-  box.innerHTML = comments.map(c => {
-    const preview = (esc(c.body) || '').replaceAll('\\n',' ');
-    const replyBadge = c.is_admin_reply ? ' <span class="text-xs font-bold text-sky-600 uppercase">· Réponse admin</span>' : '';
-    const commentUrl = '/voyage/' + esc(c.article_slug || c.article_id) + '#comment-' + c.id;
-    return '<div class="px-6 py-3.5">'
-      + '<div class="flex items-start justify-between gap-4">'
-      + '<div class="flex-1 min-w-0">'
-      + '<div class="text-sm font-semibold text-stone-800">' + esc(c.author_name) + replyBadge + ' <span class="text-xs text-stone-400">sur <a href="' + commentUrl + '" class="text-sky-600 hover:underline">' + esc(c.article_title) + '</a></span></div>'
-      + '<p class="text-sm text-stone-700 mt-1">' + preview + '</p>'
-      + '<div class="text-xs text-stone-400 mt-2">' + fmtDate(c.created_at) + '</div>'
-      + '</div>'
-      + '<div class="flex flex-col gap-2 items-end">'
-      + '<a href="' + commentUrl + '" target="_blank" rel="noopener" class="subtle-btn" data-action="admin-view-comment">Voir</a>'
-      + '<button data-id="' + c.id + '" class="subtle-btn" data-action="admin-reply">Répondre</button>'
-      + '<button data-id="' + c.id + '" class="subtle-btn" data-action="admin-delete-comment" style="background:rgba(220,60,60,.08);border-color:rgba(220,60,60,.12);">Supprimer</button>'
-      + '</div></div></div>';
-  }).join('');
+
+  document.getElementById('mod-stat-total').textContent = comments.length;
+  const weekAgo = Date.now() - 7 * 86400000;
+  document.getElementById('mod-stat-week').textContent = comments.filter(c => new Date((c.created_at||'').replace(' ','T')+'Z').getTime() > weekAgo).length;
+  document.getElementById('mod-stat-replies').textContent = comments.filter(c => c.is_admin_reply).length;
+
+  if (!comments.length) {
+    box.innerHTML = '<div class="text-center py-12" style="color:var(--ink-light)">'
+      + '<i class="ph-bold ph-chats-circle" style="font-size:3rem;display:block;margin-bottom:.75rem;color:var(--ink-light)"></i>'
+      + '<p class="text-sm font-semibold mb-1" style="color:var(--ink)">Aucun commentaire pour l\\'instant</p>'
+      + '<p class="text-sm">Les réactions des lecteurs apparaîtront ici.</p>'
+    + '</div>';
+    return;
+  }
+  box.innerHTML = comments.map(renderModComment).join('');
+}
+
+// ── Reply modal (replaces prompt()) ────────────────────────────
+let _replyTargetId = null;
+function openReplyModal(id, authorName) {
+  _replyTargetId = id;
+  document.getElementById('reply-context').innerHTML = 'En réponse à <strong>' + esc(authorName) + '</strong>';
+  document.getElementById('reply-body').value = '';
+  document.getElementById('reply-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('reply-body').focus(), 50);
+}
+function closeReplyModal() { document.getElementById('reply-modal').classList.add('hidden'); _replyTargetId = null; }
+async function submitReply() {
+  const body = document.getElementById('reply-body').value.trim();
+  if (!body) { toast('Écrivez une réponse', 'err'); return; }
+  const id = _replyTargetId;
+  const res = await fetch('/api/admin/comments/'+id+'/reply', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ body }) });
+  if (res.ok) { closeReplyModal(); toast('Réponse publiée', 'ok'); loadRecentComments(); }
+  else { const d = await res.json().catch(()=>null); toast((d&&d.error)||'Erreur', 'err'); }
 }
 
 document.addEventListener('click', async (e) => {
   const replyBtn = e.target.closest('[data-action="admin-reply"]');
-  if (replyBtn) {
-    const id = parseInt(replyBtn.dataset.id);
-    const reply = prompt('Votre réponse (sera publiée comme admin)');
-    if (!reply) return; // cancelled or empty
-    const res = await fetch('/api/admin/comments/'+id+'/reply', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ body: reply }) });
-    if (res.ok) { toast('Réponse publiée','ok'); loadRecentComments(); } else { const d = await res.json().catch(()=>null); toast((d&&d.error)||'Erreur','err'); }
-  }
+  if (replyBtn) { openReplyModal(parseInt(replyBtn.dataset.id), replyBtn.dataset.name || ''); return; }
   const delBtn = e.target.closest('[data-action="admin-delete-comment"]');
   if (delBtn) {
     const id = parseInt(delBtn.dataset.id);
@@ -1442,6 +1578,9 @@ loadAccount();
 // Deep-link support: /admin/dashboard#settings, #account, #emails, #subscribers, #moderation
 const _initialTab = (location.hash || '').replace('#','');
 if (['settings','account','emails','subscribers','moderation'].includes(_initialTab)) switchTab(_initialTab);
+// The dashboard is the page landed on right after logging back in, so nudge
+// the SW to retry anything still queued from before the session expired.
+navigator.serviceWorker?.controller?.postMessage('sync-now');
 </script>
 </body>
 </html>`);
@@ -1714,11 +1853,73 @@ ${TOAST}
 let ARTICLE_ID = ${JSON.stringify(articleId)};
 let existingPhotos = [];
 let newPhotos = [];
+let _pendingPhotoCount = 0;
+// Refreshes the "N photos en attente" count from IndexedDB - called on load
+// and after every sync attempt, since the SW (which actually replays the
+// queue) has no way to call back into this page's in-memory state directly.
+async function _refreshPendingPhotoCount() {
+  try {
+    if (!('indexedDB' in window)) return;
+    const db = await _openOfflineDB();
+    const all = await new Promise((resolve, reject) => {
+      const tx = db.transaction('pending-photos', 'readonly');
+      const req = tx.objectStore('pending-photos').getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+    _pendingPhotoCount = ARTICLE_ID ? all.filter(p => String(p.articleId) === String(ARTICLE_ID)).length : all.length;
+  } catch { _pendingPhotoCount = 0; }
+  updateSyncInfo();
+}
+
+// ── Compression photo côté client ──────────────────────────────
+// The admin publishes from the road on patchy mobile networks - an 8-12MB
+// phone-camera JPEG can time out or fail outright on 3G/hotel wifi. Every
+// photo is downscaled (max 1920px on the long edge, plenty for the blog's
+// display sizes) and re-encoded as JPEG before it ever touches the network
+// or IndexedDB, whether uploaded immediately or queued offline. This cuts
+// typical file size by 5-10x with no visible quality loss on screen.
+const PHOTO_MAX_DIM = 1920;
+const PHOTO_QUALITY = 0.82;
+function compressImage(file) {
+  // Skip compression we can't safely redo: GIFs would lose animation, and
+  // anything already tiny isn't worth the CPU/battery cost on a phone.
+  if (!file.type || !file.type.startsWith('image/') || file.type === 'image/gif' || file.size < 300 * 1024) {
+    return Promise.resolve(file);
+  }
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    const cleanup = () => URL.revokeObjectURL(url);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > PHOTO_MAX_DIM || height > PHOTO_MAX_DIM) {
+        const scale = PHOTO_MAX_DIM / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => {
+        cleanup();
+        if (!blob || blob.size >= file.size) { resolve(file); return; } // compression didn't help, keep original
+        resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg', lastModified: file.lastModified || Date.now() }));
+      }, 'image/jpeg', PHOTO_QUALITY);
+    };
+    img.onerror = () => { cleanup(); resolve(file); }; // unreadable image - let the server's own validation reject it
+    img.src = url;
+  });
+}
+async function compressFiles(fileList) {
+  return Promise.all(Array.from(fileList).map(compressImage));
+}
 let newCoverFile = null;
 let _lastSaved = null;
 let _lastPublished = null;
 
-function toast(msg,type='ok'){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:var(--danger);font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
+function toast(msg,type='ok',persist=false){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:var(--danger);font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el.onclick=persist?(()=>el.classList.add('hidden')):null;el.style.cursor=persist?'pointer':'';if(!persist)el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
 function esc(s){return (s==null? '': String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function stripDataUris(html){return(html||'').replace(/\bsrc="data:[^"]*"/g,'src=""').replace(/\bsrc='data:[^']*'/g,"src=''");}
 function dataUrlToFile(dataUrl,name){const arr=dataUrl.split(','),mime=arr[0].match(/:(.*?);/)[1],bstr=atob(arr[1]);let n=bstr.length;const u8=new Uint8Array(n);while(n--)u8[n]=bstr.charCodeAt(n);return new File([u8],name||'photo.jpg',{type:mime});}
@@ -1760,18 +1961,61 @@ function clearDraftLocal() { localStorage.removeItem(DRAFT_KEY); }
 // offline is *also* written here - the SW reads this store and replays each
 // entry (POST/PUT) via Background Sync once the network is back, even if
 // nobody has the app open at that moment. See public/sw.js for the replay side.
+// navigator.serviceWorker.ready never resolves if the SW hasn't taken control
+// of this page yet (e.g. the very first load right after registration, or a
+// test/incognito context) - it has no built-in timeout, so an unguarded
+// await here would leave the offline queue call hanging forever. A failed
+// Background Sync registration is fine either way: the 'online' event
+// listener in sw.js is the fallback path that covers exactly this case.
+function _swReadyWithTimeout(ms) {
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('sw not ready')), ms)),
+  ]);
+}
 function _openOfflineDB() {
   return new Promise((resolve, reject) => {
     if (!('indexedDB' in window)) { reject(new Error('no indexedDB')); return; }
-    const req = indexedDB.open('tranquille-offline', 1);
+    // v2 adds 'pending-photos' (stores the compressed File/Blob directly -
+    // IndexedDB supports binary values natively, no base64 round-trip needed).
+    // onupgradeneeded fires for both a brand-new DB and an existing v1 one,
+    // so the 'if not exists' guards make it safe either way.
+    const req = indexedDB.open('tranquille-offline', 2);
     req.onupgradeneeded = () => {
       if (!req.result.objectStoreNames.contains('pending-articles')) {
         req.result.createObjectStore('pending-articles', { keyPath: 'localId' });
       }
+      if (!req.result.objectStoreNames.contains('pending-photos')) {
+        req.result.createObjectStore('pending-photos', { keyPath: 'localId' });
+      }
     };
+    // The upgrade can hang forever if another tab/the Service Worker still
+    // holds an older-version connection open (IndexedDB has no forced-close
+    // API) - never let a queued photo save wedge the editor UI on this.
+    req.onblocked = () => reject(new Error('IndexedDB upgrade blocked by another open tab'));
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
+}
+async function queueOfflinePhoto(articleId, file, opts) {
+  const db = await _openOfflineDB();
+  const localId = 'photo-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction('pending-photos', 'readwrite');
+    tx.objectStore('pending-photos').put({
+      localId, articleId, file, isCover: !!(opts && opts.isCover),
+      fileName: file.name, queuedAt: Date.now(),
+    });
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+  if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    try {
+      const reg = await _swReadyWithTimeout(3000);
+      await reg.sync.register('tranquille-sync-photos');
+    } catch { /* Background Sync unsupported/denied/not-ready-yet - the 'online' fallback in sw.js still covers it */ }
+  }
+  return localId;
 }
 async function queueOfflineArticleSave(method, url, payload) {
   const db = await _openOfflineDB();
@@ -1784,9 +2028,9 @@ async function queueOfflineArticleSave(method, url, payload) {
   });
   if ('serviceWorker' in navigator && 'SyncManager' in window) {
     try {
-      const reg = await navigator.serviceWorker.ready;
+      const reg = await _swReadyWithTimeout(3000);
       await reg.sync.register('tranquille-sync-articles');
-    } catch { /* Background Sync unsupported/denied - the 'online' event fallback in sw.js still covers it */ }
+    } catch { /* Background Sync unsupported/denied/not-ready-yet - the 'online' event fallback in sw.js still covers it */ }
   }
 }
 // The SW tells every open page when a queued save actually goes through, so
@@ -1797,6 +2041,30 @@ if ('serviceWorker' in navigator) {
       const lbl = document.getElementById('sticky-status-lbl');
       if (lbl) lbl.textContent = '✓ Synchronisé';
       toast('Article envoyé automatiquement 🌴', 'ok');
+    }
+    // A queued photo just uploaded in the background - possibly while this
+    // tab was closed or the article page wasn't even open. Only touch the
+    // gallery/editor if we're looking at the same article it belongs to.
+    if (event.data && event.data.type === 'photo-synced' && event.data.ok) {
+      const d = event.data.data || {};
+      if (String(event.data.articleId) === String(ARTICLE_ID)) {
+        if (event.data.isCover && d.url) {
+          document.getElementById('e-cover').value = d.url;
+          previewCover(d.url);
+        } else if (d.url) {
+          existingPhotos.push(d);
+          renderPhotoGrid();
+        }
+      }
+      _refreshPendingPhotoCount();
+      toast('Photo envoyée automatiquement 🌴', 'ok');
+    }
+    // Session expired while a save/photo was queued offline - the item is
+    // kept in the queue (not lost), but nothing will sync until the admin
+    // logs back in. A persistent toast (not the usual 3s one) since missing
+    // this would mean silently losing work.
+    if (event.data && event.data.type === 'auth-expired') {
+      toast('Session expirée - reconnectez-vous pour envoyer ce qui est en attente (rien n\\'est perdu)', 'err', true);
     }
   });
 }
@@ -1861,6 +2129,15 @@ async function ensureArticleId() {
   if (ARTICLE_ID) return true;
   const title = document.getElementById('e-title')?.value.trim();
   if (!title) { toast("Ajoutez d'abord un titre à l'article", 'err'); return false; }
+  // A brand-new, never-saved article has no id yet, and photo queueing needs
+  // a real articleId to attach to - so unlike editing an existing article
+  // (which the offline photo queue handles fine), a first save must succeed
+  // online. Fail with a clear, specific message rather than the generic one
+  // below, which reads like a server error when it's really "no signal yet".
+  if (!navigator.onLine) {
+    toast('Pas de connexion : enregistrez une première fois une fois en ligne pour pouvoir ajouter des photos', 'err');
+    return false;
+  }
   const res = await fetch('/api/articles', {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
@@ -1884,9 +2161,11 @@ function updateSyncInfo() {
   const online = navigator.onLine;
   const dot = document.getElementById('sync-dot');
   const lbl = document.getElementById('sync-online-lbl');
-  const hasPending = !!document.getElementById('e-content')?.querySelector('img[src^="data:"]');
+  const hasPending = !!document.getElementById('e-content')?.querySelector('img[src^="data:"]') || _pendingPhotoCount > 0;
   if (dot) dot.style.background = online ? (hasPending ? 'var(--apricot)' : 'var(--palm)') : 'var(--danger)';
-  if (lbl) lbl.textContent = online ? (hasPending ? 'En ligne \u00b7 images en attente' : 'En ligne') : 'Hors ligne';
+  const photoWord = _pendingPhotoCount === 1 ? 'photo en attente' : 'photos en attente';
+  const pendingLabel = _pendingPhotoCount > 0 ? (_pendingPhotoCount + ' ' + photoWord) : 'images en attente';
+  if (lbl) lbl.textContent = online ? (hasPending ? ('En ligne \u00b7 ' + pendingLabel) : 'En ligne') : 'Hors ligne';
   if (_lastSaved) {
     const row = document.getElementById('sync-saved-row');
     const sl = document.getElementById('sync-saved-lbl');
@@ -1989,7 +2268,7 @@ window.addEventListener('online', async () => {
 // ── Init ──────────────────────────────────────────────────────
 async function init() {
   // Load folders for the selector
-  const folders = await fetch('/api/folders', {cache:'no-store'}).then(r=>r.json()).catch(()=>[]);
+  const folders = await fetch('/api/folders', {cache:'no-store', headers:{'Cache-Control':'no-cache'}}).then(r=>r.json()).catch(()=>[]);
   populateFolderSelect(folders, null, 0);
 
   const createParams = new URLSearchParams(location.search);
@@ -2009,7 +2288,7 @@ async function init() {
   setStatus('archived'); // initialise le sélecteur visuel
 
   if (ARTICLE_ID) {
-    const a = await fetch('/api/articles/' + ARTICLE_ID).then(r=>r.json()).catch(()=>null);
+    const a = await fetch('/api/articles/' + ARTICLE_ID, {cache:'no-store', headers:{'Cache-Control':'no-cache'}}).then(r=>r.json()).catch(()=>null);
     if (a && a.title) {
       document.getElementById('e-title').value = a.title || '';
       document.getElementById('e-desc').value  = a.short_description || '';
@@ -2347,18 +2626,25 @@ function handleCoverDrop(e) {
 }
 async function handleCoverFile(file) {
   if(!file) return;
+  file = await compressImage(file);
   const reader=new FileReader();
   reader.onload=ev=>{ previewCover(ev.target.result); };
   reader.readAsDataURL(file);
   if(ARTICLE_ID) {
     const fd=new FormData(); fd.append('cover',file);
-    const res=await fetch('/api/articles/'+ARTICLE_ID+'/cover',{method:'POST',body:fd}).catch(()=>null);
+    const res=await fetch('/api/articles/'+ARTICLE_ID+'/cover',{method:'POST',body:fd, signal: AbortSignal.timeout(30000)}).catch(()=>null);
     if(res?.ok){
       const data=await res.json();
       document.getElementById('e-cover').value=data.url;
       previewCover(data.url);
       toast('Couverture mise à jour !','ok');
-    } else toast('Erreur upload couverture','err');
+    } else {
+      // Network flaky/offline mid-trip: queue it instead of just failing -
+      // it'll upload itself as soon as the connection allows.
+      await queueOfflinePhoto(ARTICLE_ID, file, { isCover: true });
+      await _refreshPendingPhotoCount();
+      toast('Couverture en attente (envoi dès que connecté)', 'info');
+    }
   } else {
     newCoverFile=file;
   }
@@ -2388,43 +2674,49 @@ function renderPhotoGrid() {
 }
 
 function handleFiles(files) {
-  if (!navigator.onLine) {
-    // Offline: insert data: URI previews - will sync automatically on reconnect
-    Array.from(files).forEach(f => {
-      const r = new FileReader();
-      r.onload = e => { insertPhotoInText(e.target.result, f.name || '', false); };
-      r.readAsDataURL(f);
-    });
-    setTimeout(() => { saveDraftLocal(); updateSyncInfo(); }, 300);
-    toast('Photos en attente (sync quand connecté)', 'info');
-    return;
-  }
-  // Online: upload immediately (auto-create draft if needed)
   (async () => {
     const ok = await ensureArticleId();
     if (!ok) return;
+    const compressed = await compressFiles(files);
+
+    // Fully offline: don't even attempt the request, straight to the queue.
+    // Otherwise: try uploading now, and only fall back to the queue if the
+    // request actually fails (timeout, dropped connection mid-upload) -
+    // patchy hotel/roaming wifi is the normal case in the field, not a clean
+    // "offline" state, so this must not depend on navigator.onLine alone.
+    if (!navigator.onLine) { await queueAllPhotos(compressed); return; }
+
     toast('Upload en cours...', 'ok');
     const fd = new FormData();
-    Array.from(files).forEach(f => fd.append('photo', f));
-    fetch('/api/articles/'+ARTICLE_ID+'/photos', {method:'POST', body:fd, signal: AbortSignal.timeout(30000)})
-      .then(r=>r.json())
-      .then(data=>{
-        const uploaded = data.uploaded || [];
-        const rejected = data.rejected || [];
-        existingPhotos.push(...uploaded);
-        renderPhotoGrid();
-        uploaded.forEach(p => insertPhotoInText(p.url, p.caption || 'photo', false));
-        if (uploaded.length) {
-          toast(uploaded.length === 1 ? 'Photo insérée !' : uploaded.length + ' photos insérées !','ok');
-        }
-        // Every file failed magic-byte validation (e.g. HEIC/HEIF or another
-        // unsupported format) - don't show a false "success" toast for 0 photos.
-        if (rejected.length) {
-          toast(rejected.length + ' photo(s) au format non pris en charge (essayez JPEG, PNG, WebP)', 'err');
-        }
-      })
-      .catch(err=>toast(err?.name === 'TimeoutError' ? 'Upload trop lent, connexion instable' : 'Erreur upload','err'));
+    compressed.forEach(f => fd.append('photo', f));
+    try {
+      const res = await fetch('/api/articles/'+ARTICLE_ID+'/photos', {method:'POST', body:fd, signal: AbortSignal.timeout(30000)});
+      const data = await res.json();
+      const uploaded = data.uploaded || [];
+      const rejected = data.rejected || [];
+      existingPhotos.push(...uploaded);
+      renderPhotoGrid();
+      uploaded.forEach(p => insertPhotoInText(p.url, p.caption || 'photo', false));
+      if (uploaded.length) {
+        toast(uploaded.length === 1 ? 'Photo insérée !' : uploaded.length + ' photos insérées !','ok');
+      }
+      // Every file failed magic-byte validation (e.g. HEIC/HEIF or another
+      // unsupported format) - don't show a false "success" toast for 0 photos.
+      if (rejected.length) {
+        toast(rejected.length + ' photo(s) au format non pris en charge (essayez JPEG, PNG, WebP)', 'err');
+      }
+    } catch (err) {
+      // Network failure mid-upload (timeout, connection dropped) - queue for
+      // background retry instead of just losing the photos.
+      await queueAllPhotos(compressed);
+    }
   })();
+}
+async function queueAllPhotos(files) {
+  for (const f of files) await queueOfflinePhoto(ARTICLE_ID, f, { isCover: false });
+  renderPhotoGrid();
+  await _refreshPendingPhotoCount();
+  toast(files.length === 1 ? 'Photo en attente (envoi dès que connecté)' : files.length + ' photos en attente (envoi dès que connecté)', 'info');
 }
 function handleDrop(e) {
   e.preventDefault(); document.getElementById('dropzone').classList.remove('border-sky-400','bg-sky-50');
@@ -2600,7 +2892,6 @@ async function saveArticle() {
     if(cr?.ok) newCoverFile=null;
   }
   _lastSaved = Date.now();
-  _lastSaved = Date.now();
   if (apiStatus === 'published') _lastPublished = Date.now();
   updateSyncInfo();
   toast('Sauvegardé !','ok');
@@ -2692,6 +2983,12 @@ document.addEventListener('error', e => {
   }
 }, true);
 init().catch(err => console.error('[editor] init() failed:', err));
+_refreshPendingPhotoCount();
+// A fresh page load is also exactly what happens right after logging back in
+// (session was expired -> login form -> back to the editor), so nudge the SW
+// to retry anything still queued from before the session lapsed - otherwise
+// it would sit untouched until the next 'online' event or Background Sync tick.
+navigator.serviceWorker?.controller?.postMessage('sync-now');
 </script>
 </body>
 </html>`);

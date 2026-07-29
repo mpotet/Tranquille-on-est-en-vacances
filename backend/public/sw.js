@@ -21,7 +21,7 @@
  *   revalide silencieusement le cache.
  */
 
-const VERSION = 'v20';
+const VERSION = 'v29';
 const PAGES_CACHE = `tranquille-pages-${VERSION}`;
 const ASSETS_CACHE = `tranquille-assets-${VERSION}`;
 const API_CACHE = `tranquille-api-${VERSION}`;
@@ -39,6 +39,7 @@ const PRECACHE_ASSETS = [
 const PRECACHE_PAGES = [
   '/',
   '/voyages',
+  '/creer-mon-carnet',
 ];
 
 const PUBLIC_API_PREFIXES = [
@@ -125,10 +126,22 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(req.url);
 
-  // Auth actions (login/logout) must always hit the network - never cached,
-  // never served stale (a stale login page could mask a session that expired
-  // server-side, or replay a stale CSRF-relevant form).
-  if (url.pathname === '/admin' || url.pathname === '/admin/' || url.pathname === '/admin/login' || url.pathname === '/admin/logout') return;
+  // Auth actions (login, password reset/setup, email confirmation) must always
+  // hit the network - never cached, never served stale. Each of these embeds
+  // a one-time token or reflects the current session state in the page itself
+  // (e.g. an already-consumed reset link, or a stale "email confirmed" state);
+  // serving a cached copy could show a since-invalidated form as if it still
+  // worked, or mask a session that has since expired server-side.
+  const ADMIN_AUTH_PATHS = new Set([
+    '/admin', '/admin/', '/admin/login', '/admin/logout',
+    '/admin/setup', '/admin/reset', '/admin/forgot-password',
+    '/admin/set-password', '/admin/confirm-email',
+  ]);
+  if (ADMIN_AUTH_PATHS.has(url.pathname)) return;
+
+  // Same reasoning for the public unsubscribe link: it's a one-time token
+  // action, not a page that should ever be replayed from cache.
+  if (url.pathname === '/unsubscribe') return;
 
   // Admin JSON API: always fresh, same reasoning as the public API's
   // cache-control no-cache override above, but unconditional here - admin
@@ -317,15 +330,25 @@ self.addEventListener('notificationclick', event => {
 const SYNC_TAG = 'tranquille-sync-articles';
 const DB_NAME = 'tranquille-offline';
 const STORE = 'pending-articles';
+// v2 adds 'pending-photos' - same DB the admin editor writes to (see
+// _openOfflineDB() in admin.js), opened with matching version/upgrade logic
+// here since the two DB handles are independent even though they share a
+// name. onupgradeneeded fires for a brand-new DB and for an existing v1 one
+// alike, so the 'if not exists' guards make both paths safe.
+const PHOTO_STORE = 'pending-photos';
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
+    const req = indexedDB.open(DB_NAME, 2);
     req.onupgradeneeded = () => {
       if (!req.result.objectStoreNames.contains(STORE)) {
         req.result.createObjectStore(STORE, { keyPath: 'localId' });
       }
+      if (!req.result.objectStoreNames.contains(PHOTO_STORE)) {
+        req.result.createObjectStore(PHOTO_STORE, { keyPath: 'localId' });
+      }
     };
+    req.onblocked = () => reject(new Error('IndexedDB upgrade blocked'));
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
@@ -372,8 +395,16 @@ async function syncPendingArticles() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(item.payload),
       });
+      if (res.status === 401) {
+        // Session cookie expired/invalid while offline. Deleting the item here
+        // would silently lose the article - leave it queued and tell every open
+        // tab to prompt a re-login instead; the next successful sync (after the
+        // admin logs back in) will replay it normally.
+        await notifyClients({ type: 'auth-expired', kind: 'article', localId: item.localId });
+        continue;
+      }
       if (res.ok || res.status < 500) {
-        // 2xx = saved; 4xx = server permanently rejected it (bad payload,
+        // 2xx = saved; other 4xx = server permanently rejected it (bad payload,
         // deleted article, etc.) - either way, stop retrying it.
         await deletePending(item.localId);
         const data = await res.json().catch(() => null);
@@ -386,17 +417,81 @@ async function syncPendingArticles() {
   }
 }
 
+// ── Background sync : photos mises en attente (upload échoué / hors ligne) ──
+// Same DB, second object store (see openDB() above). Unlike articles (small
+// JSON payloads), photos are stored as the actual compressed File/Blob -
+// IndexedDB handles binary values natively, so no base64 round-trip is needed.
+const PHOTO_SYNC_TAG = 'tranquille-sync-photos';
+
+async function getAllPendingPhotos() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(PHOTO_STORE, 'readonly');
+    const req = tx.objectStore(PHOTO_STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function deletePendingPhoto(localId) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(PHOTO_STORE, 'readwrite');
+    tx.objectStore(PHOTO_STORE).delete(localId);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// Replays every queued photo in order. A cover upload goes to a different
+// endpoint (and expects a 'cover' field, not 'photo') than a gallery photo -
+// same success/failure handling as syncPendingArticles: 5xx/network error
+// keeps it queued, anything else (2xx success or a permanent 4xx rejection)
+// removes it so a photo the server has already refused doesn't retry forever.
+async function syncPendingPhotos() {
+  let pending;
+  try { pending = await getAllPendingPhotos(); } catch { return; }
+  for (const item of pending) {
+    try {
+      const fd = new FormData();
+      fd.append(item.isCover ? 'cover' : 'photo', item.file, item.fileName);
+      const url = item.isCover
+        ? '/api/articles/' + item.articleId + '/cover'
+        : '/api/articles/' + item.articleId + '/photos';
+      const res = await fetch(url, { method: 'POST', body: fd });
+      if (res.status === 401) {
+        // Same reasoning as syncPendingArticles: an expired session must not
+        // silently delete a queued photo - keep it and ask for a re-login.
+        await notifyClients({ type: 'auth-expired', kind: 'photo', localId: item.localId });
+        continue;
+      }
+      if (res.ok || res.status < 500) {
+        await deletePendingPhoto(item.localId);
+        const data = await res.json().catch(() => null);
+        // Gallery uploads return {uploaded:[...]}; take the first (each
+        // queued item is a single file, uploaded one at a time here so a
+        // failure never silently loses the rest of the batch).
+        const single = item.isCover ? data : (data && data.uploaded && data.uploaded[0]) || null;
+        await notifyClients({ type: 'photo-synced', ok: res.ok && !!single, articleId: item.articleId, isCover: item.isCover, data: single });
+      }
+      // 5xx / thrown network error: leave it queued, retry on next sync.
+    } catch {
+      // Still offline or request failed - keep it queued for the next sync event.
+    }
+  }
+}
+
 self.addEventListener('sync', event => {
   if (event.tag === SYNC_TAG) event.waitUntil(syncPendingArticles());
+  if (event.tag === PHOTO_SYNC_TAG) event.waitUntil(syncPendingPhotos());
 });
 
 // Background Sync isn't available at all on iOS Safari / WebKit, and even
 // where supported the browser decides when to actually fire it. As a
 // fallback that works everywhere, also retry whenever the SW itself observes
 // the network coming back (covers the case where the app gets reopened).
-self.addEventListener('online', () => { syncPendingArticles(); });
+self.addEventListener('online', () => { syncPendingArticles(); syncPendingPhotos(); });
 // Let an open page ask the SW to try immediately (e.g. right after the admin
 // UI detects `navigator.onLine` flip back to true).
 self.addEventListener('message', event => {
-  if (event.data === 'sync-now') event.waitUntil(syncPendingArticles());
+  if (event.data === 'sync-now') { event.waitUntil(syncPendingArticles()); event.waitUntil(syncPendingPhotos()); }
 });

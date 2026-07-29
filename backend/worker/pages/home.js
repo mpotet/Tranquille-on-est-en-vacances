@@ -32,7 +32,7 @@ ${NAV('home', authed)}
         </p>
         <p id="hero-badge" class="drame-badge mb-8 mx-auto hero-anim" style="border-color:rgba(255,199,138,.44);background:rgba(255,199,138,.16);color:rgba(255,255,255,.92);display:inline-block;--d:240ms">"Mais ça c'était bien avant le drame..."</p>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-3 hero-anim" style="--d:320ms">
-          <a id="hero-cta-primary" href="/voyages" style="display:inline-flex;align-items:center;justify-content:center;gap:.55rem;padding:.85rem 1.75rem;border-radius:999px;background:var(--apricot);color:var(--ink);font-weight:700;font-size:.92rem;border:2px solid var(--apricot);box-shadow:0 6px 22px rgba(255,199,138,.40);transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''"><i class="ph-bold ph-book-open-text"></i> <span>Lire nos aventures</span></a>
+          <a id="hero-cta-primary" href="/voyages" style="display:inline-flex;align-items:center;justify-content:center;gap:.55rem;padding:.85rem 1.75rem;border-radius:999px;background:var(--apricot);color:#1A2B3C;font-weight:700;font-size:.92rem;border:2px solid var(--apricot);box-shadow:0 6px 22px rgba(255,199,138,.40);transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''"><i class="ph-bold ph-book-open-text"></i> <span>Lire nos aventures</span></a>
           <a id="hero-cta-secondary" href="#destinations-section" style="display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.85rem 1.6rem;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-weight:700;font-size:.92rem;border:2px solid rgba(255,255,255,.5);transition:transform .2s,background .2s" onmouseover="this.style.transform='translateY(-2px)';this.style.background='rgba(255,255,255,.24)'" onmouseout="this.style.transform='';this.style.background='rgba(255,255,255,.14)'"><i class="ph-bold ph-map-trifold"></i> <span>Nos coins du monde</span></a>
         </div>
       </div>
@@ -137,6 +137,18 @@ ${NAV('home', authed)}
       </blockquote>
       <p class="mt-4 font-medium text-sm" style="color:var(--ink-muted)">- <span id="tagline-author">Devise de la famille Potet</span> <i class="ph-bold ph-globe-hemisphere-west" style="color:var(--blue)"></i></p>
     </div>
+  </section>
+
+  <!-- ── Bandeau "créer mon carnet" ─────────────────────────────── -->
+  <section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+    <a href="/creer-mon-carnet" class="group flex flex-col sm:flex-row items-center gap-4 sm:gap-5 panel rounded-[1.75rem] p-5 sm:p-6 text-center sm:text-left transition-transform hover:-translate-y-0.5" style="text-decoration:none">
+      <div class="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center" style="background:var(--blue-light)"><i class="ph-bold ph-sparkle" style="font-size:1.4rem;color:var(--blue)"></i></div>
+      <div class="flex-1">
+        <h2 class="font-display text-lg font-bold" style="color:var(--ink)">Vous aussi, vous voulez un carnet comme celui-ci ?</h2>
+        <p class="text-sm mt-0.5" style="color:var(--ink-muted)">Découvrez comment ce blog est fait - et comment en avoir un pour vos propres voyages.</p>
+      </div>
+      <span class="flex-shrink-0 inline-flex items-center gap-1.5 text-sm font-bold transition-transform group-hover:translate-x-1" style="color:var(--blue)">Je découvre <i class="ph-bold ph-arrow-right"></i></span>
+    </a>
   </section>
 
 </main>

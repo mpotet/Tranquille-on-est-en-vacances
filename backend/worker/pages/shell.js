@@ -193,8 +193,8 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 .action-btn:hover  { background:var(--blue-dark)!important;border-color:var(--blue-dark)!important;transform:translateY(-2px);box-shadow:0 10px 32px rgba(var(--blue-rgb),.38); }
 .action-btn-sm { display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.58rem 1.15rem;border-radius:999px;background:var(--blue)!important;color:#fff!important;font-weight:700;font-size:.82rem;border:2px solid var(--blue)!important;box-shadow:0 4px 14px rgba(var(--blue-rgb),.22);transition:transform .2s,box-shadow .2s,background .2s; }
 .action-btn-sm:hover { background:var(--blue-dark)!important;border-color:var(--blue-dark)!important;transform:translateY(-2px); }
-.subtle-btn    { display:inline-flex;align-items:center;justify-content:center;gap:.55rem;padding:.82rem 1.6rem;border-radius:999px;background:rgba(var(--cream-rgb),.9);color:var(--blue);font-weight:700;font-size:.92rem;border:2px solid rgba(var(--blue-rgb),.28);transition:transform .2s,box-shadow .2s,background .2s,border-color .2s; }
-.subtle-btn:hover { background:var(--blue-light);border-color:var(--blue);transform:translateY(-2px); }
+.subtle-btn    { display:inline-flex;align-items:center;justify-content:center;gap:.55rem;padding:.82rem 1.6rem;border-radius:999px;background:var(--blue-light);color:var(--blue);font-weight:700;font-size:.92rem;border:2px solid rgba(var(--blue-rgb),.28);transition:transform .2s,box-shadow .2s,background .2s,border-color .2s; }
+.subtle-btn:hover { background:var(--blue);color:#fff;border-color:var(--blue);transform:translateY(-2px); }
 .ghost-btn { display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.56rem .9rem;border-radius:999px;background:transparent;color:var(--ink-muted);font-size:.82rem;font-weight:600;border:1px solid var(--line);transition:color .2s,background .2s; }
 .ghost-btn:hover { color:var(--blue);background:var(--blue-light); }
 
@@ -444,11 +444,19 @@ input:focus, textarea:focus, select:focus { border-color: rgba(var(--blue-rgb),.
 #navbar { background: rgba(var(--cream-rgb),.94)!important; border-bottom: 1px solid rgba(var(--blue-rgb),.08)!important; box-shadow: 0 2px 14px rgba(26,43,60,.06)!important; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 #site-footer { background: linear-gradient(180deg, var(--cream) 0%, var(--sand) 100%)!important; border-top: 1px solid rgba(var(--sand-rgb),.8)!important; }
 /* ── Easter egg : scène saharienne (voir tvPlayCamel dans NAV) ── */
-/* Fond doux dans la palette du blog : ciel bleu de jour ensoleillé qui descend
-   vers le sable chaud à l'horizon. Ambiance vacances, pas de couchant kitch. */
-.tv-sahara{position:fixed;inset:0;z-index:9998;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .6s ease;
+/* Easter egg — mise en scène : le dromadaire commence à marcher sur le blog,
+   PUIS un panneau (ciel/soleil/dunes) tombe du haut comme un décor de cinéma
+   déployé en urgence (léger rebond), le dromadaire finit sa traversée, et à la
+   fin le panneau remonte d'un coup - pas de fondu. */
+.tv-sahara{position:fixed;inset:0;z-index:9998;overflow:hidden;pointer-events:none}
+/* Le PANNEAU décor : fond doux dans la palette du blog. Retenu par le haut,
+   il tombe (translateY) avec un rebond, puis remonte à la sortie. */
+.tv-panel{position:absolute;inset:0;overflow:hidden;transform:translateY(-100%);
   background:linear-gradient(180deg,#6db6e0 0%,#a9d6ec 30%,#e8ecd8 52%,#ffe6bf 66%,#f4e8d3 78%,#ecdcbc 100%)}
-.tv-sahara.tv-show{opacity:1}
+.tv-panel.tv-drop{animation:tvdrop .85s cubic-bezier(.34,1.56,.64,1) forwards}   /* chute + rebond */
+.tv-panel.tv-lift{animation:tvlift .5s cubic-bezier(.5,0,.75,0) forwards}         /* remontée nette */
+@keyframes tvdrop{0%{transform:translateY(-100%)}100%{transform:translateY(0)}}
+@keyframes tvlift{0%{transform:translateY(0)}100%{transform:translateY(-100%)}}
 .tv-sun{position:absolute;left:50%;top:30%;width:180px;height:180px;margin:-90px 0 0 -90px;border-radius:50%;
   background:radial-gradient(circle,#fffef8 0%,#fff3d4 45%,#ffe6bf 62%,rgba(255,230,191,0) 74%);
   box-shadow:0 0 100px 40px rgba(255,224,160,.5)}
@@ -456,13 +464,14 @@ input:focus, textarea:focus, select:focus { border-color: rgba(var(--blue-rgb),.
 .tv-dune1{bottom:0;height:16vh;background:#d9c199;border-radius:60% 40% 0 0/100% 100% 0 0;transform:scaleX(1.5)}
 .tv-dune2{bottom:0;height:22vh;background:#e8d5b8;border-radius:55% 45% 0 0/100% 100% 0 0;left:-15%;width:70%}
 .tv-dune3{bottom:0;height:18vh;background:#e0cba8;border-radius:50% 50% 0 0/100% 100% 0 0;left:45%;width:75%}
-.tv-camel{position:absolute;bottom:11vh;left:-320px;width:240px;z-index:5;will-change:transform;
+/* Le dromadaire : couche au-dessus du panneau. Il commence sa marche avant que
+   le panneau tombe, donc on le voit brièvement sur le blog. */
+.tv-camel{position:absolute;bottom:11vh;left:-180px;width:240px;z-index:5;will-change:transform;
   animation:tvcross 9s linear forwards;filter:drop-shadow(0 6px 8px rgba(90,58,26,.25))}
-@keyframes tvcross{to{transform:translateX(calc(100vw + 360px))}}
-/* Balancement doux et nonchalant (fiable, garde le dromadaire fidèle). */
+@keyframes tvcross{to{transform:translateX(calc(100vw + 220px))}}
 .tv-bob{animation:tvbob .55s ease-in-out infinite;transform-origin:center bottom}
 @keyframes tvbob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-7px) rotate(1deg)}}
-@media (prefers-reduced-motion: reduce){ .tv-camel{animation-duration:.01ms} .tv-bob{animation:none} }
+@media (prefers-reduced-motion: reduce){ .tv-camel{animation-duration:.01ms} .tv-bob{animation:none} .tv-panel.tv-drop,.tv-panel.tv-lift{animation-duration:.01ms} }
 
 .gradient-text { color: var(--blue); }
 </style>
@@ -571,7 +580,18 @@ _syncThemeIcon();
    palmier de la citation en bas d'accueil. Respecte reduced-motion. */
 (function(){
   var running=false, buf='';
-  var WORDS=['maroc','sahara'];
+  /* Mot déclencheur paramétrable dans l'admin (Paramètres du site), "maroc"
+     par défaut. Chargé de façon asynchrone depuis /api/settings au démarrage
+     de la page - une frappe pendant cette courte fenêtre ne matchera
+     simplement rien, ce qui est sans conséquence pour un easter egg. */
+  var WORDS=['maroc'];
+  fetch('/api/settings',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(s){
+    var w=(s&&s.easter_egg_word||'').trim().toLowerCase();
+    if(w) WORDS=[w];
+    var email=(s&&s.contact_email||'').trim();
+    var link=document.getElementById('footer-contact-link');
+    if(link&&email) link.href='mailto:'+email;
+  }).catch(function(){});
   function reduced(){return window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;}
   function typingTarget(el){
     if(!el) return false;
@@ -585,31 +605,40 @@ _syncThemeIcon();
     s.setAttribute('aria-hidden','true');
     s.className='tv-sahara';
     s.innerHTML=''+
-      '<div class="tv-sun"></div>'+
-      '<div class="tv-dune tv-dune2"></div>'+
-      '<div class="tv-dune tv-dune3"></div>'+
-      '<div class="tv-dune tv-dune1"></div>'+
+      '<div class="tv-panel">'+
+        '<div class="tv-sun"></div>'+
+        '<div class="tv-dune tv-dune2"></div>'+
+        '<div class="tv-dune tv-dune3"></div>'+
+        '<div class="tv-dune tv-dune1"></div>'+
+      '</div>'+
       '<div class="tv-camel"><div class="tv-bob">'+
         '<svg width="240" height="240" viewBox="0 0 512 512">'+
           '<defs><linearGradient id="tvbody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8ac54"></stop><stop offset="0.6" stop-color="#d4933c"></stop><stop offset="1" stop-color="#bd7f2c"></stop></linearGradient></defs>'+
           '<path fill="url(#tvbody)" d="M420.8 26.91c-11.4.76-23.7 4.65-33.6 10.29-5.3-4.86-13.5-10.52-19.3-6.11-12.5 9.46-2.4 20.76 6.8 27.94 5.5 35.86 20.7 93.17-9.8 105.97C317 183.1 308.4 36.14 241 37.94c-40.4 1.08-22.6 59.65-62.6 61.65-29.5 1.51-27.3-54.51-51.9-55.36-25.9-.9-44.62 18.9-57.71 86.97-25.63-.1-35.73 20.1-47.42 59.2-11.686 39-3 115.6 1.2 162.4l7.87-76.3c2.43 12 6.19 24.1 11.91 36.7 3.91 18.7 5.44 37.4 5.81 56-8.2 10.2-8.8 26.2-.42 35.5-.92 26.8-2.67 53.5-1.68 80.3 34.48.5 66.04-1 99.54 0 1.8-11.9-14.9-20.4-34.3-30.3.3-13.7.2-30.5 0-47.5 8.8-10.2 9-28.1-.2-36.8.1-21.3.8-38.6 3.3-43.9 8-17.1 20.6-31.9 29.1-47.2 28.7 5.3 59.7 2.9 91.9-4.7l.7 85.5c-7.7 11.3-8 27.7.3 37.8 4.7 29 .6 58.1.8 87.1h58c2.3-15-22.5-23.1-34.6-30.1 0-22.1-3.9-38.8-.4-60.3 5-9.9 5.3-21.5.4-30.8.9-33 3.3-66 10.7-99 1.6-.6 7.9-3.7 9.3-5.3l10.9 98.4c-5.6 11.9-4.4 27.3 4 36.7 6.6 30.1 4.5 59.5 7.9 89.6l61.2.8c.3-12.3-29.1-20-40.3-25.5-6.4-21.4-5.7-43.1-6.7-64.9 8-12.1 7.6-28.9-1.1-39.5.5-38.3 5.5-76.8 18.4-114.6 106.6-5.9 96.2-72 99.3-133.2 1.4-27.24 55.5 1.7 60-11.61 2.4-6.92 3.6-13.89 0-21.84-8.6-19.29-23.9-20.32-36.7-20.63-12.3-7.36-22.6-25.96-35.5-26.31zm6.7 19.58c4.9 2.64 3.8 7.47 2.7 10.11-6.6 1.96-16.3-1.08-20.8-4.59 3.9-2.99 12.2-5.39 18.1-5.52zM80.6 302.3c3.05 7.8 5.74 15.6 7.35 23.2 3.22 15.3 4.91 30.7 5.72 46.2-7.48 10.3-7.78 26.1.59 35-.25 21.6-1.3 43.2-1.52 64.7-4.54-7.5-12.92-14-24.94-17.1.16-14.4-.44-32.4-1.08-50.6 6.91-10.2 7.01-25.6-1.11-34.3-.67-27-.34-49.4 3.78-54.1 3.95-4.5 7.67-8.8 11.21-13z"></path>'+
         '</svg>'+
       '</div></div>';
-        document.body.appendChild(s);
-    /* fade-in du ciel */
-    requestAnimationFrame(function(){ s.classList.add('tv-show'); });
-    /* le chameau traverse en 7s ; on laisse un petit fondu de sortie après */
-    var total=7000;
-    setTimeout(function(){ s.classList.remove('tv-show'); }, total-600);
-    setTimeout(function(){ if(s.parentNode) s.parentNode.removeChild(s); running=false; }, total);
+    document.body.appendChild(s);
+    var panel=s.querySelector('.tv-panel');
+    /* Chorégraphie (le dromadaire traverse en 9s, il marche dès t=0) :
+       - t=500ms  : on a vu le dromadaire démarrer sur le blog -> le panneau
+                    tombe du haut (chute + rebond, comme un décor déployé).
+       - t=8300ms : le dromadaire finit sa sortie -> le panneau remonte d'un
+                    coup (pas de fondu).
+       - t=9000ms : fin de la traversée, on retire tout. */
+    setTimeout(function(){ if(panel) panel.classList.add('tv-drop'); }, 1000);
+    setTimeout(function(){ if(panel){ panel.classList.remove('tv-drop'); panel.classList.add('tv-lift'); } }, 8300);
+    setTimeout(function(){ if(s.parentNode) s.parentNode.removeChild(s); running=false; }, 9000);
   }
   window.tvPlayCamel=playCamel;
   /* déclencheur clavier */
   document.addEventListener('keydown',function(e){
     if(typingTarget(e.target)) { buf=''; return; }      /* jamais dans un champ */
     if(e.key&&e.key.length===1){
-      buf=(buf+e.key.toLowerCase()).slice(-8);
-      for(var i=0;i<WORDS.length;i++){ if(buf.indexOf(WORDS[i])!==-1){ buf=''; playCamel(); break; } }
+      /* Le buffer suit la longueur du mot courant (min 8) - un mot admin plus
+         long que "maroc" ne doit jamais devenir undetectable faute de place. */
+      var maxLen=Math.max(8,WORDS[0]?WORDS[0].length:0);
+      buf=(buf+e.key.toLowerCase()).slice(-maxLen);
+      for(var i=0;i<WORDS.length;i++){ if(WORDS[i]&&buf.indexOf(WORDS[i])!==-1){ buf=''; playCamel(); break; } }
     }
   });
   /* secours tactile : le palmier 🌴 de la citation (accueil), 5 tics en <3s */
@@ -665,6 +694,8 @@ export const FOOTER = `
         <ul class="space-y-2.5 text-sm">
           <li><a href="/" class="transition-colors font-medium hover:underline" style="color:var(--ink-muted)"><i class="ph-bold ph-house"></i> Accueil</a></li>
           <li><a href="/voyages" class="transition-colors font-medium hover:underline" style="color:var(--ink-muted)"><i class="ph-bold ph-airplane-takeoff"></i> Tous les voyages</a></li>
+          <li><a href="/creer-mon-carnet" class="transition-colors font-medium hover:underline" style="color:var(--ink-muted)"><i class="ph-bold ph-sparkle"></i> Créer mon carnet</a></li>
+          <li><a id="footer-contact-link" href="mailto:tranquilleonestenvacances@free.fr" class="transition-colors font-medium hover:underline" style="color:var(--ink-muted)"><i class="ph-bold ph-envelope-simple"></i> Contact</a></li>
         </ul>
       </div>
       <div>
@@ -676,7 +707,7 @@ export const FOOTER = `
       <h3 class="font-bold mb-2 text-xs uppercase tracking-[0.18em]" style="color:var(--ink)"><i class="ph-bold ph-bell"></i> Suivre le blog</h3>
       <p class="text-xs mb-3" style="color:var(--ink-muted)">Soyez notifié(e) à chaque nouveau récit de voyage.</p>
       <div class="flex flex-wrap gap-2 mb-2">
-        <button id="push-btn" class="hidden text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors" style="background:rgba(var(--blue-rgb),.10);color:var(--blue);border:1px solid rgba(var(--blue-rgb),.2)"><i class="ph-bold ph-bell"></i> Activer les notifications</button>
+        <button id="push-btn" class="hidden text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors" style="background:var(--blue-light);color:var(--blue);border:1px solid rgba(var(--blue-rgb),.2)"><i class="ph-bold ph-bell"></i> Activer les notifications</button>
       </div>
       <div class="flex gap-2">
         <input type="email" id="email-sub-in" placeholder="votre@email.com" class="flex-1 min-w-0 border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-sky-400" style="background:rgba(var(--cream-rgb),.7)">
@@ -925,8 +956,9 @@ function emailModalDismiss() {
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { initPushBtn(); initNotifPrompt(); });
 else { initPushBtn(); initNotifPrompt(); }
 // ── Footer destinations ───────────────────────────────────────
-function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
-fetch('/api/folders').then(r=>r.json()).then(data=>{const roots=data.filter(f=>!f.parent_id);const el=document.getElementById('footer-dest');if(el)el.innerHTML=roots.length?roots.map(f=>\`<li><a href="/voyages?folder=\${f.slug}" style="color:var(--ink-muted)" class="hover:underline transition-colors flex items-center gap-1.5">\${flagImg(f.icon)}<span>\${f.name}</span></a></li>\`).join(''):'';}).catch(()=>{const el=document.getElementById('footer-dest');if(el)el.innerHTML='';});
+function escFooter(s){return (s==null? '': String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+escFooter(icon)+'</span>';}
+fetch('/api/folders').then(r=>r.json()).then(data=>{const roots=data.filter(f=>!f.parent_id);const el=document.getElementById('footer-dest');if(el)el.innerHTML=roots.length?roots.map(f=>\`<li><a href="/voyages?folder=\${encodeURIComponent(f.slug)}" style="color:var(--ink-muted)" class="hover:underline transition-colors flex items-center gap-1.5">\${flagImg(f.icon)}<span>\${escFooter(f.name)}</span></a></li>\`).join(''):'';}).catch(()=>{const el=document.getElementById('footer-dest');if(el)el.innerHTML='';});
 (function(){var y=document.getElementById('footer-year');if(y)y.textContent=new Date().getFullYear();})();
 </script>`;
 
