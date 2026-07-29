@@ -155,64 +155,67 @@ ${ADMIN_NAV()}
 
         <!-- Tab Articles -->
       <div id="tab-articles" class="admin-tab-panel active" role="tabpanel" aria-labelledby="admintab-articles">
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div>
+            <h2 class="font-display text-2xl font-bold" style="color:var(--ink)">Vos récits</h2>
+            <p class="text-sm mt-0.5" style="color:var(--ink-muted)">Tous vos voyages, publiés ou en préparation, au même endroit.</p>
+          </div>
+          <a href="/admin/editor" class="action-btn-sm"><i class="ph-bold ph-plus-circle"></i> Nouvel article</a>
+        </div>
 
-          <!-- Sidebar -->
-          <aside class="lg:col-span-1 space-y-5">
-            <div class="section-panel majorelle-frame rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
-              <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-100">
-                <h2 class="font-bold text-stone-700 text-sm"><i class="ph-bold ph-folder"></i> Dossiers</h2>
-                <button onclick="openFolderModal(null)" class="text-sky-600 hover:text-sky-700 text-sm font-bold transition-colors">+ Nouveau</button>
-              </div>
-              <div id="folder-tree" class="p-2 max-h-80 overflow-y-auto">
-                <div class="text-stone-400 text-sm p-3 animate-pulse">Chargement...</div>
-              </div>
-            </div>
+        <!-- Stat tiles -->
+        <div class="grid grid-cols-4 gap-2 sm:gap-3 mb-6">
+          <div class="rounded-2xl p-2.5 sm:p-4 text-center" style="background:var(--cream);border:1px solid var(--line)">
+            <div id="stat-total" class="text-lg sm:text-2xl font-black" style="color:var(--ink)">-</div>
+            <div class="text-[.65rem] sm:text-xs font-bold mt-1 leading-tight" style="color:var(--ink-muted)">Articles</div>
+          </div>
+          <div class="rounded-2xl p-2.5 sm:p-4 text-center" style="background:var(--blue-light);border:1px solid rgba(var(--blue-rgb),.16)">
+            <div id="stat-views" class="text-lg sm:text-2xl font-black" style="color:var(--blue)">-</div>
+            <div class="text-[.65rem] sm:text-xs font-bold mt-1 leading-tight" style="color:var(--blue-dark)">Vues</div>
+          </div>
+          <div class="rounded-2xl p-2.5 sm:p-4 text-center" style="background:var(--palm-light);border:1px solid rgba(var(--palm-rgb),.16)">
+            <div id="stat-pub" class="text-lg sm:text-2xl font-black" style="color:var(--palm)">-</div>
+            <div class="text-[.65rem] sm:text-xs font-bold mt-1 leading-tight" style="color:var(--palm)">Publiés</div>
+          </div>
+          <div class="rounded-2xl p-2.5 sm:p-4 text-center" style="background:rgba(var(--apricot-rgb),.18);border:1px solid rgba(var(--apricot-rgb),.4)">
+            <div id="stat-draft" class="text-lg sm:text-2xl font-black" style="color:var(--pending)">-</div>
+            <div class="text-[.65rem] sm:text-xs font-bold mt-1 leading-tight" style="color:var(--pending)">Archivés</div>
+          </div>
+        </div>
 
-            <div class="grid grid-cols-2 gap-3" id="stats-grid">
-              <div class="rounded-2xl p-4 text-center" style="background:var(--cream);border:1px solid var(--line)">
-                <div id="stat-total" class="text-2xl font-black" style="color:var(--ink)">-</div>
-                <div class="text-xs font-bold mt-1" style="color:var(--ink-muted)">Articles</div>
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+          <!-- Sidebar : dossiers -->
+          <aside class="lg:col-span-1">
+            <div class="section-panel majorelle-frame rounded-2xl overflow-hidden" style="box-shadow:var(--card-shadow);border:1px solid var(--line)">
+              <div class="px-5 py-4 flex items-center justify-between gap-3" style="border-bottom:1px solid var(--line)">
+                <h3 class="font-bold text-sm" style="color:var(--ink)"><i class="ph-bold ph-folder" style="color:var(--blue)"></i> Dossiers</h3>
+                <button type="button" onclick="openFolderModal(null)" class="ghost-btn" style="padding:.3rem .7rem;font-size:.75rem"><i class="ph-bold ph-plus"></i> Nouveau</button>
               </div>
-              <div class="rounded-2xl p-4 text-center" style="background:var(--blue-light);border:1px solid rgba(var(--blue-rgb),.16)">
-                <div id="stat-views" class="text-2xl font-black" style="color:var(--blue)">-</div>
-                <div class="text-xs font-bold mt-1" style="color:var(--blue-dark)">Vues</div>
-              </div>
-              <div class="rounded-2xl p-4 text-center" style="background:var(--palm-light);border:1px solid rgba(var(--palm-rgb),.16)">
-                <div id="stat-pub" class="text-2xl font-black" style="color:var(--palm)">-</div>
-                <div class="text-xs font-bold mt-1" style="color:var(--palm)">Publiés</div>
-              </div>
-              <div class="rounded-2xl p-4 text-center" style="background:rgba(var(--apricot-rgb),.18);border:1px solid rgba(var(--apricot-rgb),.4)">
-                <div id="stat-draft" class="text-2xl font-black" style="color:var(--pending)">-</div>
-                <div class="text-xs font-bold mt-1" style="color:var(--pending)">Archivés</div>
+              <div id="folder-tree" class="p-2 max-h-96 overflow-y-auto">
+                <div class="text-sm text-center py-6" style="color:var(--ink-light)">Chargement…</div>
               </div>
             </div>
           </aside>
 
           <!-- Articles list -->
           <main class="lg:col-span-3">
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-              <h2 class="font-display text-2xl font-bold text-stone-900">Tous les articles</h2>
-              <div class="flex items-center gap-2">
-                <select id="admin-sort-select" class="border-2 rounded-xl px-3 py-1.5 text-sm font-semibold" style="border-color:rgba(var(--blue-rgb),.18);background:var(--cream);color:var(--ink)">
-                  <option value="date_desc">Plus récents</option>
-                  <option value="date_asc">Plus anciens</option>
-                  <option value="views_desc">Les plus lus</option>
-                  <option value="title_asc">Titre (A→Z)</option>
-                </select>
-                <a href="/admin/editor" class="action-btn-sm">
-                  <i class="ph-bold ph-plus-circle"></i> Nouvel article
-                </a>
-              </div>
+            <div class="flex justify-end mb-4">
+              <select id="admin-sort-select" class="rounded-xl px-3 py-2 text-sm font-semibold focus:outline-none" style="border:2px solid var(--line);background:var(--cream);color:var(--ink)">
+                <option value="date_desc">Plus récents</option>
+                <option value="date_asc">Plus anciens</option>
+                <option value="views_desc">Les plus lus</option>
+                <option value="title_asc">Titre (A→Z)</option>
+              </select>
             </div>
 
-            <div id="articles-list" class="space-y-3">
+            <div id="articles-list" class="grid sm:grid-cols-2 gap-4">
               ${Array.from({length:4}).map(() => `
-                <div class="section-panel rounded-2xl border border-stone-100 p-4 flex items-center gap-4">
-                  <div class="w-20 h-20 rounded-xl bg-stone-200 animate-pulse flex-shrink-0"></div>
+                <div class="section-panel rounded-2xl p-4 flex items-center gap-4" style="border:1px solid var(--line)">
+                  <div class="w-16 h-16 rounded-xl animate-pulse flex-shrink-0" style="background:var(--sand)"></div>
                   <div class="flex-1 space-y-2">
-                    <div class="h-4 bg-stone-200 rounded animate-pulse w-3/4"></div>
-                    <div class="h-3 bg-stone-200 rounded animate-pulse w-1/2"></div>
+                    <div class="h-4 rounded-full animate-pulse w-3/4" style="background:var(--sand)"></div>
+                    <div class="h-3 rounded-full animate-pulse w-1/2" style="background:var(--sand)"></div>
                   </div>
                 </div>
               `).join('')}
@@ -816,18 +819,18 @@ async function init() {
 function renderFolderTree(folders, parentId, depth=0) {
   const kids = folders.filter(f => f.parent_id === parentId);
   if (!kids.length) return depth===0
-    ? '<div class="text-center py-8 px-3"><i class="ph-bold ph-folder-dashed" style="font-size:2rem;display:block;margin-bottom:.4rem;color:var(--ink-light)"></i><p class="text-sm font-semibold" style="color:var(--ink)">Aucun dossier</p><p class="text-xs text-stone-400">Créez-en un avec « + Nouveau ».</p></div>'
+    ? '<div class="text-center py-8 px-3"><i class="ph-bold ph-folder-dashed" style="font-size:2rem;display:block;margin-bottom:.4rem;color:var(--ink-light)"></i><p class="text-sm font-semibold" style="color:var(--ink)">Aucun dossier</p><p class="text-xs mt-0.5" style="color:var(--ink-light)">Créez-en un avec « + Nouveau ».</p></div>'
     : '';
   return kids.map(f => \`
     <div style="padding-left:\${depth*14}px">
-      <div class="flex items-center justify-between px-3 py-2 rounded-xl group hover:bg-sky-50 transition-colors">
-        <a href="/voyages?folder=\${f.slug}" class="flex items-center gap-2 flex-1 text-sm font-semibold text-stone-700 hover:text-sky-600 transition-colors">
+      <div class="flex items-center justify-between px-3 py-2 rounded-xl group transition-colors" style="--hov:var(--blue-light)" onmouseover="this.style.background='var(--blue-light)'" onmouseout="this.style.background=''">
+        <a href="/voyages?folder=\${f.slug}" class="flex items-center gap-2 flex-1 text-sm font-semibold transition-colors" style="color:var(--ink)">
           <span class="flex-shrink-0">\${flagImg(f.icon)}</span><span>\${esc(f.name)}</span>
         </a>
         <div class="flex items-center gap-1 ml-2">
-          <button data-action="edit-folder" data-id="\${f.id}" data-name="\${esc(f.name)}" data-icon="\${esc(f.icon)}" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center hover:bg-sky-50 transition-colors" title="Renommer ce dossier"><i class="ph-bold ph-pencil-simple"></i></button>
-          <button data-action="open-folder-modal" data-id="\${f.id}" class="text-stone-400 hover:text-sky-600 active:text-sky-700 p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center hover:bg-sky-50 transition-colors" title="Ajouter un sous-dossier"><i class="ph-bold ph-folder-plus"></i></button>
-          <button data-action="del-folder" data-id="\${f.id}" class="text-stone-400 hover:text-red-500 active:text-red-600 p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center hover:bg-red-50 transition-colors" title="Supprimer ce dossier"><i class="ph-bold ph-trash"></i></button>
+          <button data-action="edit-folder" data-id="\${f.id}" data-name="\${esc(f.name)}" data-icon="\${esc(f.icon)}" class="p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center transition-colors" style="color:var(--ink-light)" onmouseover="this.style.color='var(--blue)';this.style.background='rgba(var(--blue-rgb),.08)'" onmouseout="this.style.color='var(--ink-light)';this.style.background=''" title="Renommer ce dossier"><i class="ph-bold ph-pencil-simple"></i></button>
+          <button data-action="open-folder-modal" data-id="\${f.id}" class="p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center transition-colors" style="color:var(--ink-light)" onmouseover="this.style.color='var(--blue)';this.style.background='rgba(var(--blue-rgb),.08)'" onmouseout="this.style.color='var(--ink-light)';this.style.background=''" title="Ajouter un sous-dossier"><i class="ph-bold ph-folder-plus"></i></button>
+          <button data-action="del-folder" data-id="\${f.id}" class="p-2.5 text-base touch-manipulation rounded-lg min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center transition-colors" style="color:var(--ink-light)" onmouseover="this.style.color='var(--danger)';this.style.background='rgba(220,60,60,.08)'" onmouseout="this.style.color='var(--ink-light)';this.style.background=''" title="Supprimer ce dossier"><i class="ph-bold ph-trash"></i></button>
         </div>
       </div>
       \${renderFolderTree(folders, f.id, depth+1)}

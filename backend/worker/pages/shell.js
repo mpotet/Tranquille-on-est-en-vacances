@@ -48,7 +48,7 @@ ${url ? `<meta property="og:url" content="${url}">` : ''}
 <meta name="twitter:description" content="${description}">
 <meta name="twitter:image" content="${image}">
 <!-- Pre-built, purged Tailwind stylesheet (see tailwind.config.js / npm run
-     build:css) — replaces the cdn.tailwindcss.com <script>, which shipped the
+     build:css) - replaces the cdn.tailwindcss.com <script>, which shipped the
      full JIT compiler to every visitor and recompiled all classes in-browser
      on every single page load. This static file is generated once at build
      time and is a fraction of the size. -->
@@ -375,6 +375,12 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 .float-anim { animation: float 5s ease-in-out infinite; }
 @keyframes float { 0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)} }
+/* Gold highlight for <em> inside the home hero title - a CSS rule rather
+   than an inline style baked into the admin-edited hero_title text, so the
+   accent survives no matter what HTML the admin saves (an admin re-saving
+   the title with a bare <em>, without knowing to re-add an inline color,
+   must not silently lose the highlight). */
+#hero-title em { color: var(--apricot); font-style: normal; }
 /* Staggered hero entrance: each element sets its own --d delay inline. */
 .hero-anim { opacity:0; animation: heroUp .6s ease-out forwards; animation-delay: var(--d, 0ms); }
 @keyframes heroUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
@@ -444,7 +450,7 @@ input:focus, textarea:focus, select:focus { border-color: rgba(var(--blue-rgb),.
 #navbar { background: rgba(var(--cream-rgb),.94)!important; border-bottom: 1px solid rgba(var(--blue-rgb),.08)!important; box-shadow: 0 2px 14px rgba(26,43,60,.06)!important; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 #site-footer { background: linear-gradient(180deg, var(--cream) 0%, var(--sand) 100%)!important; border-top: 1px solid rgba(var(--sand-rgb),.8)!important; }
 /* ── Easter egg : scène saharienne (voir tvPlayCamel dans NAV) ── */
-/* Easter egg — mise en scène : le dromadaire commence à marcher sur le blog,
+/* Easter egg - mise en scène : le dromadaire commence à marcher sur le blog,
    PUIS un panneau (ciel/soleil/dunes) tombe du haut comme un décor de cinéma
    déployé en urgence (léger rebond), le dromadaire finit sa traversée, et à la
    fin le panneau remonte d'un coup - pas de fondu. */

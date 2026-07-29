@@ -53,7 +53,7 @@ import { printPage, exportWordDocx } from './pages/print.js';
 // ──────────────────────────────────────────────────────────────
 import { HEAD, NAV, FOOTER, TOAST, LIGHTBOX } from './pages/shell.js';
 
-// Canonical production origin — used for canonical/og:url tags, sitemap.xml
+// Canonical production origin - used for canonical/og:url tags, sitemap.xml
 // and the RSS feed (all need an absolute URL, and there's exactly one
 // deployed origin for this site, so a fixed constant is simpler and more
 // reliable than threading `request.url` through every page function).
@@ -711,7 +711,7 @@ ${TOAST}
     : '';
   const canonicalUrl = base + '/voyage/' + article.slug;
 
-  // schema.org BlogPosting — powers rich results (article card, date,
+  // schema.org BlogPosting - powers rich results (article card, date,
   // author) in Google search rather than a bare blue link.
   // Escape '<' so a title/description containing "</script>" can't break out
   // of the JSON-LD script tag (same class of issue as unescaped user content

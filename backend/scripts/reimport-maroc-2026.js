@@ -3,7 +3,7 @@
  * reimport-maroc-2026.js
  *
  * One-off: the "Maroc 2026" article (id 96, slug maroc-2026) was imported from
- * CanalBlog as text ONLY — its 347 photos never made it into the app. This
+ * CanalBlog as text ONLY - its 347 photos never made it into the app. This
  * scrapes the original CanalBlog post, rebuilds the article body preserving the
  * exact text/image ordering, downloads every photo into R2, and rewrites the
  * article's `content` so the images are served from our own bucket.
@@ -28,7 +28,7 @@ const DB         = 'tranquille-vacances-db';
 const BUCKET     = 'tranquille-vacances-photos';
 const ARTICLE_ID = 96;
 const SOURCE_URL = 'https://cetipar.canalblog.com/2025/10/maroc-2026.html';
-const DELAY      = 250; // ms between downloads — be kind to the CanalBlog CDN
+const DELAY      = 250; // ms between downloads - be kind to the CanalBlog CDN
 const EXEC_TIMEOUT_MS = 60_000;
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -44,7 +44,7 @@ const NAMED = {
   icirc: 'î', iuml: 'ï', ocirc: 'ô', ouml: 'ö', ugrave: 'ù',
   ucirc: 'û', uuml: 'ü', ntilde: 'ñ', oelig: 'œ', aelig: 'æ',
   laquo: '«', raquo: '»', hellip: '…', deg: '°', euro: '€',
-  rsquo: '’', lsquo: '‘', ldquo: '“', rdquo: '”', ndash: '–', mdash: '—',
+  rsquo: '’', lsquo: '‘', ldquo: '“', rdquo: '”', ndash: '–', mdash: '-',
   quot: '"', lt: '<', gt: '>', apos: "'",
 };
 function decodeEntities(s) {
@@ -204,7 +204,7 @@ async function main() {
       process.stdout.write(progress(ok + fail, uniqueUrls.length, '⬇️ ') + '\r');
     } catch (err) {
       fail++;
-      process.stdout.write('\n  ✗ ' + url.slice(0, 80) + ' — ' + err.message + '\n');
+      process.stdout.write('\n  ✗ ' + url.slice(0, 80) + ' - ' + err.message + '\n');
     }
     await sleep(DELAY);
   }
@@ -239,8 +239,8 @@ async function main() {
   dbExecFile(sqlFile);
   try { unlinkSync(sqlFile); } catch {}
 
-  console.log(`\n✅ Article ${ARTICLE_ID} mis à jour — ${ok} images servies depuis /r2/imported/`);
-  if (!REMOTE) console.log('   (local seulement — relancer avec --remote pour la production)');
+  console.log(`\n✅ Article ${ARTICLE_ID} mis à jour - ${ok} images servies depuis /r2/imported/`);
+  if (!REMOTE) console.log('   (local seulement - relancer avec --remote pour la production)');
 }
 
 main().catch(err => { console.error('\nFatal:', err.message); process.exit(1); });
