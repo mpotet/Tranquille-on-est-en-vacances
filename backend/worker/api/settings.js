@@ -7,10 +7,34 @@
 
 import { json } from '../utils.js';
 
-const ALLOWED_KEYS = [
+// Every editable text on the public home page, so the whole page is
+// admin-configurable — not just the hero. Grouped by the section they belong
+// to. Kept in one list reused by both ALLOWED_KEYS (writable) and PUBLIC_KEYS
+// (readable by anonymous visitors) so a new home text can never be forgotten
+// in one place or the other.
+const HOME_CONTENT_KEYS = [
+  // Hero
   'hero_image_url', 'hero_image_r2_key',
-  'hero_title', 'hero_subtitle', 'site_tagline',
-  'hero_eyebrow', 'hero_badge', 'hero_cta_primary', 'hero_cta_secondary',
+  'hero_eyebrow', 'hero_title', 'hero_subtitle', 'hero_badge',
+  'hero_cta_primary', 'hero_cta_secondary',
+  // Hero stats (the 3 counters' labels)
+  'stat_voyages_label', 'stat_dest_label', 'stat_maroc_label',
+  // "Nos derniers voyages" section
+  'recent_eyebrow', 'recent_title', 'recent_subtitle',
+  // "Le mot des Potet" section
+  'about_eyebrow', 'about_text',
+  // "Nos coins du monde" (destinations) section
+  'dest_eyebrow', 'dest_title', 'dest_subtitle',
+  // Newsletter section
+  'sub_title', 'sub_subtitle',
+  // Install-app section
+  'install_title', 'install_text',
+  // Closing quote
+  'site_tagline', 'tagline_author',
+];
+
+const ALLOWED_KEYS = [
+  ...HOME_CONTENT_KEYS,
   'comment_gate_question', 'comment_gate_answer',
   'admin_display_name',
 ];
@@ -20,9 +44,7 @@ const ALLOWED_KEYS = [
 // future secret added to site_settings) is stripped from the public response —
 // a deny-list would silently leak a newly-added secret if we forgot to list it.
 const PUBLIC_KEYS = new Set([
-  'hero_image_url', 'hero_image_r2_key',
-  'hero_title', 'hero_subtitle', 'site_tagline',
-  'hero_eyebrow', 'hero_badge', 'hero_cta_primary', 'hero_cta_secondary',
+  ...HOME_CONTENT_KEYS,
   'comment_gate_question',
   'admin_display_name',
 ]);

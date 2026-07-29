@@ -31,7 +31,7 @@ ${NAV('home', authed)}
         <p id="hero-badge" class="drame-badge mb-8 mx-auto hero-anim" style="border-color:rgba(255,199,138,.44);background:rgba(255,199,138,.16);color:rgba(255,255,255,.92);display:inline-block;--d:240ms">"Mais ça c'était bien avant le drame..."</p>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-3 hero-anim" style="--d:320ms">
           <a id="hero-cta-primary" href="/voyages" style="display:inline-flex;align-items:center;justify-content:center;gap:.55rem;padding:.85rem 1.75rem;border-radius:999px;background:var(--apricot);color:var(--ink);font-weight:700;font-size:.92rem;border:2px solid var(--apricot);box-shadow:0 6px 22px rgba(255,199,138,.40);transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''"><i class="ph-bold ph-book-open-text"></i> <span>Lire nos aventures</span></a>
-          <a href="#destinations-section" style="display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.85rem 1.6rem;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-weight:700;font-size:.92rem;border:2px solid rgba(255,255,255,.5);transition:transform .2s,background .2s" onmouseover="this.style.transform='translateY(-2px)';this.style.background='rgba(255,255,255,.24)'" onmouseout="this.style.transform='';this.style.background='rgba(255,255,255,.14)'"><i class="ph-bold ph-map-trifold"></i> <span>Nos coins du monde</span></a>
+          <a id="hero-cta-secondary" href="#destinations-section" style="display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.85rem 1.6rem;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-weight:700;font-size:.92rem;border:2px solid rgba(255,255,255,.5);transition:transform .2s,background .2s" onmouseover="this.style.transform='translateY(-2px)';this.style.background='rgba(255,255,255,.24)'" onmouseout="this.style.transform='';this.style.background='rgba(255,255,255,.14)'"><i class="ph-bold ph-map-trifold"></i> <span>Nos coins du monde</span></a>
         </div>
       </div>
     </div>
@@ -40,15 +40,15 @@ ${NAV('home', authed)}
       <div class="max-w-3xl mx-auto px-6 py-5 grid grid-cols-3 text-center text-white">
         <div style="border-right:1px solid rgba(255,255,255,.22)">
           <div id="stat-voyages" class="font-display text-3xl sm:text-4xl font-black" data-count="0">-</div>
-          <div class="text-[.7rem] font-semibold uppercase tracking-[.16em] mt-1" style="color:rgba(255,255,255,.75)">aventures depuis 2011</div>
+          <div id="stat-voyages-label" class="text-[.7rem] font-semibold uppercase tracking-[.16em] mt-1" style="color:rgba(255,255,255,.75)">aventures depuis 2011</div>
         </div>
         <div style="border-right:1px solid rgba(255,255,255,.22)">
           <div id="stat-dest" class="font-display text-3xl sm:text-4xl font-black" data-count="0">-</div>
-          <div class="text-[.7rem] font-semibold uppercase tracking-[.16em] mt-1" style="color:rgba(255,255,255,.75)">pays, une seule Dacia</div>
+          <div id="stat-dest-label" class="text-[.7rem] font-semibold uppercase tracking-[.16em] mt-1" style="color:rgba(255,255,255,.75)">pays, une seule Dacia</div>
         </div>
         <div>
           <div id="stat-maroc" class="font-display text-3xl sm:text-4xl font-black" data-count="0">-</div>
-          <div class="text-[.7rem] font-semibold uppercase tracking-[.16em] mt-1" style="color:rgba(255,255,255,.75)">séjours au Maroc</div>
+          <div id="stat-maroc-label" class="text-[.7rem] font-semibold uppercase tracking-[.16em] mt-1" style="color:rgba(255,255,255,.75)">séjours au Maroc</div>
         </div>
       </div>
     </div>
@@ -58,9 +58,9 @@ ${NAV('home', authed)}
   <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
     <div class="flex items-end justify-between mb-10 gap-6">
       <div>
-        <div class="eyebrow mb-4">Sélection maison</div>
-        <h2 class="font-display text-3xl sm:text-5xl font-bold" style="color:var(--ink)">Nos derniers voyages</h2>
-        <p class="mt-3 text-sm sm:text-base max-w-2xl" style="color:var(--ink-muted)">Les récits les plus récents de nos vacances, avec nos coups de cœur, nos galères et nos meilleures trouvailles.</p>
+        <div id="recent-eyebrow" class="eyebrow mb-4">Sélection maison</div>
+        <h2 id="recent-title" class="font-display text-3xl sm:text-5xl font-bold" style="color:var(--ink)">Nos derniers voyages</h2>
+        <p id="recent-subtitle" class="mt-3 text-sm sm:text-base max-w-2xl" style="color:var(--ink-muted)">Les récits les plus récents de nos vacances, avec nos coups de cœur, nos galères et nos meilleures trouvailles.</p>
       </div>
       <a href="/voyages" class="hidden sm:inline-flex subtle-btn flex-shrink-0">Tout le carnet →</a>
     </div>
@@ -78,7 +78,7 @@ ${NAV('home', authed)}
       <div class="panel rounded-[2rem] p-8 sm:p-10 flex flex-col sm:flex-row items-center gap-7">
         <img src="/icon-192.png" width="84" height="84" alt="" aria-hidden="true" style="border-radius:1.25rem;flex-shrink:0;box-shadow:0 6px 20px rgba(0,87,184,.22)">
         <div>
-          <div class="eyebrow mb-3">Salut, c'est nous</div>
+          <div id="about-eyebrow" class="eyebrow mb-3">Salut, c'est nous</div>
           <p id="about-text" class="text-base sm:text-lg leading-relaxed" style="color:var(--ink)">
             Nous, c'est la famille Potet. Tout a commencé sans le vouloir en 2011, avec un voyage à Marrakech - un tajine à 5&nbsp;euros et un nom de blog plus tard, on ne s'est plus arrêtés. Une Dacia traumatisée et pas mal de galères après, on continue de tout noter ici. Bienvenue à la maison.
           </p>
@@ -91,9 +91,9 @@ ${NAV('home', authed)}
   <section id="destinations-section" class="py-16 sm:py-24" style="background:var(--sand);scroll-margin-top:5rem">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-10">
-        <div class="eyebrow mb-4 mx-auto">Où on a traîné nos valises</div>
-        <h2 class="font-display text-3xl sm:text-4xl font-bold mb-3" style="color:var(--ink)">Nos coins du monde</h2>
-        <p class="text-sm sm:text-base max-w-2xl mx-auto" style="color:var(--ink-muted)">Choisissez un pays, on vous ressort les photos, les histoires et ce qu'on referait (ou pas).</p>
+        <div id="dest-eyebrow" class="eyebrow mb-4 mx-auto">Où on a traîné nos valises</div>
+        <h2 id="dest-title" class="font-display text-3xl sm:text-4xl font-bold mb-3" style="color:var(--ink)">Nos coins du monde</h2>
+        <p id="dest-subtitle" class="text-sm sm:text-base max-w-2xl mx-auto" style="color:var(--ink-muted)">Choisissez un pays, on vous ressort les photos, les histoires et ce qu'on referait (ou pas).</p>
       </div>
       <div id="destinations" class="flex flex-wrap justify-center gap-3">
         ${Array.from({length:5}).map(()=>`<div class="w-32 h-12 rounded-2xl animate-pulse" style="background:var(--sand-deep)"></div>`).join('')}
@@ -105,8 +105,8 @@ ${NAV('home', authed)}
   <section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
     <div class="panel rounded-[2rem] p-8 sm:p-10 text-center">
       <div style="width:3.25rem;height:3.25rem;border-radius:999px;background:var(--blue-light);display:inline-flex;align-items:center;justify-content:center;margin-bottom:1rem"><i class="ph-bold ph-paper-plane-tilt" style="font-size:1.5rem;color:var(--blue)"></i></div>
-      <h2 class="font-display text-2xl sm:text-3xl font-bold mb-2" style="color:var(--ink)">On repart bientôt.</h2>
-      <p class="text-sm sm:text-base mb-6 max-w-xl mx-auto" style="color:var(--ink-muted)">Laissez votre email, on vous fait signe au prochain récit. Pas de spam, juste nous.</p>
+      <h2 id="sub-title" class="font-display text-2xl sm:text-3xl font-bold mb-2" style="color:var(--ink)">On repart bientôt.</h2>
+      <p id="sub-subtitle" class="text-sm sm:text-base mb-6 max-w-xl mx-auto" style="color:var(--ink-muted)">Laissez votre email, on vous fait signe au prochain récit. Pas de spam, juste nous.</p>
       <div class="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
         <input type="email" id="home-sub-email" placeholder="votre@email.com" class="flex-1 min-w-0 border-2 rounded-xl px-4 py-2.5 text-sm" style="border-color:rgba(var(--blue-rgb),.2)">
         <button onclick="homeSubscribe()" class="action-btn-sm justify-center"><i class="ph-bold ph-paper-plane-tilt"></i> Me prévenir</button>
@@ -120,7 +120,7 @@ ${NAV('home', authed)}
     <div class="panel rounded-[2rem] p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
       <img src="/icon-192.png" width="56" height="56" alt="" aria-hidden="true" style="border-radius:1rem;flex-shrink:0;box-shadow:0 4px 14px rgba(0,87,184,.22)">
       <div class="flex-1">
-        <h2 class="font-display text-xl font-bold mb-1" style="color:var(--ink)">Gardez le carnet sur vous</h2>
+        <h2 id="install-title" class="font-display text-xl font-bold mb-1" style="color:var(--ink)">Gardez le carnet sur vous</h2>
         <p id="install-text" class="text-sm" style="color:var(--ink-muted)">Installez l'app sur votre téléphone : elle s'ouvre d'une icône, même sans réseau en voyage.</p>
       </div>
       <button id="install-btn" onclick="installApp()" class="action-btn-sm flex-shrink-0"><i class="ph-bold ph-download-simple"></i> Installer l'app</button>
@@ -133,7 +133,7 @@ ${NAV('home', authed)}
       <blockquote id="site-tagline" class="font-display text-2xl sm:text-3xl italic leading-relaxed" style="color:var(--ink)">
         "Mais ça c'était bien avant le drame..."
       </blockquote>
-      <p class="mt-4 font-medium text-sm" style="color:var(--ink-muted)">- Devise de la famille Potet <i class="ph-bold ph-globe-hemisphere-west" style="color:var(--blue)"></i></p>
+      <p class="mt-4 font-medium text-sm" style="color:var(--ink-muted)">- <span id="tagline-author">Devise de la famille Potet</span> <i class="ph-bold ph-globe-hemisphere-west" style="color:var(--blue)"></i></p>
     </div>
   </section>
 
@@ -235,15 +235,50 @@ async function init(){
   ]);
   const recentArticles = artData.articles.slice(0, 6);
 
-  // Hero depuis settings (rendu normal, plus d'édition inline)
+  // ── Tous les textes de la page depuis les paramètres admin ──
+  // Chaque texte de la home est pilotable depuis l'onglet Paramètres. On ne
+  // remplace que si la valeur est non vide, sinon on garde le texte par défaut
+  // codé dans le template (jamais de section vide).
   const bgEl = document.getElementById('hero-bg');
   if(settings.hero_image_url){ bgEl.src=settings.hero_image_url; bgEl.style.display='block'; }
-  if(settings.hero_eyebrow)   document.getElementById('hero-eyebrow').innerHTML = settings.hero_eyebrow;
-  if(settings.hero_title)     document.getElementById('hero-title').innerHTML = settings.hero_title;
-  if(settings.hero_subtitle)  document.getElementById('hero-subtitle').innerHTML = settings.hero_subtitle;
-  if(settings.hero_badge)     document.getElementById('hero-badge').innerHTML = settings.hero_badge;
-  if(settings.hero_cta_primary) document.querySelector('#hero-cta-primary span').innerHTML = settings.hero_cta_primary;
-  if(settings.site_tagline)   document.getElementById('site-tagline').innerHTML = settings.site_tagline;
+
+  // setTxt : innerHTML sur l'élément #id si la clé existe et est non vide.
+  // innerHTML (pas textContent) car certains champs autorisent <em>/<br>.
+  const setTxt = (id, val) => { const el = document.getElementById(id); if(el && val) el.innerHTML = val; };
+  // setSpan : idem mais cible le <span> interne (boutons avec icône + libellé).
+  const setSpan = (sel, val) => { const el = document.querySelector(sel); if(el && val) el.innerHTML = val; };
+
+  // Hero
+  setTxt('hero-eyebrow',  settings.hero_eyebrow);
+  setTxt('hero-title',    settings.hero_title);
+  setTxt('hero-subtitle', settings.hero_subtitle);
+  setTxt('hero-badge',    settings.hero_badge);
+  setSpan('#hero-cta-primary span',   settings.hero_cta_primary);
+  setSpan('#hero-cta-secondary span', settings.hero_cta_secondary);
+  // Stats (libellés sous les 3 compteurs — le nombre reste calculé)
+  setTxt('stat-voyages-label', settings.stat_voyages_label);
+  setTxt('stat-dest-label',    settings.stat_dest_label);
+  setTxt('stat-maroc-label',   settings.stat_maroc_label);
+  // Section "Nos derniers voyages"
+  setTxt('recent-eyebrow',  settings.recent_eyebrow);
+  setTxt('recent-title',    settings.recent_title);
+  setTxt('recent-subtitle', settings.recent_subtitle);
+  // Section "Le mot des Potet"
+  setTxt('about-eyebrow', settings.about_eyebrow);
+  setTxt('about-text',    settings.about_text);
+  // Section "Nos coins du monde"
+  setTxt('dest-eyebrow',  settings.dest_eyebrow);
+  setTxt('dest-title',    settings.dest_title);
+  setTxt('dest-subtitle', settings.dest_subtitle);
+  // Section abonnement
+  setTxt('sub-title',    settings.sub_title);
+  setTxt('sub-subtitle', settings.sub_subtitle);
+  // Section installer l'app
+  setTxt('install-title', settings.install_title);
+  setTxt('install-text',  settings.install_text);
+  // Citation de bas de page
+  setTxt('site-tagline',   settings.site_tagline);
+  setTxt('tagline-author', settings.tagline_author);
 
   // Stats - animated count-up (respects reduced-motion). The Maroc count is a
   // deliberate wink ("la routine s'installe") rather than a generic metric.

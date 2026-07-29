@@ -29,7 +29,7 @@ import {
 
 // API handlers
 import { listFolders, createFolder, updateFolder, deleteFolder } from './api/folders.js';
-import { listArticles, getArticle, createArticle, updateArticle, patchArticleStatus, deleteArticle, recordView, logPageView, isBotUserAgent } from './api/articles.js';
+import { listArticles, getArticle, createArticle, updateArticle, patchArticleStatus, deleteArticle, recordView, logPageView, isBotUserAgent, ensureVisitorId } from './api/articles.js';
 import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, deleteHeroImage, serveR2Object } from './api/photos.js';
 import { getSettings, updateSettings } from './api/settings.js';
 import { listComments, createComment, deleteComment, listRecentCommentsAdmin, replyToComment } from './api/comments.js';
@@ -1440,12 +1440,21 @@ export default {
     // Log page views for the analytics dashboard — skip the admin's own
     // browsing (publicAuthed) and bots, same filter as recordView() for
     // article pages. Fire-and-forget via waitUntil so it never delays the
-    // response the visitor is waiting for.
+    // response the visitor is waiting for. A per-browser visitor cookie lets
+    // logPageView collapse repeat loads into one daily visit; set it on the
+    // response so the next load carries it.
+    let visitorSetCookie = null;
     if (!publicAuthed && !isBotUserAgent(request) && (path === '/' || path === '' || path === '/voyages')) {
-      ctx.waitUntil(logPageView(env, request, { path: path || '/' }));
+      const visitor = ensureVisitorId(request);
+      visitorSetCookie = visitor.setCookie;
+      ctx.waitUntil(logPageView(env, request, { path: path || '/', visitorId: visitor.id }));
     }
-    if (path === '/' || path === '') return homePage(publicAuthed);
-    if (path === '/voyages')         return voyagesPage(publicAuthed);
+    const withVisitorCookie = (resp) => {
+      if (visitorSetCookie) resp.headers.append('Set-Cookie', visitorSetCookie);
+      return resp;
+    };
+    if (path === '/' || path === '') return withVisitorCookie(homePage(publicAuthed));
+    if (path === '/voyages')         return withVisitorCookie(voyagesPage(publicAuthed));
     const voyageMatch = matchPath('/voyage/:slug', path);
     if (voyageMatch) return voyagePage(env, voyageMatch.slug, publicAuthed, new URL(request.url).origin);
 

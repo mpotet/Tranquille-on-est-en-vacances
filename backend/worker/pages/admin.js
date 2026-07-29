@@ -335,36 +335,134 @@ ${ADMIN_NAV()}
         </div>
       </div>
 
-      <!-- Hero texts -->
-      <p class="text-xs font-black text-stone-400 uppercase tracking-wider mt-6 mb-3">Textes de la page d'accueil</p>
-      <div class="grid sm:grid-cols-2 gap-5">
+      <!-- Home texts : every text on the public home page -->
+      <p class="text-xs font-black uppercase tracking-wider mt-6 mb-1" style="color:var(--blue)"><i class="ph-bold ph-house"></i> Textes de la page d'accueil</p>
+      <p class="text-xs mb-3" style="color:var(--ink-light)">Tous les textes de la page d'accueil sont modifiables ici. Laissez un champ vide pour garder le texte par défaut.</p>
+
+      <!-- Section hero -->
+      <p class="text-[.7rem] font-bold uppercase tracking-wider mt-4 mb-2" style="color:var(--ink-muted)">En-tête (héro)</p>
+      <div class="grid sm:grid-cols-2 gap-4">
         <div>
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-tag"></i> Sur-titre (eyebrow)</label>
-          <input type="text" id="s-hero-eyebrow" placeholder="Carnet de bord de la famille Potet" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)"><i class="ph-bold ph-tag"></i> Sur-titre (eyebrow)</label>
+          <input type="text" id="s-hero-eyebrow" placeholder="Le carnet des Potet" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
         </div>
         <div>
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-seal-warning"></i> Badge (citation drame)</label>
-          <input type="text" id="s-hero-badge" placeholder="&quot;Mais ça c'était bien avant le drame...&quot;" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)"><i class="ph-bold ph-seal-warning"></i> Badge (citation)</label>
+          <input type="text" id="s-hero-badge" placeholder="&quot;Mais ça c'était bien avant le drame...&quot;" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
         </div>
         <div class="sm:col-span-2">
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-text-t"></i> Titre héro <span class="font-normal normal-case text-stone-400">(HTML autorisé : &lt;em&gt;, &lt;br&gt;)</span></label>
-          <input type="text" id="s-hero-title" placeholder="Nos voyages en famille…" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)"><i class="ph-bold ph-text-t"></i> Titre héro <span class="font-normal normal-case" style="color:var(--ink-light)">(HTML : &lt;em&gt;, &lt;br&gt;)</span></label>
+          <input type="text" id="s-hero-title" placeholder="Entrez, on allait justement…" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
         </div>
         <div class="sm:col-span-2">
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-chat-text"></i> Sous-titre héro</label>
-          <textarea id="s-hero-subtitle" rows="2" placeholder="Chaque article raconte un voyage vécu…" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm resize-none"></textarea>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)"><i class="ph-bold ph-chat-text"></i> Sous-titre héro</label>
+          <textarea id="s-hero-subtitle" rows="2" placeholder="Depuis 2011, on part quelque part…" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm resize-none" style="border:2px solid var(--line)"></textarea>
         </div>
         <div>
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-cursor-click"></i> Bouton principal</label>
-          <input type="text" id="s-hero-cta-primary" placeholder="Explorer nos voyages" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)"><i class="ph-bold ph-cursor-click"></i> Bouton principal</label>
+          <input type="text" id="s-hero-cta-primary" placeholder="Lire nos aventures" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
         </div>
         <div>
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-cursor"></i> Bouton secondaire <span class="font-normal normal-case text-stone-400">(non affiché)</span></label>
-          <input type="text" id="s-hero-cta-secondary" placeholder="Parcourir le carnet" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)"><i class="ph-bold ph-cursor"></i> Bouton secondaire</label>
+          <input type="text" id="s-hero-cta-secondary" placeholder="Nos coins du monde" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
+        </div>
+      </div>
+
+      <!-- Section stats -->
+      <p class="text-[.7rem] font-bold uppercase tracking-wider mt-5 mb-2" style="color:var(--ink-muted)">Compteurs (libellés sous les chiffres)</p>
+      <div class="grid sm:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Compteur 1 — voyages</label>
+          <input type="text" id="s-stat-voyages" placeholder="aventures depuis 2011" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
+        </div>
+        <div>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Compteur 2 — pays</label>
+          <input type="text" id="s-stat-dest" placeholder="pays, une seule Dacia" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
+        </div>
+        <div>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Compteur 3 — Maroc</label>
+          <input type="text" id="s-stat-maroc" placeholder="séjours au Maroc" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
+        </div>
+      </div>
+
+      <!-- Section "Nos derniers voyages" -->
+      <p class="text-[.7rem] font-bold uppercase tracking-wider mt-5 mb-2" style="color:var(--ink-muted)">Section « Nos derniers voyages »</p>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Sur-titre</label>
+          <input type="text" id="s-recent-eyebrow" placeholder="Sélection maison" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
+        </div>
+        <div>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Titre</label>
+          <input type="text" id="s-recent-title" placeholder="Nos derniers voyages" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
         </div>
         <div class="sm:col-span-2">
-          <label class="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wide"><i class="ph-bold ph-quotes"></i> Accroche du site (citation en bas de page)</label>
-          <input type="text" id="s-tagline" placeholder="Le voyage en famille enrichit…" class="w-full border-2 border-stone-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-sky-400 transition-colors text-sm">
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Sous-titre</label>
+          <textarea id="s-recent-subtitle" rows="2" placeholder="Les récits les plus récents…" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm resize-none" style="border:2px solid var(--line)"></textarea>
+        </div>
+      </div>
+
+      <!-- Section "Le mot des Potet" -->
+      <p class="text-[.7rem] font-bold uppercase tracking-wider mt-5 mb-2" style="color:var(--ink-muted)">Section « Le mot des Potet »</p>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Sur-titre</label>
+          <input type="text" id="s-about-eyebrow" placeholder="Salut, c'est nous" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Présentation de la famille</label>
+          <textarea id="s-about-text" rows="4" placeholder="Nous, c'est la famille Potet…" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm resize-none" style="border:2px solid var(--line)"></textarea>
+        </div>
+      </div>
+
+      <!-- Section "Nos coins du monde" -->
+      <p class="text-[.7rem] font-bold uppercase tracking-wider mt-5 mb-2" style="color:var(--ink-muted)">Section « Nos coins du monde »</p>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Sur-titre</label>
+          <input type="text" id="s-dest-eyebrow" placeholder="Où on a traîné nos valises" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
+        </div>
+        <div>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Titre</label>
+          <input type="text" id="s-dest-title" placeholder="Nos coins du monde" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Sous-titre</label>
+          <textarea id="s-dest-subtitle" rows="2" placeholder="Choisissez un pays…" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm resize-none" style="border:2px solid var(--line)"></textarea>
+        </div>
+      </div>
+
+      <!-- Section abonnement + install -->
+      <p class="text-[.7rem] font-bold uppercase tracking-wider mt-5 mb-2" style="color:var(--ink-muted)">Section abonnement &amp; installation de l'app</p>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Abonnement — titre</label>
+          <input type="text" id="s-sub-title" placeholder="On repart bientôt." class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
+        </div>
+        <div>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Abonnement — sous-titre</label>
+          <input type="text" id="s-sub-subtitle" placeholder="Laissez votre email…" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
+        </div>
+        <div>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Install app — titre</label>
+          <input type="text" id="s-install-title" placeholder="Gardez le carnet sur vous" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
+        </div>
+        <div>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Install app — texte</label>
+          <input type="text" id="s-install-text" placeholder="Installez l'app sur votre téléphone…" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
+        </div>
+      </div>
+
+      <!-- Citation de bas de page -->
+      <p class="text-[.7rem] font-bold uppercase tracking-wider mt-5 mb-2" style="color:var(--ink-muted)">Citation de bas de page</p>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)"><i class="ph-bold ph-quotes"></i> Citation</label>
+          <input type="text" id="s-tagline" placeholder="&quot;Mais ça c'était bien avant le drame...&quot;" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
+        </div>
+        <div>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Attribution</label>
+          <input type="text" id="s-tagline-author" placeholder="Devise de la famille Potet" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
         </div>
       </div>
 
@@ -805,7 +903,29 @@ async function loadSettings() {
   document.getElementById('s-hero-subtitle').value  = s.hero_subtitle     || '';
   document.getElementById('s-hero-cta-primary').value   = s.hero_cta_primary   || '';
   document.getElementById('s-hero-cta-secondary').value = s.hero_cta_secondary || '';
+  // Stats
+  document.getElementById('s-stat-voyages').value = s.stat_voyages_label || '';
+  document.getElementById('s-stat-dest').value    = s.stat_dest_label    || '';
+  document.getElementById('s-stat-maroc').value   = s.stat_maroc_label   || '';
+  // Section "Nos derniers voyages"
+  document.getElementById('s-recent-eyebrow').value  = s.recent_eyebrow  || '';
+  document.getElementById('s-recent-title').value    = s.recent_title    || '';
+  document.getElementById('s-recent-subtitle').value = s.recent_subtitle || '';
+  // Section "Le mot des Potet"
+  document.getElementById('s-about-eyebrow').value = s.about_eyebrow || '';
+  document.getElementById('s-about-text').value    = s.about_text    || '';
+  // Section "Nos coins du monde"
+  document.getElementById('s-dest-eyebrow').value  = s.dest_eyebrow  || '';
+  document.getElementById('s-dest-title').value    = s.dest_title    || '';
+  document.getElementById('s-dest-subtitle').value = s.dest_subtitle || '';
+  // Abonnement + install
+  document.getElementById('s-sub-title').value     = s.sub_title     || '';
+  document.getElementById('s-sub-subtitle').value  = s.sub_subtitle  || '';
+  document.getElementById('s-install-title').value = s.install_title || '';
+  document.getElementById('s-install-text').value  = s.install_text  || '';
+  // Citation
   document.getElementById('s-tagline').value        = s.site_tagline      || '';
+  document.getElementById('s-tagline-author').value = s.tagline_author    || '';
   document.getElementById('s-gate-question').value  = s.comment_gate_question || '';
   document.getElementById('s-gate-answer').value    = s.comment_gate_answer   || '';
   document.getElementById('s-admin-display-name').value = s.admin_display_name || 'Damien Potet';
@@ -862,7 +982,23 @@ async function saveSettings() {
     hero_subtitle:       document.getElementById('s-hero-subtitle').value.trim(),
     hero_cta_primary:    document.getElementById('s-hero-cta-primary').value.trim(),
     hero_cta_secondary:  document.getElementById('s-hero-cta-secondary').value.trim(),
+    stat_voyages_label:  document.getElementById('s-stat-voyages').value.trim(),
+    stat_dest_label:     document.getElementById('s-stat-dest').value.trim(),
+    stat_maroc_label:    document.getElementById('s-stat-maroc').value.trim(),
+    recent_eyebrow:      document.getElementById('s-recent-eyebrow').value.trim(),
+    recent_title:        document.getElementById('s-recent-title').value.trim(),
+    recent_subtitle:     document.getElementById('s-recent-subtitle').value.trim(),
+    about_eyebrow:       document.getElementById('s-about-eyebrow').value.trim(),
+    about_text:          document.getElementById('s-about-text').value.trim(),
+    dest_eyebrow:        document.getElementById('s-dest-eyebrow').value.trim(),
+    dest_title:          document.getElementById('s-dest-title').value.trim(),
+    dest_subtitle:       document.getElementById('s-dest-subtitle').value.trim(),
+    sub_title:           document.getElementById('s-sub-title').value.trim(),
+    sub_subtitle:        document.getElementById('s-sub-subtitle').value.trim(),
+    install_title:       document.getElementById('s-install-title').value.trim(),
+    install_text:        document.getElementById('s-install-text').value.trim(),
     site_tagline:        document.getElementById('s-tagline').value.trim(),
+    tagline_author:      document.getElementById('s-tagline-author').value.trim(),
     comment_gate_question: document.getElementById('s-gate-question').value.trim(),
     comment_gate_answer:   document.getElementById('s-gate-answer').value.trim(),
     admin_display_name:    document.getElementById('s-admin-display-name').value.trim(),

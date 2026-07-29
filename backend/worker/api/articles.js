@@ -394,11 +394,43 @@ async function getAllFolderIds(env, folderId, seen = new Set()) {
 // server-side filter available without adding friction (CAPTCHA, etc.) for
 // real visitors. Not exhaustive, but covers the large majority of automated
 // traffic that would otherwise inflate "vues".
-const BOT_UA_RE = /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|whatsapp|telegrambot|discordbot|slackbot|embedly|quora link preview|pinterest|semrush|ahrefs|mj12bot|dotbot|petalbot|yandex|baiduspider|headlesschrome|phantomjs|lighthouse|pagespeed|uptimerobot|pingdom|gtmetrix/i;
+const BOT_UA_RE = /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|whatsapp|telegrambot|discordbot|slackbot|embedly|quora link preview|pinterest|semrush|ahrefs|mj12bot|dotbot|petalbot|yandex|baiduspider|headlesschrome|phantomjs|lighthouse|pagespeed|uptimerobot|pingdom|gtmetrix|python-requests|curl|wget|go-http-client|axios|node-fetch|okhttp|java\/|libwww|scrapy|apache-httpclient/i;
 
 function isBotUserAgent(request) {
   const ua = request?.headers?.get('User-Agent') || '';
-  return !ua || BOT_UA_RE.test(ua);
+  if (!ua || BOT_UA_RE.test(ua)) return true;
+  // Cloudflare's edge already classifies known bots on most plans — trust its
+  // verdict when present (catches crawlers that spoof a browser UA).
+  const cf = request?.cf || {};
+  if (cf.verifiedBotCategory && cf.verifiedBotCategory !== '') return true;
+  if (cf.botManagement && cf.botManagement.verifiedBot === true) return true;
+  return false;
+}
+
+// ── Per-browser visitor id (analytics dedup, never an IP) ─────
+const VISITOR_COOKIE = 'tv_vid';
+
+/** Read the visitor id from the request cookie, or null if none yet. */
+function readVisitorId(request) {
+  const cookie = request?.headers?.get('Cookie') || '';
+  const m = cookie.match(/(?:^|;\s*)tv_vid=([A-Za-z0-9_-]{16,64})/);
+  return m ? m[1] : null;
+}
+
+/**
+ * Return { id, setCookie } for the visitor: reuse the existing cookie id, or
+ * mint a fresh random one plus the Set-Cookie header to persist it. The id is
+ * an opaque random token (no IP, no identity) used only to collapse repeat
+ * loads from the same browser into a single daily visit.
+ */
+function ensureVisitorId(request) {
+  const existing = readVisitorId(request);
+  if (existing) return { id: existing, setCookie: null };
+  const id = crypto.randomUUID().replace(/-/g, '');
+  // 1 year, HttpOnly (JS never needs it), SameSite=Lax so it survives normal
+  // navigation from external links (referrals) while not being sent cross-site.
+  const setCookie = `${VISITOR_COOKIE}=${id}; Max-Age=31536000; Path=/; HttpOnly; Secure; SameSite=Lax`;
+  return { id, setCookie };
 }
 
 /**
@@ -407,15 +439,21 @@ function isBotUserAgent(request) {
  * (request.cf), already resolved server-side. Best-effort: a logging failure
  * must never break the page/view-count response it's attached to.
  */
-async function logPageView(env, request, { articleId = null, path }) {
+async function logPageView(env, request, { articleId = null, path, visitorId = null }) {
   try {
     const cf = request?.cf || {};
     let referrerHost = null;
     const ref = request?.headers?.get('Referer');
     if (ref) { try { referrerHost = new URL(ref).hostname || null; } catch {} }
+    const vid = visitorId || readVisitorId(request);
+    // ON CONFLICT DO NOTHING against idx_page_views_unique_daily collapses
+    // repeat loads from the same browser on the same path+day into one visit.
+    // If vid is null (cookie blocked) we fall back to logging every load, since
+    // there's no key to dedup on — the unique index is partial (visitor_id IS
+    // NOT NULL) so those rows never trip the constraint.
     await env.DB
-      .prepare('INSERT INTO page_views (article_id, path, country_code, region, city, referrer_host) VALUES (?, ?, ?, ?, ?, ?)')
-      .bind(articleId, path, cf.country || null, cf.region || null, cf.city || null, referrerHost)
+      .prepare('INSERT INTO page_views (article_id, path, country_code, region, city, referrer_host, visitor_id) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING')
+      .bind(articleId, path, cf.country || null, cf.region || null, cf.city || null, referrerHost, vid)
       .run();
   } catch { /* analytics must never break the request it's attached to */ }
 }
@@ -447,14 +485,19 @@ export async function recordView(env, slugOrId, request, authed = false) {
   // dashboard is meant to show who's reading the blog, not the admin's own
   // browsing while managing it. view_count above still increments either way
   // (unchanged prior behaviour), this only affects the page_views history.
+  let setCookie = null;
   if (!authed) {
-    await logPageView(env, request, { articleId: article.id, path: '/voyage/' + article.slug });
+    const visitor = ensureVisitorId(request);
+    setCookie = visitor.setCookie;
+    await logPageView(env, request, { articleId: article.id, path: '/voyage/' + article.slug, visitorId: visitor.id });
   }
 
   // We already know the pre-increment count and just added 1 — return that
   // directly instead of a second SELECT that could race with a concurrent
   // delete (returning null → `updated.view_count` TypeError → 500).
-  return json({ views: article.view_count + 1 });
+  const resp = json({ views: article.view_count + 1 });
+  if (setCookie) resp.headers.append('Set-Cookie', setCookie);
+  return resp;
 }
 
-export { logPageView, isBotUserAgent };
+export { logPageView, isBotUserAgent, ensureVisitorId, readVisitorId };
