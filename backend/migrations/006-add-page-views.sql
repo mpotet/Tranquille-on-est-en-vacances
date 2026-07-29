@@ -1,5 +1,5 @@
 -- Detailed, timestamped visit log to power an admin analytics dashboard
--- (period breakdowns, per-country/city charts) — the existing `view_count`
+-- (period breakdowns, per-country/city charts) - the existing `view_count`
 -- column on articles stays as-is (fast running total, used for "most read"
 -- sorting); this table adds the historical detail it never had.
 --

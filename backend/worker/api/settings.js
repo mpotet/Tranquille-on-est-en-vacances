@@ -8,7 +8,7 @@
 import { json } from '../utils.js';
 
 // Every editable text on the public home page, so the whole page is
-// admin-configurable — not just the hero. Grouped by the section they belong
+// admin-configurable - not just the hero. Grouped by the section they belong
 // to. Kept in one list reused by both ALLOWED_KEYS (writable) and PUBLIC_KEYS
 // (readable by anonymous visitors) so a new home text can never be forgotten
 // in one place or the other.
@@ -41,7 +41,7 @@ const ALLOWED_KEYS = [
 
 // Allow-list of keys safe to expose to anonymous visitors. Anything NOT listed
 // here (Mailjet API keys/secret, sender address, the spam-gate answer, and any
-// future secret added to site_settings) is stripped from the public response —
+// future secret added to site_settings) is stripped from the public response -
 // a deny-list would silently leak a newly-added secret if we forgot to list it.
 const PUBLIC_KEYS = new Set([
   ...HOME_CONTENT_KEYS,

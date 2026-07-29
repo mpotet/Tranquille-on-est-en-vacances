@@ -227,7 +227,7 @@ ${ADMIN_NAV()}
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
             <h2 class="font-display text-2xl font-bold" style="color:var(--ink)">Qui lit le carnet ?</h2>
-            <p class="text-sm mt-0.5" style="color:var(--ink-muted)">Aucune IP n'est jamais enregistrée — juste le pays/ville fourni par le réseau, pour voir d'où viennent les lecteurs.</p>
+            <p class="text-sm mt-0.5" style="color:var(--ink-muted)">Aucune IP n'est jamais enregistrée - juste le pays/ville fourni par le réseau, pour voir d'où viennent les lecteurs.</p>
           </div>
           <div class="flex gap-1.5 flex-wrap" role="group" aria-label="Période">
             <button type="button" class="period-pill" data-period="today">Aujourd'hui</button>
@@ -372,15 +372,15 @@ ${ADMIN_NAV()}
       <p class="text-[.7rem] font-bold uppercase tracking-wider mt-5 mb-2" style="color:var(--ink-muted)">Compteurs (libellés sous les chiffres)</p>
       <div class="grid sm:grid-cols-3 gap-4">
         <div>
-          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Compteur 1 — voyages</label>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Compteur 1 - voyages</label>
           <input type="text" id="s-stat-voyages" placeholder="aventures depuis 2011" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
         </div>
         <div>
-          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Compteur 2 — pays</label>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Compteur 2 - pays</label>
           <input type="text" id="s-stat-dest" placeholder="pays, une seule Dacia" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
         </div>
         <div>
-          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Compteur 3 — Maroc</label>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Compteur 3 - Maroc</label>
           <input type="text" id="s-stat-maroc" placeholder="séjours au Maroc" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
         </div>
       </div>
@@ -436,19 +436,19 @@ ${ADMIN_NAV()}
       <p class="text-[.7rem] font-bold uppercase tracking-wider mt-5 mb-2" style="color:var(--ink-muted)">Section abonnement &amp; installation de l'app</p>
       <div class="grid sm:grid-cols-2 gap-4">
         <div>
-          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Abonnement — titre</label>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Abonnement - titre</label>
           <input type="text" id="s-sub-title" placeholder="On repart bientôt." class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
         </div>
         <div>
-          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Abonnement — sous-titre</label>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Abonnement - sous-titre</label>
           <input type="text" id="s-sub-subtitle" placeholder="Laissez votre email…" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
         </div>
         <div>
-          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Install app — titre</label>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Install app - titre</label>
           <input type="text" id="s-install-title" placeholder="Gardez le carnet sur vous" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
         </div>
         <div>
-          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Install app — texte</label>
+          <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)">Install app - texte</label>
           <input type="text" id="s-install-text" placeholder="Installez l'app sur votre téléphone…" class="w-full rounded-xl px-4 py-2.5 focus:outline-none transition-colors text-sm" style="border:2px solid var(--line)">
         </div>
       </div>
@@ -1195,7 +1195,7 @@ async function loadAnalytics() {
   document.getElementById('an-total').textContent = data.total;
   const trendEl = document.getElementById('an-trend');
   if (data.trend_pct === null) {
-    trendEl.textContent = '—';
+    trendEl.textContent = '-';
     trendEl.style.color = 'var(--ink-light)';
   } else {
     const up = data.trend_pct >= 0;
@@ -1204,7 +1204,7 @@ async function loadAnalytics() {
   }
   document.getElementById('an-countries').textContent = data.countries_distinct;
 
-  // Daily/hourly bar chart — bars proportional to the bucket's max. Only the
+  // Daily/hourly bar chart - bars proportional to the bucket's max. Only the
   // peak bucket gets a permanent number above its bar (keeps the chart
   // readable at any period length); every bar shows its exact label + count
   // via a real JS tooltip that follows the pointer (see an-tooltip below),
@@ -1252,7 +1252,7 @@ async function loadAnalytics() {
     }
   }
 
-  // Locations — top 6 cities (grouped by city+country, not country alone) +
+  // Locations - top 6 cities (grouped by city+country, not country alone) +
   // "Autres" bucket, proportional bars. Shows "Paris, France" rather than
   // just "France" since city is what's actually useful to a curious reader.
   const locations = data.locations || [];
@@ -1279,7 +1279,7 @@ async function loadAnalytics() {
       }).join('')
     : '<p class="text-sm text-center py-6" style="color:var(--ink-light)">Aucune visite sur cette période.</p>';
 
-  // Top articles — reuse the same ascending-bars popularity pattern as the
+  // Top articles - reuse the same ascending-bars popularity pattern as the
   // public site (renderPopularityBars in home.js/index.js), scoped to this
   // period's view count rather than the article's lifetime total.
   const topArts = data.top_articles || [];
@@ -1751,7 +1751,7 @@ function clearDraftLocal() { localStorage.removeItem(DRAFT_KEY); }
 
 // ── Offline sync queue (IndexedDB) ──────────────────────────────
 // localStorage isn't reachable from the Service Worker, so a save made while
-// offline is *also* written here — the SW reads this store and replays each
+// offline is *also* written here - the SW reads this store and replays each
 // entry (POST/PUT) via Background Sync once the network is back, even if
 // nobody has the app open at that moment. See public/sw.js for the replay side.
 function _openOfflineDB() {
@@ -1780,7 +1780,7 @@ async function queueOfflineArticleSave(method, url, payload) {
     try {
       const reg = await navigator.serviceWorker.ready;
       await reg.sync.register('tranquille-sync-articles');
-    } catch { /* Background Sync unsupported/denied — the 'online' event fallback in sw.js still covers it */ }
+    } catch { /* Background Sync unsupported/denied - the 'online' event fallback in sw.js still covers it */ }
   }
 }
 // The SW tells every open page when a queued save actually goes through, so
@@ -2481,7 +2481,7 @@ async function saveArticle() {
       payload.notify = false; // never auto-notify subscribers for a sync that happens unattended
       try {
         await queueOfflineArticleSave(ARTICLE_ID ? 'PUT' : 'POST', ARTICLE_ID ? ('/api/articles/'+ARTICLE_ID) : '/api/articles', payload);
-      } catch (e) { /* IndexedDB unavailable — the local draft above is still the fallback */ }
+      } catch (e) { /* IndexedDB unavailable - the local draft above is still the fallback */ }
     }
     updateSyncInfo();
     toast('Sauvegardé - sera envoyé dès que possible 📴', 'ok');

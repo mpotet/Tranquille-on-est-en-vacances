@@ -255,7 +255,7 @@ async function init(){
   setTxt('hero-badge',    settings.hero_badge);
   setSpan('#hero-cta-primary span',   settings.hero_cta_primary);
   setSpan('#hero-cta-secondary span', settings.hero_cta_secondary);
-  // Stats (libellés sous les 3 compteurs — le nombre reste calculé)
+  // Stats (libellés sous les 3 compteurs - le nombre reste calculé)
   setTxt('stat-voyages-label', settings.stat_voyages_label);
   setTxt('stat-dest-label',    settings.stat_dest_label);
   setTxt('stat-maroc-label',   settings.stat_maroc_label);

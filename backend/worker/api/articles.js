@@ -37,7 +37,7 @@ export async function listArticles(request, env, isAdmin) {
   const statusParam = url.searchParams.get('status');   // 'published' | 'draft' | null (all for admin)
   const folderSlug  = url.searchParams.get('folder');
   const q           = (url.searchParams.get('q') || '').trim();
-  // `|| fallback` catches NaN from a non-numeric ?page=abc / ?limit=xyz — an
+  // `|| fallback` catches NaN from a non-numeric ?page=abc / ?limit=xyz - an
   // unguarded parseInt('abc') is NaN, and NaN in LIMIT/OFFSET makes the D1 bind
   // throw (500). The clamps also stop ?limit=-5 (SQLite reads a negative LIMIT
   // as "unlimited", which would silently dump the whole table).
@@ -45,9 +45,9 @@ export async function listArticles(request, env, isAdmin) {
   const limit       = Math.min(50, Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10) || 20));
   const offset      = (page - 1) * limit;
 
-  // Whitelisted sort options only — never interpolate the raw query param
+  // Whitelisted sort options only - never interpolate the raw query param
   // into ORDER BY (SQL injection). Default: most recent trip first, everywhere.
-  // Sorts by start_date, not the legacy `date` column — `date` was meant to
+  // Sorts by start_date, not the legacy `date` column - `date` was meant to
   // mirror start_date but has drifted out of sync on many existing rows
   // (bulk-import artifact), which silently broke "most recent first".
   const SORT_OPTIONS = {
@@ -88,7 +88,7 @@ export async function listArticles(request, env, isAdmin) {
       .bind(folderSlug)
       .first();
     if (folder) {
-      // Coerce to integers before interpolating — these come from folders.id
+      // Coerce to integers before interpolating - these come from folders.id
       // (INTEGER PK) so they're already numeric, but forcing it here keeps this
       // the only non-bound value in the query provably injection-proof.
       const ids = (await getAllFolderIds(env, folder.id)).map(Number).filter(Number.isInteger);
@@ -399,7 +399,7 @@ const BOT_UA_RE = /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|whatsa
 function isBotUserAgent(request) {
   const ua = request?.headers?.get('User-Agent') || '';
   if (!ua || BOT_UA_RE.test(ua)) return true;
-  // Cloudflare's edge already classifies known bots on most plans — trust its
+  // Cloudflare's edge already classifies known bots on most plans - trust its
   // verdict when present (catches crawlers that spoof a browser UA).
   const cf = request?.cf || {};
   if (cf.verifiedBotCategory && cf.verifiedBotCategory !== '') return true;
@@ -435,7 +435,7 @@ function ensureVisitorId(request) {
 
 /**
  * Log one visit into page_views for the analytics dashboard. Never stores an
- * IP — city/region/country come straight from Cloudflare's edge geolocation
+ * IP - city/region/country come straight from Cloudflare's edge geolocation
  * (request.cf), already resolved server-side. Best-effort: a logging failure
  * must never break the page/view-count response it's attached to.
  */
@@ -449,7 +449,7 @@ async function logPageView(env, request, { articleId = null, path, visitorId = n
     // ON CONFLICT DO NOTHING against idx_page_views_unique_daily collapses
     // repeat loads from the same browser on the same path+day into one visit.
     // If vid is null (cookie blocked) we fall back to logging every load, since
-    // there's no key to dedup on — the unique index is partial (visitor_id IS
+    // there's no key to dedup on - the unique index is partial (visitor_id IS
     // NOT NULL) so those rows never trip the constraint.
     await env.DB
       .prepare('INSERT INTO page_views (article_id, path, country_code, region, city, referrer_host, visitor_id) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING')
@@ -481,7 +481,7 @@ export async function recordView(env, slugOrId, request, authed = false) {
     .bind(article.id)
     .run();
 
-  // Only log the detailed analytics event for real (non-admin) visitors — the
+  // Only log the detailed analytics event for real (non-admin) visitors - the
   // dashboard is meant to show who's reading the blog, not the admin's own
   // browsing while managing it. view_count above still increments either way
   // (unchanged prior behaviour), this only affects the page_views history.
@@ -492,7 +492,7 @@ export async function recordView(env, slugOrId, request, authed = false) {
     await logPageView(env, request, { articleId: article.id, path: '/voyage/' + article.slug, visitorId: visitor.id });
   }
 
-  // We already know the pre-increment count and just added 1 — return that
+  // We already know the pre-increment count and just added 1 - return that
   // directly instead of a second SELECT that could race with a concurrent
   // delete (returning null → `updated.view_count` TypeError → 500).
   const resp = json({ views: article.view_count + 1 });

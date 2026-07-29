@@ -7,7 +7,7 @@
 -- visitor_id and are simply left as-is (historical data).
 --
 -- Privacy unchanged: visitor_id is a random UUID with no link to identity or
--- IP — it only lets us tell "same browser, same day" apart from a new visit.
+-- IP - it only lets us tell "same browser, same day" apart from a new visit.
 ALTER TABLE page_views ADD COLUMN visitor_id TEXT;
 
 -- Enforce the "one visit per visitor+path+day" rule at the DB level so a race

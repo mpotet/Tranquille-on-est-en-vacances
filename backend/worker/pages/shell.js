@@ -53,7 +53,7 @@ tailwind.config = {
   --ink-light:     #8A9BAC;
   --danger:        #DC3C3C;
   --danger-rgb:    220,60,60;
-  --pending:       #9A5B12;   /* deep amber — "brouillon / en attente / archivé" ink */
+  --pending:       #9A5B12;   /* deep amber - "brouillon / en attente / archivé" ink */
   --pending-rgb:   154,91,18;
   --line:          rgba(26,43,60,.10);
   --card-shadow:   0 2px 12px rgba(26,43,60,.06), 0 8px 28px rgba(26,43,60,.04);
@@ -132,7 +132,7 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 }
 /* alias */
 .section-panel, .glass-panel, .majorelle-frame, .majorelle-showcase { background: rgba(255,253,249,.96)!important; border: 1px solid rgba(var(--sand-rgb), .7)!important; box-shadow: var(--card-shadow)!important; }
-/* Plain white card with a thin line border + the theme's soft shadow — the
+/* Plain white card with a thin line border + the theme's soft shadow - the
    pattern repeated inline for comments/prev-next cards on the voyage page.
    No border-radius here on purpose: call sites already set their own via a
    Tailwind rounded-* class. */
@@ -321,7 +321,7 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 /* ── Tailwind colour overrides (keep light theme coherent) ── */
 .bg-white   { background: #fff!important; }
 /* Tailwind's shadow-sm reads flat/generic (hard grey) next to the theme's
-   softer double-diffuse .panel/.card shadow — used throughout admin.js for
+   softer double-diffuse .panel/.card shadow - used throughout admin.js for
    ordinary content cards, so this one override carries most of that visual
    gap without touching every call site individually. */
 .shadow-sm  { box-shadow: var(--card-shadow)!important; }
@@ -512,7 +512,7 @@ export const FOOTER = `
 <script>
 // ── Service Worker + Push notifications ──────────────────────
 // Registered on every page load, with an explicit re-check for updates each
-// time there's a network connection — this is what keeps the offline article
+// time there's a network connection - this is what keeps the offline article
 // precache current (new trips) and recovers a stuck/broken SW without the
 // user having to do anything. Never block rendering on this.
 if ('serviceWorker' in navigator) {
@@ -528,7 +528,7 @@ function getServiceWorkerReady() {
 // ── "Install app" button (home page) ─────────────────────────
 // Chrome/Android/Edge fire beforeinstallprompt and let us trigger the native
 // install dialog from our own button. iOS Safari never fires it (Apple has no
-// programmatic install API) — there we show the same button but it opens
+// programmatic install API) - there we show the same button but it opens
 // manual "Partager → Sur l'écran d'accueil" instructions instead. Hidden
 // entirely once the app is already running standalone (already installed).
 var _deferredInstallPrompt = null;
@@ -577,7 +577,7 @@ async function installApp(){
   }
 })();
 // ── Warm the admin shell in cache while online, so the whole admin area
-// (dashboard + new-article editor) keeps working with no signal — someone
+// (dashboard + new-article editor) keeps working with no signal - someone
 // travelling can still open the dashboard and start/edit an article, which
 // gets queued (publish_when_online) and synced automatically once back online.
 if (navigator.onLine && window.location.pathname.startsWith('/admin')) {

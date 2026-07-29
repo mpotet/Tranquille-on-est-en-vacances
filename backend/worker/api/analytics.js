@@ -22,7 +22,7 @@ export async function getAnalytics(request, env) {
   // SQLite datetime('now') is UTC; page_views.created_at is also UTC
   // (CURRENT_TIMESTAMP default), so comparing them directly is consistent.
   // 'today' compares against the last 24h (rolling), not local calendar
-  // midnight — the server has no notion of the visitor's timezone.
+  // midnight - the server has no notion of the visitor's timezone.
   const sinceExpr = isToday ? `datetime('now', '-1 day')` : (days ? `datetime('now', '-${days} days')` : null);
   const prevSinceExpr = isToday ? `datetime('now', '-2 days')` : (days ? `datetime('now', '-${days * 2} days')` : null);
 
@@ -38,7 +38,7 @@ export async function getAnalytics(request, env) {
     env.DB.prepare(`SELECT COUNT(*) AS n FROM page_views ${whereCurrent}`).first(),
     wherePrev ? env.DB.prepare(`SELECT COUNT(*) AS n FROM page_views ${wherePrev}`).first() : Promise.resolve(null),
     // Grouped by city (not just country) so the dashboard can show "Paris,
-    // France" rather than just "France" — city/region/country all come from
+    // France" rather than just "France" - city/region/country all come from
     // Cloudflare's edge geolocation (see page_views schema comment), no IP
     // ever stored. Two visitors from different cities in the same country
     // must stay distinct rows here; country-level totals are derived by
@@ -72,7 +72,7 @@ export async function getAnalytics(request, env) {
     ? Math.round(((total - prevTotal) / prevTotal) * 100)
     : null;
 
-  // One row per (city, country) pair — the client renders "Paris, France".
+  // One row per (city, country) pair - the client renders "Paris, France".
   // Rows with no city (older data predating city tracking, or a request
   // Cloudflare couldn't resolve) fall back to just the country/"Inconnu".
   const locations = (countryRows.results || []).map(r => ({ code: r.country_code, city: r.city || null, count: r.n }));

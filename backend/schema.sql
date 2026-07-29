@@ -88,7 +88,7 @@ CREATE INDEX IF NOT EXISTS idx_folders_parent      ON folders(parent_id);
 -- Powers the admin analytics dashboard (period breakdowns, per-country/city
 -- charts). articles.view_count stays as the fast running total for "most
 -- read" sorting; this table adds the historical detail. No IP address is
--- ever stored — city/region/country come straight from Cloudflare's edge
+-- ever stored - city/region/country come straight from Cloudflare's edge
 -- geolocation (request.cf.*), resolved server-side without the IP touching
 -- the database.
 CREATE TABLE IF NOT EXISTS page_views (

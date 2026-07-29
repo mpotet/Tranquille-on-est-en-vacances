@@ -52,7 +52,7 @@ import { printPage, exportWordDocx } from './pages/print.js';
 // ──────────────────────────────────────────────────────────────
 import { HEAD, NAV, FOOTER, TOAST, LIGHTBOX } from './pages/shell.js';
 
-// Matches skeletonCards() in pages/home.js — kept identical so the loading
+// Matches skeletonCards() in pages/home.js - kept identical so the loading
 // state reads the same whether you land here from the home grid or directly.
 function skeletonVoyageCards(n) {
   return Array.from({length:n}).map(()=>`
@@ -148,7 +148,7 @@ function safeAttr(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').
 function safeText(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function fmtDateCard(a){const s=a.start_date||a.date,e=a.end_date||a.date;if(!s)return'';const opt={month:'short',year:'numeric'};const ms=new Date(s).toLocaleDateString('fr-FR',opt);const me=new Date(e).toLocaleDateString('fr-FR',opt);return ms===me?ms:ms+' - '+me;}
 function stripMd(s){return(s||'').replace(/!\\[[^\\]]*\\]\\([^)]*\\)/g,'').replace(/\\*\\*([^*\\n]+)\\*\\*/g,'$1').replace(/\\*([^*\\n]+)\\*/g,'$1').replace(/^#{1,6}\\s+/gm,'').replace(/\\s+/g,' ').trim();}
-// Ascending bars (signal-strength style), matching home.js/popularityBarsSSR —
+// Ascending bars (signal-strength style), matching home.js/popularityBarsSSR -
 // equal-sized dots read as carousel/pagination indicators, misleading here.
 function renderPopularityBars(views, minViews, maxViews) {
   const range = maxViews - minViews || 1;
@@ -161,7 +161,7 @@ function renderPopularityBars(views, minViews, maxViews) {
   return '<div style="display:flex;align-items:center;gap:3px">' + bars + '<span style="font-size:.68rem;margin-left:4px;color:var(--ink-light);line-height:1">' + views + '</span></div>';
 }
 // Same status palette/icons as the admin dashboard (STATUS_META in admin.js)
-// and the .badge-* classes in shell.js — kept in sync deliberately.
+// and the .badge-* classes in shell.js - kept in sync deliberately.
 function statusMeta(status){
   if(status==='published') return {label:'Publié',icon:'ph-fill ph-check-circle',bg:'var(--palm)',color:'#fff'};
   if(status==='publish_when_online') return {label:'Dès connexion',icon:'ph-bold ph-wifi-high',bg:'var(--pending)',color:'#fff'};
@@ -600,7 +600,7 @@ ${TOAST}
   })();
 
   // Photos + prev/next in parallel
-  // Ordered by start_date, not the legacy `date` column — `date` has drifted
+  // Ordered by start_date, not the legacy `date` column - `date` has drifted
   // out of sync with start_date on many existing rows (bulk-import artifact).
   const [photosRes, prevRow, nextRow] = await Promise.all([
     env.DB.prepare('SELECT * FROM photos WHERE article_id = ? ORDER BY sort_order, id').bind(article.id).all(),
@@ -969,7 +969,7 @@ document.querySelector('[data-scroll-comments]')?.addEventListener('click', (e)=
 // ──────────────────────────────────────────────────────────────
 // Main fetch handler
 // ──────────────────────────────────────────────────────────────
-// Styled 500 page — served when any SSR route throws (a DB timeout, a bad
+// Styled 500 page - served when any SSR route throws (a DB timeout, a bad
 // migration, an unhandled edge case) so a visitor gets a branded, navigable
 // page instead of a raw Cloudflare stack trace. Never leaks the error detail.
 function errorPage() {
@@ -1437,7 +1437,7 @@ export default {
 
     // ── Public HTML pages ─────────────────────────────────────
     const publicAuthed = await isAuthenticated(request, env.SESSION_SECRET);
-    // Log page views for the analytics dashboard — skip the admin's own
+    // Log page views for the analytics dashboard - skip the admin's own
     // browsing (publicAuthed) and bots, same filter as recordView() for
     // article pages. Fire-and-forget via waitUntil so it never delays the
     // response the visitor is waiting for. A per-browser visitor cookie lets
