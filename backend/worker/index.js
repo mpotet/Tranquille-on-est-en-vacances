@@ -35,7 +35,7 @@ import { getSettings, updateSettings } from './api/settings.js';
 import { listComments, createComment, deleteComment, listRecentCommentsAdmin, replyToComment } from './api/comments.js';
 import { getAnalytics } from './api/analytics.js';
 import {
-  listEmailLog, getEmailConfigStatus, saveEmailConfig, checkEmailSenderStatus, requestSenderVerification,
+  listEmailLog, listSubscriberEmailLog, getEmailConfigStatus, saveEmailConfig, checkEmailSenderStatus, requestSenderVerification,
 } from './api/email-admin.js';
 import {
   getPushConfig, pushSubscribe, pushUnsubscribe,
@@ -82,14 +82,14 @@ function voyagesPage(authed=false) {
 ${NAV('voyages', authed)}
 <main class="pt-16">
   <!-- ── Mini-hero ───────────────────────────────────────────── -->
-  <section class="hero-photo" style="min-height:clamp(13rem,26vh,18rem);display:flex;flex-direction:column;justify-content:flex-end">
+  <section class="hero-photo" style="min-height:clamp(15rem,30vh,21rem);display:flex;flex-direction:column;justify-content:flex-end">
     <div class="hero-photo-overlay"></div>
-    <div class="hero-photo-content w-full pb-8 pt-16">
+    <div class="hero-photo-content w-full pb-9 pt-16">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div id="breadcrumb" class="hidden mb-2"></div>
-        <div id="hero-eyebrow-wrap" class="eyebrow mb-3 hero-anim" style="background:rgba(255,199,138,.22);border-color:rgba(255,199,138,.5);color:#fff;--d:0ms">Carnet de bord des Potet</div>
-        <h1 id="voyages-title" class="font-display text-3xl sm:text-5xl font-bold mb-3 text-white drop-shadow-lg hero-anim" style="--d:80ms">Tous nos voyages</h1>
-        <span id="subtitle" class="drame-badge hero-anim" style="border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;display:inline-block;margin-bottom:.5rem;--d:160ms">Chargement…</span>
+        <div id="breadcrumb" class="hidden mb-3"></div>
+        <div id="hero-eyebrow-wrap" class="eyebrow mb-4 hero-anim" style="background:rgba(255,199,138,.22);border-color:rgba(255,199,138,.5);color:#fff;--d:0ms">Carnet de bord des Potet</div>
+        <h1 id="voyages-title" class="font-display text-3xl sm:text-5xl font-bold mb-4 text-white drop-shadow-lg hero-anim" style="--d:80ms">Tous nos voyages</h1>
+        <span id="subtitle" class="drame-badge hero-anim" style="border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;display:inline-block;--d:160ms">Chargement…</span>
       </div>
     </div>
   </section>
@@ -250,14 +250,17 @@ function renderAdminFolderActions(activeFolder){
   const folderName = safeText(activeFolder.name || '');
   const editorUrl = '/admin/editor?folder=' + encodeURIComponent(activeFolder.slug || '');
 
-  return '<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-2">'+
-    '<div class="rounded-[1.6rem] px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style="background:rgba(0,87,184,.08);border:1px solid rgba(0,87,184,.16)">'+
-      '<div>'+
-        '<div class="text-xs font-black uppercase tracking-[.18em]" style="color:var(--blue)">Mode admin</div>'+
-        '<div class="font-display text-xl font-bold mt-1" style="color:var(--ink)">'+flagImg(activeFolder.icon||'')+' '+folderName+'</div>'+
-        '<p class="text-sm mt-1" style="color:var(--ink-muted)">'+parentHint+'</p>'+
+  return '<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">'+
+    '<div class="rounded-[1.75rem] px-5 py-5 sm:px-7 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5" style="background:rgba(0,87,184,.07);border:1px solid rgba(0,87,184,.16)">'+
+      '<div class="flex items-center gap-4">'+
+        '<div class="flex-shrink-0 flex items-center justify-center rounded-2xl" style="width:3rem;height:3rem;background:rgba(255,255,255,.75);font-size:1.35rem">'+flagImg(activeFolder.icon||'')+'</div>'+
+        '<div>'+
+          '<div class="text-xs font-black uppercase tracking-[.18em] mb-0.5" style="color:var(--blue)"><i class="ph-fill ph-shield-check"></i> Mode admin</div>'+
+          '<div class="font-display text-xl font-bold" style="color:var(--ink)">'+folderName+'</div>'+
+          '<p class="text-sm mt-0.5" style="color:var(--ink-muted)">'+parentHint+'</p>'+
+        '</div>'+
       '</div>'+
-      '<div class="flex flex-wrap gap-2">'+
+      '<div class="flex flex-wrap gap-2.5 sm:flex-shrink-0">'+
         '<a href="' + safeAttr(editorUrl) + '" class="action-btn-sm"><i class="ph-bold ph-plus-circle"></i> Nouveau voyage</a>'+
         '<button type="button" class="subtle-btn" data-folder-id="' + activeFolder.id + '" data-folder-name="' + safeAttr(activeFolder.name || '') + '"><i class="ph-bold ph-folder-plus"></i> Nouveau sous-dossier</button>'+
       '</div>'+
@@ -404,10 +407,12 @@ async function init(){
   const gridItems=[...childFolders.map(folderCard),...artData.articles.map(a=>card(a,minV,maxV))];
   document.getElementById('grid').innerHTML=gridItems.length
     ?gridItems.join('')
-    :'<div class="col\\-span-3 text-center py-20" style="color:var(--ink-light)">'
-      +(activeF?'<div style="font-size:3rem;display:block;margin-bottom:1rem">'+flagImg(activeF.icon||'')+'</div>':'<i class="ph-bold ph-map-trifold" style="font-size:3.5rem;display:block;margin-bottom:1rem;color:var(--ink-light)"></i>')
-      +'<p class="text-xl font-semibold mb-1" style="color:var(--ink)">Pas encore posé nos valises ici…</p>'
-      +'<p class="text-sm">Ce coin du monde attend son premier récit.</p>'
+    :'<div class="col\\-span-3 text-center py-16 px-6">'
+      +'<div class="mx-auto mb-5 flex items-center justify-center rounded-full" style="width:5rem;height:5rem;background:var(--blue-light);font-size:2.1rem">'
+        +(activeF?flagImg(activeF.icon||''):'<i class="ph-bold ph-map-trifold" style="color:var(--blue)"></i>')
+      +'</div>'
+      +'<p class="text-xl font-semibold mb-1.5" style="color:var(--ink)">Pas encore posé nos valises ici…</p>'
+      +'<p class="text-sm" style="color:var(--ink-light)">Ce coin du monde attend son premier récit.</p>'
     +'</div>';
   if(_voyFetchFailed) showVoyErrorBanner();
 
@@ -1419,6 +1424,10 @@ export default {
       if (path === '/api/admin/email-log' && method === 'GET') {
         if (!authed) return unauthorized();
         return listEmailLog(env);
+      }
+      if (path === '/api/admin/subscriber-email-log' && method === 'GET') {
+        if (!authed) return unauthorized();
+        return listSubscriberEmailLog(env);
       }
       if (path === '/api/admin/email-config') {
         if (!authed) return unauthorized();

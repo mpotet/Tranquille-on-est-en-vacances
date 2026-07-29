@@ -590,7 +590,7 @@ ${ADMIN_NAV()}
     <!-- Mailjet sender setup -->
     <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
       <div class="px-6 py-5 border-b border-stone-100">
-        <h2 class="font-bold text-stone-800 text-base"><i class="ph-bold ph-paper-plane-tilt" style="color:var(--blue)"></i> Envoi des emails (Mailjet)</h2>
+        <h2 class="font-bold text-stone-800 text-base"><i class="ph-bold ph-paper-plane-tilt" style="color:var(--blue)"></i> Envoi des emails</h2>
         <p class="text-xs text-stone-400 mt-0.5">Aucun nom de domaine requis : il suffit de vérifier votre propre adresse email (même @free.fr, @gmail.com...) pour pouvoir envoyer vers n'importe quelle boîte mail.</p>
       </div>
       <div class="px-6 pb-6 pt-4">
@@ -640,18 +640,37 @@ ${ADMIN_NAV()}
       </div>
     </div>
 
-    <!-- Send history -->
-    <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-stone-100 flex items-center justify-between">
-        <div>
-          <h2 class="font-bold text-stone-800 text-base"><i class="ph-bold ph-clock-counter-clockwise" style="color:var(--blue)"></i> Historique des envois</h2>
-          <p class="text-xs text-stone-400 mt-0.5">Les 50 derniers emails administrateur (setup, réinitialisation, changement d'adresse...)</p>
+    <!-- Send history: subscriber notifications + admin-account emails, side by side -->
+    <div class="grid lg:grid-cols-2 gap-6">
+
+      <!-- Subscriber notification history -->
+      <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-stone-100 flex items-center justify-between">
+          <div>
+            <h2 class="font-bold text-stone-800 text-base"><i class="ph-bold ph-users-three" style="color:var(--blue)"></i> Notifications envoyées aux lecteurs</h2>
+            <p class="text-xs text-stone-400 mt-0.5">Les 50 derniers envois (nouveau récit / mise à jour). Cliquez une ligne pour voir qui l'a reçue.</p>
+          </div>
+          <button onclick="loadSubscriberEmailLog()" class="text-sky-600 hover:text-sky-700 text-sm font-bold transition-colors"><i class="ph-bold ph-arrow-clockwise"></i></button>
         </div>
-        <button onclick="loadEmailLog()" class="text-sky-600 hover:text-sky-700 text-sm font-bold transition-colors"><i class="ph-bold ph-arrow-clockwise"></i></button>
+        <div id="subscriber-email-log-list" class="divide-y divide-stone-100">
+          <div class="text-stone-400 text-sm p-6 animate-pulse text-center">Chargement…</div>
+        </div>
       </div>
-      <div id="email-log-list" class="divide-y divide-stone-100">
-        <div class="text-stone-400 text-sm p-6 animate-pulse text-center">Chargement…</div>
+
+      <!-- Admin-account email history -->
+      <div class="section-panel majorelle-frame rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-stone-100 flex items-center justify-between">
+          <div>
+            <h2 class="font-bold text-stone-800 text-base"><i class="ph-bold ph-clock-counter-clockwise" style="color:var(--blue)"></i> Emails envoyés par le site</h2>
+            <p class="text-xs text-stone-400 mt-0.5">Les 50 derniers emails techniques (configuration, réinitialisation, changement d'adresse...)</p>
+          </div>
+          <button onclick="loadEmailLog()" class="text-sky-600 hover:text-sky-700 text-sm font-bold transition-colors"><i class="ph-bold ph-arrow-clockwise"></i></button>
+        </div>
+        <div id="email-log-list" class="divide-y divide-stone-100">
+          <div class="text-stone-400 text-sm p-6 animate-pulse text-center">Chargement…</div>
+        </div>
       </div>
+
     </div>
 
   </div>
@@ -840,10 +859,10 @@ function renderFolderTree(folders, parentId, depth=0) {
 function renderArticles(arts, folders) {
   if (!arts.length) {
     document.getElementById('articles-list').innerHTML =
-      '<div class="section-panel rounded-2xl border border-stone-100 text-center py-16 px-6">' +
+      '<div class="sm:col-span-2 section-panel majorelle-frame rounded-2xl text-center py-16 px-6" style="border:1px solid var(--line)">' +
       '<i class="ph-bold ph-notebook" style="font-size:3rem;display:block;margin-bottom:.75rem;color:var(--ink-light)"></i>' +
       '<p class="text-base font-semibold mb-1" style="color:var(--ink)">Aucun article pour l’instant</p>' +
-      '<p class="text-sm text-stone-400 mb-4">Commencez par écrire votre premier récit de voyage.</p>' +
+      '<p class="text-sm mb-4" style="color:var(--ink-muted)">Commencez par écrire votre premier récit de voyage.</p>' +
       '<a href="/admin/editor" class="action-btn-sm"><i class="ph-bold ph-plus-circle"></i> Nouvel article</a>' +
       '</div>';
     return;
@@ -862,18 +881,18 @@ function renderArticles(arts, folders) {
     // button reflects that rather than offering a misleading force-publish.
     const canToggle = a.status === 'published' || a.status === 'archived';
     const toggleLabel = isPub ? '<i class="ph-bold ph-archive"></i> Archiver' : '<i class="ph-bold ph-check-circle"></i> Publier';
-    const toggleCls = isPub ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50';
+    const toggleColor = isPub ? 'var(--pending)' : 'var(--palm)';
     const meta = STATUS_META[a.status] || STATUS_META.archived;
     return \`
-    <div class="bg-white rounded-2xl border border-stone-100 overflow-hidden hover:shadow-md transition-shadow">
+    <article class="card-line rounded-2xl overflow-hidden transition-shadow hover:shadow-md">
       <div class="flex gap-4 p-4">
-        <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-cover flex-shrink-0" data-fallback="https://picsum.photos/seed/\${a.id}z/200/200">
+        <img src="\${esc(a.cover_url||'')}" alt="\${esc(a.title)}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover flex-shrink-0" style="border:1px solid var(--line)" data-fallback="https://picsum.photos/seed/\${a.id}z/200/200">
         <div class="flex-1 min-w-0">
           <div class="flex items-start justify-between gap-2 mb-1.5">
-            <h3 class="font-bold text-stone-900 text-sm sm:text-base leading-snug">\${esc(a.title)}</h3>
+            <h3 class="font-bold text-sm sm:text-base leading-snug" style="color:var(--ink)">\${esc(a.title)}</h3>
             <span class="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 \${meta.badge}">\${meta.label}</span>
           </div>
-          <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-stone-400">
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs" style="color:var(--ink-light)">
             <span><i class="ph-bold ph-calendar-blank"></i> \${fmtDateRange(a)}</span>
             \${a.destination ? \`<span><i class="ph-bold ph-map-pin"></i> \${esc(a.destination)}</span>\` : ''}
             \${a.folder_name ? \`<span class="inline-flex items-center gap-1">\${flagImg(a.folder_icon||'')} \${esc(a.folder_name)}</span>\` : ''}
@@ -881,13 +900,13 @@ function renderArticles(arts, folders) {
           </div>
         </div>
       </div>
-      <div class="border-t border-stone-50 flex items-center gap-1 px-3 py-2">
-        \${canToggle ? \`<button data-action="toggle-status" data-id="\${a.id}" data-status="\${a.status}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors \${toggleCls}">\${toggleLabel}</button>\` : ''}
-        <a href="/admin/editor/\${a.id}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"><i class="ph-bold ph-pencil-simple"></i> Modifier</a>
-        <a href="/voyage/\${a.slug}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-400 hover:bg-stone-50 rounded-lg transition-colors"><i class="ph-bold ph-eye"></i> Voir</a>
-        <button data-action="del-article" data-id="\${a.id}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-50 rounded-lg transition-colors ml-auto touch-manipulation"><i class="ph-bold ph-trash"></i></button>
+      <div class="flex items-center gap-1.5 px-3 py-2.5 flex-wrap" style="border-top:1px solid var(--line)">
+        \${canToggle ? \`<button data-action="toggle-status" data-id="\${a.id}" data-status="\${a.status}" class="ghost-btn" style="padding:.35rem .75rem;font-size:.75rem;color:\${toggleColor}">\${toggleLabel}</button>\` : ''}
+        <a href="/admin/editor/\${a.id}" class="ghost-btn" style="padding:.35rem .75rem;font-size:.75rem"><i class="ph-bold ph-pencil-simple"></i> Modifier</a>
+        <a href="/voyage/\${a.slug}" class="ghost-btn" style="padding:.35rem .75rem;font-size:.75rem"><i class="ph-bold ph-eye"></i> Voir</a>
+        <button data-action="del-article" data-id="\${a.id}" class="ghost-btn ml-auto touch-manipulation" style="padding:.35rem .75rem;font-size:.75rem;color:var(--danger)"><i class="ph-bold ph-trash"></i></button>
       </div>
-    </div>\`;
+    </article>\`;
   }).join('');
 }
 
@@ -1257,6 +1276,52 @@ async function loadEmailLog() {
   }).join('');
 }
 
+// ── Subscriber notification history (new/updated article emails) ──────
+async function loadSubscriberEmailLog() {
+  const box = document.getElementById('subscriber-email-log-list');
+  if (!box) return;
+  box.innerHTML = '<div class="text-stone-400 text-sm p-6 animate-pulse text-center">Chargement…</div>';
+  const data = await fetch('/api/admin/subscriber-email-log').then(r=>r.json()).catch(()=>null);
+  const entries = data?.entries || [];
+  if (!entries.length) { box.innerHTML = '<div class="text-stone-400 text-sm p-6 text-center">Aucun envoi aux abonnés pour le moment.</div>'; return; }
+  box.innerHTML = entries.map((e, i) => {
+    const allOk = e.failed_count === 0;
+    const kindLabel = e.is_update ? 'Mise à jour' : 'Nouveau récit';
+    const countLabel = e.sent_count + ' envoyé' + (e.sent_count > 1 ? 's' : '') + (e.failed_count ? ', ' + e.failed_count + ' échoué' + (e.failed_count > 1 ? 's' : '') : '');
+    const recipientsHtml = e.recipients.map(r =>
+      '<div class="flex items-center gap-2 py-1.5">' +
+        '<i class="ph-fill '+(r.ok?'ph-check-circle':'ph-x-circle')+'" style="font-size:1rem;color:'+(r.ok?'var(--palm)':'var(--danger)')+';flex-shrink:0"></i>' +
+        '<span class="text-xs font-medium text-stone-700">'+esc(r.email)+'</span>' +
+        (!r.ok && r.error ? '<span class="text-xs text-red-500 ml-auto truncate max-w-[45%]" title="'+esc(r.error)+'">'+esc(r.error)+'</span>' : '') +
+      '</div>'
+    ).join('');
+    return '<div class="px-6 py-3.5">' +
+      '<button type="button" class="w-full flex items-start gap-3 text-left" data-action="toggle-sub-email-row" data-row="sel-'+i+'">' +
+        '<i class="ph-fill '+(allOk?'ph-check-circle':'ph-warning-circle')+'" style="font-size:1.15rem;color:'+(allOk?'var(--palm)':'var(--danger)')+';margin-top:.1rem;flex-shrink:0"></i>' +
+        '<div class="flex-1 min-w-0">' +
+          '<div class="flex items-center justify-between gap-2">' +
+            '<span class="text-sm font-semibold text-stone-800">'+esc(kindLabel)+' - '+esc(e.article_title)+'</span>' +
+            '<span class="text-xs text-stone-400 whitespace-nowrap">'+fmtLogDate(e.created_at)+'</span>' +
+          '</div>' +
+          '<p class="text-xs text-stone-500 mt-0.5">'+countLabel+'</p>' +
+        '</div>' +
+        '<i class="ph-bold ph-caret-down text-stone-400 flex-shrink-0 mt-1" style="font-size:.8rem;transition:transform .15s" id="sel-'+i+'-caret"></i>' +
+      '</button>' +
+      '<div id="sel-'+i+'" class="hidden mt-2 ml-8 pl-3 border-l-2" style="border-color:var(--line)">'+recipientsHtml+'</div>' +
+    '</div>';
+  }).join('');
+}
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action="toggle-sub-email-row"]');
+  if (!btn) return;
+  const row = document.getElementById(btn.dataset.row);
+  const caret = document.getElementById(btn.dataset.row + '-caret');
+  if (!row) return;
+  const opening = row.classList.contains('hidden');
+  row.classList.toggle('hidden');
+  if (caret) caret.style.transform = opening ? 'rotate(180deg)' : '';
+});
+
 // ── Subscribers (admin) ───────────────────────────────────────
 async function loadSubscribers() {
   const box = document.getElementById('subscribers-list');
@@ -1517,7 +1582,7 @@ document.addEventListener('click', async (e) => {
 // ── Tab switching ───────────────────────────────────────────────
 const TAB_LOADERS = {
   analytics: () => { loadAnalytics(); },
-  emails: () => { loadEmailConfigStatus(); loadEmailLog(); },
+  emails: () => { loadEmailConfigStatus(); loadSubscriberEmailLog(); loadEmailLog(); },
   subscribers: () => { loadSubscribers(); },
   moderation: () => { loadRecentComments(); },
 };
@@ -1797,8 +1862,8 @@ ${ADMIN_NAV()}
 
       ${isEdit ? `
       <div class="rounded-2xl p-5" style="background:rgba(var(--danger-rgb),.06);border:1px solid rgba(var(--danger-rgb),.16)">
-        <h3 class="font-bold mb-3 text-sm" style="color:var(--danger)"><i class="ph-bold ph-warning"></i> Zone danger</h3>
         <button onclick="delArticle()" class="w-full text-white font-bold py-2.5 rounded-xl transition-colors text-sm" style="background:var(--danger)"><i class="ph-bold ph-trash"></i> Supprimer l'article</button>
+        <p class="text-xs mt-2 text-center" style="color:var(--ink-muted)">Cette action est définitive.</p>
       </div>` : ''}
     </aside>
   </div>

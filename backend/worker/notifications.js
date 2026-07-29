@@ -199,39 +199,54 @@ async function _doNotify(env, article, isUpdate, changes) {
 
       if (emailSubs && emailSubs.length > 0) {
         const auth = btoa(`${apiKey}:${apiSecret}`);
-        await Promise.allSettled(emailSubs.map(async sub => {
-          try {
-            const unsubUrl = `${publicUrl}/unsubscribe?token=${sub.token}`;
-            const subject = isUpdate
-              ? `✏️ Récit mis à jour : ${article.title}`
-              : `✈️ Nouveau voyage : ${article.title}`;
-            const emailRes = await fetch('https://api.mailjet.com/v3.1/send', {
-              method:  'POST',
-              headers: {
-                'Authorization': `Basic ${auth}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                Messages: [{
-                  From: { Email: fromAddress, Name: fromName },
-                  To:   [{ Email: sub.email }],
-                  Subject: subject,
-                  HTMLPart: buildEmailHtml(article, articleUrl, unsubUrl, isUpdate, changes),
-                }],
-              }),
-              signal: AbortSignal.timeout(10000),
-            });
-            const emailBody = await emailRes.json().catch(() => null);
-            const msgResult = emailBody?.Messages?.[0];
-            if (!emailRes.ok || !msgResult || msgResult.Status !== 'success') {
-              console.error(`[Email] HTTP ${emailRes.status} pour ${sub.email}:`, emailBody);
-            } else {
-              console.log('[Email] ✓ envoyé à', sub.email);
-            }
-          } catch (err) {
-            console.error('[Email] error for', sub.email, err);
+        // Promise.allSettled preserves input order, so this maps 1:1 back onto
+        // emailSubs by index - used below to build the per-recipient log row
+        // (see subscriber_email_log / migrations/008) that the admin dashboard
+        // reads. Previously this only reached console.log/console.error,
+        // invisible outside of a live `wrangler tail`.
+        const results = await Promise.allSettled(emailSubs.map(async sub => {
+          const unsubUrl = `${publicUrl}/unsubscribe?token=${sub.token}`;
+          const subject = isUpdate
+            ? `✏️ Récit mis à jour : ${article.title}`
+            : `✈️ Nouveau voyage : ${article.title}`;
+          const emailRes = await fetch('https://api.mailjet.com/v3.1/send', {
+            method:  'POST',
+            headers: {
+              'Authorization': `Basic ${auth}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              Messages: [{
+                From: { Email: fromAddress, Name: fromName },
+                To:   [{ Email: sub.email }],
+                Subject: subject,
+                HTMLPart: buildEmailHtml(article, articleUrl, unsubUrl, isUpdate, changes),
+              }],
+            }),
+            signal: AbortSignal.timeout(10000),
+          });
+          const emailBody = await emailRes.json().catch(() => null);
+          const msgResult = emailBody?.Messages?.[0];
+          if (!emailRes.ok || !msgResult || msgResult.Status !== 'success') {
+            const errMsg = `HTTP ${emailRes.status}: ${msgResult?.Errors?.[0]?.ErrorMessage || emailBody?.ErrorMessage || 'échec inconnu'}`;
+            console.error(`[Email] ${errMsg} pour ${sub.email}`);
+            throw new Error(errMsg);
           }
+          console.log('[Email] ✓ envoyé à', sub.email);
         }));
+
+        const recipients = emailSubs.map((sub, i) => {
+          const r = results[i];
+          return { email: sub.email, ok: r.status === 'fulfilled', error: r.status === 'rejected' ? String(r.reason?.message || r.reason) : null };
+        });
+        const sentCount = recipients.filter(r => r.ok).length;
+        try {
+          await env.DB.prepare(
+            'INSERT INTO subscriber_email_log (article_id, article_title, is_update, recipients, sent_count, failed_count) VALUES (?, ?, ?, ?, ?, ?)'
+          ).bind(article.id, article.title, isUpdate ? 1 : 0, JSON.stringify(recipients), sentCount, recipients.length - sentCount).run();
+        } catch (err) {
+          console.error('[Email] échec écriture subscriber_email_log:', err?.message || err);
+        }
       }
     }
   } catch (err) {

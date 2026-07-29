@@ -253,9 +253,9 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 
 /* ── Quote block ───────────────────────────────────────────── */
 .quote-block {
-  background: linear-gradient(135deg, var(--blue-light) 0%, rgba(var(--sky-rgb),.10) 100%);
-  border: 1px solid rgba(var(--blue-rgb), .12); border-radius: 2rem;
-  padding: 2.5rem 2rem;
+  background: linear-gradient(135deg, rgba(var(--apricot-rgb),.16) 0%, var(--blue-light) 100%);
+  border: 1px solid rgba(var(--apricot-rgb), .3); border-radius: 2rem;
+  padding: 2.75rem 2rem;
 }
 
 /* ── Divider ────────────────────────────────────────────────── */
@@ -498,7 +498,7 @@ export const NAV = (active = '', authed = false) => `
       <div class="hidden md:flex items-center gap-1">
         <a href="/" class="nav-link ${active==='home'?'nav-link-active':''}"><i class="ph-bold ph-house"></i> Accueil</a>
         <a href="/voyages" class="nav-link ${active==='voyages'?'nav-link-active':''}"><i class="ph-bold ph-airplane-takeoff"></i> Voyages</a>
-        <button type="button" id="theme-toggle" onclick="toggleTheme()" class="p-2 rounded-full transition-colors" style="color:var(--ink-muted)" aria-label="Changer le thème clair/sombre" title="Thème clair/sombre">
+        <button type="button" id="theme-toggle" onclick="toggleTheme()" class="nav-link" style="width:2.6rem;padding:.55rem;margin-left:.15rem" aria-label="Changer le thème clair/sombre" title="Thème clair/sombre">
           <i class="ph-bold ph-moon" id="theme-toggle-icon"></i>
         </button>
         ${authed ? `
@@ -512,7 +512,7 @@ export const NAV = (active = '', authed = false) => `
             <div class="px-4 py-2 text-[.68rem] font-bold uppercase tracking-[.14em]" style="color:var(--ink-light);border-bottom:1px solid var(--line)">Espace admin</div>
             <a href="/admin" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph-bold ph-gauge" style="color:var(--blue)"></i> Tableau de bord</a>
             <a href="/admin/editor" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph-bold ph-plus-circle" style="color:var(--blue)"></i> Nouvel article</a>
-            <form method="POST" action="/admin/logout" style="border-top:1px solid var(--line);margin-top:.25rem;padding-top:.25rem">
+            <form method="POST" action="/admin/logout" onsubmit="return doLogout(event)" style="border-top:1px solid var(--line);margin-top:.25rem;padding-top:.25rem">
               <button type="submit" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold w-full text-left transition-colors hover:bg-red-50" style="color:var(--danger);background:none;border:none;cursor:pointer"><i class="ph-bold ph-sign-out"></i> Déconnexion</button>
             </form>
           </div>
@@ -542,7 +542,7 @@ export const NAV = (active = '', authed = false) => `
           <div class="flex items-center gap-1.5 px-3 pb-1 text-[.68rem] font-bold uppercase tracking-[.14em]" style="color:var(--blue)"><i class="ph-fill ph-shield-check"></i> Espace admin</div>
           <a href="/admin" class="mobile-nav-link"><i class="ph-bold ph-gauge"></i> Tableau de bord</a>
           <a href="/admin/editor" class="mobile-nav-link"><i class="ph-bold ph-plus-circle"></i> Nouvel article</a>
-          <form method="POST" action="/admin/logout"><button type="submit" class="mobile-nav-link w-full text-left" style="color:var(--danger);background:none;border:none;cursor:pointer"><i class="ph-bold ph-sign-out"></i> Déconnexion</button></form>
+          <form method="POST" action="/admin/logout" onsubmit="return doLogout(event)"><button type="submit" class="mobile-nav-link w-full text-left" style="color:var(--danger);background:none;border:none;cursor:pointer"><i class="ph-bold ph-sign-out"></i> Déconnexion</button></form>
         </div>
         ` : `
         <a href="/admin" class="action-btn-sm justify-center mt-2"><i class="ph-bold ph-lock-key"></i> Admin</a>
@@ -770,6 +770,26 @@ if ('serviceWorker' in navigator) {
 function getServiceWorkerReady() {
   if (!('serviceWorker' in navigator) || !navigator.serviceWorker?.ready) return Promise.resolve(null);
   return navigator.serviceWorker.ready.catch(() => null);
+}
+
+// Every public page is cached by the SW with the admin menu baked into its
+// HTML when logged in (same cache key regardless of auth state - see sw.js).
+// A plain form submit would redirect straight to '/' and the SW's
+// stale-while-revalidate would instantly serve back that stale authed copy,
+// so the header would still show "Admin" right after logging out. Intercept
+// the submit to clear the SW's page cache first, then navigate for real.
+function doLogout(event) {
+  event.preventDefault();
+  const finish = () => { window.location.href = '/'; };
+  fetch('/admin/logout', { method: 'POST' })
+    .then(() => {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage('clear-page-cache');
+      }
+    })
+    .catch(() => {})
+    .finally(finish);
+  return false;
 }
 
 // ── "Install app" button (home page) ─────────────────────────

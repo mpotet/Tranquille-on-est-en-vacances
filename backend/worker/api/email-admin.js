@@ -73,6 +73,28 @@ export async function listEmailLog(env) {
 }
 
 // ──────────────────────────────────────────────────────────────
+// Subscriber notification history (new/updated article emails) - separate
+// from the admin-account log above. One row per publish/update event; each
+// row's `recipients` is a JSON array the client can expand to see who got it.
+// ──────────────────────────────────────────────────────────────
+export async function listSubscriberEmailLog(env) {
+  const { results } = await env.DB
+    .prepare('SELECT id, article_id, article_title, is_update, recipients, sent_count, failed_count, created_at FROM subscriber_email_log ORDER BY created_at DESC LIMIT 50')
+    .all();
+  const entries = (results || []).map(r => ({
+    id: r.id,
+    article_id: r.article_id,
+    article_title: r.article_title,
+    is_update: !!r.is_update,
+    recipients: JSON.parse(r.recipients || '[]'),
+    sent_count: r.sent_count,
+    failed_count: r.failed_count,
+    created_at: r.created_at,
+  }));
+  return json({ entries });
+}
+
+// ──────────────────────────────────────────────────────────────
 // Current Mailjet config + sender verification status
 // ──────────────────────────────────────────────────────────────
 export async function getEmailConfigStatus(env) {

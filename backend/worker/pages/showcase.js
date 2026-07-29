@@ -26,10 +26,12 @@ function feature(icon, title, text) {
 }
 
 function compareRow(text, good) {
+  const tint = good ? 'var(--palm)' : 'var(--danger)';
+  const bg = good ? 'rgba(var(--palm-rgb),.06)' : 'rgba(220,60,60,.05)';
   return `
-    <li class="flex items-start gap-2.5">
-      <i class="ph-bold ${good ? 'ph-check-circle' : 'ph-x-circle'}" style="font-size:1.15rem;flex-shrink:0;margin-top:.05rem;color:${good ? 'var(--palm)' : 'var(--danger)'}"></i>
-      <span class="text-sm" style="color:var(--ink-muted)">${text}</span>
+    <li class="flex items-start gap-3 rounded-xl p-3" style="background:${bg}">
+      <i class="ph-bold ${good ? 'ph-check-circle' : 'ph-x-circle'}" style="font-size:1.25rem;flex-shrink:0;margin-top:.05rem;color:${tint}"></i>
+      <span class="text-sm leading-relaxed font-medium" style="color:var(--ink)">${text}</span>
     </li>`;
 }
 
@@ -49,7 +51,7 @@ ${NAV('', authed)}
   <!-- ── Hero ─────────────────────────────────────────────────── -->
   <section class="relative overflow-hidden" style="background:linear-gradient(160deg,var(--blue) 0%,var(--blue-dark) 100%)">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 text-center relative z-[1]">
-      <div class="eyebrow mb-5 inline-flex" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff"><i class="ph-bold ph-sparkle"></i> Envie du même carnet ?</div>
+      <div class="eyebrow mb-5 inline-flex" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff">Envie du même carnet ?</div>
       <h1 class="font-display text-3xl sm:text-5xl font-bold text-white leading-tight mb-5">Ce blog, vous pourriez l'avoir aussi.</h1>
       <p class="text-base sm:text-lg leading-relaxed mb-8" style="color:rgba(255,255,255,.88)">Sans publicité, lisible même sans réseau, et pensé pour qu'on puisse écrire et publier depuis son téléphone, en plein voyage. Voici tout ce qu'il y a sous le capot - et pourquoi ça change tout par rapport à un blog gratuit classique.</p>
       <a href="mailto:${email}?subject=${encodeURIComponent('Je veux un carnet comme le vôtre')}" class="inline-flex items-center gap-2 font-bold text-sm sm:text-base rounded-full px-7 py-3.5 transition-transform hover:-translate-y-0.5" style="background:#fff;color:var(--blue);box-shadow:0 10px 30px rgba(0,0,0,.2)">
@@ -61,13 +63,13 @@ ${NAV('', authed)}
   <!-- ── Comparatif ───────────────────────────────────────────── -->
   <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
     <div class="text-center mb-10">
-      <div class="eyebrow mb-4 inline-flex"><i class="ph-bold ph-scales"></i> Face à un blog gratuit classique</div>
+      <div class="eyebrow mb-4 inline-flex">Face à un blog gratuit classique</div>
       <h2 class="font-display text-2xl sm:text-3xl font-bold" style="color:var(--ink)">Le confort d'un vrai site, pas d'une plateforme des années 2000</h2>
     </div>
     <div class="grid sm:grid-cols-2 gap-5 sm:gap-6">
       <div class="panel rounded-[1.75rem] p-6 sm:p-7">
         <h3 class="font-display text-lg font-bold mb-4 flex items-center gap-2" style="color:var(--danger)"><i class="ph-bold ph-x-circle"></i> Un blog gratuit classique</h3>
-        <ul class="space-y-3.5">
+        <ul class="space-y-2">
           ${compareRow('Publicités affichées sur vos photos et vos textes, hors de votre contrôle', false)}
           ${compareRow("Illisible sans réseau - une panne de 4G en voyage et la page ne charge plus", false)}
           ${compareRow('Interface d\'administration vieillissante, pensée pour un ordinateur de bureau', false)}
@@ -80,7 +82,7 @@ ${NAV('', authed)}
       </div>
       <div class="panel rounded-[1.75rem] p-6 sm:p-7" style="border-color:rgba(var(--palm-rgb),.35);box-shadow:0 8px 30px rgba(var(--palm-rgb),.10)">
         <h3 class="font-display text-lg font-bold mb-4 flex items-center gap-2" style="color:var(--palm)"><i class="ph-bold ph-check-circle"></i> Ce carnet-ci</h3>
-        <ul class="space-y-3.5">
+        <ul class="space-y-2">
           ${compareRow('Zéro publicité, nulle part. Le site vous appartient entièrement.', true)}
           ${compareRow("Se lit hors ligne comme une vraie appli installée sur le téléphone - même en pleine montagne sans réseau", true)}
           ${compareRow('Rédaction et publication depuis le téléphone, en quelques taps, même en voyage', true)}
@@ -98,7 +100,7 @@ ${NAV('', authed)}
   <section class="py-16" style="background:var(--sand)">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-10">
-        <div class="eyebrow mb-4 inline-flex"><i class="ph-bold ph-stack"></i> Sous le capot</div>
+        <div class="eyebrow mb-4 inline-flex">Sous le capot</div>
         <h2 class="font-display text-2xl sm:text-3xl font-bold" style="color:var(--ink)">Tout ce que ce carnet sait faire</h2>
         <p class="mt-3 max-w-2xl mx-auto text-sm sm:text-base" style="color:var(--ink-muted)">La liste complète - rien n'est survendu, tout est déjà en marche sur ce site même.</p>
       </div>
@@ -122,7 +124,7 @@ ${NAV('', authed)}
   <!-- ── Autres usages ────────────────────────────────────────────── -->
   <section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
     <div class="text-center mb-10">
-      <div class="eyebrow mb-4 inline-flex"><i class="ph-bold ph-lightbulb"></i> Pas que pour les voyages</div>
+      <div class="eyebrow mb-4 inline-flex">Pas que pour les voyages</div>
       <h2 class="font-display text-2xl sm:text-3xl font-bold" style="color:var(--ink)">D'autres façons de s'en servir</h2>
       <p class="mt-3 max-w-2xl mx-auto text-sm sm:text-base" style="color:var(--ink-muted)">Le principe - un carnet en ligne, sans pub, facile à tenir à jour depuis son téléphone - s'adapte à bien d'autres usages qu'un simple blog de voyage.</p>
     </div>

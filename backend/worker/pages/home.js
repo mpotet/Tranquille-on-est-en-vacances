@@ -30,7 +30,7 @@ ${NAV('home', authed)}
         <p id="hero-subtitle" class="text-base sm:text-xl text-white/85 leading-relaxed mb-4 font-medium mx-auto hero-anim" style="max-width:44ch;--d:160ms">
           Depuis 2011, on part quelque part, on revient avec des histoires - et on les note ici pour ne pas les oublier (et pour vous).
         </p>
-        <p id="hero-badge" class="drame-badge mb-8 mx-auto hero-anim" style="border-color:rgba(255,199,138,.44);background:rgba(255,199,138,.16);color:rgba(255,255,255,.92);display:inline-block;--d:240ms">"Mais ça c'était bien avant le drame..."</p>
+        <p id="hero-badge" class="font-display mb-8 mx-auto hero-anim" style="font-style:italic;font-weight:700;font-size:clamp(1.05rem,2.4vw,1.35rem);color:var(--apricot);text-shadow:0 2px 12px rgba(0,0,0,.35);--d:240ms">"Mais ça c'était bien avant le drame..."</p>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-3 hero-anim" style="--d:320ms">
           <a id="hero-cta-primary" href="/voyages" style="display:inline-flex;align-items:center;justify-content:center;gap:.55rem;padding:.85rem 1.75rem;border-radius:999px;background:var(--apricot);color:#1A2B3C;font-weight:700;font-size:.92rem;border:2px solid var(--apricot);box-shadow:0 6px 22px rgba(255,199,138,.40);transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''"><i class="ph-bold ph-book-open-text"></i> <span>Lire nos aventures</span></a>
           <a id="hero-cta-secondary" href="#destinations-section" style="display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.85rem 1.6rem;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-weight:700;font-size:.92rem;border:2px solid rgba(255,255,255,.5);transition:transform .2s,background .2s" onmouseover="this.style.transform='translateY(-2px)';this.style.background='rgba(255,255,255,.24)'" onmouseout="this.style.transform='';this.style.background='rgba(255,255,255,.14)'"><i class="ph-bold ph-map-trifold"></i> <span>Nos coins du monde</span></a>
@@ -75,17 +75,13 @@ ${NAV('home', authed)}
   </section>
 
   <!-- ── Le mot des Potet ───────────────────────────────────── -->
-  <section class="py-4 sm:py-8">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="panel rounded-[2rem] p-8 sm:p-10 flex flex-col sm:flex-row items-center gap-7">
-        <img src="/icon-192.png" width="84" height="84" alt="" aria-hidden="true" style="border-radius:1.25rem;flex-shrink:0;box-shadow:0 6px 20px rgba(0,87,184,.22)">
-        <div>
-          <div id="about-eyebrow" class="eyebrow mb-3">Salut, c'est nous</div>
-          <p id="about-text" class="text-base sm:text-lg leading-relaxed" style="color:var(--ink)">
-            Nous, c'est la famille Potet. Tout a commencé sans le vouloir en 2011, avec un voyage à Marrakech - un tajine à 5&nbsp;euros et un nom de blog plus tard, on ne s'est plus arrêtés. Une Dacia traumatisée et pas mal de galères après, on continue de tout noter ici. Bienvenue à la maison.
-          </p>
-        </div>
-      </div>
+  <section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+    <div class="panel rounded-[2rem] p-8 sm:p-10 text-center">
+      <img src="/icon-192.png" width="56" height="56" alt="" aria-hidden="true" style="border-radius:1rem;display:block;margin:0 auto 1rem;box-shadow:0 6px 20px rgba(0,87,184,.22)">
+      <div id="about-eyebrow" class="eyebrow mb-3 mx-auto">Salut, c'est nous</div>
+      <p id="about-text" class="text-base sm:text-lg leading-relaxed max-w-xl mx-auto" style="color:var(--ink)">
+        Nous, c'est la famille Potet. Tout a commencé sans le vouloir en 2011, avec un voyage à Marrakech - un tajine à 5&nbsp;euros et un nom de blog plus tard, on ne s'est plus arrêtés. Une Dacia traumatisée et pas mal de galères après, on continue de tout noter ici. Bienvenue à la maison.
+      </p>
     </div>
   </section>
 
@@ -131,11 +127,12 @@ ${NAV('home', authed)}
 
   <!-- ── Citation ───────────────────────────────────────────── -->
   <section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 text-center">
-    <div class="quote-block">
-      <blockquote id="site-tagline" class="font-display text-2xl sm:text-3xl italic leading-relaxed" style="color:var(--ink)">
+    <div class="quote-block relative overflow-hidden">
+      <i class="ph-fill ph-quotes" aria-hidden="true" style="position:absolute;top:-.5rem;left:1.25rem;font-size:5rem;color:rgba(255,199,138,.35);line-height:1"></i>
+      <blockquote id="site-tagline" class="font-display text-2xl sm:text-3xl font-bold italic leading-relaxed relative" style="color:var(--ink)">
         "Mais ça c'était bien avant le drame..."
       </blockquote>
-      <p class="mt-4 font-medium text-sm" style="color:var(--ink-muted)">- <span id="tagline-author">Devise de la famille Potet</span> <i class="ph-bold ph-globe-hemisphere-west" style="color:var(--blue)"></i></p>
+      <p class="mt-4 font-semibold text-sm tracking-wide" style="color:var(--palm)">- <span id="tagline-author">Devise de la famille Potet</span> <i class="ph-bold ph-globe-hemisphere-west"></i></p>
     </div>
   </section>
 

@@ -21,7 +21,7 @@
  *   revalide silencieusement le cache.
  */
 
-const VERSION = 'v29';
+const VERSION = 'v31';
 const PAGES_CACHE = `tranquille-pages-${VERSION}`;
 const ASSETS_CACHE = `tranquille-assets-${VERSION}`;
 const API_CACHE = `tranquille-api-${VERSION}`;
@@ -157,7 +157,7 @@ self.addEventListener('fetch', event => {
   // apply to this app-controlled cache on a single person's own device, so we
   // intentionally do not honour it here.
   if (url.pathname.startsWith('/admin/')) {
-    event.respondWith(staleWhileRevalidate(event, req, PAGES_CACHE));
+    event.respondWith(networkFirst(req, PAGES_CACHE));
     return;
   }
 
@@ -211,6 +211,31 @@ async function staleWhileRevalidate(event, req, cacheName) {
     status: 200,
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
   });
+}
+
+// Network-first, falling back to the cache only when the network fails - for
+// the admin dashboard/editor. staleWhileRevalidate always serves the cached
+// copy first even when online, which means any HTML/markup change deployed
+// here stays invisible until a *second* navigation (the one after the
+// revalidation that just ran in the background) - a redesign can appear to
+// "not have shipped" for a normal admin who is virtually always online. This
+// still preserves offline editing (the whole reason these pages are cached
+// at all): only the ordering flips, network is tried first and the cache is
+// the fallback, not the other way around.
+async function networkFirst(req, cacheName) {
+  const cache = await caches.open(cacheName);
+  try {
+    const resp = await fetch(req);
+    if (resp && resp.ok) cache.put(req, resp.clone());
+    return resp;
+  } catch {
+    const cached = await cache.match(req);
+    if (cached) return cached;
+    return new Response(offlineFallbackHtml(), {
+      status: 200,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
+  }
 }
 
 // Comme staleWhileRevalidate, mais renvoie un corps JSON en cas d'échec total
@@ -494,4 +519,14 @@ self.addEventListener('online', () => { syncPendingArticles(); syncPendingPhotos
 // UI detects `navigator.onLine` flip back to true).
 self.addEventListener('message', event => {
   if (event.data === 'sync-now') { event.waitUntil(syncPendingArticles()); event.waitUntil(syncPendingPhotos()); }
+  // Every public page (/, /voyages, /voyage/:slug) is cached with the admin
+  // menu/edit buttons baked into the HTML server-side when authed - the same
+  // cache key is used whether or not the visitor is logged in, so there is no
+  // way to tell a logged-out cache entry from a logged-in one by URL alone.
+  // Right after logout the admin UI asks for a clear so the very next
+  // navigation to '/' can't serve back the stale authed=true copy while the
+  // real logged-out page is being fetched in the background.
+  if (event.data === 'clear-page-cache') {
+    event.waitUntil(caches.open(PAGES_CACHE).then(cache => cache.keys().then(keys => Promise.all(keys.map(k => cache.delete(k))))));
+  }
 });

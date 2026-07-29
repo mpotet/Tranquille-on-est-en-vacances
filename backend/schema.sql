@@ -190,6 +190,22 @@ CREATE TABLE IF NOT EXISTS email_log (
 
 CREATE INDEX IF NOT EXISTS idx_email_log_created ON email_log(created_at DESC);
 
+-- Subscriber notification emails (new/updated article) - see migrations/008.
+-- One row per publish/update event (not per recipient); recipients is a JSON
+-- array of {email, ok, error} for the expandable per-recipient detail.
+CREATE TABLE IF NOT EXISTS subscriber_email_log (
+  id            INTEGER  PRIMARY KEY AUTOINCREMENT,
+  article_id    INTEGER  REFERENCES articles(id) ON DELETE SET NULL,
+  article_title TEXT     NOT NULL,
+  is_update     INTEGER  NOT NULL,
+  recipients    TEXT     NOT NULL,
+  sent_count    INTEGER  NOT NULL,
+  failed_count  INTEGER  NOT NULL,
+  created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscriber_email_log_created ON subscriber_email_log(created_at DESC);
+
 -- Seed the single admin row in first-run state (no password, no token).
 -- The setup email/token is generated at runtime by
 -- `npm run admin:send-setup-email`, NOT here (that would send a real email).
