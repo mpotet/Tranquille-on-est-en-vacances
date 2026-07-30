@@ -2415,15 +2415,33 @@ function populateFolderSelect(folders, parentId, depth) {
 function _focusEditorAtEnd() {
   const ed = document.getElementById('e-content');
   if (!ed) return;
-  ed.focus();
-  const range = document.createRange();
-  range.selectNodeContents(ed);
-  range.collapse(false);
-  const sel = window.getSelection();
-  sel.removeAllRanges();
-  sel.addRange(range);
-  saveSelection();
-  ed.scrollIntoView({ block: 'end' });
+  let placed = false;
+  const place = () => {
+    if (placed) return;
+    placed = true;
+    ed.focus();
+    const range = document.createRange();
+    range.selectNodeContents(ed);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    saveSelection();
+    // Scroller sur le dernier enfant (pas sur ed lui-même : sa hauteur
+    // grandit au fur et à mesure que les images se chargent, donc un
+    // scrollIntoView sur ed juste après avoir posé innerHTML atterrit
+    // au milieu du contenu une fois les images arrivées).
+    (ed.lastElementChild || ed).scrollIntoView({ block: 'end' });
+  };
+  // Attendre que les images du contenu (souvent nombreuses) aient fini de
+  // charger pour que la hauteur finale soit connue avant de scroller.
+  const imgs = Array.from(ed.querySelectorAll('img')).filter(img => !img.complete);
+  if (!imgs.length) { place(); return; }
+  let remaining = imgs.length;
+  const done = () => { if (--remaining <= 0) place(); };
+  imgs.forEach(img => { img.addEventListener('load', done, { once: true }); img.addEventListener('error', done, { once: true }); });
+  // Filet de sécurité si une image ne déclenche jamais load/error.
+  setTimeout(place, 3000);
 }
 
 // ── WYSIWYG rich text editor ──────────────────────────────────

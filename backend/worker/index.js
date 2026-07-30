@@ -712,7 +712,7 @@ ${TOAST}
   <button type="button" id="ipsearch-toggle" aria-label="Rechercher dans le texte" title="Rechercher dans le texte" style="position:fixed;bottom:1.25rem;right:1.5rem;z-index:50;display:inline-flex;align-items:center;justify-content:center;width:3.1rem;height:3.1rem;border-radius:999px;background:var(--cream);color:var(--blue);border:1.5px solid rgba(var(--blue-rgb),.28);box-shadow:0 4px 18px rgba(0,0,0,.15);font-size:1.2rem;cursor:pointer">
     <i class="ph-bold ph-magnifying-glass"></i>
   </button>
-  <div id="ipsearch-bar" class="hidden panel" style="position:fixed;bottom:1.25rem;right:1.5rem;z-index:51;display:flex;align-items:center;gap:.4rem;padding:.5rem .6rem;border-radius:999px;box-shadow:0 8px 28px rgba(0,0,0,.2);max-width:calc(100vw - 2rem)">
+  <div id="ipsearch-bar" class="hidden panel" style="position:fixed;bottom:1.25rem;right:1.5rem;z-index:51;align-items:center;gap:.4rem;padding:.5rem .6rem;border-radius:999px;box-shadow:0 8px 28px rgba(0,0,0,.2);max-width:calc(100vw - 2rem)">
     <i class="ph-bold ph-magnifying-glass" style="color:var(--ink-light);margin-left:.3rem"></i>
     <input id="ipsearch-input" type="text" placeholder="Rechercher un mot..." autocomplete="off" style="border:none;outline:none;background:transparent;width:min(46vw,14rem);font-size:.9rem;color:var(--ink)">
     <span id="ipsearch-count" style="font-size:.78rem;color:var(--ink-muted);white-space:nowrap;padding:0 .2rem">0/0</span>
@@ -921,11 +921,13 @@ document.querySelectorAll('button[data-share-btn]').forEach(b=>b.addEventListene
 
   function openBar(){
     bar.classList.remove('hidden');
+    bar.style.display='flex';
     toggleBtn.classList.add('hidden');
     input.focus();
   }
   function closeBar(){
     bar.classList.add('hidden');
+    bar.style.display='';
     toggleBtn.classList.remove('hidden');
     clearMarks();
     countEl.textContent='0/0';
