@@ -706,19 +706,24 @@ ${TOAST}
   <a href="/admin/articles/${article.id}/print" target="_blank" style="position:fixed;bottom:5rem;right:calc(1.5rem + 130px + .75rem);z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:rgba(var(--ink-rgb),.82);color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.25);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.15)"><i class="ph-bold ph-export" style="font-size:1.1rem"></i> Exporter</a>` : '';
 
   // Recherche d'un mot-clé dans le texte de l'article (long récit de voyage) :
-  // bouton flottant qui ouvre une mini barre de recherche, surligne les
-  // occurrences dans .prose-vacation et permet de naviguer entre elles.
+  // le bouton rond se transforme (morph animé) en barre de recherche au lieu
+  // de faire apparaître un second élément superposé au premier - plus clair
+  // visuellement que deux éléments indépendants qui se chevauchent.
   const inPageSearchWidget = `
-  <button type="button" id="ipsearch-toggle" aria-label="Rechercher dans le texte" title="Rechercher dans le texte" style="position:fixed;bottom:1.25rem;right:1.5rem;z-index:50;display:inline-flex;align-items:center;justify-content:center;width:3.1rem;height:3.1rem;border-radius:999px;background:var(--cream);color:var(--blue);border:1.5px solid rgba(var(--blue-rgb),.28);box-shadow:0 4px 18px rgba(0,0,0,.15);font-size:1.2rem;cursor:pointer">
-    <i class="ph-bold ph-magnifying-glass"></i>
-  </button>
-  <div id="ipsearch-bar" class="hidden panel" style="position:fixed;bottom:1.25rem;right:1.5rem;z-index:51;align-items:center;gap:.4rem;padding:.5rem .6rem;border-radius:999px;box-shadow:0 8px 28px rgba(0,0,0,.2);max-width:calc(100vw - 2rem)">
-    <i class="ph-bold ph-magnifying-glass" style="color:var(--ink-light);margin-left:.3rem"></i>
-    <input id="ipsearch-input" type="text" placeholder="Rechercher un mot..." autocomplete="off" style="border:none;outline:none;background:transparent;width:min(46vw,14rem);font-size:.9rem;color:var(--ink)">
-    <span id="ipsearch-count" style="font-size:.78rem;color:var(--ink-muted);white-space:nowrap;padding:0 .2rem">0/0</span>
-    <button type="button" id="ipsearch-prev" aria-label="Occurrence précédente" class="ghost-btn" style="padding:.4rem .55rem"><i class="ph-bold ph-caret-up"></i></button>
-    <button type="button" id="ipsearch-next" aria-label="Occurrence suivante" class="ghost-btn" style="padding:.4rem .55rem"><i class="ph-bold ph-caret-down"></i></button>
-    <button type="button" id="ipsearch-close" aria-label="Fermer la recherche" class="ghost-btn" style="padding:.4rem .55rem"><i class="ph-bold ph-x"></i></button>
+  <div id="ipsearch-wrap" style="position:fixed;bottom:1.25rem;right:1.5rem;z-index:50;display:flex;justify-content:flex-end;max-width:calc(100vw - 2rem)">
+    <div id="ipsearch-shell" class="panel" style="display:flex;align-items:center;width:3.1rem;height:3.1rem;border-radius:999px;box-shadow:0 4px 18px rgba(0,0,0,.15);max-width:calc(100vw - 2rem);overflow:hidden;transition:width .28s cubic-bezier(.4,0,.2,1),box-shadow .28s ease">
+      <button type="button" id="ipsearch-toggle" aria-label="Rechercher dans le texte" title="Rechercher dans le texte" style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:3.1rem;height:3.1rem;border-radius:999px;background:transparent;color:var(--blue);border:none;font-size:1.2rem;cursor:pointer;transition:opacity .18s ease,transform .18s ease">
+        <i class="ph-bold ph-magnifying-glass"></i>
+      </button>
+      <div id="ipsearch-fields" style="display:flex;align-items:center;gap:.35rem;flex:1;min-width:0;padding-right:.5rem;opacity:0;transform:translateX(6px);transition:opacity .18s ease .06s,transform .18s ease .06s">
+        <i class="ph-bold ph-magnifying-glass" style="color:var(--ink-light);margin-left:.9rem;flex:none"></i>
+        <input id="ipsearch-input" type="text" placeholder="Rechercher un mot..." autocomplete="off" style="border:none;outline:none;background:transparent;flex:1;min-width:0;width:min(46vw,12rem);font-size:.9rem;color:var(--ink)">
+        <span id="ipsearch-count" style="font-size:.78rem;color:var(--ink-muted);white-space:nowrap;padding:0 .2rem;flex:none">0/0</span>
+        <button type="button" id="ipsearch-prev" aria-label="Occurrence précédente" class="ghost-btn" style="flex:none;padding:.4rem .5rem"><i class="ph-bold ph-caret-up"></i></button>
+        <button type="button" id="ipsearch-next" aria-label="Occurrence suivante" class="ghost-btn" style="flex:none;padding:.4rem .5rem"><i class="ph-bold ph-caret-down"></i></button>
+        <button type="button" id="ipsearch-close" aria-label="Fermer la recherche" class="ghost-btn" style="flex:none;padding:.4rem .5rem"><i class="ph-bold ph-x"></i></button>
+      </div>
+    </div>
   </div>`;
 
   const coverUrl = safeAttr(article.cover_url || '');
@@ -837,15 +842,16 @@ document.querySelectorAll('button[data-share-btn]').forEach(b=>b.addEventListene
 // long) et permet de naviguer entre elles sans dépendre du Ctrl+F natif
 // du navigateur, qui n'est pas toujours disponible (PWA, in-app browsers).
 (function(){
+  const shell=document.getElementById('ipsearch-shell');
   const toggleBtn=document.getElementById('ipsearch-toggle');
-  const bar=document.getElementById('ipsearch-bar');
+  const fields=document.getElementById('ipsearch-fields');
   const input=document.getElementById('ipsearch-input');
   const countEl=document.getElementById('ipsearch-count');
   const prevBtn=document.getElementById('ipsearch-prev');
   const nextBtn=document.getElementById('ipsearch-next');
   const closeBtn=document.getElementById('ipsearch-close');
   const content=document.querySelector('.prose-vacation');
-  if(!toggleBtn||!bar||!content) return;
+  if(!shell||!toggleBtn||!fields||!content) return;
 
   let marks=[];
   let current=-1;
@@ -919,19 +925,48 @@ document.querySelectorAll('button[data-share-btn]').forEach(b=>b.addEventListene
     focusCurrent();
   }
 
+  let isOpen=false;
   function openBar(){
-    bar.classList.remove('hidden');
-    bar.style.display='flex';
-    toggleBtn.classList.add('hidden');
-    input.focus();
+    if(isOpen) return;
+    isOpen=true;
+    // Largeur cible du "shell" une fois ouvert : celle du bouton rond (déjà
+    // appliquée) + la largeur naturelle du bloc de champs. "fields" est un
+    // enfant flex (flex:1;min-width:0) dont la largeur en place dépend de
+    // celle, encore contrainte, du parent - on la mesure donc hors flux
+    // (position:absolute, flex/min-width neutralisés) pour obtenir sa vraie
+    // largeur de contenu avant de lancer la transition.
+    fields.style.position='absolute';
+    fields.style.visibility='hidden';
+    fields.style.flex='none';
+    fields.style.minWidth='0';
+    fields.style.width='auto';
+    const fieldsWidth=fields.scrollWidth;
+    fields.style.position='';
+    fields.style.visibility='';
+    fields.style.flex='';
+    fields.style.minWidth='';
+    fields.style.width='';
+    shell.style.width=(3.1*16 + fieldsWidth)+'px';
+    toggleBtn.style.opacity='0';
+    toggleBtn.style.transform='scale(.7)';
+    toggleBtn.style.pointerEvents='none';
+    fields.style.opacity='1';
+    fields.style.transform='translateX(0)';
+    setTimeout(()=>input.focus(),280);
   }
   function closeBar(){
-    bar.classList.add('hidden');
-    bar.style.display='';
-    toggleBtn.classList.remove('hidden');
+    if(!isOpen) return;
+    isOpen=false;
+    shell.style.width='';
+    toggleBtn.style.opacity='';
+    toggleBtn.style.transform='';
+    toggleBtn.style.pointerEvents='';
+    fields.style.opacity='0';
+    fields.style.transform='translateX(6px)';
     clearMarks();
     countEl.textContent='0/0';
     input.value='';
+    toggleBtn.focus();
   }
 
   toggleBtn.addEventListener('click',openBar);

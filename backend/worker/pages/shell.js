@@ -535,9 +535,6 @@ ${UPDATE_BANNER}
       <div class="hidden md:flex items-center gap-1">
         <a href="/" class="nav-link ${active==='home'?'nav-link-active':''}"><i class="ph-bold ph-house"></i> Accueil</a>
         <a href="/voyages" class="nav-link ${active==='voyages'?'nav-link-active':''}"><i class="ph-bold ph-airplane-takeoff"></i> Voyages</a>
-        <button type="button" id="theme-toggle" onclick="toggleTheme()" class="nav-link" style="width:2.6rem;padding:.55rem;margin-left:.15rem" aria-label="Changer le thème clair/sombre" title="Thème clair/sombre">
-          <i class="ph-bold ph-moon" id="theme-toggle-icon"></i>
-        </button>
         ${authed ? `
         <div class="relative ml-2" id="admin-menu-wrap">
           <button type="button" id="admin-menu-btn" aria-haspopup="true" aria-expanded="false"
@@ -557,6 +554,10 @@ ${UPDATE_BANNER}
         ` : `
         <a href="/admin" class="action-btn-sm ml-3"><i class="ph-bold ph-lock-key"></i> Admin</a>
         `}
+        <span aria-hidden="true" style="width:1px;height:1.4rem;background:var(--line);margin:0 .5rem"></span>
+        <button type="button" id="theme-toggle" onclick="toggleTheme()" class="nav-link" style="width:2.6rem;padding:.55rem" aria-label="Changer le thème clair/sombre" title="Thème clair/sombre">
+          <i class="ph-bold ph-moon" id="theme-toggle-icon"></i>
+        </button>
       </div>
       <button onclick="const m=document.getElementById('mobile-menu');m.classList.toggle('hidden');this.setAttribute('aria-expanded',!m.classList.contains('hidden'))"
               class="md:hidden p-2 rounded-xl transition-colors"
@@ -571,9 +572,6 @@ ${UPDATE_BANNER}
       <div class="panel rounded-2xl p-3 flex flex-col gap-1 mt-1 shadow-lg">
         <a href="/" class="mobile-nav-link ${active==='home'?'nav-link-active':''}"><i class="ph-bold ph-house"></i> Accueil</a>
         <a href="/voyages" class="mobile-nav-link ${active==='voyages'?'nav-link-active':''}"><i class="ph-bold ph-airplane-takeoff"></i> Voyages</a>
-        <button type="button" onclick="toggleTheme()" class="mobile-nav-link w-full text-left" style="background:none;border:none;cursor:pointer">
-          <i class="ph-bold ph-moon" id="theme-toggle-icon-mobile"></i> <span id="theme-toggle-label-mobile">Thème sombre</span>
-        </button>
         ${authed ? `
         <div class="mt-2 pt-2" style="border-top:1px solid var(--line)">
           <div class="flex items-center gap-1.5 px-3 pb-1 text-[.68rem] font-bold uppercase tracking-[.14em]" style="color:var(--blue)"><i class="ph-fill ph-shield-check"></i> Espace admin</div>
@@ -584,6 +582,12 @@ ${UPDATE_BANNER}
         ` : `
         <a href="/admin" class="action-btn-sm justify-center mt-2"><i class="ph-bold ph-lock-key"></i> Admin</a>
         `}
+        <div class="mt-2 pt-2 flex items-center justify-between" style="border-top:1px solid var(--line)">
+          <span class="px-3 text-sm font-semibold" style="color:var(--ink-muted)">Affichage</span>
+          <button type="button" onclick="toggleTheme()" class="mobile-nav-link" style="background:none;border:none;cursor:pointer;width:auto">
+            <i class="ph-bold ph-moon" id="theme-toggle-icon-mobile"></i> <span id="theme-toggle-label-mobile">Thème sombre</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
