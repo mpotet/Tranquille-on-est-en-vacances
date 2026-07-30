@@ -23,7 +23,7 @@ ${NAV('home', authed)}
     <div class="hero-photo-overlay"></div>
     <div class="hero-photo-content w-full flex-1 flex items-center py-12 sm:py-16">
       <div class="max-w-3xl mx-auto px-6 sm:px-10 lg:px-12 text-center">
-        <div id="hero-eyebrow" class="eyebrow mb-5 mx-auto hero-anim" style="background:rgba(255,199,138,.22);border-color:rgba(255,199,138,.5);color:#fff;--d:0ms">Le carnet des Potet</div>
+        <div id="hero-eyebrow" class="eyebrow mb-5 mx-auto hero-anim hero-eyebrow-glow" style="background:rgba(255,199,138,.22);border-color:rgba(255,199,138,.5);color:#fff;--d:0ms">Le carnet des Potet</div>
         <h1 id="hero-title" class="font-display font-bold mb-5 text-white drop-shadow-lg mx-auto hero-anim" style="font-size:clamp(2.2rem,6vw,4rem);line-height:1.06;letter-spacing:-.015em;max-width:18ch;text-wrap:balance;--d:80ms">
           Entrez, on allait justement <em style="color:var(--apricot);font-style:normal">raconter le voyage</em>.
         </h1>

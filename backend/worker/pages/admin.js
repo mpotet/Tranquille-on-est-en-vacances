@@ -2374,6 +2374,11 @@ async function init() {
       }
       existingPhotos = a.photos || [];
       renderPhotoGrid();
+      // La plupart des modifications consistent à ajouter les notes de la
+      // dernière journée en fin d'article - placer le curseur à la fin du
+      // contenu (et scroller jusque-là) évite d'avoir à chercher la fin du
+      // texte à chaque ouverture d'un article existant.
+      _focusEditorAtEnd();
     } else if (a && !a.title) {
       toast('Impossible de charger l’article','err');
     }
@@ -2402,6 +2407,23 @@ function populateFolderSelect(folders, parentId, depth) {
     document.getElementById('e-folder').appendChild(opt);
     populateFolderSelect(folders, f.id, depth+1);
   });
+}
+
+// Place le curseur à la toute fin du contenu de l'éditeur et scrolle
+// jusqu'à lui - utilisé à l'ouverture d'un article existant pour permettre
+// d'ajouter tout de suite les notes du jour sans avoir à chercher la fin.
+function _focusEditorAtEnd() {
+  const ed = document.getElementById('e-content');
+  if (!ed) return;
+  ed.focus();
+  const range = document.createRange();
+  range.selectNodeContents(ed);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  saveSelection();
+  ed.scrollIntoView({ block: 'end' });
 }
 
 // ── WYSIWYG rich text editor ──────────────────────────────────

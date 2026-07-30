@@ -705,6 +705,22 @@ ${TOAST}
   <a href="/admin/editor/${article.id}" style="position:fixed;bottom:5rem;right:1.5rem;z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:var(--blue);color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(var(--blue-rgb),.4)"><i class="ph-bold ph-pencil-simple" style="font-size:1.1rem"></i> Modifier</a>
   <a href="/admin/articles/${article.id}/print" target="_blank" style="position:fixed;bottom:5rem;right:calc(1.5rem + 130px + .75rem);z-index:50;display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.25rem;border-radius:999px;background:rgba(var(--ink-rgb),.82);color:#fff;font-weight:700;font-size:.85rem;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.25);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.15)"><i class="ph-bold ph-export" style="font-size:1.1rem"></i> Exporter</a>` : '';
 
+  // Recherche d'un mot-clé dans le texte de l'article (long récit de voyage) :
+  // bouton flottant qui ouvre une mini barre de recherche, surligne les
+  // occurrences dans .prose-vacation et permet de naviguer entre elles.
+  const inPageSearchWidget = `
+  <button type="button" id="ipsearch-toggle" aria-label="Rechercher dans le texte" title="Rechercher dans le texte" style="position:fixed;bottom:1.25rem;right:1.5rem;z-index:50;display:inline-flex;align-items:center;justify-content:center;width:3.1rem;height:3.1rem;border-radius:999px;background:var(--cream);color:var(--blue);border:1.5px solid rgba(var(--blue-rgb),.28);box-shadow:0 4px 18px rgba(0,0,0,.15);font-size:1.2rem;cursor:pointer">
+    <i class="ph-bold ph-magnifying-glass"></i>
+  </button>
+  <div id="ipsearch-bar" class="hidden panel" style="position:fixed;bottom:1.25rem;right:1.5rem;z-index:51;display:flex;align-items:center;gap:.4rem;padding:.5rem .6rem;border-radius:999px;box-shadow:0 8px 28px rgba(0,0,0,.2);max-width:calc(100vw - 2rem)">
+    <i class="ph-bold ph-magnifying-glass" style="color:var(--ink-light);margin-left:.3rem"></i>
+    <input id="ipsearch-input" type="text" placeholder="Rechercher un mot..." autocomplete="off" style="border:none;outline:none;background:transparent;width:min(46vw,14rem);font-size:.9rem;color:var(--ink)">
+    <span id="ipsearch-count" style="font-size:.78rem;color:var(--ink-muted);white-space:nowrap;padding:0 .2rem">0/0</span>
+    <button type="button" id="ipsearch-prev" aria-label="Occurrence précédente" class="ghost-btn" style="padding:.4rem .55rem"><i class="ph-bold ph-caret-up"></i></button>
+    <button type="button" id="ipsearch-next" aria-label="Occurrence suivante" class="ghost-btn" style="padding:.4rem .55rem"><i class="ph-bold ph-caret-down"></i></button>
+    <button type="button" id="ipsearch-close" aria-label="Fermer la recherche" class="ghost-btn" style="padding:.4rem .55rem"><i class="ph-bold ph-x"></i></button>
+  </div>`;
+
   const coverUrl = safeAttr(article.cover_url || '');
   // og:image/og:url must be absolute (social crawlers don't resolve relative
   // URLs). cover_url is stored root-relative (/r2/…); prefix the request
@@ -784,6 +800,7 @@ ${NAV('', authed)}
   </div>
 </main>
 ${adminFabs}
+${inPageSearchWidget}
 ${FOOTER}
 ${TOAST}
 ${LIGHTBOX}
@@ -814,6 +831,117 @@ document.getElementById('main').addEventListener('click',(e)=>{
   else if(img.dataset.photoUrl) openLightbox([{url:img.dataset.photoUrl, caption:img.dataset.photoCaption||''}],0);
 });
 document.querySelectorAll('button[data-share-btn]').forEach(b=>b.addEventListener('click',share));
+
+// ── Recherche de mot-clé dans le texte de l'article ────────────
+// Surligne les occurrences dans .prose-vacation (le récit peut être très
+// long) et permet de naviguer entre elles sans dépendre du Ctrl+F natif
+// du navigateur, qui n'est pas toujours disponible (PWA, in-app browsers).
+(function(){
+  const toggleBtn=document.getElementById('ipsearch-toggle');
+  const bar=document.getElementById('ipsearch-bar');
+  const input=document.getElementById('ipsearch-input');
+  const countEl=document.getElementById('ipsearch-count');
+  const prevBtn=document.getElementById('ipsearch-prev');
+  const nextBtn=document.getElementById('ipsearch-next');
+  const closeBtn=document.getElementById('ipsearch-close');
+  const content=document.querySelector('.prose-vacation');
+  if(!toggleBtn||!bar||!content) return;
+
+  let marks=[];
+  let current=-1;
+
+  function clearMarks(){
+    content.querySelectorAll('mark[data-ipsearch]').forEach(m=>{
+      const parent=m.parentNode;
+      parent.replaceChild(document.createTextNode(m.textContent),m);
+      parent.normalize();
+    });
+    marks=[];
+    current=-1;
+  }
+
+  function escRe(s){return s.replace(/[.*+?^\${}()|[\\]\\\\]/g,'\\\\\$&');}
+
+  function runSearch(term){
+    clearMarks();
+    if(!term){ countEl.textContent='0/0'; return; }
+    const re=new RegExp(escRe(term),'gi');
+    const walker=document.createTreeWalker(content, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue||!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const tag=node.parentNode&&node.parentNode.nodeName;
+        if(tag==='SCRIPT'||tag==='STYLE') return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const textNodes=[];
+    let n; while((n=walker.nextNode())) textNodes.push(n);
+    textNodes.forEach(node=>{
+      const text=node.nodeValue;
+      re.lastIndex=0;
+      if(!re.test(text)) return;
+      re.lastIndex=0;
+      const frag=document.createDocumentFragment();
+      let lastIndex=0, m;
+      while((m=re.exec(text))){
+        if(m.index>lastIndex) frag.appendChild(document.createTextNode(text.slice(lastIndex,m.index)));
+        const mark=document.createElement('mark');
+        mark.setAttribute('data-ipsearch','1');
+        mark.style.cssText='background:rgba(255,199,138,.55);color:inherit;border-radius:.2em;padding:0 .05em';
+        mark.textContent=m[0];
+        frag.appendChild(mark);
+        lastIndex=m.index+m[0].length;
+        if(m.index===re.lastIndex) re.lastIndex++;
+      }
+      if(lastIndex<text.length) frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+      node.parentNode.replaceChild(frag,node);
+    });
+    marks=Array.from(content.querySelectorAll('mark[data-ipsearch]'));
+    current=marks.length?0:-1;
+    updateCount();
+    if(current>=0) focusCurrent();
+  }
+
+  function updateCount(){
+    countEl.textContent=(marks.length?current+1:0)+'/'+marks.length;
+  }
+
+  function focusCurrent(){
+    marks.forEach((m,i)=>{ m.style.background = i===current ? 'rgba(255,199,138,1)' : 'rgba(255,199,138,.55)'; });
+    const m=marks[current];
+    if(m) m.scrollIntoView({block:'center', behavior:'smooth'});
+  }
+
+  function goTo(delta){
+    if(!marks.length) return;
+    current=(current+delta+marks.length)%marks.length;
+    updateCount();
+    focusCurrent();
+  }
+
+  function openBar(){
+    bar.classList.remove('hidden');
+    toggleBtn.classList.add('hidden');
+    input.focus();
+  }
+  function closeBar(){
+    bar.classList.add('hidden');
+    toggleBtn.classList.remove('hidden');
+    clearMarks();
+    countEl.textContent='0/0';
+    input.value='';
+  }
+
+  toggleBtn.addEventListener('click',openBar);
+  closeBtn.addEventListener('click',closeBar);
+  input.addEventListener('input',()=>runSearch(input.value.trim()));
+  input.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter'){ e.preventDefault(); goTo(e.shiftKey?-1:1); }
+    else if(e.key==='Escape'){ closeBar(); }
+  });
+  prevBtn.addEventListener('click',()=>goTo(-1));
+  nextBtn.addEventListener('click',()=>goTo(1));
+})();
 
 // ── Comment form (progressive enhancement) ────────────────────
 function _escC(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}

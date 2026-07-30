@@ -21,7 +21,7 @@
  *   revalide silencieusement le cache.
  */
 
-const VERSION = 'v31';
+const VERSION = 'v34';
 const PAGES_CACHE = `tranquille-pages-${VERSION}`;
 const ASSETS_CACHE = `tranquille-assets-${VERSION}`;
 const API_CACHE = `tranquille-api-${VERSION}`;
@@ -70,6 +70,16 @@ async function precacheAllArticlePages(pagesCache) {
 }
 
 // ── Installation : pré-cache du shell, des pages clés et de tous les récits ──
+// Deliberately does NOT call self.skipWaiting() here anymore. Doing so used
+// to mean: the instant a new deploy finished installing, it took over every
+// open tab immediately (via clients.claim() in activate below) - the running
+// page kept executing old JS against a now-different cached HTML/API shape
+// underneath it, with no visible sign anything had changed until something
+// broke ("la PWA ne se met pas à jour"). The new worker now sits in
+// "installed/waiting" until a client explicitly asks for it (see the
+// 'skip-waiting' message handler near the bottom) - shell.js shows an
+// "update available" banner for exactly this, and reloads once the new
+// worker takes over.
 self.addEventListener('install', event => {
   event.waitUntil(
     (async () => {
@@ -83,8 +93,6 @@ self.addEventListener('install', event => {
         )
       );
       await precacheAllArticlePages(pagesCache);
-
-      self.skipWaiting();
     })()
   );
 });
@@ -529,4 +537,9 @@ self.addEventListener('message', event => {
   if (event.data === 'clear-page-cache') {
     event.waitUntil(caches.open(PAGES_CACHE).then(cache => cache.keys().then(keys => Promise.all(keys.map(k => cache.delete(k))))));
   }
+  // Sent to a specific *waiting* worker (reg.waiting.postMessage(...) in
+  // shell.js's "Mettre à jour" button) - only that instance receives it, so
+  // this always means "the visitor just asked to update", never a stray
+  // message reaching an already-active worker.
+  if (event.data === 'skip-waiting') { self.skipWaiting(); }
 });

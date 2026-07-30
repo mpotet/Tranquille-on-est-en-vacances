@@ -230,7 +230,11 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
 /* ── Full-bleed photo hero ──────────────────────────────────── */
 .hero-photo {
   position: relative; overflow: hidden;
-  background: linear-gradient(135deg, #0057B8 0%, #003D80 40%, #2E7D6B 100%);
+  /* Plain fallback gradient in the site's own palette for whenever no
+     hero_image_url is set - deliberately quiet (no shapes, no extra hues)
+     so it stays legible under the headline and never competes with a real
+     cover photo once one is uploaded. */
+  background: linear-gradient(135deg, #003D80 0%, #0057B8 45%, #2E7D6B 100%);
 }
 .hero-photo-img {
   position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
@@ -382,8 +386,16 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
    must not silently lose the highlight). */
 #hero-title em { color: var(--apricot); font-style: normal; }
 /* Staggered hero entrance: each element sets its own --d delay inline. */
-.hero-anim { opacity:0; animation: heroUp .6s ease-out forwards; animation-delay: var(--d, 0ms); }
-@keyframes heroUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+.hero-anim { opacity:0; animation: heroUp .75s cubic-bezier(.2,.8,.2,1) forwards; animation-delay: var(--d, 0ms); }
+@keyframes heroUp { from { opacity:0; transform:translateY(26px) scale(.98); } to { opacity:1; transform:translateY(0) scale(1); } }
+/* Slow ambient glow drifting behind the hero eyebrow badge - subtle enough to
+   never distract from the text, just enough to keep the very first thing a
+   visitor sees from feeling static. */
+/* Combined with .hero-anim's own entrance animation (a second animation
+   shorthand here would silently replace it instead of adding to it - the
+   glow has to ride alongside heroUp in one comma-separated declaration). */
+.hero-anim.hero-eyebrow-glow { animation: heroUp .75s cubic-bezier(.2,.8,.2,1) forwards, heroGlow 3.4s ease-in-out .75s infinite; animation-delay: var(--d, 0ms), 0.75s; }
+@keyframes heroGlow { 0%,100% { box-shadow:0 0 0 0 rgba(255,199,138,0); } 50% { box-shadow:0 0 22px 2px rgba(255,199,138,.25); } }
 /* Slow Ken-Burns zoom on the hero background photo when present. */
 .hero-photo-img { animation: heroZoom 1.8s ease-out both; }
 @keyframes heroZoom { from { transform:scale(1.06); } to { transform:scale(1); } }
@@ -392,6 +404,7 @@ body { min-height: 100vh; background: var(--cream); color: var(--ink); font-fami
   .page-in, .float-anim, .scroll-cue { animation: none!important; }
   .hero-anim { opacity:1!important; animation:none!important; }
   .hero-photo-img { animation:none!important; }
+  .hero-eyebrow-glow { animation:none!important; }
   .voyage-card, .card, .btn-primary, .btn-ghost, .action-btn, .subtle-btn { transition: none!important; }
   /* Lightbox zoom/pan image transform + the zoom control buttons' hover
      transitions were not covered by the rule above and kept animating even
@@ -484,7 +497,21 @@ input:focus, textarea:focus, select:focus { border-color: rgba(var(--blue-rgb),.
 `;
 };
 
+// Shown when the SW has downloaded a new version and it's sitting in
+// "waiting" state - without this the new code is on disk but the open tab
+// keeps running the old JS/HTML forever, since skipWaiting() is no longer
+// called automatically (see sw.js) precisely so a page mid-use never gets
+// swapped out from under the visitor without them asking for it.
+const UPDATE_BANNER = `
+<div id="sw-update-banner" class="hidden fixed top-0 left-0 right-0 z-[100] flex items-center justify-center gap-3 px-4 py-2.5 text-sm font-bold flex-wrap text-center" style="background:var(--apricot);color:#5A3A12;box-shadow:0 2px 12px rgba(0,0,0,.15)" role="alert">
+  <span class="inline-flex items-center gap-2"><i class="ph-fill ph-warning-circle"></i> Une nouvelle version du site est disponible.</span>
+  <button type="button" onclick="applySwUpdate()" class="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-black uppercase tracking-wide" style="background:#5A3A12;color:#fff">
+    <i class="ph-bold ph-arrow-clockwise"></i> Mettre à jour
+  </button>
+</div>`;
+
 export const NAV = (active = '', authed = false) => `
+${UPDATE_BANNER}
 <nav id="navbar" class="fixed top-0 left-0 right-0 z-50">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-16">
@@ -762,9 +789,60 @@ export const FOOTER = `
 // time there's a network connection - this is what keeps the offline article
 // precache current (new trips) and recovers a stuck/broken SW without the
 // user having to do anything. Never block rendering on this.
+//
+// Update flow: sw.js no longer calls skipWaiting() on install (see its own
+// comment) - a new worker sits in "installed/waiting" state until the
+// visitor explicitly asks for it, since silently swapping the running page's
+// code out from under them mid-use is exactly the "why is nothing working
+// right" bug this whole flow exists to prevent. Instead: show a banner the
+// moment a waiting worker is detected (on registration, or later if one
+// finishes installing while this tab stays open), and only call
+// skipWaiting() when they click "Mettre à jour" - the controllerchange
+// listener then reloads once the new worker has actually taken over.
+function _showUpdateBanner(){
+  const b = document.getElementById('sw-update-banner');
+  if (!b) return;
+  b.classList.remove('hidden');
+  const h = b.offsetHeight;
+  // The nav is itself fixed (see #navbar) and every page's <main> only
+  // accounts for the nav's own height via a static pt-16 - pushing just the
+  // nav down without also pushing <main> would tuck the page's first content
+  // behind the now-lower nav. Nudging both by the banner's real height (not
+  // a guessed constant) keeps this correct regardless of how long the
+  // banner's text wraps to on a given screen width.
+  const nav = document.getElementById('navbar');
+  if (nav) nav.style.top = h + 'px';
+  const main = document.querySelector('main');
+  if (main) main.style.marginTop = h + 'px';
+}
+let _swReloading = false;
+function applySwUpdate(){
+  navigator.serviceWorker.getRegistration().then(reg => {
+    if (reg && reg.waiting) reg.waiting.postMessage('skip-waiting');
+  });
+}
 if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (_swReloading) return;
+    _swReloading = true;
+    window.location.reload();
+  });
   navigator.serviceWorker.register('/sw.js', { scope: '/' })
-    .then(reg => { if (navigator.onLine) reg.update().catch(() => {}); })
+    .then(reg => {
+      if (reg.waiting) _showUpdateBanner();
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          // "installed" + an existing controller means this is an update to
+          // an already-active SW (not the very first install on this
+          // device), which is the only case where showing "update available"
+          // makes sense - a first-ever install has nothing to update *from*.
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) _showUpdateBanner();
+        });
+      });
+      if (navigator.onLine) reg.update().catch(() => {});
+    })
     .catch(() => {});
 }
 function getServiceWorkerReady() {
