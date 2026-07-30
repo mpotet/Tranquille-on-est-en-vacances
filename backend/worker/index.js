@@ -710,18 +710,22 @@ ${TOAST}
   // de faire apparaître un second élément superposé au premier - plus clair
   // visuellement que deux éléments indépendants qui se chevauchent.
   const inPageSearchWidget = `
+  <style>
+    #ipsearch-fields button:hover { background:var(--sand)!important; color:var(--ink)!important; }
+    #ipsearch-input:focus { box-shadow:none!important; border-color:transparent!important; }
+  </style>
   <div id="ipsearch-wrap" style="position:fixed;bottom:1.25rem;right:1.5rem;z-index:50;display:flex;justify-content:flex-end;max-width:calc(100vw - 2rem)">
     <div id="ipsearch-shell" class="panel" style="display:flex;align-items:center;width:3.1rem;height:3.1rem;border-radius:999px;box-shadow:0 4px 18px rgba(0,0,0,.15);max-width:calc(100vw - 2rem);overflow:hidden;transition:width .28s cubic-bezier(.4,0,.2,1),box-shadow .28s ease">
-      <button type="button" id="ipsearch-toggle" aria-label="Rechercher dans le texte" title="Rechercher dans le texte" style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:3.1rem;height:3.1rem;border-radius:999px;background:transparent;color:var(--blue);border:none;font-size:1.2rem;cursor:pointer;transition:opacity .18s ease,transform .18s ease">
+      <button type="button" id="ipsearch-toggle" aria-label="Rechercher dans le texte" title="Rechercher dans le texte" style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:3.1rem;height:3.1rem;border-radius:999px;background:transparent;color:var(--blue);border:none;font-size:1.2rem;cursor:pointer;transition:opacity .15s ease,transform .15s ease,width .28s cubic-bezier(.4,0,.2,1)">
         <i class="ph-bold ph-magnifying-glass"></i>
       </button>
-      <div id="ipsearch-fields" style="display:flex;align-items:center;gap:.35rem;flex:1;min-width:0;padding-right:.5rem;opacity:0;transform:translateX(6px);transition:opacity .18s ease .06s,transform .18s ease .06s">
-        <i class="ph-bold ph-magnifying-glass" style="color:var(--ink-light);margin-left:.9rem;flex:none"></i>
-        <input id="ipsearch-input" type="text" placeholder="Rechercher un mot..." autocomplete="off" style="border:none;outline:none;background:transparent;flex:1;min-width:0;width:min(46vw,12rem);font-size:.9rem;color:var(--ink)">
-        <span id="ipsearch-count" style="font-size:.78rem;color:var(--ink-muted);white-space:nowrap;padding:0 .2rem;flex:none">0/0</span>
-        <button type="button" id="ipsearch-prev" aria-label="Occurrence précédente" class="ghost-btn" style="flex:none;padding:.4rem .5rem"><i class="ph-bold ph-caret-up"></i></button>
-        <button type="button" id="ipsearch-next" aria-label="Occurrence suivante" class="ghost-btn" style="flex:none;padding:.4rem .5rem"><i class="ph-bold ph-caret-down"></i></button>
-        <button type="button" id="ipsearch-close" aria-label="Fermer la recherche" class="ghost-btn" style="flex:none;padding:.4rem .5rem"><i class="ph-bold ph-x"></i></button>
+      <div id="ipsearch-fields" style="display:flex;align-items:center;gap:.15rem;flex:1;min-width:0;padding:0 .35rem 0 0;opacity:0;transform:translateX(6px);transition:opacity .15s ease,transform .15s ease">
+        <input id="ipsearch-input" type="text" placeholder="Rechercher un mot..." autocomplete="off" style="border:none;outline:none;box-shadow:none;background:transparent;flex:1;min-width:0;width:min(46vw,12rem);font-size:.9rem;color:var(--ink);padding:0 0 0 .2rem">
+        <span id="ipsearch-count" style="font-size:.78rem;color:var(--ink-muted);white-space:nowrap;padding:0 .3rem;flex:none">0/0</span>
+        <span style="width:1px;height:1.3rem;background:var(--line);flex:none;margin:0 .1rem"></span>
+        <button type="button" id="ipsearch-prev" aria-label="Occurrence précédente" style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:1.9rem;height:1.9rem;border-radius:50%;background:transparent;border:none;color:var(--ink-muted);cursor:pointer;font-size:.9rem"><i class="ph-bold ph-caret-up"></i></button>
+        <button type="button" id="ipsearch-next" aria-label="Occurrence suivante" style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:1.9rem;height:1.9rem;border-radius:50%;background:transparent;border:none;color:var(--ink-muted);cursor:pointer;font-size:.9rem"><i class="ph-bold ph-caret-down"></i></button>
+        <button type="button" id="ipsearch-close" aria-label="Fermer la recherche" style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:1.9rem;height:1.9rem;border-radius:50%;background:transparent;border:none;color:var(--ink-muted);cursor:pointer;font-size:.9rem"><i class="ph-bold ph-x"></i></button>
       </div>
     </div>
   </div>`;
@@ -925,6 +929,7 @@ document.querySelectorAll('button[data-share-btn]').forEach(b=>b.addEventListene
     focusCurrent();
   }
 
+  const CLOSED_WIDTH_PX=3.1*16;
   let isOpen=false;
   function openBar(){
     if(isOpen) return;
@@ -946,9 +951,7 @@ document.querySelectorAll('button[data-share-btn]').forEach(b=>b.addEventListene
     fields.style.flex='';
     fields.style.minWidth='';
     fields.style.width='';
-    shell.style.width=(3.1*16 + fieldsWidth)+'px';
-    toggleBtn.style.opacity='0';
-    toggleBtn.style.transform='scale(.7)';
+    shell.style.width=(CLOSED_WIDTH_PX + fieldsWidth)+'px';
     toggleBtn.style.pointerEvents='none';
     fields.style.opacity='1';
     fields.style.transform='translateX(0)';
@@ -957,9 +960,11 @@ document.querySelectorAll('button[data-share-btn]').forEach(b=>b.addEventListene
   function closeBar(){
     if(!isOpen) return;
     isOpen=false;
-    shell.style.width='';
-    toggleBtn.style.opacity='';
-    toggleBtn.style.transform='';
+    // Revenir explicitement à la largeur du bouton rond fermé : un simple
+    // style.width='' retombe sur "auto" (rien ne fixe plus 3.1rem une fois
+    // l'inline style posé par openBar() effacé), donc le panneau ne se
+    // repliait jamais visuellement.
+    shell.style.width=CLOSED_WIDTH_PX+'px';
     toggleBtn.style.pointerEvents='';
     fields.style.opacity='0';
     fields.style.transform='translateX(6px)';
