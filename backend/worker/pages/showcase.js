@@ -54,8 +54,8 @@ ${NAV('', authed)}
       <div class="eyebrow mb-5 inline-flex" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff">Envie du même carnet ?</div>
       <h1 class="font-display text-3xl sm:text-5xl font-bold text-white leading-tight mb-5">Ce blog, vous pourriez l'avoir aussi.</h1>
       <p class="text-base sm:text-lg leading-relaxed mb-8" style="color:rgba(255,255,255,.88)">Sans publicité, lisible même sans réseau, et pensé pour qu'on puisse écrire et publier depuis son téléphone, en plein voyage. Voici tout ce qu'il y a sous le capot - et pourquoi ça change tout par rapport à un blog gratuit classique.</p>
-      <a href="mailto:${email}?subject=${encodeURIComponent('Je veux un carnet comme le vôtre')}" class="inline-flex items-center gap-2 font-bold text-sm sm:text-base rounded-full px-7 py-3.5 transition-transform hover:-translate-y-0.5" style="background:#fff;color:var(--blue);box-shadow:0 10px 30px rgba(0,0,0,.2)">
-        <i class="ph-bold ph-envelope-simple"></i> Contacter ${email}
+      <a href="mailto:${email}?subject=${encodeURIComponent('Je veux un carnet comme le vôtre')}" class="inline-flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 font-bold text-sm sm:text-base rounded-[1.75rem] sm:rounded-full px-5 sm:px-7 py-3 sm:py-3.5 transition-transform hover:-translate-y-0.5 max-w-full" style="background:#fff;color:var(--blue);box-shadow:0 10px 30px rgba(0,0,0,.2);word-break:break-word">
+        <span><i class="ph-bold ph-envelope-simple"></i> Contacter</span><span>${email}</span>
       </a>
     </div>
   </section>

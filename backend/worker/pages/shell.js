@@ -136,8 +136,18 @@ ${url ? `<meta property="og:url" content="${url}">` : ''}
 }
 
 /* ── Base ──────────────────────────────────────────────────── */
-html { scroll-behavior: smooth; background: var(--cream); }
-body { min-height: 100vh; background: var(--cream); color: var(--ink); font-family: Montserrat, sans-serif; }
+html { scroll-behavior: smooth; background: var(--cream); overflow-x: hidden; }
+body { min-height: 100vh; background: var(--cream); color: var(--ink); font-family: Montserrat, sans-serif; overflow-x: hidden; }
+/* Filet de sécurité anti-débordement horizontal : sur les très petits écrans
+   (ex. Galaxy Z Fold fermé, ~280px), un texte non-sécable dans un bouton/pill
+   (email, URL...) forçait la page à s'élargir au lieu de passer à la ligne.
+   Applique un retour à la ligne par défaut à tout élément inline/bouton,
+   sans casser la mise en page sur les écrans normaux. */
+a, button, .action-btn, .action-btn-sm, .btn-primary, .btn-ghost, .subtle-btn, .ghost-btn {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
 /* Plain white surfaces (Tailwind's bg-white utility, and native form controls
    which browsers render white regardless of page CSS) still need an explicit
    flip in dark mode - unlike .panel/.section-panel below, these aren't part of
