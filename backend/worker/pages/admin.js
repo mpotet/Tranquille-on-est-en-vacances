@@ -2415,10 +2415,7 @@ function populateFolderSelect(folders, parentId, depth) {
 function _focusEditorAtEnd() {
   const ed = document.getElementById('e-content');
   if (!ed) return;
-  let placed = false;
-  const place = () => {
-    if (placed) return;
-    placed = true;
+  const scrollToEnd = () => {
     ed.focus();
     const range = document.createRange();
     range.selectNodeContents(ed);
@@ -2427,21 +2424,48 @@ function _focusEditorAtEnd() {
     sel.removeAllRanges();
     sel.addRange(range);
     saveSelection();
-    // Scroller sur le dernier enfant (pas sur ed lui-même : sa hauteur
-    // grandit au fur et à mesure que les images se chargent, donc un
-    // scrollIntoView sur ed juste après avoir posé innerHTML atterrit
-    // au milieu du contenu une fois les images arrivées).
     (ed.lastElementChild || ed).scrollIntoView({ block: 'end' });
   };
-  // Attendre que les images du contenu (souvent nombreuses) aient fini de
-  // charger pour que la hauteur finale soit connue avant de scroller.
-  const imgs = Array.from(ed.querySelectorAll('img')).filter(img => !img.complete);
-  if (!imgs.length) { place(); return; }
-  let remaining = imgs.length;
-  const done = () => { if (--remaining <= 0) place(); };
-  imgs.forEach(img => { img.addEventListener('load', done, { once: true }); img.addEventListener('error', done, { once: true }); });
-  // Filet de sécurité si une image ne déclenche jamais load/error.
-  setTimeout(place, 3000);
+  // La hauteur de l'éditeur grandit au fur et à mesure que les images se
+  // chargent, une par une et pas forcément en rafale (connexion lente en
+  // voyage) - donc un scroll basé sur un délai fixe atterrit au bon endroit
+  // ou pas selon la vitesse du réseau du moment (rapide -> fin ; lent ->
+  // milieu, sur l'image en cours de chargement au moment du délai).
+  // On combine donc : suivi explicite du load/error de chaque image déjà
+  // présente dans le contenu (fiable même si les images arrivent en
+  // trickle très espacé), + un ResizeObserver pour rattraper le reflow dû
+  // aux polices web ou à d'éventuelles images non comptabilisées.
+  let stillWaitingForImages = false;
+  let settleTimer = null;
+  const maybeDisconnect = () => {
+    if (stillWaitingForImages) return;
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => { if (!stillWaitingForImages) ro.disconnect(); }, 500);
+  };
+
+  const imgs = Array.from(ed.querySelectorAll('img'));
+  const incomplete = imgs.filter(img => !img.complete);
+  if (incomplete.length) {
+    stillWaitingForImages = true;
+    let remaining = incomplete.length;
+    const onOneDone = () => {
+      scrollToEnd();
+      if (--remaining <= 0) { stillWaitingForImages = false; maybeDisconnect(); }
+    };
+    incomplete.forEach(img => {
+      img.addEventListener('load', onOneDone, { once: true });
+      img.addEventListener('error', onOneDone, { once: true });
+    });
+  }
+
+  const ro = new ResizeObserver(() => { scrollToEnd(); maybeDisconnect(); });
+  ro.observe(ed);
+  scrollToEnd();
+  maybeDisconnect();
+  // Filet de sécurité : ne jamais observer indéfiniment si quelque chose
+  // continue de faire varier la hauteur (ex: chargement très lent, ou une
+  // image qui ne déclenche jamais load/error).
+  setTimeout(() => ro.disconnect(), 15000);
 }
 
 // ── WYSIWYG rich text editor ──────────────────────────────────
