@@ -3068,12 +3068,26 @@ document.getElementById('e-content')?.addEventListener('drop', async e => {
 // Paste image from clipboard into the editor
 document.getElementById('e-content')?.addEventListener('paste', async e => {
   const items = [...e.clipboardData.items].filter(i => i.type.startsWith('image/'));
-  if (!items.length) return;
+  if (items.length) {
+    e.preventDefault();
+    let range = null;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount) range = sel.getRangeAt(0).cloneRange();
+    for (const item of items) { const file = item.getAsFile(); if (file) await uploadAndInsertAtRange(file, range); }
+    return;
+  }
+  // Force plain-text paste for everything else. Sources like Samsung Notes
+  // or a copy from the site's own rendered preview carry inline
+  // style="--tw-..." (Tailwind) attributes on every element - left alone,
+  // the browser's default rich-paste drags all of that markup into the
+  // article content, which previously corrupted an article's storage
+  // (dozens of KB of dead CSS text wedged between paragraphs). Plain text
+  // still preserves line breaks (converted below to \n\n so blank-line
+  // paragraphs survive), just strips all markup/styling.
   e.preventDefault();
-  let range = null;
-  const sel = window.getSelection();
-  if (sel && sel.rangeCount) range = sel.getRangeAt(0).cloneRange();
-  for (const item of items) { const file = item.getAsFile(); if (file) await uploadAndInsertAtRange(file, range); }
+  const text = e.clipboardData.getData('text/plain');
+  if (!text) return;
+  document.execCommand('insertText', false, text);
 });
 
 // ── Float toolbar above mobile keyboard ───────────────────────
