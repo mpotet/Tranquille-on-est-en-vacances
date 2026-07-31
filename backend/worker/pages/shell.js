@@ -22,6 +22,15 @@ export const HEAD = (
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="${description}">
 <meta name="theme-color" content="#0057B8">
+<!-- Tells the browser this page already implements its own light/dark
+     theming (the color-scheme CSS property does the same for engines that
+     only read stylesheets) - some mobile browsers' "force dark mode"
+     feature (e.g. Samsung Internet) otherwise repaints page colors on top
+     of ours, which breaks anything relying on a specific translucent
+     backdrop color (like the mobile options drawer's dimmed overlay). This
+     is a hint, not a guarantee - a browser-level force-dark toggle can still
+     override it, but the two together are the strongest standard signal. -->
+<meta name="color-scheme" content="light dark">
 <title>${title}</title>
 <script>
 // Applied before any CSS/paint so a saved dark-mode preference doesn't flash

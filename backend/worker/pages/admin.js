@@ -1691,16 +1691,37 @@ export function editorPage(articleId = null) {
    as a window that opened on top, not a flat background swap that lets the
    article text show through underneath it. */
 @media (max-width: 1023px) {
+  /* Everything in #editor-sidebar (Statut, Informations, photo de
+     couverture, Supprimer...) is now reachable from the "⋮ Options" drawer
+     below no matter where you've scrolled to - showing it a second time
+     inline above the article text was pure duplication (and confusing:
+     "Fermer"/Statut sitting there with nothing to close). Hidden by default
+     on mobile; the drawer rule below re-shows this exact element (no
+     duplicated markup) as the fixed overlay when opened. */
+  #editor-sidebar { display: none; }
   body.mobile-opts-open { overflow: hidden; }
   #mobile-opts-backdrop {
     display: none; position: fixed; inset: 0; z-index: 69;
-    background: rgba(26,43,60,.55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+    /* Opaque solid (rgb(), not backdrop-filter:blur()+rgba()): a forced-dark
+       mode some mobile browsers apply (Samsung Internet's "Dark mode
+       websites", separate from this app's own light/dark theme) repaints
+       page colors as a post-process and can turn a blurred translucent
+       overlay into a near-transparent mess, letting the article text
+       underneath show through the "closed window". Still theme-aware (uses
+       --ink-rgb, which is dark in light mode and light in dark mode - i.e.
+       the opposite of the page background, same intent as the previous
+       dark tint) but with no transparency for a repaint pass to mangle. */
+    background: rgb(var(--ink-rgb));
   }
   body.mobile-opts-open #mobile-opts-backdrop { display: block; }
   body.mobile-opts-open #editor-sidebar {
-    position: fixed; z-index: 70; margin: 0;
+    display: block; position: fixed; z-index: 70; margin: 0;
     top: 5vh; left: 3vw; right: 3vw; bottom: 5vh;
-    background: var(--cream); overflow-y: auto;
+    /* Same reasoning: rgb(var(--cream-rgb)) is still theme-aware but always
+       fully opaque, unlike a bare var(--cream) reference some engines can
+       resolve inconsistently mid-repaint. */
+    background: rgb(var(--cream-rgb));
+    overflow-y: auto;
     border-radius: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,.35);
     padding: 1rem 1rem calc(1.5rem + env(safe-area-inset-bottom));
   }
