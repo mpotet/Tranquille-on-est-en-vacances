@@ -317,6 +317,11 @@ async function init(){
   const qs=new URLSearchParams();
   if(folder) qs.set('folder',folder);
   if(sort!=='date_desc') qs.set('sort',sort);
+  // The API defaults to 20 per page (its normal listing-endpoint cap) - this
+  // page has no pagination UI and is meant to show the whole carnet de
+  // voyage, so ask for the API's max (50) explicitly. A handful of trips a
+  // year means the real count won't outgrow that for a very long time.
+  qs.set('limit','50');
   const [folders,artData]=await Promise.all([
     _voyFetch('/api/folders',[]),
     _voyFetch('/api/articles'+(qs.toString()?'?'+qs.toString():''),{articles:[],total:0}),

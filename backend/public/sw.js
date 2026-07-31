@@ -21,7 +21,7 @@
  *   revalide silencieusement le cache.
  */
 
-const VERSION = 'v34';
+const VERSION = 'v36';
 const PAGES_CACHE = `tranquille-pages-${VERSION}`;
 const ASSETS_CACHE = `tranquille-assets-${VERSION}`;
 const API_CACHE = `tranquille-api-${VERSION}`;
@@ -176,7 +176,17 @@ self.addEventListener('fetch', event => {
     // instead of serving the stale-while-revalidate cached copy.
     const wantsFresh = (req.headers.get('cache-control') || '').includes('no-cache');
     if (isPublicApiGet(url) && !wantsFresh) {
-      event.respondWith(staleWhileRevalidateJson(event, req, API_CACHE));
+      // /api/articles?limit=N is keyed ignoring `limit` specifically: the
+      // client-side request-more-per-page value can change across a
+      // deploy (it did once already) with no way to know what a given
+      // device cached under the *old* value while offline - if the cache
+      // key still included `limit`, an offline visitor who hadn't been
+      // online since that change would hit a hard cache miss (a real
+      // network error, not just fewer results) on the voyages listing.
+      // Every other querystring param (q, folder, sort, page) still keys
+      // separately since those select genuinely different result sets.
+      const cacheUrl = url.pathname === '/api/articles' ? stripLimitParam(url) : req.url;
+      event.respondWith(staleWhileRevalidateJson(event, req, API_CACHE, cacheUrl));
     }
     return;
   }
@@ -248,12 +258,15 @@ async function networkFirst(req, cacheName) {
 
 // Comme staleWhileRevalidate, mais renvoie un corps JSON en cas d'échec total
 // (ces endpoints sont toujours consommés via response.json() côté client).
-async function staleWhileRevalidateJson(event, req, cacheName) {
+// `cacheKey` (optionnel) permet de stocker/lire sous une URL normalisée
+// différente de la requête réelle - voir stripLimitParam ci-dessous.
+async function staleWhileRevalidateJson(event, req, cacheName, cacheKey) {
   const cache = await caches.open(cacheName);
-  const cached = await cache.match(req);
+  const key = cacheKey || req.url;
+  const cached = await cache.match(key);
 
   const revalidate = fetch(req).then(resp => {
-    if (resp && resp.ok) cache.put(req, resp.clone());
+    if (resp && resp.ok) cache.put(key, resp.clone());
     return resp;
   }).catch(() => null);
 
@@ -269,6 +282,15 @@ async function staleWhileRevalidateJson(event, req, cacheName) {
     status: 503,
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+// Cache key for /api/articles that ignores `limit` - see the fetch handler
+// for why (the client-side "how many per page" value isn't part of what
+// makes two article listings actually different result sets).
+function stripLimitParam(url) {
+  const u = new URL(url);
+  u.searchParams.delete('limit');
+  return u.toString();
 }
 
 // Assets statiques : servir depuis le cache s'il existe, sinon aller au réseau et cacher.

@@ -136,8 +136,15 @@ ${url ? `<meta property="og:url" content="${url}">` : ''}
 }
 
 /* ── Base ──────────────────────────────────────────────────── */
-html { scroll-behavior: smooth; background: var(--cream); overflow-x: hidden; }
-body { min-height: 100vh; background: var(--cream); color: var(--ink); font-family: Montserrat, sans-serif; overflow-x: hidden; }
+/* overflow-x:clip here instead of hidden: both stop horizontal overflow
+   from widening the page, but hidden also makes html/body a scroll
+   container (even though they never actually scroll - the real page
+   scroll happens elsewhere), which silently breaks every position:sticky
+   element on the site - a sticky sidebar button just scrolled away like a
+   static one, with no visible error. clip gives the same visual clipping
+   without creating that scroll container. */
+html { scroll-behavior: smooth; background: var(--cream); overflow-x: clip; }
+body { min-height: 100vh; background: var(--cream); color: var(--ink); font-family: Montserrat, sans-serif; overflow-x: clip; }
 /* Filet de sécurité anti-débordement horizontal : sur les très petits écrans
    (ex. Galaxy Z Fold fermé, ~280px), un texte non-sécable dans un bouton/pill
    (email, URL...) forçait la page à s'élargir au lieu de passer à la ligne.

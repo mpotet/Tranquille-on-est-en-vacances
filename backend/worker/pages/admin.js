@@ -1680,6 +1680,31 @@ export function editorPage(articleId = null) {
 #e-content .img-pair-add{flex:1;min-width:0;max-width:49%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;border:2px dashed rgba(var(--blue-rgb),.5);border-radius:.75rem;cursor:pointer;color:rgba(var(--blue-rgb),.8);font-size:.8rem;font-weight:600;padding:1.5rem .5rem;transition:all .15s;background:rgba(var(--blue-rgb),.04)}
 #e-content .img-pair-add:hover{border-color:var(--blue);background:rgba(var(--blue-rgb),.12);color:var(--blue-dark)}
 #e-content .img-pair-add i{font-size:1.6rem}
+/* Mobile "Options" drawer: on lg+ this rule never applies (the media query
+   itself is scoped to below the lg breakpoint), so the sidebar keeps its
+   normal in-flow desktop layout untouched. On mobile, toggling
+   .mobile-opts-open on <body> turns the SAME #editor-sidebar element (no
+   duplicated markup / ids) into a real modal sheet - a dimmed/blurred
+   backdrop behind it (#mobile-opts-backdrop, matching the notif/email
+   modals' rgba(0,0,0,.55)+blur elsewhere on this site) plus a solid,
+   shadowed panel that's visibly inset from the screen edges - so it reads
+   as a window that opened on top, not a flat background swap that lets the
+   article text show through underneath it. */
+@media (max-width: 1023px) {
+  body.mobile-opts-open { overflow: hidden; }
+  #mobile-opts-backdrop {
+    display: none; position: fixed; inset: 0; z-index: 69;
+    background: rgba(26,43,60,.55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  }
+  body.mobile-opts-open #mobile-opts-backdrop { display: block; }
+  body.mobile-opts-open #editor-sidebar {
+    position: fixed; z-index: 70; margin: 0;
+    top: 5vh; left: 3vw; right: 3vw; bottom: 5vh;
+    background: var(--cream); overflow-y: auto;
+    border-radius: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    padding: 1rem 1rem calc(1.5rem + env(safe-area-inset-bottom));
+  }
+}
 </style></head>
 <body class="font-sans antialiased pt-14 pb-20 lg:pb-0" style="background:var(--cream);color:var(--ink)">
 ${ADMIN_NAV()}
@@ -1733,13 +1758,39 @@ ${ADMIN_NAV()}
 
     </div>
 
-    <!-- Sidebar: first on mobile, col-3 on desktop -->
-    <aside class="order-1 lg:col-start-3 lg:row-start-1 space-y-4">
+    <!-- Sidebar: first on mobile, col-3 on desktop.
+         Desktop: sticky + its own scroll. Sauvegarder/Annuler/Exporter and
+         the rest (Statut, Informations, photo de couverture, Supprimer...)
+         all stay reachable together while scrolling a long article, instead
+         of scrolling away with the sidebar's natural position (previously)
+         or a save-bar sticky div popping out of the sidebar's own bottom
+         once the sidebar's content was shorter than the article (the
+         in-between attempt). If the sidebar itself is taller than the
+         available viewport height, it scrolls internally rather than
+         getting clipped - so "Supprimer l'article" at the very bottom is
+         still reachable via a small scroll inside the sidebar, not lost.
+         Mobile: same markup (one set of #e-start-date/#e-folder/etc ids,
+         no duplication), but normally lives inline above the article text
+         (order-1) - reachable only by scrolling back to the top. #mobile-opts-drawer
+         toggles it into a full-screen overlay instead, opened from the
+         "Options" button in the sticky bottom bar, so Statut/Infos/photo de
+         couverture/Supprimer are reachable from anywhere in a long article
+         without losing your place in the text. -->
+    <div id="mobile-opts-backdrop" onclick="closeMobileOptsDrawer()"></div>
+    <aside id="editor-sidebar" class="order-1 lg:col-start-3 lg:row-start-1 space-y-4 lg:sticky lg:overflow-y-auto" style="top:5rem;max-height:calc(100vh - 6rem)">
 
-      <!-- Save button (desktop only - mobile uses sticky bottom bar) -->
+      <!-- Close bar - only rendered visible by the mobile-opts-open CSS
+           above (position:fixed inside the drawer); a plain block in normal
+           desktop/inline-mobile layout so it costs nothing there. -->
+      <button type="button" onclick="closeMobileOptsDrawer()" class="lg:hidden w-full flex items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-semibold" style="border:1px solid var(--line);color:var(--ink-muted);background:var(--cream)"><i class="ph-bold ph-x"></i> Fermer</button>
+
+      <!-- Save button (desktop only - mobile uses sticky bottom bar below).
+           The whole <aside> is sticky now, so this is just its first child -
+           it stays at the top of the (already-pinned) sidebar automatically. -->
       <div class="hidden lg:block space-y-2">
         <button onclick="saveArticle()" class="w-full action-btn text-white font-bold py-3 rounded-2xl transition-all"><i class="ph-bold ph-floppy-disk"></i> Sauvegarder</button>
-        ${isEdit ? `<a id="export-btn" href="/admin/articles/${articleId}/print" target="_blank" class="w-full flex items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-semibold transition-colors" style="border:1px solid var(--line);color:var(--ink-muted);text-decoration:none"><i class="ph-bold ph-export"></i> Exporter (PDF / Word)</a>` : ''}
+        <a href="/admin/dashboard" class="w-full flex items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-semibold transition-colors" style="border:1px solid var(--line);color:var(--ink-muted);text-decoration:none;background:var(--cream)"><i class="ph-bold ph-x"></i> Annuler</a>
+        ${isEdit ? `<a id="export-btn" href="/admin/articles/${articleId}/print" target="_blank" class="w-full flex items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-semibold transition-colors" style="border:1px solid var(--line);color:var(--ink-muted);text-decoration:none;background:var(--cream)"><i class="ph-bold ph-export"></i> Exporter (PDF / Word)</a>` : ''}
       </div>
 
       <!-- Status -->
@@ -1872,6 +1923,9 @@ ${ADMIN_NAV()}
 <!-- Sticky save bar (mobile only) -->
 <div class="fixed bottom-0 inset-x-0 z-40 lg:hidden backdrop-blur-sm px-4 py-3 flex items-center gap-3 shadow-xl" style="padding-bottom:max(12px,env(safe-area-inset-bottom));background:rgba(255,255,255,.95);border-top:1px solid var(--line)">
   <span id="sticky-status-lbl" class="flex-1 text-sm font-semibold truncate" style="color:var(--ink-muted)">Archivé</span>
+  <button onclick="openMobileOptsDrawer()" title="Statut, informations, photos, supprimer..." class="flex-shrink-0 flex items-center justify-center touch-manipulation" style="width:2.6rem;height:2.6rem;border-radius:999px;border:1px solid var(--line);color:var(--ink-muted);background:var(--cream)">
+    <i class="ph-bold ph-dots-three-vertical" style="font-size:1.2rem"></i>
+  </button>
   <button onclick="saveArticle()" class="action-btn py-2.5 px-5 text-sm font-bold flex-shrink-0 whitespace-nowrap touch-manipulation">
     <i class="ph-bold ph-floppy-disk"></i> Sauvegarder
   </button>
@@ -2671,6 +2725,15 @@ function openInsertImg(pairRow) {
   document.getElementById('insert-img-modal').classList.remove('hidden');
 }
 function closeInsertImg() { document.getElementById('insert-img-modal').classList.add('hidden'); }
+
+// ── Mobile "Options" drawer (Statut/Infos/photo de couverture/Supprimer) ──
+// Below lg, #editor-sidebar normally sits inline above the article text and
+// is only reachable by scrolling back to the top. Toggling this class turns
+// it into a full-screen overlay (CSS in the page <style>) instead - opened
+// from the "⋮" button next to Sauvegarder in the sticky bottom bar, so those
+// settings stay reachable no matter how far down the article you've scrolled.
+function openMobileOptsDrawer() { document.body.classList.add('mobile-opts-open'); }
+function closeMobileOptsDrawer() { document.body.classList.remove('mobile-opts-open'); }
 function setImgSize(size) {
   document.getElementById('iim-size').value = size;
   const on = 'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-sky-400 bg-sky-50 text-sky-700 text-sm font-bold transition-all';
@@ -3082,8 +3145,7 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // the browser's default rich-paste drags all of that markup into the
   // article content, which previously corrupted an article's storage
   // (dozens of KB of dead CSS text wedged between paragraphs). Plain text
-  // still preserves line breaks (converted below to \n\n so blank-line
-  // paragraphs survive), just strips all markup/styling.
+  // still preserves line breaks, just strips all markup/styling.
   e.preventDefault();
   const text = e.clipboardData.getData('text/plain');
   if (!text) return;
