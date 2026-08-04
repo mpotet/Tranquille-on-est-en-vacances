@@ -160,6 +160,11 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 function safeText(s){return esc(s);}
 function safeAttr(s){return esc(s);}
 function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+icon+'</span>';}
+// A root folder is a real "pays" only if its icon is an actual flag emoji
+// (two Unicode Regional Indicator Symbols, U+1F1E6-U+1F1FF) - a generic
+// organisational folder like "Autres" keeps the default 📁 icon, which
+// isn't a flag, so it must not inflate the "X pays" homepage stat.
+function isFlagIcon(icon){const cp=[...(icon||'')].map(c=>c.codePointAt(0));return cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF;}
 function stripMd(s){return(s||'').replace(/!\\[[^\\]]*\\]\\([^)]*\\)/g,'').replace(/\\*\\*([^*\\n]+)\\*\\*/g,'$1').replace(/\\*([^*\\n]+)\\*/g,'$1').replace(/^#{1,6}\\s+/gm,'').replace(/\\s+/g,' ').trim();}
 function fmtDateCard(a){const s=a.start_date||a.date,e=a.end_date||a.date;if(!s)return'';const opt={month:'short',year:'numeric'};const ms=new Date(s).toLocaleDateString('fr-FR',opt);const me=new Date(e).toLocaleDateString('fr-FR',opt);return ms===me?ms:ms+' - '+me;}
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
@@ -294,7 +299,7 @@ async function init(){
   // Stats - animated count-up (respects reduced-motion). The Maroc count is a
   // deliberate wink ("la routine s'installe") rather than a generic metric.
   const nbVoyages = artData.total ?? artData.articles.length;
-  const nbPays    = folderData.filter(f=>!f.parent_id).length;
+  const nbPays    = folderData.filter(f=>!f.parent_id && isFlagIcon(f.icon)).length;
   // Count Morocco stays across all articles (destination or folder mentions "maroc").
   const norm = s => (s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();
   const nbMaroc = artData.articles.filter(a => norm(a.destination).includes('maroc') || norm(a.folder_name).includes('maroc')).length;

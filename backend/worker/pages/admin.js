@@ -1725,6 +1725,16 @@ export function editorPage(articleId = null) {
     border-radius: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,.35);
     padding: 1rem 1rem calc(1.5rem + env(safe-area-inset-bottom));
   }
+
+  /* Exactly one of the two mobile bottom bars, switched by a single class on
+     <body> - see the focusin/focusout handler near the bottom of the page's
+     script. Default (not editing): Sauvegarder bar shown, formatting bar
+     hidden. While #e-content has focus: the reverse. Plain display swaps,
+     no transition - nothing to land mid-animation or get clipped. */
+  #mobile-save-bar { display: flex; }
+  #mobile-format-bar { display: none; }
+  body.editor-editing #mobile-save-bar { display: none; }
+  body.editor-editing #mobile-format-bar { display: flex; }
 }
 </style></head>
 <body class="font-sans antialiased pt-14 pb-20 lg:pb-0" style="background:var(--cream);color:var(--ink)">
@@ -1755,8 +1765,21 @@ ${ADMIN_NAV()}
         <div class="mb-2">
           <label class="text-xs font-bold uppercase tracking-wide" style="color:var(--ink-muted)">Contenu</label>
         </div>
-        <div class="rounded-2xl focus-within:border-sky-400 transition-colors overflow-hidden" style="border:2px solid var(--line)">
-          <div id="editor-toolbar" class="flex flex-wrap items-center gap-0.5 p-1.5" style="background:var(--cream);border-bottom:1px solid var(--line)">
+        <!-- overflow-hidden removed (was only there to clip the toolbar's
+             own corners to match the container's rounded-2xl) - it also
+             breaks position:sticky on any descendant (an ancestor with
+             non-visible overflow becomes sticky's containing block, and the
+             editor box's own scroll never actually moves, so the toolbar
+             would silently stop sticking and just scroll away with the
+             text - the same failure mode found earlier with html/body's
+             overflow-x:hidden breaking the sidebar's sticky). The toolbar
+             now carries its own top corner radius (rounded-t-2xl) instead,
+             so it still looks seamless without needing the parent to clip. -->
+        <div class="rounded-2xl focus-within:border-sky-400 transition-colors" style="border:2px solid var(--line)">
+          <!-- Desktop only: mobile uses #mobile-format-bar (fixed bottom bar,
+               swapped with #mobile-save-bar - see the CSS/JS near the bottom
+               of this page) instead of this one scrolling with the article. -->
+          <div id="editor-toolbar" class="hidden lg:flex flex-wrap items-center gap-0.5 p-1.5 rounded-t-2xl sticky" style="background:var(--cream);border-bottom:1px solid var(--line);top:5rem;z-index:20">
             <button type="button" class="toolbar-btn" onclick="fmt('bold')" title="Gras"><i class="ph-bold ph-text-b"></i></button>
             <button type="button" class="toolbar-btn" onclick="fmt('italic')" title="Italique"><i class="ph-bold ph-text-italic"></i></button>
             <button type="button" class="toolbar-btn" onclick="fmt('underline')" title="Souligné"><i class="ph-bold ph-text-underline"></i></button>
@@ -1771,7 +1794,7 @@ ${ADMIN_NAV()}
             <button type="button" class="toolbar-btn" style="color:var(--blue)" onclick="openInsertImg()" title="Insérer une image"><i class="ph-bold ph-image"></i></button>
           </div>
           <div id="e-content" contenteditable="true" spellcheck="true"
-               class="prose-vacation min-h-[360px] max-w-none p-5 focus:outline-none"
+               class="prose-vacation min-h-[360px] max-w-none p-5 rounded-b-2xl focus:outline-none"
                data-placeholder="Commencez à écrire votre récit..."
                style="color:var(--ink)"></div>
         </div>
@@ -1941,8 +1964,18 @@ ${ADMIN_NAV()}
   </div>
 </div>
 
-<!-- Sticky save bar (mobile only) -->
-<div class="fixed bottom-0 inset-x-0 z-40 lg:hidden backdrop-blur-sm px-4 py-3 flex items-center gap-3 shadow-xl" style="padding-bottom:max(12px,env(safe-area-inset-bottom));background:rgba(255,255,255,.95);border-top:1px solid var(--line)">
+<!-- Mobile bottom bar: exactly ONE of these two is ever visible, toggled by
+     the single "editor-editing" class on <body> (set on focusin/focusout of
+     #e-content - see the script near the bottom of this page). No height
+     math, no animation, no visualViewport tracking: both bars simply sit at
+     fixed bottom:0 and let the OS/browser's native "push fixed content above
+     the keyboard" behaviour handle the rest, same as any ordinary fixed
+     bottom bar over a focused input - that's what was actually unreliable
+     before (computing the keyboard's height by hand raced the keyboard's own
+     open/close animation and got it wrong, or ran stale, on some devices/
+     keyboards). display:none/flex is instant, so there's nothing to visibly
+     glitch or land mid-transition either. -->
+<div id="mobile-save-bar" class="fixed bottom-0 inset-x-0 z-40 lg:hidden backdrop-blur-sm px-4 py-3 items-center gap-3 shadow-xl" style="padding-bottom:max(12px,env(safe-area-inset-bottom));background:rgba(255,255,255,.95);border-top:1px solid var(--line)">
   <span id="sticky-status-lbl" class="flex-1 text-sm font-semibold truncate" style="color:var(--ink-muted)">Archivé</span>
   <button onclick="openMobileOptsDrawer()" title="Statut, informations, photos, supprimer..." class="flex-shrink-0 flex items-center justify-center touch-manipulation" style="width:2.6rem;height:2.6rem;border-radius:999px;border:1px solid var(--line);color:var(--ink-muted);background:var(--cream)">
     <i class="ph-bold ph-dots-three-vertical" style="font-size:1.2rem"></i>
@@ -1950,6 +1983,25 @@ ${ADMIN_NAV()}
   <button onclick="saveArticle()" class="action-btn py-2.5 px-5 text-sm font-bold flex-shrink-0 whitespace-nowrap touch-manipulation">
     <i class="ph-bold ph-floppy-disk"></i> Sauvegarder
   </button>
+</div>
+
+<!-- Formatting bar, mobile only - same buttons/onclick handlers as the
+     desktop toolbar inside the editor box (fmt()/fmtBlock()/openInsertImg()
+     are the same global functions either way), just laid out as its own
+     fixed bottom bar instead of scrolling with the article text. -->
+<div id="mobile-format-bar" class="fixed bottom-0 inset-x-0 z-40 lg:hidden px-2 items-center gap-0.5 shadow-xl overflow-x-auto" style="padding-top:.35rem;padding-bottom:max(.35rem,env(safe-area-inset-bottom));background:var(--cream);border-top:1px solid var(--line)">
+  <button type="button" class="toolbar-btn" onclick="fmt('bold')" title="Gras"><i class="ph-bold ph-text-b"></i></button>
+  <button type="button" class="toolbar-btn" onclick="fmt('italic')" title="Italique"><i class="ph-bold ph-text-italic"></i></button>
+  <button type="button" class="toolbar-btn" onclick="fmt('underline')" title="Souligné"><i class="ph-bold ph-text-underline"></i></button>
+  <span class="toolbar-sep"></span>
+  <button type="button" class="toolbar-btn" onclick="fmtBlock('H2')" title="Titre"><i class="ph-bold ph-text-h-two"></i></button>
+  <button type="button" class="toolbar-btn" onclick="fmtBlock('H3')" title="Sous-titre"><i class="ph-bold ph-text-h-three"></i></button>
+  <button type="button" class="toolbar-btn" onclick="fmtBlock('P')" title="Texte normal"><i class="ph-bold ph-paragraph"></i></button>
+  <span class="toolbar-sep"></span>
+  <button type="button" class="toolbar-btn" onclick="fmt('insertUnorderedList')" title="Liste à puces"><i class="ph-bold ph-list-bullets"></i></button>
+  <button type="button" class="toolbar-btn" onclick="fmtBlock('BLOCKQUOTE')" title="Citation"><i class="ph-bold ph-quotes"></i></button>
+  <span class="toolbar-sep"></span>
+  <button type="button" class="toolbar-btn" style="color:var(--blue)" onclick="openInsertImg()" title="Insérer une image"><i class="ph-bold ph-image"></i></button>
 </div>
 
 <!-- Insert image modal -->
@@ -3173,23 +3225,32 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   document.execCommand('insertText', false, text);
 });
 
-// ── Float toolbar above mobile keyboard ───────────────────────
+// ── Mobile bottom bar swap: Sauvegarder vs formatting, never both ─────────
+// body.editor-editing is the single source of truth for which bar shows
+// (CSS above). It tracks real DOM focus on #e-content via focusin/focusout
+// on document - not the on-screen keyboard's own height (that approach
+// raced each keyboard's open/close animation and produced a bar that was
+// missing, mispositioned, or clipped depending on device/timing). A tap on
+// one of the formatting buttons blurs #e-content just before its own click
+// handler re-focuses it (fmt()/fmtBlock() both call editor.focus()) - so
+// focusout is deferred one tick to let that click land first and cancel the
+// class removal, instead of visibly flashing the save bar in between.
 (function() {
-  const vv = window.visualViewport;
-  if (!vv) return;
-  const toolbar = document.getElementById('editor-toolbar');
-  if (!toolbar) return;
-  function updateToolbar() {
-    const isMobile = window.innerWidth < 1024;
-    const keyboardH = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-    if (isMobile && keyboardH > 150) {
-      toolbar.style.cssText = 'position:fixed;bottom:'+keyboardH+'px;left:0;right:0;z-index:50;border-radius:0;border-top:1px solid var(--line);border-bottom:none;box-shadow:0 -2px 8px rgba(0,0,0,.08);background:var(--cream);padding:.35rem .75rem';
-    } else {
-      toolbar.style.cssText = '';
-    }
-  }
-  vv.addEventListener('resize', updateToolbar);
-  vv.addEventListener('scroll', updateToolbar);
+  const editor = document.getElementById('e-content');
+  if (!editor) return;
+  let pendingBlur = null;
+  document.addEventListener('focusin', e => {
+    if (e.target !== editor) return;
+    if (pendingBlur) { clearTimeout(pendingBlur); pendingBlur = null; }
+    document.body.classList.add('editor-editing');
+  });
+  document.addEventListener('focusout', e => {
+    if (e.target !== editor) return;
+    pendingBlur = setTimeout(() => {
+      if (document.activeElement !== editor) document.body.classList.remove('editor-editing');
+      pendingBlur = null;
+    }, 0);
+  });
 })();
 
 document.addEventListener('click', e => {

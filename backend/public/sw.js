@@ -21,7 +21,7 @@
  *   revalide silencieusement le cache.
  */
 
-const VERSION = 'v38';
+const VERSION = 'v42';
 const PAGES_CACHE = `tranquille-pages-${VERSION}`;
 const ASSETS_CACHE = `tranquille-assets-${VERSION}`;
 const API_CACHE = `tranquille-api-${VERSION}`;
