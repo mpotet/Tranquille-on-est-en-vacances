@@ -19,7 +19,18 @@ export const HEAD = (
   } = opts;
   return `
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- interactive-widget=resizes-content: makes the on-screen keyboard actually
+     shrink the layout viewport instead of just overlaying it while the
+     layout viewport stays full-height underneath. Without it, a
+     position:fixed;bottom:0 bar (the editor's mobile formatting bar) stays
+     anchored to the bottom of that unchanged full-height layout viewport -
+     which is now BEHIND the keyboard - and only scrolls into the visible
+     area once the page is scrolled all the way to its own bottom, exactly
+     the "bar shows at the bottom of the text, disappears scrolling up"
+     symptom reported. Supported on Chrome/Samsung Internet 108+; older
+     engines silently ignore the token and keep their previous (imperfect
+     but not broken) behaviour. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
 <meta name="description" content="${description}">
 <meta name="theme-color" content="#0057B8">
 <!-- Tells the browser this page already implements its own light/dark
@@ -718,6 +729,86 @@ _syncThemeIcon();
     });
   });
 })();
+
+// ── PWA back-button stack ─────────────────────────────────────
+// Installed as display:standalone (see manifest.json), so the Android
+// system back gesture/button has no browser chrome to fall back to - by
+// default it either pops this page's history (fine, this site is a plain
+// multi-page app so that already works page-to-page) or, once history is
+// empty, closes the app outright. That's the right behaviour on the home
+// page, but wrong for anything layered ON a page without a real navigation
+// - a modal, the mobile options drawer, the image-insert dialog, the
+// lightbox, or (in the editor) the on-screen keyboard being open: back
+// should dismiss whichever of those is topmost first, exactly like it
+// dismisses the keyboard/a dialog in any native Android app, and only
+// actually navigate/exit once nothing is layered on top.
+//
+// Mechanism: every open overlay pushes one history entry (a harmless
+// same-URL state, never changes what's on screen by itself) and registers
+// its close function. The back button fires 'popstate' for that pushed
+// entry before it would ever reach real navigation; the top of the stack
+// closes itself and consumes the event. Multiple overlays opened in
+// sequence (e.g. image-insert dialog opened from inside the options
+// drawer) unwind one at a time, most-recent-first, same as native back-stack
+// semantics. Lives in NAV (present on every page, admin or public) rather
+// than a page-specific script, since the lightbox and other public-site
+// overlays need it too, not just the admin editor's drawer/modals/keyboard.
+window._tvBackStack = [];
+// True while popBackHandler() is unwinding a history entry itself (button
+// close, not the user pressing back) - lets the popstate listener tell
+// "this popstate is one WE triggered by calling history.back()" apart from
+// "the user just pressed the real back button", so it doesn't try to close
+// an overlay a second time (which would pop the wrong entry - or nothing -
+// off the stack for whatever overlay opened next).
+window._tvPopstateFromClose = false;
+// By default, a browser auto-saves the page's scroll position with every
+// pushState entry and restores it on the matching popstate. That's exactly
+// backwards here: these pushState calls happen for an overlay opening (the
+// scroll position hasn't changed, there's nothing to "restore" back to
+// other than where the user already is) - but going back from a keyboard
+// that closed WITHOUT ever scrolling the page was jumping to whatever
+// position the page happened to be at the very first pushState of the
+// session, since that's the entry the browser associates the restore with.
+// 'manual' turns that auto-restore off entirely; nothing in this app
+// relies on scroll-position-per-history-entry, so there's no behaviour to
+// replace it with - the page's own scroll simply stays exactly where it was
+// through every push/pop the back-stack does.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+function pushBackHandler(onBack) {
+  window._tvBackStack.push(onBack);
+  history.pushState({ _tvOverlay: true, depth: window._tvBackStack.length }, '');
+}
+// For the rare case where one overlay hands off directly to another as part
+// of a single continuous user action (e.g. tapping the mobile formatting
+// bar's image button blurs the editor - which would normally close the
+// "keyboard open" entry - right as the image dialog opens and wants to push
+// its own): swap the top handler in place instead of popping-then-pushing.
+// One user gesture should correspond to one history entry, not a
+// pop+push pair a stray back tap could unwind through in one step while
+// the app still thinks two things are layered.
+function replaceTopBackHandler(onBack) {
+  if (window._tvBackStack.length) window._tvBackStack[window._tvBackStack.length - 1] = onBack;
+  else pushBackHandler(onBack);
+}
+// Call when an overlay closes itself WITHOUT the user pressing back (a
+// "Fermer" button, tapping the scrim, saving/submitting...) - the entry
+// this overlay pushed is now stale and must be popped so the real page
+// underneath is next, not a dead state that back would otherwise re-trigger
+// this same close handler for.
+function popBackHandler() {
+  if (!window._tvBackStack.length) return;
+  window._tvBackStack.pop();
+  if (history.state && history.state._tvOverlay) {
+    window._tvPopstateFromClose = true;
+    history.back();
+  }
+}
+window.addEventListener('popstate', () => {
+  if (window._tvPopstateFromClose) { window._tvPopstateFromClose = false; return; }
+  if (!window._tvBackStack.length) return; // nothing registered -> let the browser/OS handle it (real navigation, or exit on the home page)
+  const onBack = window._tvBackStack.pop();
+  onBack();
+});
 </script>
 ${authed ? `
 <script>

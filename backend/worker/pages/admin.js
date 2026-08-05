@@ -1680,6 +1680,19 @@ export function editorPage(articleId = null) {
 #e-content .img-pair-add{flex:1;min-width:0;max-width:49%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;border:2px dashed rgba(var(--blue-rgb),.5);border-radius:.75rem;cursor:pointer;color:rgba(var(--blue-rgb),.8);font-size:.8rem;font-weight:600;padding:1.5rem .5rem;transition:all .15s;background:rgba(var(--blue-rgb),.04)}
 #e-content .img-pair-add:hover{border-color:var(--blue);background:rgba(var(--blue-rgb),.12);color:var(--blue-dark)}
 #e-content .img-pair-add i{font-size:1.6rem}
+/* A collapsed text-cursor next to an inline image has no visible caret at
+   all on most mobile browsers (nothing to blink next to a photo) - the
+   selectionchange listener elsewhere on this page tags the figure the
+   cursor actually landed next to with this class, so tapping a photo gives
+   a clear "the cursor is here, before/after this image" signal instead of
+   an invisible one. The 3px offset outline (not a border) doesn't shift
+   layout or crop into the image itself. */
+#e-content figure.img-caret-adjacent,
+#e-content .img-pair.img-caret-adjacent { outline:3px solid var(--blue); outline-offset:3px; border-radius:.75rem; }
+/* The default browser caret color is easy to lose against a photo or a
+   dashed image-pair outline - pick the brand blue explicitly instead of
+   inheriting an implicit black/text-color one. */
+#e-content{caret-color:var(--blue);}
 /* Mobile "Options" drawer: on lg+ this rule never applies (the media query
    itself is scoped to below the lg breakpoint), so the sidebar keeps its
    normal in-flow desktop layout untouched. On mobile, toggling
@@ -2605,6 +2618,58 @@ function restoreSelection() {
   if (!_savedRange) return;
   const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(_savedRange);
 }
+
+// Tapping an image in a contenteditable places the text cursor immediately
+// before or after it (standard browser behaviour) rather than "selecting"
+// the image the way a native image picker would - on mobile in particular
+// there's no visible caret next to an image at all, so nothing shows where
+// that cursor actually landed. Mirrors that invisible caret position onto
+// the adjacent figure/img with a visible outline instead, updated on every
+// selectionchange, so tapping a photo gives an unambiguous "the cursor is
+// right here, before/after this image" signal instead of nothing.
+(function() {
+  const editor = document.getElementById('e-content');
+  if (!editor) return;
+  let _highlighted = null;
+  function clearHighlight() {
+    if (_highlighted) { _highlighted.classList.remove('img-caret-adjacent'); _highlighted = null; }
+  }
+  // Walk outward from a text position to the nearest FIGURE ancestor/sibling
+  // - the DOM node the caret is "at" (its container) is usually the shared
+  // parent of the image and surrounding text, not the figure itself.
+  function figureNear(node, offset) {
+    if (!node) return null;
+    // Collapsed range sitting inside or right next to a figure: check the
+    // child at/adjacent to the offset for an element range (text nodes have
+    // no children - only relevant when node is the contenteditable/a block,
+    // i.e. the caret is between block-level children, not inside text).
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const before = node.childNodes[offset - 1];
+      const after = node.childNodes[offset];
+      for (const cand of [after, before]) {
+        if (!cand) continue;
+        if (cand.nodeType === Node.ELEMENT_NODE) {
+          const fig = cand.matches?.('figure, .img-pair') ? cand : cand.querySelector?.('figure');
+          if (fig) return fig.tagName === 'FIGURE' ? fig : cand;
+        }
+      }
+    }
+    // Caret inside a text node right next to a figure sibling.
+    let el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    const prev = el?.previousElementSibling, next = el?.nextElementSibling;
+    if (prev?.matches?.('figure, .img-pair')) return prev;
+    if (next?.matches?.('figure, .img-pair')) return next;
+    return null;
+  }
+  document.addEventListener('selectionchange', () => {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount || !sel.isCollapsed || !editor.contains(sel.anchorNode)) { clearHighlight(); return; }
+    const fig = figureNear(sel.anchorNode, sel.anchorOffset);
+    if (fig === _highlighted) return;
+    clearHighlight();
+    if (fig) { fig.classList.add('img-caret-adjacent'); _highlighted = fig; }
+  });
+})();
 function fmt(cmd) {
   const ed = document.getElementById('e-content');
   ed.focus();
@@ -2796,8 +2861,30 @@ function openInsertImg(pairRow) {
   const capIn = document.getElementById('iim-caption');
   if (capIn) capIn.value = '';
   document.getElementById('insert-img-modal').classList.remove('hidden');
+  // PWA back button (see shell.js's back-stack) dismisses this dialog
+  // instead of falling through to real page navigation / exiting the app.
+  //
+  // This dialog is very often opened via a click on the mobile formatting
+  // bar's image button, which fires #e-content's blur just before this
+  // handler runs - the editor-editing IIFE's own back-stack bookkeeping for
+  // that blur is deferred one tick, so its "keyboard is open" entry is still
+  // on the stack right now. Swap it in place (replaceTopBackHandler) rather
+  // than stacking a second entry on top: opening the keyboard then tapping
+  // its own toolbar to open this dialog is one continuous user action, not
+  // two independently-dismissable layers - a single back tap should return
+  // straight to the editor, not first close an empty "nothing to show for
+  // it" keyboard-closed state.
+  if (window._tvEditingBackHandler) {
+    window._tvEditingBackHandler = false;
+    replaceTopBackHandler(closeInsertImg);
+  } else {
+    pushBackHandler(closeInsertImg);
+  }
 }
-function closeInsertImg() { document.getElementById('insert-img-modal').classList.add('hidden'); }
+function closeInsertImg() {
+  document.getElementById('insert-img-modal').classList.add('hidden');
+  popBackHandler();
+}
 
 // ── Mobile "Options" drawer (Statut/Infos/photo de couverture/Supprimer) ──
 // Below lg, #editor-sidebar normally sits inline above the article text and
@@ -2805,8 +2892,14 @@ function closeInsertImg() { document.getElementById('insert-img-modal').classLis
 // it into a full-screen overlay (CSS in the page <style>) instead - opened
 // from the "⋮" button next to Sauvegarder in the sticky bottom bar, so those
 // settings stay reachable no matter how far down the article you've scrolled.
-function openMobileOptsDrawer() { document.body.classList.add('mobile-opts-open'); }
-function closeMobileOptsDrawer() { document.body.classList.remove('mobile-opts-open'); }
+function openMobileOptsDrawer() {
+  document.body.classList.add('mobile-opts-open');
+  pushBackHandler(closeMobileOptsDrawer);
+}
+function closeMobileOptsDrawer() {
+  document.body.classList.remove('mobile-opts-open');
+  popBackHandler();
+}
 function setImgSize(size) {
   document.getElementById('iim-size').value = size;
   const on = 'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-sky-400 bg-sky-50 text-sky-700 text-sm font-bold transition-all';
@@ -3226,31 +3319,84 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
 });
 
 // ── Mobile bottom bar swap: Sauvegarder vs formatting, never both ─────────
-// body.editor-editing is the single source of truth for which bar shows
-// (CSS above). It tracks real DOM focus on #e-content via focusin/focusout
-// on document - not the on-screen keyboard's own height (that approach
-// raced each keyboard's open/close animation and produced a bar that was
-// missing, mispositioned, or clipped depending on device/timing). A tap on
-// one of the formatting buttons blurs #e-content just before its own click
-// handler re-focuses it (fmt()/fmtBlock() both call editor.focus()) - so
-// focusout is deferred one tick to let that click land first and cancel the
-// class removal, instead of visibly flashing the save bar in between.
+// The Sauvegarder bar must be the default state at all times, and only ever
+// give way to the formatting bar while an on-screen keyboard is actually
+// covering the screen - DOM focus on #e-content is NOT the same thing:
+// - focus can persist with no keyboard visible (tapping the keyboard's own
+//   "back"/dismiss key/gesture only hides the keyboard, it doesn't blur the
+//   field), which left the formatting bar shown with nothing to justify it.
+// - a click that starts inside #e-content but is really aimed at a button
+//   OUTSIDE it (Sauvegarder, a toolbar button, "Fermer"...) can transiently
+//   blur with no refocus at all in some browsers, which could leave BOTH
+//   bars hidden for a frame - a real bug the previous focus-only version hit.
+// visualViewport height shrinking relative to the layout viewport is the
+// actual, engine-reported signal for "a keyboard is on screen" and is true
+// or false regardless of how the keyboard got dismissed. body.editor-editing
+// still exists as the single CSS switch (unchanged), just driven by this
+// instead of focus/blur.
 (function() {
   const editor = document.getElementById('e-content');
+  const vv = window.visualViewport;
   if (!editor) return;
-  let pendingBlur = null;
-  document.addEventListener('focusin', e => {
-    if (e.target !== editor) return;
-    if (pendingBlur) { clearTimeout(pendingBlur); pendingBlur = null; }
-    document.body.classList.add('editor-editing');
-  });
-  document.addEventListener('focusout', e => {
-    if (e.target !== editor) return;
-    pendingBlur = setTimeout(() => {
-      if (document.activeElement !== editor) document.body.classList.remove('editor-editing');
-      pendingBlur = null;
-    }, 0);
-  });
+
+  // interactive-widget=resizes-content (viewport meta, see shell.js) makes
+  // the on-screen keyboard shrink window.innerHeight itself, not just
+  // visualViewport - comparing the two against EACH OTHER (the previous
+  // approach) no longer isolates the keyboard's height, since both shrink
+  // together. Track the tallest innerHeight ever seen instead, as a stable
+  // "no keyboard" baseline (screen rotation/URL-bar-collapse only ever grow
+  // it back toward that same max, never past it) - a real keyboard is the
+  // one thing that pushes innerHeight measurably BELOW its own recent
+  // maximum while the page itself hasn't navigated or resized the window.
+  let _maxHeight = window.innerHeight;
+  function keyboardLikelyOpen() {
+    if (window.innerHeight > _maxHeight) _maxHeight = window.innerHeight;
+    // 0.75 leaves headroom for browser chrome (URL bar collapsing/
+    // expanding) never being mistaken for a keyboard, while still catching
+    // every real on-screen keyboard (typically 35-50% of screen height).
+    return window.innerHeight < _maxHeight * 0.75;
+  }
+
+  // While the keyboard is open, PWA back should dismiss it (blur the
+  // editor) instead of navigating away or exiting the app - same
+  // pushBackHandler/popBackHandler mechanism as the modals in shell.js.
+  // window._tvEditingBackHandler tracks whether WE currently hold an entry
+  // (exposed on window, not a closure-local, so openInsertImg() below can
+  // synchronously hand off to it - see the comment there for why that
+  // matters) so toggling editor-editing on/off only pushes/pops once per
+  // open/close instead of once per update() call (update() re-runs on every
+  // scroll/resize event while the keyboard is up).
+  window._tvEditingBackHandler = false;
+  function update() {
+    const open = document.activeElement === editor && keyboardLikelyOpen();
+    document.body.classList.toggle('editor-editing', open);
+    if (open && !window._tvEditingBackHandler) {
+      window._tvEditingBackHandler = true;
+      pushBackHandler(() => { window._tvEditingBackHandler = false; editor.blur(); });
+    } else if (!open && window._tvEditingBackHandler) {
+      window._tvEditingBackHandler = false;
+      popBackHandler();
+    }
+  }
+
+  editor.addEventListener('focus', update);
+  // A tap on one of the formatting buttons blurs #e-content (focus moving to
+  // the button) BEFORE that button's own click handler runs and calls
+  // editor.focus() again (fmt()/fmtBlock() both do) - reading
+  // activeElement synchronously on blur sees the button, not the editor,
+  // and would wrongly drop back to the Sauvegarder bar mid-keystroke. Defer
+  // one tick so the click's refocus lands first; only actual navigation away
+  // (tapping the title field, closing the drawer, etc.) leaves the editor
+  // un-focused by the time this runs.
+  editor.addEventListener('blur', () => setTimeout(update, 0));
+  if (vv) {
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+  }
+  // Also catch the keyboard's own dismiss gesture on browsers that fire a
+  // plain window resize instead of (or in addition to) visualViewport events.
+  window.addEventListener('resize', update);
+  update();
 })();
 
 document.addEventListener('click', e => {
