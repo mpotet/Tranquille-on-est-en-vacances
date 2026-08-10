@@ -1812,13 +1812,16 @@ ${ADMIN_NAV()}
                  data-placeholder="Commencez à écrire votre récit..."
                  style="color:var(--ink)"></div>
             <!-- Shown only while an existing article's images are still
-                 loading: covers the editor (pointer-events:none content
-                 stays inert underneath) with a fixed, non-scrolling
-                 progress readout instead of letting the page jump around
-                 as each image resizes the editor and the old
-                 scroll-to-end-on-every-load behaviour fought the user for
-                 control of the scroll position. -->
-            <div id="e-loading-overlay" class="hidden" style="position:absolute;inset:0;z-index:30;border-radius:0 0 1rem 1rem;background:var(--cream);flex-direction:column;align-items:center;justify-content:center;gap:.75rem">
+                 preloading, BEFORE any of the article's HTML/images ever
+                 touch #e-content - a fixed-size box with nothing else on
+                 the page moving, instead of revealing the editor content
+                 progressively while it grows/reflows/scrolls underneath
+                 the user (the previous approach: images loaded straight
+                 into the visible editor while a percentage was merely
+                 decorative on top of it, so the page still jumped around
+                 during loading and the editor sat blank/broken-looking
+                 until everything settled). -->
+            <div id="e-loading-overlay" class="hidden" style="position:absolute;inset:0;z-index:30;min-height:360px;border-radius:0 0 1rem 1rem;background:var(--cream);flex-direction:column;align-items:center;justify-content:center;gap:.75rem">
               <div style="width:min(220px,70%);height:8px;border-radius:999px;background:var(--line);overflow:hidden">
                 <div id="e-loading-bar" style="height:100%;width:0%;border-radius:999px;background:var(--blue);transition:width .2s ease"></div>
               </div>
@@ -2516,19 +2519,7 @@ async function init() {
       document.getElementById('e-title').value = a.title || '';
       document.getElementById('e-desc').value  = a.short_description || '';
       const rawContent = a.content || '';
-      const contentEl = document.getElementById('e-content');
-      let html = rawContent.trim().startsWith('<') ? rawContent : (rawContent ? (typeof marked !== 'undefined' ? marked.parse(rawContent) : '<p>' + rawContent.replace(/\\n\\n/g,'</p><p>').replace(/\\n/g,'<br>') + '</p>') : '');
-      // Un article avec beaucoup d'images stockées pouvait bloquer la page
-      // 1-2 min avant de pouvoir écrire : le navigateur décodait toutes les
-      // images d'un coup au moment de l'injection dans innerHTML ci-dessous.
-      // loading="lazy" doit être présent dans le HTML AU MOMENT du parsing
-      // pour être pris en compte - le poser après coup via la propriété JS
-      // (img.loading = 'lazy') est trop tard, le navigateur a déjà lancé le
-      // fetch de toutes les images pendant le parsing de innerHTML, donc ça
-      // ne changeait rien en pratique. On l'injecte donc directement dans
-      // la chaîne HTML avant assignation.
-      html = html.replace(/<img /gi, '<img loading="lazy" decoding="async" ');
-      contentEl.innerHTML = html;
+      const html = rawContent.trim().startsWith('<') ? rawContent : (rawContent ? (typeof marked !== 'undefined' ? marked.parse(rawContent) : '<p>' + rawContent.replace(/\\n\\n/g,'</p><p>').replace(/\\n/g,'<br>') + '</p>') : '');
       document.getElementById('e-start-date').value  = a.start_date || a.date || today;
       document.getElementById('e-end-date').value  = a.end_date || a.date || today;
       document.getElementById('e-dest').value  = a.destination || '';
@@ -2541,11 +2532,16 @@ async function init() {
       }
       existingPhotos = a.photos || [];
       renderPhotoGrid();
-      // La plupart des modifications consistent à ajouter les notes de la
-      // dernière journée en fin d'article - placer le curseur à la fin du
-      // contenu (et scroller jusque-là) évite d'avoir à chercher la fin du
-      // texte à chaque ouverture d'un article existant.
-      _focusEditorAtEnd();
+      // Un article avec beaucoup d'images stockées pouvait bloquer la page
+      // 1-2 min avant de pouvoir écrire, et pendant ce temps l'éditeur
+      // affichait le contenu en train de grossir/reflow au fur et à mesure
+      // (page qui saute dans tous les sens). On précharge donc toutes les
+      // images du HTML EN DEHORS du DOM (juste des objets Image() en
+      // mémoire, jamais insérés) derrière un overlay fixe avec un %, et on
+      // n'injecte le HTML dans #e-content qu'une fois tout prêt (ou après
+      // un délai de sécurité) - l'éditeur reste soit complètement vide/masqué,
+      // soit complètement rempli, jamais entre les deux.
+      _loadContentWithProgress(html);
     } else if (a && !a.title) {
       toast('Impossible de charger l’article','err');
     }
@@ -2579,80 +2575,77 @@ function populateFolderSelect(folders, parentId, depth) {
 // Place le curseur à la toute fin du contenu de l'éditeur et scrolle
 // jusqu'à lui - utilisé à l'ouverture d'un article existant pour permettre
 // d'ajouter tout de suite les notes du jour sans avoir à chercher la fin.
-//
-// Plutôt que de re-scroller/reprendre le focus à chaque image qui finit de
-// charger (l'ancienne approche - ça faisait sauter la page dans tous les
-// sens pendant 1-2 min sur un gros article, et entrait en conflit avec la
-// frappe/le clavier mobile), on couvre l'éditeur d'un overlay fixe avec une
-// barre de progression pendant le chargement des toutes premières images
-// (celles visibles à l'écran - les suivantes sont en loading="lazy" et ne
-// se chargeront qu'au scroll, donc inutile de les attendre ici), puis on
-// scrolle et on place le curseur UNE seule fois une fois l'overlay retiré.
 function _focusEditorAtEnd() {
+  const ed = document.getElementById('e-content');
+  if (!ed) return;
+  ed.focus();
+  const range = document.createRange();
+  range.selectNodeContents(ed);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  saveSelection();
+  (ed.lastElementChild || ed).scrollIntoView({ block: 'end' });
+}
+
+// Précharge toutes les images d'un article AVANT de toucher à l'éditeur
+// visible, derrière un overlay fixe avec un %. Rien ne bouge tant que ce
+// n'est pas prêt : ni #e-content (reste vide), ni la fenêtre (aucun scroll
+// avant la toute fin) - contrairement à l'ancienne approche qui injectait
+// le HTML directement dans l'éditeur visible et laissait la page grandir/
+// sauter pendant que les images arrivaient une à une.
+function _loadContentWithProgress(html) {
   const ed = document.getElementById('e-content');
   const overlay = document.getElementById('e-loading-overlay');
   const bar = document.getElementById('e-loading-bar');
   const pctLabel = document.getElementById('e-loading-pct');
   if (!ed) return;
 
-  const placeCursorAtEnd = () => {
-    ed.focus();
-    const range = document.createRange();
-    range.selectNodeContents(ed);
-    range.collapse(false);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-    saveSelection();
-    (ed.lastElementChild || ed).scrollIntoView({ block: 'end' });
+  const reveal = () => {
+    // Les images sont déjà chargées (préchauffées dans le cache HTTP du
+    // navigateur ci-dessous), donc loading="lazy" ici ne retarde rien de
+    // visible - il évite juste au navigateur de décoder/mettre en page les
+    // 200+ <img> hors écran d'un coup au moment de l'injection.
+    ed.innerHTML = html.replace(/<img /gi, '<img loading="lazy" decoding="async" ');
+    if (overlay) overlay.classList.add('hidden');
+    _focusEditorAtEnd();
   };
 
-  // Toutes les images ont loading="lazy" (posé directement dans le HTML
-  // avant injection - voir plus haut) : seules celles proches du haut de
-  // l'article démarrent réellement leur chargement tout de suite, le reste
-  // ne bougera qu'au scroll. On ne peut donc pas savoir à l'avance combien
-  // vont réellement charger ni lesquelles - on affiche l'overlay le temps
-  // que ÇA SE STABILISE (plus aucune image "en vol" pendant 400ms), avec
-  // un filet de sécurité court : sur un article normal ça ne bloque jamais
-  // plus d'une seconde ou deux, jamais 1-2 min comme avant.
-  const allImgs = Array.from(ed.querySelectorAll('img'));
-  const incomplete = allImgs.filter(img => !img.complete);
-  if (!incomplete.length || !overlay) { placeCursorAtEnd(); return; }
+  const urls = [...html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)].map(m => m[1]);
+  if (!urls.length || !overlay) { reveal(); return; }
 
   overlay.classList.remove('hidden');
   overlay.style.display = 'flex';
-  let pending = incomplete.length;
-  const total = pending;
+  let done = 0;
+  const total = urls.length;
   let finished = false;
-  let settleTimer = null;
   const updatePct = () => {
-    const pct = Math.max(0, Math.min(100, Math.round(((total - pending) / total) * 100)));
+    const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
     if (bar) bar.style.width = pct + '%';
     if (pctLabel) pctLabel.textContent = 'Chargement des images… ' + pct + '%';
   };
   const finish = () => {
     if (finished) return;
     finished = true;
-    clearTimeout(settleTimer);
     clearTimeout(safety);
-    overlay.classList.add('hidden');
-    placeCursorAtEnd();
+    reveal();
   };
   updatePct();
-  incomplete.forEach(img => {
-    const onOneDone = () => {
-      pending = Math.max(0, pending - 1);
-      updatePct();
-      clearTimeout(settleTimer);
-      settleTimer = setTimeout(finish, 400);
-    };
-    img.addEventListener('load', onOneDone, { once: true });
-    img.addEventListener('error', onOneDone, { once: true });
+  urls.forEach(src => {
+    const probe = new Image();
+    const onOneDone = () => { done++; updatePct(); if (done >= total) finish(); };
+    probe.addEventListener('load', onOneDone, { once: true });
+    probe.addEventListener('error', onOneDone, { once: true });
+    probe.src = src;
   });
-  // Filet de sécurité absolu : ne jamais bloquer l'éditeur derrière
-  // l'overlay au-delà de quelques secondes, quoi qu'il arrive (image qui
-  // ne déclenche jamais load/error, connexion très lente, etc.).
-  const safety = setTimeout(finish, 4000);
+  // Filet de sécurité : une connexion très lente en voyage, ou une image
+  // dont l'URL a disparu (jamais de load/error), ne doit jamais empêcher
+  // indéfiniment d'accéder à l'éditeur - on révèle le contenu tel quel
+  // après quelques secondes, les images restantes finiront de charger
+  // normalement (avec loading="lazy" posé juste en dessous) une fois
+  // affichées.
+  const safety = setTimeout(finish, 8000);
 }
 
 // ── WYSIWYG rich text editor ──────────────────────────────────
