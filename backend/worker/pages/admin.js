@@ -1806,10 +1806,25 @@ ${ADMIN_NAV()}
             <span class="toolbar-sep"></span>
             <button type="button" class="toolbar-btn" style="color:var(--blue)" onclick="openInsertImg()" title="Insérer une image"><i class="ph-bold ph-image"></i></button>
           </div>
-          <div id="e-content" contenteditable="true" spellcheck="true"
-               class="prose-vacation min-h-[360px] max-w-none p-5 rounded-b-2xl focus:outline-none"
-               data-placeholder="Commencez à écrire votre récit..."
-               style="color:var(--ink)"></div>
+          <div style="position:relative">
+            <div id="e-content" contenteditable="true" spellcheck="true"
+                 class="prose-vacation min-h-[360px] max-w-none p-5 rounded-b-2xl focus:outline-none"
+                 data-placeholder="Commencez à écrire votre récit..."
+                 style="color:var(--ink)"></div>
+            <!-- Shown only while an existing article's images are still
+                 loading: covers the editor (pointer-events:none content
+                 stays inert underneath) with a fixed, non-scrolling
+                 progress readout instead of letting the page jump around
+                 as each image resizes the editor and the old
+                 scroll-to-end-on-every-load behaviour fought the user for
+                 control of the scroll position. -->
+            <div id="e-loading-overlay" class="hidden" style="position:absolute;inset:0;z-index:30;border-radius:0 0 1rem 1rem;background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.75rem">
+              <div style="width:min(220px,70%);height:8px;border-radius:999px;background:var(--line);overflow:hidden">
+                <div id="e-loading-bar" style="height:100%;width:0%;border-radius:999px;background:var(--blue);transition:width .2s ease"></div>
+              </div>
+              <div id="e-loading-pct" class="text-sm font-bold" style="color:var(--ink)">Chargement des images… 0%</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2565,24 +2580,23 @@ function populateFolderSelect(folders, parentId, depth) {
 // Place le curseur à la toute fin du contenu de l'éditeur et scrolle
 // jusqu'à lui - utilisé à l'ouverture d'un article existant pour permettre
 // d'ajouter tout de suite les notes du jour sans avoir à chercher la fin.
+//
+// Plutôt que de re-scroller/reprendre le focus à chaque image qui finit de
+// charger (l'ancienne approche - ça faisait sauter la page dans tous les
+// sens pendant 1-2 min sur un gros article, et entrait en conflit avec la
+// frappe/le clavier mobile), on couvre l'éditeur d'un overlay fixe avec une
+// barre de progression pendant le chargement des toutes premières images
+// (celles visibles à l'écran - les suivantes sont en loading="lazy" et ne
+// se chargeront qu'au scroll, donc inutile de les attendre ici), puis on
+// scrolle et on place le curseur UNE seule fois une fois l'overlay retiré.
 function _focusEditorAtEnd() {
   const ed = document.getElementById('e-content');
+  const overlay = document.getElementById('e-loading-overlay');
+  const bar = document.getElementById('e-loading-bar');
+  const pctLabel = document.getElementById('e-loading-pct');
   if (!ed) return;
-  // Une seule fois : si l'utilisateur a déjà interagi avec l'éditeur (tapé,
-  // cliqué ailleurs dans le texte, ouvert le clavier...) avant que toutes les
-  // images soient chargées, on n'a plus le droit de lui voler le focus/la
-  // sélection ni de le re-scroller - sur un article avec beaucoup d'images
-  // et une connexion lente en voyage, ça pouvait continuer à arriver pendant
-  // 15s après l'ouverture, en plein milieu de la frappe (le curseur revenait
-  // sans arrêt en fin d'article, et le scroll partait dans tous les sens).
-  let userTookOver = false;
-  const stopIfUserActed = () => { userTookOver = true; };
-  ed.addEventListener('keydown', stopIfUserActed, { once: true });
-  ed.addEventListener('mousedown', stopIfUserActed, { once: true });
-  ed.addEventListener('touchstart', stopIfUserActed, { once: true });
 
-  const scrollToEnd = () => {
-    if (userTookOver) return;
+  const placeCursorAtEnd = () => {
     ed.focus();
     const range = document.createRange();
     range.selectNodeContents(ed);
@@ -2593,51 +2607,45 @@ function _focusEditorAtEnd() {
     saveSelection();
     (ed.lastElementChild || ed).scrollIntoView({ block: 'end' });
   };
-  // La hauteur de l'éditeur grandit au fur et à mesure que les images se
-  // chargent, une par une et pas forcément en rafale (connexion lente en
-  // voyage) - donc un scroll basé sur un délai fixe atterrit au bon endroit
-  // ou pas selon la vitesse du réseau du moment (rapide -> fin ; lent ->
-  // milieu, sur l'image en cours de chargement au moment du délai).
-  // On combine donc : suivi explicite du load/error de chaque image déjà
-  // présente dans le contenu (fiable même si les images arrivent en
-  // trickle très espacé), + un ResizeObserver pour rattraper le reflow dû
-  // aux polices web ou à d'éventuelles images non comptabilisées.
-  let stillWaitingForImages = false;
-  let settleTimer = null;
-  const maybeDisconnect = () => {
-    if (stillWaitingForImages) return;
-    clearTimeout(settleTimer);
-    settleTimer = setTimeout(() => { if (!stillWaitingForImages) ro.disconnect(); }, 500);
-  };
 
-  const imgs = Array.from(ed.querySelectorAll('img'));
+  // Seules les images non-lazy (celles que le navigateur commence à
+  // charger tout de suite, en pratique celles visibles dans les ~2-3
+  // premiers écrans) doivent bloquer l'overlay - attendre les images
+  // loading="lazy" reviendrait à annuler leur intérêt.
+  const imgs = Array.from(ed.querySelectorAll('img:not([loading="lazy"])'));
   const incomplete = imgs.filter(img => !img.complete);
-  if (incomplete.length) {
-    stillWaitingForImages = true;
-    let remaining = incomplete.length;
-    const onOneDone = () => {
-      scrollToEnd();
-      if (--remaining <= 0) { stillWaitingForImages = false; maybeDisconnect(); }
-    };
-    incomplete.forEach(img => {
-      img.addEventListener('load', onOneDone, { once: true });
-      img.addEventListener('error', onOneDone, { once: true });
-    });
-  }
+  if (!incomplete.length || !overlay) { placeCursorAtEnd(); return; }
 
-  const ro = new ResizeObserver(() => { scrollToEnd(); maybeDisconnect(); });
-  ro.observe(ed);
-  scrollToEnd();
-  maybeDisconnect();
-  // Filet de sécurité : ne jamais observer indéfiniment si quelque chose
-  // continue de faire varier la hauteur (ex: chargement très lent, ou une
-  // image qui ne déclenche jamais load/error). Le clavier virtuel qui
-  // s'ouvre/se ferme redimensionne aussi l'éditeur (barre d'outils flottante,
-  // reflow) : sans le garde-fou userTookOver ci-dessus, ce timer de 15s
-  // pouvait provoquer un scroll/re-focus forcé pendant que l'utilisateur
-  // tapait déjà ailleurs dans le texte (signalé sur mobile : impossible de
-  // rester sur la dernière ligne, ça remontait tout seul de 2 lignes).
-  setTimeout(() => ro.disconnect(), 15000);
+  overlay.classList.remove('hidden');
+  const total = incomplete.length;
+  let done = 0;
+  let finished = false;
+  const updatePct = () => {
+    const pct = Math.round((done / total) * 100);
+    if (bar) bar.style.width = pct + '%';
+    if (pctLabel) pctLabel.textContent = 'Chargement des images… ' + pct + '%';
+  };
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    clearTimeout(safety);
+    overlay.classList.add('hidden');
+    placeCursorAtEnd();
+  };
+  updatePct();
+  incomplete.forEach(img => {
+    const onOneDone = () => {
+      done++;
+      updatePct();
+      if (done >= total) finish();
+    };
+    img.addEventListener('load', onOneDone, { once: true });
+    img.addEventListener('error', onOneDone, { once: true });
+  });
+  // Filet de sécurité : une connexion très lente ou une image qui ne
+  // déclenche jamais load/error ne doit jamais bloquer l'éditeur
+  // indéfiniment derrière l'overlay.
+  const safety = setTimeout(finish, 8000);
 }
 
 // ── WYSIWYG rich text editor ──────────────────────────────────
@@ -3370,6 +3378,14 @@ document.getElementById('e-content')?.addEventListener('drop', async e => {
 document.getElementById('e-content')?.addEventListener('paste', async e => {
   e.preventDefault();
   const items = [...e.clipboardData.items].filter(i => i.type.startsWith('image/'));
+  // Word (and Word Online/Outlook) doesn't expose pasted images as a plain
+  // image/* clipboard item - it only puts them inline as base64 data: URIs
+  // inside the text/html flavor. Without this, the items list above stays
+  // empty for a Word paste and the images were silently dropped, keeping
+  // only the text. Extract every data:image src from the HTML flavor (if
+  // any) and treat each one as an image to upload, same as a direct paste.
+  const html = e.clipboardData.getData('text/html');
+  const htmlImageUrls = html ? [...html.matchAll(/<img[^>]+src=["'](data:image\/[a-zA-Z0-9.+-]+;base64,[^"']+)["']/gi)].map(m => m[1]) : [];
   // Force plain-text for the text part in all cases. Sources like Samsung
   // Notes or a copy from the site's own rendered preview carry inline
   // style="--tw-..." (Tailwind) attributes on every element - left alone,
@@ -3379,11 +3395,12 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // still preserves line breaks, just strips all markup/styling.
   const text = e.clipboardData.getData('text/plain');
   if (text) document.execCommand('insertText', false, text);
-  if (items.length) {
+  if (items.length || htmlImageUrls.length) {
     let range = null;
     const sel = window.getSelection();
     if (sel && sel.rangeCount) range = sel.getRangeAt(0).cloneRange();
     for (const item of items) { const file = item.getAsFile(); if (file) await uploadAndInsertAtRange(file, range); }
+    for (let i = 0; i < htmlImageUrls.length; i++) { await uploadAndInsertAtRange(dataUrlToFile(htmlImageUrls[i], 'image-' + (i + 1) + '.png'), range); }
   }
 });
 
