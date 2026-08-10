@@ -2501,7 +2501,20 @@ async function init() {
       document.getElementById('e-title').value = a.title || '';
       document.getElementById('e-desc').value  = a.short_description || '';
       const rawContent = a.content || '';
-      document.getElementById('e-content').innerHTML = rawContent.trim().startsWith('<') ? rawContent : (rawContent ? (typeof marked !== 'undefined' ? marked.parse(rawContent) : '<p>' + rawContent.replace(/\\n\\n/g,'</p><p>').replace(/\\n/g,'<br>') + '</p>') : '');
+      const contentEl = document.getElementById('e-content');
+      contentEl.innerHTML = rawContent.trim().startsWith('<') ? rawContent : (rawContent ? (typeof marked !== 'undefined' ? marked.parse(rawContent) : '<p>' + rawContent.replace(/\\n\\n/g,'</p><p>').replace(/\\n/g,'<br>') + '</p>') : '');
+      // Un article avec beaucoup d'images stockées pouvait bloquer la page
+      // 1-2 min avant de pouvoir écrire : le navigateur décodait toutes les
+      // images d'un coup au moment de l'injection ci-dessus. loading="lazy"
+      // reporte le chargement des images hors écran à leur entrée dans le
+      // viewport (au scroll), decoding="async" évite que le décodage des
+      // images déjà visibles bloque le thread principal - l'éditeur devient
+      // utilisable dès l'injection du HTML plutôt qu'après le chargement de
+      // toutes les images.
+      contentEl.querySelectorAll('img').forEach(img => {
+        img.loading = 'lazy';
+        img.decoding = 'async';
+      });
       document.getElementById('e-start-date').value  = a.start_date || a.date || today;
       document.getElementById('e-end-date').value  = a.end_date || a.date || today;
       document.getElementById('e-dest').value  = a.destination || '';
@@ -2555,7 +2568,21 @@ function populateFolderSelect(folders, parentId, depth) {
 function _focusEditorAtEnd() {
   const ed = document.getElementById('e-content');
   if (!ed) return;
+  // Une seule fois : si l'utilisateur a déjà interagi avec l'éditeur (tapé,
+  // cliqué ailleurs dans le texte, ouvert le clavier...) avant que toutes les
+  // images soient chargées, on n'a plus le droit de lui voler le focus/la
+  // sélection ni de le re-scroller - sur un article avec beaucoup d'images
+  // et une connexion lente en voyage, ça pouvait continuer à arriver pendant
+  // 15s après l'ouverture, en plein milieu de la frappe (le curseur revenait
+  // sans arrêt en fin d'article, et le scroll partait dans tous les sens).
+  let userTookOver = false;
+  const stopIfUserActed = () => { userTookOver = true; };
+  ed.addEventListener('keydown', stopIfUserActed, { once: true });
+  ed.addEventListener('mousedown', stopIfUserActed, { once: true });
+  ed.addEventListener('touchstart', stopIfUserActed, { once: true });
+
   const scrollToEnd = () => {
+    if (userTookOver) return;
     ed.focus();
     const range = document.createRange();
     range.selectNodeContents(ed);
@@ -2604,7 +2631,12 @@ function _focusEditorAtEnd() {
   maybeDisconnect();
   // Filet de sécurité : ne jamais observer indéfiniment si quelque chose
   // continue de faire varier la hauteur (ex: chargement très lent, ou une
-  // image qui ne déclenche jamais load/error).
+  // image qui ne déclenche jamais load/error). Le clavier virtuel qui
+  // s'ouvre/se ferme redimensionne aussi l'éditeur (barre d'outils flottante,
+  // reflow) : sans le garde-fou userTookOver ci-dessus, ce timer de 15s
+  // pouvait provoquer un scroll/re-focus forcé pendant que l'utilisateur
+  // tapait déjà ailleurs dans le texte (signalé sur mobile : impossible de
+  // rester sur la dernière ligne, ça remontait tout seul de 2 lignes).
   setTimeout(() => ro.disconnect(), 15000);
 }
 
@@ -2661,10 +2693,45 @@ function restoreSelection() {
     if (next?.matches?.('figure, .img-pair')) return next;
     return null;
   }
+  // Tapping directly on an <img> lets the browser select the image itself
+  // as an "element selection" (not a text caret) - on mobile this also
+  // triggers the browser's native "scroll the selected element into view"
+  // behaviour, which visibly jumps the page (reported: "ça scrolle en bas
+  // du input" from a single tap on a photo already fully on screen).
+  // Placing a plain collapsed text-cursor right after the image ourselves
+  // instead - same as clicking just past it - sidesteps both problems at
+  // once: no native element-selection to scroll into view, and a normal
+  // collapsed caret the selectionchange handler below already knows how to
+  // highlight via figureNear().
+  editor.addEventListener('click', e => {
+    const img = e.target.closest('img');
+    if (!img || !editor.contains(img)) return;
+    e.preventDefault();
+    const range = document.createRange();
+    range.setStartAfter(img);
+    range.collapse(true);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    editor.focus();
+  });
+
   document.addEventListener('selectionchange', () => {
     const sel = window.getSelection();
-    if (!sel || !sel.rangeCount || !sel.isCollapsed || !editor.contains(sel.anchorNode)) { clearHighlight(); return; }
-    const fig = figureNear(sel.anchorNode, sel.anchorOffset);
+    if (!sel || !sel.rangeCount || !editor.contains(sel.anchorNode)) { clearHighlight(); return; }
+    let fig = null;
+    if (!sel.isCollapsed) {
+      // Tapping an image directly (rather than the text right next to it)
+      // gives the browser's own non-collapsed "this one element is
+      // selected" range - covered by figureNear's collapsed-caret path,
+      // check the range's actual selected content for a figure instead.
+      const range = sel.getRangeAt(0);
+      const container = range.commonAncestorContainer;
+      const root = container.nodeType === Node.ELEMENT_NODE ? container : container.parentElement;
+      fig = root?.closest?.('figure, .img-pair') || root?.querySelector?.('figure, .img-pair');
+    } else {
+      fig = figureNear(sel.anchorNode, sel.anchorOffset);
+    }
     if (fig === _highlighted) return;
     clearHighlight();
     if (fig) { fig.classList.add('img-caret-adjacent'); _highlighted = fig; }
@@ -3294,28 +3361,30 @@ document.getElementById('e-content')?.addEventListener('drop', async e => {
   }
   for (const file of files) { await uploadAndInsertAtRange(file, range); range = null; }
 });
-// Paste image from clipboard into the editor
+// Paste image(s) + text from clipboard into the editor. A single paste can
+// carry both at once (e.g. sharing a phone gallery selection with a caption,
+// or a chat app message with attached photos) - clipboardData exposes each
+// as separate items, so both must be handled here, not just whichever is
+// found first (an earlier version returned right after handling images,
+// silently dropping any text that came in the same paste).
 document.getElementById('e-content')?.addEventListener('paste', async e => {
+  e.preventDefault();
   const items = [...e.clipboardData.items].filter(i => i.type.startsWith('image/'));
-  if (items.length) {
-    e.preventDefault();
-    let range = null;
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount) range = sel.getRangeAt(0).cloneRange();
-    for (const item of items) { const file = item.getAsFile(); if (file) await uploadAndInsertAtRange(file, range); }
-    return;
-  }
-  // Force plain-text paste for everything else. Sources like Samsung Notes
-  // or a copy from the site's own rendered preview carry inline
+  // Force plain-text for the text part in all cases. Sources like Samsung
+  // Notes or a copy from the site's own rendered preview carry inline
   // style="--tw-..." (Tailwind) attributes on every element - left alone,
   // the browser's default rich-paste drags all of that markup into the
   // article content, which previously corrupted an article's storage
   // (dozens of KB of dead CSS text wedged between paragraphs). Plain text
   // still preserves line breaks, just strips all markup/styling.
-  e.preventDefault();
   const text = e.clipboardData.getData('text/plain');
-  if (!text) return;
-  document.execCommand('insertText', false, text);
+  if (text) document.execCommand('insertText', false, text);
+  if (items.length) {
+    let range = null;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount) range = sel.getRangeAt(0).cloneRange();
+    for (const item of items) { const file = item.getAsFile(); if (file) await uploadAndInsertAtRange(file, range); }
+  }
 });
 
 // ── Mobile bottom bar swap: Sauvegarder vs formatting, never both ─────────
