@@ -2694,7 +2694,17 @@ function _loadContentWithProgress(html) {
     // navigateur ci-dessous), donc loading="lazy" ici ne retarde rien de
     // visible - il évite juste au navigateur de décoder/mettre en page les
     // 200+ <img> hors écran d'un coup au moment de l'injection.
-    ed.innerHTML = finalHtml.replace(/<img /gi, '<img loading="lazy" decoding="async" ');
+    // draggable="false" : par défaut, TOUTE <img> est nativement
+    // "draggable" dans un navigateur - un mousedown qui démarre
+    // directement sur une image est alors interprété comme un début de
+    // glisser-déposer NATIF de l'image (curseur fantôme, dépose ailleurs
+    // dans le contenteditable), pas comme une sélection de texte. Une
+    // sélection commençant sur l'image (pour couvrir image + texte
+    // ensuite) déclenchait ce drag natif à la place, qui dupliquait
+    // l'image à l'endroit du "dépose" et corrompait la structure du
+    // <figure> autour - d'où "impossible de couper" quand la sélection
+    // démarre sur l'image (la sélection de texte n'avait jamais lieu).
+    ed.innerHTML = finalHtml.replace(/<img /gi, '<img draggable="false" loading="lazy" decoding="async" ');
     // Les articles importés/anciens stockent leurs images en <img> nu (un
     // par <p>), sans le wrapper <figure> (bouton croix pour supprimer,
     // bouton pour passer en demi-largeur) que produit désormais toute
@@ -3012,28 +3022,88 @@ function _doRedo() {
   // handling of a selected contenteditable=false element), while
   // preventDefault still blocks the native scroll-into-view that caused
   // the original mobile jump.
-  // Only treat this as "select the image" for a genuine click - not the
-  // mouseup that ends a drag. A drag starting in text and ending on/past
-  // an image is exactly how a user selects "some text + an image"
-  // together, and the click that fires at the end of that drag was
-  // unconditionally overwriting the mixed selection the drag had just
-  // built with a single-figure selection instead - Ctrl+X then only ever
-  // cut the image, silently dropping the text (reported: cut doesn't work
-  // when text + image are selected together). Tracked via mousedown
-  // position vs. click position: real clicks land within a few pixels of
-  // where the button went down, a drag doesn't.
+  // Only treat this as "select just the image" for a genuine click - not
+  // the mouseup that ends a drag. A drag starting in TEXT and ending on/
+  // past an image already produces the browser's own correct mixed
+  // selection on its own (contenteditable="false" figures can still be
+  // the END of a native drag-selection, just not reliably the START of
+  // one - see below); the bug was the click that fires at the end of
+  // that drag unconditionally overwriting it with a single-figure
+  // selection - Ctrl+X then only ever cut the image, silently dropping
+  // the text. Tracked via mousedown position vs. click position: a real
+  // click lands within a few pixels of where the button went down, a
+  // drag doesn't.
+  //
+  // A drag starting ON the image is the harder direction. Two things
+  // were tried and rejected:
+  //  1. Letting the browser's native drag-to-select run from there does
+  //     nothing (a contenteditable="false" element has no native anchor
+  //     to extend a selection from) - or on some engines, triggers the
+  //     image's own native "drag this picture" behavior instead, which
+  //     duplicated the <img> wherever the drag ended and corrupted the
+  //     surrounding markup (separately fixed via draggable="false" on
+  //     every <img>, which stops the corruption but still leaves no
+  //     selection at all forming).
+  //  2. Seeding a selection with Selection.setBaseAndExtent() at
+  //     mousedown, hoping the browser's own subsequent native drag would
+  //     extend it: instead the browser deleted the figure outright mid-
+  //     drag on every engine tested, before Ctrl+X ever ran.
+  // Tracking the drag manually instead (own mousemove/mouseup, own Range
+  // built from the real mouse position each step via
+  // caretRangeFromPoint) sidesteps both - never touches native selection-
+  // extension logic across the contenteditable=false boundary at all.
   let _imgMouseDownPos = null;
-  editor.addEventListener('mousedown', e => { _imgMouseDownPos = { x: e.clientX, y: e.clientY }; });
+  let _imgDragFigure = null;
+  function _imgDragMove(e) {
+    if (!_imgDragFigure) return;
+    let endRange = null;
+    if (document.caretRangeFromPoint) endRange = document.caretRangeFromPoint(e.clientX, e.clientY);
+    else if (document.caretPositionFromPoint) {
+      const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+      if (pos) { endRange = document.createRange(); endRange.setStart(pos.offsetNode, pos.offset); }
+    }
+    if (!endRange || !editor.contains(endRange.startContainer)) return;
+    const parent = _imgDragFigure.parentNode;
+    const idx = Array.prototype.indexOf.call(parent.childNodes, _imgDragFigure);
+    const range = document.createRange();
+    // Figure comes before the drag target in document order in every
+    // real use case (dragging FROM an image INTO later text) - simpler
+    // and more predictable than detecting/handling the reverse.
+    range.setStart(parent, idx);
+    range.setEnd(endRange.startContainer, endRange.startOffset);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+  function _imgDragEnd() {
+    _imgDragFigure = null;
+    document.removeEventListener('mousemove', _imgDragMove);
+    document.removeEventListener('mouseup', _imgDragEnd);
+  }
+  editor.addEventListener('mousedown', e => {
+    _imgMouseDownPos = { x: e.clientX, y: e.clientY };
+    const img = e.target.closest('img');
+    if (!img || !editor.contains(img)) return;
+    // Blocks the browser's own native mousedown handling on the image
+    // (element-selection / drag-start) so only the manual tracking below
+    // ever runs - leaving both active at once was letting the native
+    // behavior corrupt the DOM (deleting/duplicating content) in a race
+    // with this handler's own Range building.
+    e.preventDefault();
+    _imgDragFigure = img.closest('figure') || img;
+    document.addEventListener('mousemove', _imgDragMove);
+    document.addEventListener('mouseup', _imgDragEnd);
+  });
   editor.addEventListener('click', e => {
     const img = e.target.closest('img');
     if (!img || !editor.contains(img)) return;
     const dx = _imgMouseDownPos ? Math.abs(e.clientX - _imgMouseDownPos.x) : 0;
     const dy = _imgMouseDownPos ? Math.abs(e.clientY - _imgMouseDownPos.y) : 0;
     const wasDrag = dx > 4 || dy > 4;
-    // A drag that ends on the image leaves a real, already-correct mixed
-    // selection in place (browser's own native text-selection behavior
-    // across contenteditable=false elements) - just let it be, only
-    // suppress the native scroll-into-view.
+    // A drag leaves a real, already-correct selection in place (either
+    // the browser's own native text-selection when the drag started in
+    // text, or the one built manually above when it started on the
+    // image) - just let it be, only suppress the native scroll-into-view.
     if (wasDrag) { e.preventDefault(); return; }
     e.preventDefault();
     const figure = img.closest('figure') || img;
@@ -3185,6 +3255,11 @@ function _makeImgFigure(urlOrImg, caption, size) {
   } else {
     img = document.createElement('img'); img.src = urlOrImg; img.alt = caption || '';
   }
+  // Suppresses the browser's native "drag this image" behavior - see the
+  // draggable="false" comment in _loadContentWithProgress's reveal() for
+  // why this matters (a mousedown starting on the image needs to begin a
+  // text selection, not a native image drag).
+  img.draggable = false;
   figure.appendChild(img);
   // Never render caption/filename in the editor
   // No onclick wired here on purpose - a delegated listener on #e-content
