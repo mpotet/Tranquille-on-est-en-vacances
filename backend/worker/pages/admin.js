@@ -1818,7 +1818,7 @@ ${ADMIN_NAV()}
                  as each image resizes the editor and the old
                  scroll-to-end-on-every-load behaviour fought the user for
                  control of the scroll position. -->
-            <div id="e-loading-overlay" class="hidden" style="position:absolute;inset:0;z-index:30;border-radius:0 0 1rem 1rem;background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.75rem">
+            <div id="e-loading-overlay" class="hidden" style="position:absolute;inset:0;z-index:30;border-radius:0 0 1rem 1rem;background:var(--cream);flex-direction:column;align-items:center;justify-content:center;gap:.75rem">
               <div style="width:min(220px,70%);height:8px;border-radius:999px;background:var(--line);overflow:hidden">
                 <div id="e-loading-bar" style="height:100%;width:0%;border-radius:999px;background:var(--blue);transition:width .2s ease"></div>
               </div>
@@ -2620,6 +2620,7 @@ function _focusEditorAtEnd() {
   if (!incomplete.length || !overlay) { placeCursorAtEnd(); return; }
 
   overlay.classList.remove('hidden');
+  overlay.style.display = 'flex';
   let pending = incomplete.length;
   const total = pending;
   let finished = false;
@@ -3391,7 +3392,7 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // only the text. Extract every data:image src from the HTML flavor (if
   // any) and treat each one as an image to upload, same as a direct paste.
   const html = e.clipboardData.getData('text/html');
-  const htmlImageUrls = html ? [...html.matchAll(/<img[^>]+src=["'](data:image\/[a-zA-Z0-9.+-]+;base64,[^"']+)["']/gi)].map(m => m[1]) : [];
+  const htmlImageUrls = html ? [...html.matchAll(/<img[^>]+src=["'](data:image[/][a-zA-Z0-9.+-]+;base64,[^"']+)["']/gi)].map(m => m[1]) : [];
   // Force plain-text for the text part in all cases. Sources like Samsung
   // Notes or a copy from the site's own rendered preview carry inline
   // style="--tw-..." (Tailwind) attributes on every element - left alone,
