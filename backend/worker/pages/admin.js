@@ -2608,7 +2608,17 @@ function _loadContentWithProgress(html) {
     // visible - il évite juste au navigateur de décoder/mettre en page les
     // 200+ <img> hors écran d'un coup au moment de l'injection.
     ed.innerHTML = html.replace(/<img /gi, '<img loading="lazy" decoding="async" ');
-    if (overlay) overlay.classList.add('hidden');
+    if (overlay) {
+      // .style.display was set to 'flex' below to show the overlay - an
+      // inline style always beats a class for the same property, so the
+      // hidden class's display:none could never win back without also
+      // clearing the inline value here (found by inspecting a real
+      // reveal: classList said "hidden" but computed display stayed
+      // "flex", leaving the overlay's opaque background covering the
+      // freshly-populated editor).
+      overlay.classList.add('hidden');
+      overlay.style.display = '';
+    }
     _focusEditorAtEnd();
   };
 
