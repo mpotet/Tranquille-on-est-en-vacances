@@ -2605,7 +2605,24 @@ function _focusEditorAtEnd() {
   sel.removeAllRanges();
   sel.addRange(range);
   saveSelection();
-  (ed.lastElementChild || ed).scrollIntoView({ block: 'end', behavior: 'instant' });
+  const target = ed.lastElementChild || ed;
+  target.scrollIntoView({ block: 'end', behavior: 'instant' });
+  // Sur mobile, une barre fixe (#mobile-save-bar par défaut, ou
+  // #mobile-format-bar une fois le clavier ouvert) est collée en bas de
+  // l'écran par-dessus le contenu - scrollIntoView ne le sait pas et
+  // aligne le bas de l'élément avec le bas RÉEL du viewport, donc les
+  // 2-3 dernières lignes du texte finissent cachées derrière cette barre
+  // (signalé : "le curseur est bien en bas mais ça ne scrolle pas
+  // vraiment tout en bas"). On corrige d'un scroll supplémentaire égal à
+  // la hauteur de la barre actuellement visible.
+  const visibleBar = [document.getElementById('mobile-save-bar'), document.getElementById('mobile-format-bar')]
+    .find(bar => bar && getComputedStyle(bar).display !== 'none');
+  if (visibleBar) {
+    const barHeight = visibleBar.getBoundingClientRect().height;
+    const rect = target.getBoundingClientRect();
+    const overlap = barHeight - (window.innerHeight - rect.bottom);
+    if (overlap > 0) window.scrollBy({ top: overlap, behavior: 'instant' });
+  }
 }
 
 // data: URI SVG placeholder shown in place of an image the user chose not
@@ -3466,7 +3483,16 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // only the text. Extract every data:image src from the HTML flavor (if
   // any) and treat each one as an image to upload, same as a direct paste.
   const html = e.clipboardData.getData('text/html');
-  const htmlImageUrls = html ? [...html.matchAll(/<img[^>]+src=["'](data:image[/][a-zA-Z0-9.+-]+;base64,[^"']+)["']/gi)].map(m => m[1]) : [];
+  const allImgSrcs = html ? [...html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)].map(m => m[1]) : [];
+  // Word/Word Online/Outlook only puts pasted images inline as base64
+  // data: URIs inside the text/html flavor, never as a plain image/* item.
+  const dataImageUrls = allImgSrcs.filter(src => src.indexOf('data:image/') === 0);
+  // Copying an <img> that's already IN this editor (duplicating a photo,
+  // or copy/pasting between two articles) puts a real http(s):// src in
+  // the HTML flavor instead of a data: URI or an image/* clipboard item -
+  // it's already hosted on our own storage, so it just needs inserting
+  // again, no upload/re-encode needed.
+  const hostedImageUrls = allImgSrcs.filter(src => /^(https?:)?[/][/]/i.test(src) || src.indexOf('/r2/') === 0);
   // Force plain-text for the text part in all cases. Sources like Samsung
   // Notes or a copy from the site's own rendered preview carry inline
   // style="--tw-..." (Tailwind) attributes on every element - left alone,
@@ -3476,12 +3502,13 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // still preserves line breaks, just strips all markup/styling.
   const text = e.clipboardData.getData('text/plain');
   if (text) document.execCommand('insertText', false, text);
-  if (items.length || htmlImageUrls.length) {
+  if (items.length || dataImageUrls.length || hostedImageUrls.length) {
     let range = null;
     const sel = window.getSelection();
     if (sel && sel.rangeCount) range = sel.getRangeAt(0).cloneRange();
     for (const item of items) { const file = item.getAsFile(); if (file) await uploadAndInsertAtRange(file, range); }
-    for (let i = 0; i < htmlImageUrls.length; i++) { await uploadAndInsertAtRange(dataUrlToFile(htmlImageUrls[i], 'image-' + (i + 1) + '.png'), range); }
+    for (let i = 0; i < dataImageUrls.length; i++) { await uploadAndInsertAtRange(dataUrlToFile(dataImageUrls[i], 'image-' + (i + 1) + '.png'), range); }
+    for (const src of hostedImageUrls) { insertPhotoAtRange(src, '', range); }
   }
 });
 
