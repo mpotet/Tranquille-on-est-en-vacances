@@ -3012,9 +3012,29 @@ function _doRedo() {
   // handling of a selected contenteditable=false element), while
   // preventDefault still blocks the native scroll-into-view that caused
   // the original mobile jump.
+  // Only treat this as "select the image" for a genuine click - not the
+  // mouseup that ends a drag. A drag starting in text and ending on/past
+  // an image is exactly how a user selects "some text + an image"
+  // together, and the click that fires at the end of that drag was
+  // unconditionally overwriting the mixed selection the drag had just
+  // built with a single-figure selection instead - Ctrl+X then only ever
+  // cut the image, silently dropping the text (reported: cut doesn't work
+  // when text + image are selected together). Tracked via mousedown
+  // position vs. click position: real clicks land within a few pixels of
+  // where the button went down, a drag doesn't.
+  let _imgMouseDownPos = null;
+  editor.addEventListener('mousedown', e => { _imgMouseDownPos = { x: e.clientX, y: e.clientY }; });
   editor.addEventListener('click', e => {
     const img = e.target.closest('img');
     if (!img || !editor.contains(img)) return;
+    const dx = _imgMouseDownPos ? Math.abs(e.clientX - _imgMouseDownPos.x) : 0;
+    const dy = _imgMouseDownPos ? Math.abs(e.clientY - _imgMouseDownPos.y) : 0;
+    const wasDrag = dx > 4 || dy > 4;
+    // A drag that ends on the image leaves a real, already-correct mixed
+    // selection in place (browser's own native text-selection behavior
+    // across contenteditable=false elements) - just let it be, only
+    // suppress the native scroll-into-view.
+    if (wasDrag) { e.preventDefault(); return; }
     e.preventDefault();
     const figure = img.closest('figure') || img;
     const range = document.createRange();
