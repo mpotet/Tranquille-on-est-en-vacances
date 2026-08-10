@@ -2346,7 +2346,7 @@ function _showDraftBar(draft) {
   const d = new Date(draft._ts).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
   const bar = document.createElement('div');
   bar.id = 'draft-bar';
-  bar.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:39;display:flex;align-items:center;gap:.75rem;background:var(--blue-light);border-bottom:1px solid rgba(var(--blue-rgb),.3);padding:.6rem 1rem;font-size:.85rem;font-weight:500;color:var(--blue-dark);box-shadow:0 1px 4px rgba(0,0,0,.06)';
+  bar.style.cssText = 'position:fixed;top:4rem;left:0;right:0;z-index:39;display:flex;align-items:center;gap:.75rem;background:var(--blue-light);border-bottom:1px solid rgba(var(--blue-rgb),.3);padding:.6rem 1rem;font-size:.85rem;font-weight:500;color:var(--blue-dark);box-shadow:0 1px 4px rgba(0,0,0,.06)';
   bar.innerHTML = \`<i class="ph-bold ph-cloud-slash" style="font-size:1.1rem;flex-shrink:0"></i>
     <span style="flex:1">Brouillon local du \${d} non synchronisé</span>
     <button onclick="_applyDraft()" style="background:var(--blue);color:#fff;border:none;padding:.3rem .8rem;border-radius:.5rem;font-weight:700;font-size:.78rem;cursor:pointer">Restaurer</button>
@@ -2769,6 +2769,168 @@ function restoreSelection() {
   const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(_savedRange);
 }
 
+// ── Undo/redo history ──────────────────────────────────────────
+// Ctrl+Z never worked in this editor: the browser's own contenteditable
+// undo stack only tracks changes it made itself via execCommand, and most
+// of what actually mutates #e-content here (paste handling, image
+// insert/delete, drag&drop, the format buttons) manipulates the DOM
+// directly instead - none of that ever registers as an undoable step, so
+// native Ctrl+Z had nothing to undo. This replaces it with our own
+// snapshot-based history: every meaningful change pushes a copy of the
+// HTML + a serializable caret position, and Ctrl+Z/Ctrl+Shift+Z (or
+// Ctrl+Y) step through that stack ourselves instead of relying on the
+// browser's.
+const _UNDO_MAX = 100;
+let _undoStack = [];
+let _redoStack = [];
+let _undoRestoring = false; // guards against our own restore re-triggering a snapshot
+let _undoDebounce = null;
+// The state to go BACK to if undo is pressed right now - captured before
+// a change happens, not after. A stack entry only means "what things
+// looked like right before this edit started"; the current live DOM is
+// never itself stored in the stack. Typing keeps reusing the same
+// baseline for the whole debounced burst (so 20 keystrokes = 1 undo
+// step); the first structural mutation (paste, image insert/delete...)
+// captures a fresh baseline of its own.
+let _undoBaseline = null;
+
+// A live Range can't survive a full innerHTML swap, so the caret is
+// captured as (container element's position among its siblings at each
+// level, text offset) instead - reconstructible after the DOM is rebuilt
+// as long as the structure at that point is unchanged, which it always is
+// immediately after a snapshot of that same structure.
+function _caretPath() {
+  const ed = document.getElementById('e-content');
+  const sel = window.getSelection();
+  if (!ed || !sel || !sel.rangeCount || !ed.contains(sel.anchorNode)) return null;
+  const path = [];
+  let node = sel.anchorNode;
+  while (node && node !== ed) {
+    const parent = node.parentNode;
+    if (!parent) return null;
+    path.unshift(Array.prototype.indexOf.call(parent.childNodes, node));
+    node = parent;
+  }
+  return { path, offset: sel.anchorOffset };
+}
+function _restoreCaretPath(caret) {
+  const ed = document.getElementById('e-content');
+  if (!ed || !caret) { ed?.focus(); return; }
+  let node = ed;
+  for (const i of caret.path) {
+    if (!node.childNodes[i]) { ed.focus(); return; }
+    node = node.childNodes[i];
+  }
+  try {
+    const range = document.createRange();
+    const maxOffset = node.nodeType === Node.TEXT_NODE ? node.length : node.childNodes.length;
+    range.setStart(node, Math.min(caret.offset, maxOffset));
+    range.collapse(true);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } catch (err) { /* structure shifted unexpectedly - just leave focus on the editor */ }
+  ed.focus();
+}
+function _captureState() {
+  const ed = document.getElementById('e-content');
+  return ed ? { html: ed.innerHTML, caret: _caretPath() } : null;
+}
+// Finalizes the current baseline (the state from right before whatever
+// change is now ending) into a real undo step, then clears it - the next
+// change, whenever it happens, will capture its own fresh baseline first.
+function _commitUndoBaseline() {
+  clearTimeout(_undoDebounce);
+  if (!_undoBaseline) return;
+  const ed = document.getElementById('e-content');
+  if (ed && ed.innerHTML !== _undoBaseline.html) {
+    _undoStack.push(_undoBaseline);
+    if (_undoStack.length > _UNDO_MAX) _undoStack.shift();
+    _redoStack = []; // a real change invalidates whatever redo history existed
+  }
+  _undoBaseline = null;
+}
+// Call BEFORE a mutation happens (the first keystroke of a typing burst)
+// to remember what to undo back to. Safe to call repeatedly mid-burst -
+// only the first call in a row actually captures anything, exactly like a
+// debounce's leading edge.
+function _pushUndoSnapshot() {
+  if (_undoRestoring || _undoBaseline) return;
+  _undoBaseline = _captureState();
+}
+// Call BEFORE a discrete, non-typing mutation (paste, image insert/
+// delete, split...) - unlike _pushUndoSnapshot, this always closes out
+// whatever came before as its OWN undo step first (e.g. a typing burst
+// still pending its debounce when the user clicks "insert image"), so
+// that action doesn't silently get merged into the next one. It also
+// commits ITSELF on the next tick, right after the caller's own
+// synchronous DOM mutation has run - these actions are one-shot, not a
+// burst like typing, so nothing else should ever get folded into the
+// same step (found by testing type -> insert image -> type again: the
+// image insert's baseline was left open, so the second typing burst
+// silently merged into the image-insert's undo step instead of getting
+// its own).
+function _pushUndoSnapshotForAction() {
+  _commitUndoBaseline();
+  _undoBaseline = _captureState();
+  setTimeout(_commitUndoBaseline, 0);
+}
+// Typing fires this on every keystroke: captures the pre-burst baseline
+// on the first keystroke (via _pushUndoSnapshot's own guard), then
+// commits it into a real undo step once the user pauses - one undo step
+// per burst of typing instead of one per character, matching how every
+// other text editor's undo granularity works.
+function _scheduleUndoSnapshot() {
+  _pushUndoSnapshot();
+  clearTimeout(_undoDebounce);
+  _undoDebounce = setTimeout(_commitUndoBaseline, 400);
+}
+function _doUndo() {
+  _commitUndoBaseline();
+  const ed = document.getElementById('e-content');
+  if (!ed || !_undoStack.length) return;
+  // The current state becomes the redo target.
+  _redoStack.push(_captureState());
+  const prev = _undoStack.pop();
+  _undoRestoring = true;
+  ed.innerHTML = prev.html;
+  _restoreCaretPath(prev.caret);
+  _undoRestoring = false;
+}
+function _doRedo() {
+  _commitUndoBaseline();
+  const ed = document.getElementById('e-content');
+  if (!ed || !_redoStack.length) return;
+  _undoStack.push(_captureState());
+  const next = _redoStack.pop();
+  _undoRestoring = true;
+  ed.innerHTML = next.html;
+  _restoreCaretPath(next.caret);
+  _undoRestoring = false;
+}
+(function() {
+  const editor = document.getElementById('e-content');
+  if (!editor) return;
+  editor.addEventListener('input', _scheduleUndoSnapshot);
+  editor.addEventListener('keydown', e => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (!mod || e.key.toLowerCase() !== 'z') return;
+    e.preventDefault();
+    if (e.shiftKey) _doRedo(); else _doUndo();
+  });
+  editor.addEventListener('keydown', e => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (!mod || e.key.toLowerCase() !== 'y') return;
+    e.preventDefault();
+    _doRedo();
+  });
+  // Losing focus (clicking Sauvegarder, switching fields...) ends the
+  // current typing burst - commit it now instead of leaving it to the
+  // 400ms debounce, so a quick click-away-then-Ctrl+Z-elsewhere doesn't
+  // find a half-finished pending step.
+  editor.addEventListener('blur', _commitUndoBaseline);
+})();
+
 // Tapping an image in a contenteditable places the text cursor immediately
 // before or after it (standard browser behaviour) rather than "selecting"
 // the image the way a native image picker would - on mobile in particular
@@ -2868,6 +3030,7 @@ function fmtBlock(tag) {
   document.execCommand('formatBlock', false, '<' + tag + '>');
 }
 function insertPhotoInText(url, caption, showToast=true, size='full') {
+  _pushUndoSnapshotForAction();
   const figure = _makeImgFigure(url, caption, size);
   const editor = document.getElementById('e-content');
   if (size === 'half') {
@@ -2903,6 +3066,7 @@ function insertPhotoInText(url, caption, showToast=true, size='full') {
 
 // ── Insert at cursor range (drag / paste) ─────────────────────
 function insertPhotoAtRange(url, caption, range) {
+  _pushUndoSnapshotForAction();
   const figure = _makeImgFigure(url, caption, 'full');
   const editor = document.getElementById('e-content');
   if (range && range.commonAncestorContainer && editor.contains(range.commonAncestorContainer)) {
@@ -2942,6 +3106,7 @@ function _splitToHalf(figure) {
   const editor = document.getElementById('e-content');
   const parent = figure.parentElement;
   if (parent !== editor) return; // only split top-level full figures
+  _pushUndoSnapshotForAction();
   figure.className = 'img-half';
   figure.querySelectorAll('.img-split').forEach(b => b.remove());
   const row = document.createElement('div'); row.className = 'img-pair';
@@ -2950,6 +3115,7 @@ function _splitToHalf(figure) {
   _refreshImgPairSlot(row);
 }
 function _deleteImgFigure(figure) {
+  _pushUndoSnapshotForAction();
   const row = figure.parentElement;
   figure.remove();
   if (row && row.classList.contains('img-pair')) {
