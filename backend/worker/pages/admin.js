@@ -3153,19 +3153,42 @@ function _makeImgFigure(urlOrImg, caption, size) {
   }
   figure.appendChild(img);
   // Never render caption/filename in the editor
+  // No onclick wired here on purpose - a delegated listener on #e-content
+  // (see below) handles both buttons for every figure, whether it was
+  // just created in this session or loaded straight from stored HTML
+  // (imported articles' bare <img> tags get upgraded to this same figure
+  // markup once and saved - per-element .onclick would only ever work for
+  // the session that created it, leaving every figure dead on next load).
   const del = document.createElement('button');
   del.type = 'button'; del.className = 'img-delete'; del.title = 'Supprimer'; del.textContent = '\u00d7';
-  del.onclick = function(e) { e.stopPropagation(); _deleteImgFigure(figure); };
   figure.appendChild(del);
   if (size === 'full') {
     const split = document.createElement('button');
     split.type = 'button'; split.className = 'img-split'; split.title = 'Mettre en demi-largeur';
     split.innerHTML = '<i class="ph-bold ph-columns"></i>';
-    split.onclick = function(e) { e.stopPropagation(); _splitToHalf(figure); };
     figure.appendChild(split);
   }
   return figure;
 }
+(function() {
+  const editor = document.getElementById('e-content');
+  if (!editor) return;
+  editor.addEventListener('click', e => {
+    const delBtn = e.target.closest('.img-delete');
+    if (delBtn) {
+      e.stopPropagation();
+      const figure = delBtn.closest('figure');
+      if (figure) _deleteImgFigure(figure);
+      return;
+    }
+    const splitBtn = e.target.closest('.img-split');
+    if (splitBtn) {
+      e.stopPropagation();
+      const figure = splitBtn.closest('figure');
+      if (figure) _splitToHalf(figure);
+    }
+  });
+})();
 function _splitToHalf(figure) {
   const editor = document.getElementById('e-content');
   const parent = figure.parentElement;
@@ -3213,11 +3236,11 @@ function _expandToFull(figure) {
   if (!row || !row.classList.contains('img-pair')) return;
   figure.className = 'img-full';
   figure.querySelectorAll('.img-expand').forEach(b => b.remove());
-  // Restore the split button for full-width figures
+  // Restore the split button for full-width figures - no .onclick needed,
+  // the delegated #e-content click listener (see _makeImgFigure) handles it.
   const split = document.createElement('button');
   split.type = 'button'; split.className = 'img-split'; split.title = 'Mettre en demi-largeur';
   split.innerHTML = '<i class="ph-bold ph-columns"></i>';
-  split.onclick = function(e) { e.stopPropagation(); _splitToHalf(figure); };
   figure.appendChild(split);
   row.parentNode.insertBefore(figure, row);
   row.remove();
