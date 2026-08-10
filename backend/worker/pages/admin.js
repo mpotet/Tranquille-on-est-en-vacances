@@ -2996,23 +2996,29 @@ function _doRedo() {
     if (next?.matches?.('figure, .img-pair')) return next;
     return null;
   }
-  // Tapping directly on an <img> lets the browser select the image itself
-  // as an "element selection" (not a text caret) - on mobile this also
-  // triggers the browser's native "scroll the selected element into view"
-  // behaviour, which visibly jumps the page (reported: "ça scrolle en bas
-  // du input" from a single tap on a photo already fully on screen).
-  // Placing a plain collapsed text-cursor right after the image ourselves
-  // instead - same as clicking just past it - sidesteps both problems at
-  // once: no native element-selection to scroll into view, and a normal
-  // collapsed caret the selectionchange handler below already knows how to
-  // highlight via figureNear().
+  // Tapping directly on an <img> used to just drop a collapsed text
+  // caret right after it - the browser's own native "select this element"
+  // click behavior was suppressed because on mobile it also triggers a
+  // native scroll-into-view that visibly jumped the page (reported: "ça
+  // scrolle en bas du input" from a single tap on a photo already fully
+  // on screen). That trade-off went too far the other way though: with no
+  // way to ever select an image as an element, it could never be part of
+  // a selection at all - a drag/shift-click spanning text + an image (to
+  // Ctrl+X both together) had nothing real to grab onto for the image
+  // portion (reported separately: cut only working when the selection is
+  // text-only). Selecting the whole <figure> as a proper node selection
+  // fixes both: a plain click now selects the image (so a lone click +
+  // Ctrl+X/Ctrl+C on it works, and Delete removes it via the browser's own
+  // handling of a selected contenteditable=false element), while
+  // preventDefault still blocks the native scroll-into-view that caused
+  // the original mobile jump.
   editor.addEventListener('click', e => {
     const img = e.target.closest('img');
     if (!img || !editor.contains(img)) return;
     e.preventDefault();
+    const figure = img.closest('figure') || img;
     const range = document.createRange();
-    range.setStartAfter(img);
-    range.collapse(true);
+    range.selectNode(figure);
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
@@ -3024,14 +3030,22 @@ function _doRedo() {
     if (!sel || !sel.rangeCount || !editor.contains(sel.anchorNode)) { clearHighlight(); return; }
     let fig = null;
     if (!sel.isCollapsed) {
-      // Tapping an image directly (rather than the text right next to it)
-      // gives the browser's own non-collapsed "this one element is
-      // selected" range - covered by figureNear's collapsed-caret path,
-      // check the range's actual selected content for a figure instead.
+      // A click on an image now selects its whole <figure> as a single-
+      // node range (see the click handler above) - when the range is
+      // exactly that one figure, prefer it directly over the more general
+      // "any figure under here" fallback below, which would otherwise
+      // just grab the first figure in the editor when a mixed text+image
+      // selection's commonAncestorContainer is #e-content itself.
       const range = sel.getRangeAt(0);
-      const container = range.commonAncestorContainer;
-      const root = container.nodeType === Node.ELEMENT_NODE ? container : container.parentElement;
-      fig = root?.closest?.('figure, .img-pair') || root?.querySelector?.('figure, .img-pair');
+      if (range.startContainer === range.endContainer &&
+          range.endOffset - range.startOffset === 1 &&
+          range.startContainer.childNodes[range.startOffset]?.matches?.('figure, .img-pair')) {
+        fig = range.startContainer.childNodes[range.startOffset];
+      } else {
+        const container = range.commonAncestorContainer;
+        const root = container.nodeType === Node.ELEMENT_NODE ? container : container.parentElement;
+        fig = root?.closest?.('figure, .img-pair') || root?.querySelector?.('figure, .img-pair');
+      }
     } else {
       fig = figureNear(sel.anchorNode, sel.anchorOffset);
     }
