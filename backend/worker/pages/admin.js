@@ -1792,7 +1792,7 @@ ${ADMIN_NAV()}
           <!-- Desktop only: mobile uses #mobile-format-bar (fixed bottom bar,
                swapped with #mobile-save-bar - see the CSS/JS near the bottom
                of this page) instead of this one scrolling with the article. -->
-          <div id="editor-toolbar" class="hidden lg:flex flex-wrap items-center gap-0.5 p-1.5 rounded-t-2xl sticky" style="background:var(--cream);border-bottom:1px solid var(--line);top:5rem;z-index:20">
+          <div id="editor-toolbar" class="hidden lg:flex flex-wrap items-center gap-0.5 p-1.5 rounded-t-2xl sticky" style="background:var(--cream);border-bottom:1px solid var(--line);top:4rem;z-index:20">
             <button type="button" class="toolbar-btn" onclick="fmt('bold')" title="Gras"><i class="ph-bold ph-text-b"></i></button>
             <button type="button" class="toolbar-btn" onclick="fmt('italic')" title="Italique"><i class="ph-bold ph-text-italic"></i></button>
             <button type="button" class="toolbar-btn" onclick="fmt('underline')" title="Souligné"><i class="ph-bold ph-text-underline"></i></button>
@@ -1826,6 +1826,14 @@ ${ADMIN_NAV()}
                 <div id="e-loading-bar" style="height:100%;width:0%;border-radius:999px;background:var(--blue);transition:width .2s ease"></div>
               </div>
               <div id="e-loading-pct" class="text-sm font-bold" style="color:var(--ink)">Chargement des images… 0%</div>
+              <!-- Hidden until a few seconds have passed with no sign of
+                   finishing (see _loadContentWithProgress) - a slow/flaky
+                   connection in voyage shouldn't force waiting out the full
+                   safety timeout just to start typing. Skips straight to
+                   the text with placeholder boxes standing in for the
+                   images that haven't loaded yet, instead of the real
+                   photos. -->
+              <button type="button" id="e-loading-skip" onclick="_skipImagePreload()" class="hidden text-xs font-bold underline" style="color:var(--ink-muted)">Continuer sans attendre les images</button>
             </div>
           </div>
         </div>
@@ -1852,7 +1860,7 @@ ${ADMIN_NAV()}
          couverture/Supprimer are reachable from anywhere in a long article
          without losing your place in the text. -->
     <div id="mobile-opts-backdrop" onclick="closeMobileOptsDrawer()"></div>
-    <aside id="editor-sidebar" class="order-1 lg:col-start-3 lg:row-start-1 space-y-4 lg:sticky lg:overflow-y-auto" style="top:5rem;max-height:calc(100vh - 6rem)">
+    <aside id="editor-sidebar" class="order-1 lg:col-start-3 lg:row-start-1 space-y-4 lg:sticky lg:overflow-y-auto" style="top:4rem;max-height:calc(100vh - 5rem)">
 
       <!-- Close bar - only rendered visible by the mobile-opts-open CSS
            above (position:fixed inside the drawer); a plain block in normal
@@ -2147,6 +2155,12 @@ let _lastPublished = null;
 
 function toast(msg,type='ok',persist=false){const i=document.getElementById('toast-icon'),m=document.getElementById('toast-msg'),el=document.getElementById('toast');i.innerHTML=type==='ok'?'<i class="ph-fill ph-check-circle" style="color:var(--palm);font-size:1.25rem"></i>':type==='err'?'<i class="ph-fill ph-x-circle" style="color:var(--danger);font-size:1.25rem"></i>':'<i class="ph-fill ph-info" style="color:var(--blue);font-size:1.25rem"></i>';m.textContent=msg;el.classList.remove('hidden');clearTimeout(el._t);el.onclick=persist?(()=>el.classList.add('hidden')):null;el.style.cursor=persist?'pointer':'';if(!persist)el._t=setTimeout(()=>el.classList.add('hidden'),3000)}
 function esc(s){return (s==null? '': String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+// Images sautées via "Continuer sans attendre les images" (voir
+// _skipImagePreload) portent un placeholder en src et l'URL réelle dans
+// data-original-src - la restaurer avant toute sauvegarde/brouillon est
+// impératif : sinon stripDataUris() blanchirait le src placeholder
+// (c'est une data: URI) et l'article perdrait la photo pour de bon.
+function restorePlaceholderSrcs(html){return(html||'').replace(/<img([^>]*) data-original-src=["']([^"']+)["']([^>]*) src=["'][^"']*["']/gi,'<img$1$3 src="$2"').replace(/<img([^>]*) src=["'][^"']*["']([^>]*) data-original-src=["']([^"']+)["']/gi,'<img$1$2 src="$3"');}
 function stripDataUris(html){return(html||'').replace(/\bsrc="data:[^"]*"/g,'src=""').replace(/\bsrc='data:[^']*'/g,"src=''");}
 function dataUrlToFile(dataUrl,name){const arr=dataUrl.split(','),mime=arr[0].match(/:(.*?);/)[1],bstr=atob(arr[1]);let n=bstr.length;const u8=new Uint8Array(n);while(n--)u8[n]=bstr.charCodeAt(n);return new File([u8],name||'photo.jpg',{type:mime});}
 
@@ -2160,7 +2174,7 @@ function _draftPayload() {
     start_date:        document.getElementById('e-start-date')?.value || '',
     end_date:          document.getElementById('e-end-date')?.value || '',
     short_description: document.getElementById('e-desc')?.value.trim() || '',
-    content:           navigator.onLine ? stripDataUris(document.getElementById('e-content')?.innerHTML || '') : (document.getElementById('e-content')?.innerHTML || ''),
+    content:           navigator.onLine ? stripDataUris(restorePlaceholderSrcs(document.getElementById('e-content')?.innerHTML || '')) : (document.getElementById('e-content')?.innerHTML || ''),
     status:            document.getElementById('pub-status')?.value || 'archived',
     folder_id:         parseInt(document.getElementById('e-folder')?.value) || null,
     cover_url:         document.getElementById('e-cover')?.value.trim() || null,
@@ -2370,7 +2384,7 @@ async function ensureArticleId() {
       title, status: 'archived',
       start_date: document.getElementById('e-start-date')?.value || new Date().toISOString().slice(0,10),
       end_date: document.getElementById('e-end-date')?.value || new Date().toISOString().slice(0,10),
-      content: stripDataUris(document.getElementById('e-content')?.innerHTML || ''),
+      content: stripDataUris(restorePlaceholderSrcs(document.getElementById('e-content')?.innerHTML || '')),
     })
   }).catch(() => null);
   if (!res?.ok) { toast('Erreur lors de la création du brouillon', 'err'); return false; }
@@ -2573,8 +2587,13 @@ function populateFolderSelect(folders, parentId, depth) {
 }
 
 // Place le curseur à la toute fin du contenu de l'éditeur et scrolle
-// jusqu'à lui - utilisé à l'ouverture d'un article existant pour permettre
-// d'ajouter tout de suite les notes du jour sans avoir à chercher la fin.
+// jusqu'à lui, SANS animation - utilisé à l'ouverture d'un article existant
+// pour permettre d'ajouter tout de suite les notes du jour sans avoir à
+// chercher la fin. { behavior: 'instant' } évite l'effet "ascenseur" d'un
+// scroll fluide sur un article de plusieurs dizaines de milliers de pixels
+// de haut ; appelé pendant que l'overlay de chargement couvre encore
+// l'écran (voir _loadContentWithProgress), l'utilisateur ne voit donc même
+// pas ce saut - juste l'endroit final, direct.
 function _focusEditorAtEnd() {
   const ed = document.getElementById('e-content');
   if (!ed) return;
@@ -2586,7 +2605,30 @@ function _focusEditorAtEnd() {
   sel.removeAllRanges();
   sel.addRange(range);
   saveSelection();
-  (ed.lastElementChild || ed).scrollIntoView({ block: 'end' });
+  (ed.lastElementChild || ed).scrollIntoView({ block: 'end', behavior: 'instant' });
+}
+
+// data: URI SVG placeholder shown in place of an image the user chose not
+// to wait for (see _skipImagePreload) - a plain grey box with a picture
+// icon, so the layout still reads as "there's a photo here" without
+// costing a single byte of network.
+const _PLACEHOLDER_IMG_SRC = 'data:image/svg+xml,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">' +
+  '<rect width="400" height="300" fill="#e7e5e4"/>' +
+  '<path d="M150 190 L180 150 L210 180 L240 140 L270 190 Z" fill="#a8a29e"/>' +
+  '<circle cx="160" cy="120" r="16" fill="#a8a29e"/>' +
+  '</svg>'
+);
+
+let _skipCurrentPreload = null;
+
+// Appelé par le bouton "Continuer sans attendre les images" de l'overlay.
+// Remplace chaque src d'image PAS ENCORE chargée par un placeholder (en
+// gardant l'URL réelle dans data-original-src, pour ne jamais la perdre :
+// _restorePlaceholderImgs la restaure avant sauvegarde/export) et révèle
+// l'éditeur immédiatement, sans attendre le reste.
+function _skipImagePreload() {
+  if (_skipCurrentPreload) _skipCurrentPreload();
 }
 
 // Précharge toutes les images d'un article AVANT de toucher à l'éditeur
@@ -2600,14 +2642,20 @@ function _loadContentWithProgress(html) {
   const overlay = document.getElementById('e-loading-overlay');
   const bar = document.getElementById('e-loading-bar');
   const pctLabel = document.getElementById('e-loading-pct');
+  const skipBtn = document.getElementById('e-loading-skip');
   if (!ed) return;
 
-  const reveal = () => {
+  const reveal = (finalHtml) => {
     // Les images sont déjà chargées (préchauffées dans le cache HTTP du
     // navigateur ci-dessous), donc loading="lazy" ici ne retarde rien de
     // visible - il évite juste au navigateur de décoder/mettre en page les
     // 200+ <img> hors écran d'un coup au moment de l'injection.
-    ed.innerHTML = html.replace(/<img /gi, '<img loading="lazy" decoding="async" ');
+    ed.innerHTML = finalHtml.replace(/<img /gi, '<img loading="lazy" decoding="async" ');
+    // Placer le curseur + scroller AVANT de retirer l'overlay : l'écran est
+    // encore couvert par le fond plein de l'overlay à ce moment-là, donc
+    // l'utilisateur ne voit jamais le saut vers la fin de l'article - juste
+    // l'overlay qui disparaît directement sur la position finale.
+    _focusEditorAtEnd();
     if (overlay) {
       // .style.display was set to 'flex' below to show the overlay - an
       // inline style always beats a class for the same property, so the
@@ -2619,16 +2667,18 @@ function _loadContentWithProgress(html) {
       overlay.classList.add('hidden');
       overlay.style.display = '';
     }
-    _focusEditorAtEnd();
+    if (skipBtn) skipBtn.classList.add('hidden');
+    _skipCurrentPreload = null;
   };
 
   const urls = [...html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)].map(m => m[1]);
-  if (!urls.length || !overlay) { reveal(); return; }
+  if (!urls.length || !overlay) { reveal(html); return; }
 
   overlay.classList.remove('hidden');
   overlay.style.display = 'flex';
   let done = 0;
   const total = urls.length;
+  const loadedUrls = new Set();
   let finished = false;
   const updatePct = () => {
     const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
@@ -2639,12 +2689,28 @@ function _loadContentWithProgress(html) {
     if (finished) return;
     finished = true;
     clearTimeout(safety);
-    reveal();
+    clearTimeout(skipDelay);
+    reveal(html);
   };
+  // Remplace par un placeholder chaque <img> dont l'URL n'a pas fini de
+  // charger au moment du clic sur "Continuer sans attendre" - l'original
+  // reste récupérable via data-original-src (voir _restorePlaceholderImgs).
+  const skipNow = () => {
+    if (finished) return;
+    finished = true;
+    clearTimeout(safety);
+    clearTimeout(skipDelay);
+    const withPlaceholders = html.replace(/<img([^>]*) src=["']([^"']+)["']/gi, (match, attrs, src) => {
+      if (loadedUrls.has(src)) return match;
+      return '<img' + attrs + ' data-original-src="' + src + '" src="' + _PLACEHOLDER_IMG_SRC + '"';
+    });
+    reveal(withPlaceholders);
+  };
+  _skipCurrentPreload = skipNow;
   updatePct();
   urls.forEach(src => {
     const probe = new Image();
-    const onOneDone = () => { done++; updatePct(); if (done >= total) finish(); };
+    const onOneDone = () => { done++; loadedUrls.add(src); updatePct(); if (done >= total) finish(); };
     probe.addEventListener('load', onOneDone, { once: true });
     probe.addEventListener('error', onOneDone, { once: true });
     probe.src = src;
@@ -2656,6 +2722,11 @@ function _loadContentWithProgress(html) {
   // normalement (avec loading="lazy" posé juste en dessous) une fois
   // affichées.
   const safety = setTimeout(finish, 8000);
+  // Le bouton "Continuer sans attendre" n'apparaît qu'après un délai -
+  // inutile sur un chargement normal de quelques centaines de ms à 1-2s,
+  // il ne doit se montrer que si ça traîne vraiment (connexion de voyage
+  // capricieuse).
+  const skipDelay = setTimeout(() => { if (!finished && skipBtn) skipBtn.classList.remove('hidden'); }, 3000);
 }
 
 // ── WYSIWYG rich text editor ──────────────────────────────────
@@ -3262,7 +3333,7 @@ async function saveArticle() {
     start_date:        startDate,
     end_date:          endDate,
     short_description: document.getElementById('e-desc').value.trim(),
-    content:           stripDataUris(document.getElementById('e-content').innerHTML),
+    content:           stripDataUris(restorePlaceholderSrcs(document.getElementById('e-content').innerHTML)),
     status:            apiStatus,
     notify,
     folder_id:         parseInt(document.getElementById('e-folder').value) || null,
