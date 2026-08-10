@@ -2605,24 +2605,36 @@ function _focusEditorAtEnd() {
   sel.removeAllRanges();
   sel.addRange(range);
   saveSelection();
-  const target = ed.lastElementChild || ed;
-  target.scrollIntoView({ block: 'end', behavior: 'instant' });
-  // Sur mobile, une barre fixe (#mobile-save-bar par défaut, ou
-  // #mobile-format-bar une fois le clavier ouvert) est collée en bas de
-  // l'écran par-dessus le contenu - scrollIntoView ne le sait pas et
-  // aligne le bas de l'élément avec le bas RÉEL du viewport, donc les
-  // 2-3 dernières lignes du texte finissent cachées derrière cette barre
-  // (signalé : "le curseur est bien en bas mais ça ne scrolle pas
-  // vraiment tout en bas"). On corrige d'un scroll supplémentaire égal à
-  // la hauteur de la barre actuellement visible.
-  const visibleBar = [document.getElementById('mobile-save-bar'), document.getElementById('mobile-format-bar')]
-    .find(bar => bar && getComputedStyle(bar).display !== 'none');
-  if (visibleBar) {
-    const barHeight = visibleBar.getBoundingClientRect().height;
-    const rect = target.getBoundingClientRect();
-    const overlap = barHeight - (window.innerHeight - rect.bottom);
-    if (overlap > 0) window.scrollBy({ top: overlap, behavior: 'instant' });
-  }
+  const doScroll = () => {
+    const target = ed.lastElementChild || ed;
+    target.scrollIntoView({ block: 'end', behavior: 'instant' });
+    // Sur mobile, une barre fixe (#mobile-save-bar par défaut, ou
+    // #mobile-format-bar une fois le clavier ouvert) est collée en bas de
+    // l'écran par-dessus le contenu - scrollIntoView ne le sait pas et
+    // aligne le bas de l'élément avec le bas RÉEL du viewport, donc les
+    // 2-3 dernières lignes du texte finissent cachées derrière cette barre
+    // (signalé : "le curseur est bien en bas mais ça ne scrolle pas
+    // vraiment tout en bas"). On corrige d'un scroll supplémentaire égal à
+    // la hauteur de la barre actuellement visible.
+    const visibleBar = [document.getElementById('mobile-save-bar'), document.getElementById('mobile-format-bar')]
+      .find(bar => bar && getComputedStyle(bar).display !== 'none');
+    if (visibleBar) {
+      const barHeight = visibleBar.getBoundingClientRect().height;
+      const rect = target.getBoundingClientRect();
+      const overlap = barHeight - (window.innerHeight - rect.bottom);
+      if (overlap > 0) window.scrollBy({ top: overlap, behavior: 'instant' });
+    }
+  };
+  // Sur un très gros article (des centaines d'images), le navigateur n'a
+  // pas forcément fini de mettre en page tout le contenu qu'on vient
+  // d'injecter au moment où ce scroll s'exécute (même juste après
+  // l'assignation à innerHTML, en synchrone) - la hauteur réelle du
+  // dernier élément n'est donc pas encore stable, et scrollIntoView('end')
+  // atterrit trop court (signalé : "10 lignes du bas en scroll" alors que
+  // le curseur DOM, lui, est bien en toute fin). Deux
+  // requestAnimationFrame d'affilée garantissent qu'un cycle de mise en
+  // page complet a eu lieu avant de mesurer/scroller.
+  requestAnimationFrame(() => requestAnimationFrame(doScroll));
 }
 
 // data: URI SVG placeholder shown in place of an image the user chose not
@@ -3501,14 +3513,57 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // (dozens of KB of dead CSS text wedged between paragraphs). Plain text
   // still preserves line breaks, just strips all markup/styling.
   const text = e.clipboardData.getData('text/plain');
-  if (text) document.execCommand('insertText', false, text);
+  // Images go in BEFORE the text, not after: insertPhotoAtRange/
+  // uploadAndInsertAtRange move the live selection to right after each
+  // inserted figure, so chaining them one after another naturally keeps
+  // insertion order - but a range captured once and reused for every
+  // insertion goes stale after the first one moves the selection. Doing
+  // the text insertion (execCommand('insertText'), which always targets
+  // the CURRENT selection) first used to run before this loop and left
+  // every image re-targeting that same now-stale post-text position,
+  // which silently reordered "image then caption" pastes into "caption
+  // then image" (reported bug). Re-reading the selection right before
+  // each step instead keeps them in the order the user actually pasted.
   if (items.length || dataImageUrls.length || hostedImageUrls.length) {
-    let range = null;
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount) range = sel.getRangeAt(0).cloneRange();
-    for (const item of items) { const file = item.getAsFile(); if (file) await uploadAndInsertAtRange(file, range); }
-    for (let i = 0; i < dataImageUrls.length; i++) { await uploadAndInsertAtRange(dataUrlToFile(dataImageUrls[i], 'image-' + (i + 1) + '.png'), range); }
-    for (const src of hostedImageUrls) { insertPhotoAtRange(src, '', range); }
+    const getRange = () => {
+      const sel = window.getSelection();
+      return sel && sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+    };
+    for (const item of items) { const file = item.getAsFile(); if (file) await uploadAndInsertAtRange(file, getRange()); }
+    for (let i = 0; i < dataImageUrls.length; i++) { await uploadAndInsertAtRange(dataUrlToFile(dataImageUrls[i], 'image-' + (i + 1) + '.png'), getRange()); }
+    for (const src of hostedImageUrls) { insertPhotoAtRange(src, '', getRange()); }
+    // execCommand('insertText', ...) silently no-ops (returns false, does
+    // nothing) once called after an await on a real network request - it
+    // needs to run synchronously within the trusted user-gesture call
+    // stack the paste event started in, which the image upload(s) above
+    // already left behind. Insert the text as plain DOM nodes at the
+    // current selection instead, which has no such restriction (found by
+    // instrumenting execCommand directly: it returned false here, and the
+    // pasted caption silently vanished even though the image landed fine).
+    if (text) {
+      const range = getRange();
+      if (range) {
+        range.deleteContents();
+        const lines = text.split('\\n');
+        const frag = document.createDocumentFragment();
+        lines.forEach((line, i) => {
+          if (i > 0) frag.appendChild(document.createElement('br'));
+          frag.appendChild(document.createTextNode(line));
+        });
+        const lastNode = frag.lastChild;
+        range.insertNode(frag);
+        if (lastNode) {
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          const r2 = document.createRange();
+          r2.setStartAfter(lastNode);
+          r2.collapse(true);
+          sel.addRange(r2);
+        }
+      }
+    }
+  } else if (text) {
+    document.execCommand('insertText', false, text);
   }
 });
 
