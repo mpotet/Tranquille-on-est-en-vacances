@@ -2352,16 +2352,31 @@ function _showDraftBar(draft) {
     <button onclick="_applyDraft()" style="background:var(--blue);color:#fff;border:none;padding:.3rem .8rem;border-radius:.5rem;font-weight:700;font-size:.78rem;cursor:pointer">Restaurer</button>
     <button onclick="_dismissDraft()" style="color:var(--blue);border:none;background:none;padding:.3rem .5rem;font-size:.78rem;cursor:pointer;font-weight:600">Ignorer</button>\`;
   document.body.appendChild(bar);
+  // Being position:fixed, this bar floats OVER the page instead of taking
+  // up space in it - since it spans the full width, it was covering the
+  // top of the sticky sidebar (Sauvegarder button included) whenever that
+  // sidebar's sticky position put it near the top of the viewport
+  // (reported: "ça passe par-dessus le bouton sauvegarder"). Push the
+  // whole page's content down by the bar's real height instead, same
+  // pattern already used for the PWA "update available" banner in
+  // shell.js - nothing underneath ever ends up hidden behind it.
+  const h = bar.offsetHeight;
+  const container = document.querySelector('body > div.max-w-7xl');
+  if (container) container.style.marginTop = h + 'px';
 }
 function _applyDraft() {
   if (_pendingDraft) { fillFromDraft(_pendingDraft); _pendingDraft = null; }
   document.getElementById('draft-bar')?.remove();
+  const container = document.querySelector('body > div.max-w-7xl');
+  if (container) container.style.marginTop = '';
   toast('Brouillon restauré ✓', 'ok');
 }
 function _dismissDraft() {
   clearDraftLocal();
   _pendingDraft = null;
   document.getElementById('draft-bar')?.remove();
+  const container = document.querySelector('body > div.max-w-7xl');
+  if (container) container.style.marginTop = '';
 }
 
 // ── Auto-create draft if article has no ID yet ────────────────
@@ -2680,6 +2695,14 @@ function _loadContentWithProgress(html) {
     // visible - il évite juste au navigateur de décoder/mettre en page les
     // 200+ <img> hors écran d'un coup au moment de l'injection.
     ed.innerHTML = finalHtml.replace(/<img /gi, '<img loading="lazy" decoding="async" ');
+    // Les articles importés/anciens stockent leurs images en <img> nu (un
+    // par <p>), sans le wrapper <figure> (bouton croix pour supprimer,
+    // bouton pour passer en demi-largeur) que produit désormais toute
+    // insertion d'image - d'où ces images sans aucun contrôle visible
+    // signalé par l'utilisateur. On les met à niveau une fois pour toutes
+    // à l'ouverture, silencieusement (le HTML sauvegardé ensuite aura la
+    // même structure <figure> que les images insérées depuis toujours).
+    _wrapBareImages(ed);
     // Placer le curseur + scroller AVANT de retirer l'overlay : l'écran est
     // encore couvert par le fond plein de l'overlay à ce moment-là, donc
     // l'utilisateur ne voit jamais le saut vers la fin de l'article - juste
@@ -3081,12 +3104,53 @@ function insertPhotoAtRange(url, caption, range) {
   }
 }
 
+// Upgrades every bare <img> (not already inside a <figure>) found in the
+// editor to the same <figure> structure every image insertion path
+// produces (delete button, split-to-half button) - imported/older
+// articles stored images as plain <img> tags with none of that, so they
+// had no visible controls at all. Each bare image sits alone in its own
+// <p> in every article seen so far (confirmed against a real 272-image
+// article) - that <p> gets replaced by the figure directly, same
+// placement, same "full width" sizing as a freshly inserted photo.
+function _wrapBareImages(editor) {
+  const bareImgs = Array.from(editor.querySelectorAll('img')).filter(img => !img.closest('figure'));
+  bareImgs.forEach(img => {
+    // Both captured BEFORE _makeImgFigure, which reparents img into the
+    // new figure via appendChild - by the time that returns, img sits
+    // inside the figure with no next sibling of its own, so reading
+    // either of these afterward silently breaks insertBefore below
+    // (confirmed live: threw "node before which... is not a child of
+    // this node" partway through a 272-image article, leaving the
+    // preload overlay stuck since the exception aborted reveal() midway).
+    const parent = img.parentElement;
+    const nextSibling = img.nextSibling;
+    const wasOnlyChild = parent && parent.tagName === 'P' && parent.childNodes.length === 1 && parent.firstChild === img;
+    const figure = _makeImgFigure(img, img.alt, 'full');
+    if (wasOnlyChild) {
+      parent.replaceWith(figure);
+    } else if (parent) {
+      parent.insertBefore(figure, nextSibling);
+    }
+  });
+}
+
 // ── Image figure helpers ──────────────────────────────────────
-function _makeImgFigure(url, caption, size) {
+// Accepts either a URL (creates a fresh <img>, the normal insert path) or
+// an existing <img> element (reused in place - see _wrapBareImages, which
+// upgrades bare <img> tags from older/imported article content that
+// predates this figure-wrapper structure, so they get the same delete/
+// split controls as every image inserted since).
+function _makeImgFigure(urlOrImg, caption, size) {
   const figure = document.createElement('figure');
   figure.className = 'img-' + size;
   figure.setAttribute('contenteditable', 'false');
-  const img = document.createElement('img'); img.src = url; img.alt = caption || '';
+  let img;
+  if (urlOrImg instanceof Element) {
+    img = urlOrImg;
+    if (caption != null) img.alt = caption;
+  } else {
+    img = document.createElement('img'); img.src = urlOrImg; img.alt = caption || '';
+  }
   figure.appendChild(img);
   // Never render caption/filename in the editor
   const del = document.createElement('button');
