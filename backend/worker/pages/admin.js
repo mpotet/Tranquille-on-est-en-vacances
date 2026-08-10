@@ -2517,19 +2517,18 @@ async function init() {
       document.getElementById('e-desc').value  = a.short_description || '';
       const rawContent = a.content || '';
       const contentEl = document.getElementById('e-content');
-      contentEl.innerHTML = rawContent.trim().startsWith('<') ? rawContent : (rawContent ? (typeof marked !== 'undefined' ? marked.parse(rawContent) : '<p>' + rawContent.replace(/\\n\\n/g,'</p><p>').replace(/\\n/g,'<br>') + '</p>') : '');
+      let html = rawContent.trim().startsWith('<') ? rawContent : (rawContent ? (typeof marked !== 'undefined' ? marked.parse(rawContent) : '<p>' + rawContent.replace(/\\n\\n/g,'</p><p>').replace(/\\n/g,'<br>') + '</p>') : '');
       // Un article avec beaucoup d'images stockées pouvait bloquer la page
       // 1-2 min avant de pouvoir écrire : le navigateur décodait toutes les
-      // images d'un coup au moment de l'injection ci-dessus. loading="lazy"
-      // reporte le chargement des images hors écran à leur entrée dans le
-      // viewport (au scroll), decoding="async" évite que le décodage des
-      // images déjà visibles bloque le thread principal - l'éditeur devient
-      // utilisable dès l'injection du HTML plutôt qu'après le chargement de
-      // toutes les images.
-      contentEl.querySelectorAll('img').forEach(img => {
-        img.loading = 'lazy';
-        img.decoding = 'async';
-      });
+      // images d'un coup au moment de l'injection dans innerHTML ci-dessous.
+      // loading="lazy" doit être présent dans le HTML AU MOMENT du parsing
+      // pour être pris en compte - le poser après coup via la propriété JS
+      // (img.loading = 'lazy') est trop tard, le navigateur a déjà lancé le
+      // fetch de toutes les images pendant le parsing de innerHTML, donc ça
+      // ne changeait rien en pratique. On l'injecte donc directement dans
+      // la chaîne HTML avant assignation.
+      html = html.replace(/<img /gi, '<img loading="lazy" decoding="async" ');
+      contentEl.innerHTML = html;
       document.getElementById('e-start-date').value  = a.start_date || a.date || today;
       document.getElementById('e-end-date').value  = a.end_date || a.date || today;
       document.getElementById('e-dest').value  = a.destination || '';
@@ -2608,26 +2607,32 @@ function _focusEditorAtEnd() {
     (ed.lastElementChild || ed).scrollIntoView({ block: 'end' });
   };
 
-  // Seules les images non-lazy (celles que le navigateur commence à
-  // charger tout de suite, en pratique celles visibles dans les ~2-3
-  // premiers écrans) doivent bloquer l'overlay - attendre les images
-  // loading="lazy" reviendrait à annuler leur intérêt.
-  const imgs = Array.from(ed.querySelectorAll('img:not([loading="lazy"])'));
-  const incomplete = imgs.filter(img => !img.complete);
+  // Toutes les images ont loading="lazy" (posé directement dans le HTML
+  // avant injection - voir plus haut) : seules celles proches du haut de
+  // l'article démarrent réellement leur chargement tout de suite, le reste
+  // ne bougera qu'au scroll. On ne peut donc pas savoir à l'avance combien
+  // vont réellement charger ni lesquelles - on affiche l'overlay le temps
+  // que ÇA SE STABILISE (plus aucune image "en vol" pendant 400ms), avec
+  // un filet de sécurité court : sur un article normal ça ne bloque jamais
+  // plus d'une seconde ou deux, jamais 1-2 min comme avant.
+  const allImgs = Array.from(ed.querySelectorAll('img'));
+  const incomplete = allImgs.filter(img => !img.complete);
   if (!incomplete.length || !overlay) { placeCursorAtEnd(); return; }
 
   overlay.classList.remove('hidden');
-  const total = incomplete.length;
-  let done = 0;
+  let pending = incomplete.length;
+  const total = pending;
   let finished = false;
+  let settleTimer = null;
   const updatePct = () => {
-    const pct = Math.round((done / total) * 100);
+    const pct = Math.max(0, Math.min(100, Math.round(((total - pending) / total) * 100)));
     if (bar) bar.style.width = pct + '%';
     if (pctLabel) pctLabel.textContent = 'Chargement des images… ' + pct + '%';
   };
   const finish = () => {
     if (finished) return;
     finished = true;
+    clearTimeout(settleTimer);
     clearTimeout(safety);
     overlay.classList.add('hidden');
     placeCursorAtEnd();
@@ -2635,17 +2640,18 @@ function _focusEditorAtEnd() {
   updatePct();
   incomplete.forEach(img => {
     const onOneDone = () => {
-      done++;
+      pending = Math.max(0, pending - 1);
       updatePct();
-      if (done >= total) finish();
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(finish, 400);
     };
     img.addEventListener('load', onOneDone, { once: true });
     img.addEventListener('error', onOneDone, { once: true });
   });
-  // Filet de sécurité : une connexion très lente ou une image qui ne
-  // déclenche jamais load/error ne doit jamais bloquer l'éditeur
-  // indéfiniment derrière l'overlay.
-  const safety = setTimeout(finish, 8000);
+  // Filet de sécurité absolu : ne jamais bloquer l'éditeur derrière
+  // l'overlay au-delà de quelques secondes, quoi qu'il arrive (image qui
+  // ne déclenche jamais load/error, connexion très lente, etc.).
+  const safety = setTimeout(finish, 4000);
 }
 
 // ── WYSIWYG rich text editor ──────────────────────────────────
