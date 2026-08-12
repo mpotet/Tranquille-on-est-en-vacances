@@ -2962,6 +2962,29 @@ function _doRedo() {
   // 400ms debounce, so a quick click-away-then-Ctrl+Z-elsewhere doesn't
   // find a half-finished pending step.
   editor.addEventListener('blur', _commitUndoBaseline);
+  // Ctrl+X/right-click "Couper" fire a real 'cut' event, which the
+  // browser handles in two separate steps: (1) put the selection on the
+  // clipboard, (2) delete the selected content from the DOM. Step 1
+  // reliably works even when the selection includes a non-text node like
+  // our <figure contenteditable="false"> (that's why Copy always worked -
+  // it's only step 1). Step 2 is where browsers vary: some silently skip
+  // deleting when the selection isn't plain text, leaving the image (and
+  // any text selected alongside it) fully intact after a "successful"
+  // cut - reported repeatedly ("impossible de couper" while copier
+  // works). Deleting the selection ourselves right after the native cut
+  // has had a chance to populate the clipboard removes the dependency on
+  // that step 2 behavior entirely - the browser can leave the DOM alone
+  // and this still finishes the job.
+  editor.addEventListener('cut', () => {
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount || sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      if (!editor.contains(range.commonAncestorContainer)) return;
+      _pushUndoSnapshotForAction();
+      range.deleteContents();
+    }, 0);
+  });
 })();
 
 // Tapping an image in a contenteditable places the text cursor immediately
