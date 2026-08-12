@@ -1663,7 +1663,13 @@ export function editorPage(articleId = null) {
 #e-content .img-pair{outline:2px dashed rgba(var(--blue-rgb),.35);outline-offset:3px;border-radius:.75rem}
 #e-content .img-pair figure{max-width:49%;min-width:0}
 #e-content figure{position:relative}
-#e-content .img-delete,#e-content .img-split,#e-content .img-expand{position:absolute;top:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;font-weight:700;opacity:0;transition:opacity .15s;z-index:10;padding:0}
+/* user-select:none keeps these decorative buttons' glyphs (×, the split
+   icon) out of any text selection spanning the figure - without it, a
+   selection/copy/cut that includes the image also grabs their textContent
+   (reported: pasting after cutting an image inserted a stray "×" line -
+   the delete button's own "×" glyph had been swept into the clipboard
+   alongside the image). */
+#e-content .img-delete,#e-content .img-split,#e-content .img-expand{position:absolute;top:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;font-weight:700;opacity:0;transition:opacity .15s;z-index:10;padding:0;user-select:none;-webkit-user-select:none}
 #e-content .img-delete{right:6px}
 #e-content .img-split{right:38px;font-size:.7rem}
 #e-content .img-expand{left:6px;font-size:.7rem}
@@ -2962,28 +2968,78 @@ function _doRedo() {
   // 400ms debounce, so a quick click-away-then-Ctrl+Z-elsewhere doesn't
   // find a half-finished pending step.
   editor.addEventListener('blur', _commitUndoBaseline);
+  // A selection spanning a <figure> includes its delete/split/expand
+  // <button> elements in the DOM Range - the browser's default copy/cut
+  // then puts THEIR textContent (the "×" glyph, the split icon's text) on
+  // the clipboard right along with the image, since a Range's contents
+  // include every descendant regardless of CSS (user-select:none on
+  // those buttons stops a manual drag-selection from grabbing them, but
+  // not a Range built programmatically via selectNode/setStart/setEnd -
+  // see the click/drag handlers below). Pasting afterward then inserted
+  // a stray "×" line (reported: "quand je colle il me met des ××"). Copy
+  // and cut both need the clipboard content built from a clone of the
+  // selection with those buttons stripped out first, for both the HTML
+  // and plain-text clipboard flavors.
+  function _cleanClipboardHtml(range) {
+    const frag = range.cloneContents();
+    frag.querySelectorAll('.img-delete, .img-split, .img-expand, .img-pair-add').forEach(el => el.remove());
+    const div = document.createElement('div');
+    div.appendChild(frag);
+    return div;
+  }
+  function _writeCleanClipboard(e) {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount || sel.isCollapsed) return false;
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.commonAncestorContainer)) return false;
+    const cleaned = _cleanClipboardHtml(range);
+    // Only worth overriding the clipboard when a figure/button was
+    // actually part of the selection - plain text selections were never
+    // affected, no need to touch their clipboard behavior at all.
+    if (!cleaned.querySelector('figure, .img-pair') && cleaned.textContent === range.toString()) return false;
+    e.preventDefault();
+    e.clipboardData.setData('text/html', cleaned.innerHTML);
+    e.clipboardData.setData('text/plain', cleaned.textContent);
+    return true;
+  }
+  editor.addEventListener('copy', e => { _writeCleanClipboard(e); });
   // Ctrl+X/right-click "Couper" fire a real 'cut' event, which the
   // browser handles in two separate steps: (1) put the selection on the
   // clipboard, (2) delete the selected content from the DOM. Step 1
   // reliably works even when the selection includes a non-text node like
   // our <figure contenteditable="false"> (that's why Copy always worked -
-  // it's only step 1). Step 2 is where browsers vary: some silently skip
-  // deleting when the selection isn't plain text, leaving the image (and
-  // any text selected alongside it) fully intact after a "successful"
-  // cut - reported repeatedly ("impossible de couper" while copier
-  // works). Deleting the selection ourselves right after the native cut
-  // has had a chance to populate the clipboard removes the dependency on
-  // that step 2 behavior entirely - the browser can leave the DOM alone
-  // and this still finishes the job.
-  editor.addEventListener('cut', () => {
-    setTimeout(() => {
-      const sel = window.getSelection();
-      if (!sel || !sel.rangeCount || sel.isCollapsed) return;
-      const range = sel.getRangeAt(0);
-      if (!editor.contains(range.commonAncestorContainer)) return;
-      _pushUndoSnapshotForAction();
+  // it's only step 1, now handled above via _writeCleanClipboard). Step 2
+  // is where browsers vary: some silently skip deleting when the
+  // selection isn't plain text, leaving the image (and any text selected
+  // alongside it) fully intact after a "successful" cut - reported
+  // repeatedly ("impossible de couper" while copier works). Deleting the
+  // selection ourselves removes the dependency on that step 2 behavior
+  // entirely - the browser can leave the DOM alone and this still
+  // finishes the job.
+  editor.addEventListener('cut', e => {
+    const overrodeClipboard = _writeCleanClipboard(e);
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.commonAncestorContainer)) return;
+    _pushUndoSnapshotForAction();
+    if (overrodeClipboard) {
+      // preventDefault() above already stopped the native cut from doing
+      // anything at all (clipboard AND deletion both skipped) - delete
+      // synchronously ourselves right now instead of waiting a tick for
+      // native deletion that's never going to happen.
       range.deleteContents();
-    }, 0);
+    } else {
+      // Native clipboard write went through untouched (plain text) - give
+      // the browser's own deletion a chance to run first, only clean up
+      // after if it left the selection in place (see fix above this one).
+      setTimeout(() => {
+        const sel2 = window.getSelection();
+        if (sel2 && sel2.rangeCount && !sel2.isCollapsed && editor.contains(sel2.getRangeAt(0).commonAncestorContainer)) {
+          sel2.getRangeAt(0).deleteContents();
+        }
+      }, 0);
+    }
   });
 })();
 
