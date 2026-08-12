@@ -3961,6 +3961,18 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // it's already hosted on our own storage, so it just needs inserting
   // again, no upload/re-encode needed.
   const hostedImageUrls = allImgSrcs.filter(src => /^(https?:)?[/][/]/i.test(src) || src.indexOf('/r2/') === 0);
+  // Word DESKTOP (not Word Online) copying MULTIPLE images at once
+  // references each one in the HTML flavor as a local file:/// path to a
+  // temp file it creates on disk (e.g. file:///C:/.../clip_image001.png) -
+  // a browser can never read that path for security reasons, so none of
+  // the three buckets above ever match it. Rather than silently dropping
+  // those images with no explanation (reported: only text pasted, no
+  // warning at all, even though the images were confirmed present on the
+  // clipboard by pasting into a second Word document), warn explicitly so
+  // it's clear this is a real platform limitation - not a bug to keep
+  // reporting - and that pasting each image individually (or via drag &
+  // drop / the toolbar's image picker) is the workaround.
+  const unreachableFileUrls = allImgSrcs.filter(src => src.indexOf('file:') === 0);
   // Force plain-text for the text part in all cases. Sources like Samsung
   // Notes or a copy from the site's own rendered preview carry inline
   // style="--tw-..." (Tailwind) attributes on every element - left alone,
@@ -4020,6 +4032,19 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
     }
   } else if (text) {
     document.execCommand('insertText', false, text);
+  }
+  if (unreachableFileUrls.length) {
+    // Genuine platform limitation, not a bug: a browser can never read a
+    // file:/// path off the clipboard for security reasons, no matter
+    // what this editor does. Word Desktop only does this for
+    // multi-image copies - a single image usually comes through fine via
+    // the image/* clipboard item handled above.
+    toast(
+      unreachableFileUrls.length === 1
+        ? "1 image du collage n'a pas pu être récupérée (limitation de Word) - collez-la individuellement"
+        : unreachableFileUrls.length + " images du collage n'ont pas pu être récupérées (limitation de Word) - collez-les individuellement",
+      'err'
+    );
   }
 });
 
