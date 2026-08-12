@@ -3135,6 +3135,21 @@ function _doRedo() {
   let _imgDragFigure = null;
   function _imgDragMove(e) {
     if (!_imgDragFigure) return;
+    // Real mouse hardware/OS input always generates a little jitter
+    // between mousedown and mouseup even for what the user experiences as
+    // a single motionless click - without this guard, that jitter alone
+    // was enough to rebuild the selection via caretRangeFromPoint at
+    // whatever point the jitter landed on, sometimes producing a Range
+    // that didn't cleanly span the whole figure (e.g. starting between
+    // its own child nodes) - inconsistent copy/cut results depending on
+    // the exact jitter of a given click (reported: "ça ne le fait pas
+    // toujours", only the delete button's "×" pasted, no image). Same
+    // 4px threshold as the click handler's own drag detection below.
+    if (_imgMouseDownPos) {
+      const dx = Math.abs(e.clientX - _imgMouseDownPos.x);
+      const dy = Math.abs(e.clientY - _imgMouseDownPos.y);
+      if (dx <= 4 && dy <= 4) return;
+    }
     let endRange = null;
     if (document.caretRangeFromPoint) endRange = document.caretRangeFromPoint(e.clientX, e.clientY);
     else if (document.caretPositionFromPoint) {
