@@ -32,6 +32,12 @@ export const HEAD = (
      but not broken) behaviour. -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
 <meta name="description" content="${description}">
+<!-- Google Search Console ownership. The DNS-TXT method Search Console
+     suggests first can't work here: the site is served from a
+     *.workers.dev hostname, whose DNS zone belongs to Cloudflare, so there
+     is nowhere to add a TXT record. The HTML-meta method is the supported
+     route for this setup and only needs to stay present on the homepage. -->
+<meta name="google-site-verification" content="lNRkcam9LXMDBpOS03SwtkWMSZ5yCL3U8JiTzdTpo5s">
 <meta name="theme-color" content="#0057B8">
 <!-- Tells the browser this page already implements its own light/dark
      theming (the color-scheme CSS property does the same for engines that

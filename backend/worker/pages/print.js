@@ -248,7 +248,27 @@ function blockToParagraphs(block, resolvedImg) {
   }
 }
 
-export async function exportWordDocx(article, env) {
+/** Decode a `data:image/...;base64,...` URI into the shape loadImage returns. */
+function decodeDataUri(uri) {
+  try {
+    const m = /^data:image\/(png|jpe?g|gif);base64,(.+)$/i.exec(uri || '');
+    if (!m) return null;
+    const bin = atob(m[2]);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    if (bytes.length < 24) return null;
+    return { data: bytes, ...imageDimensions(bytes) };
+  } catch { return null; }
+}
+
+/**
+ * `prescaled` maps original image URL -> data: URI of a browser-downscaled
+ * copy. Embedding the full-size originals server-side meant fetching and
+ * packing ~50MB for a 133-photo article, which exceeded the Worker's CPU
+ * limit and returned HTTP 1102 instead of a document. The browser downscales
+ * them first (see collectDownscaledImages), so this only has to assemble.
+ */
+export async function exportWordDocx(article, env, prescaled) {
   const title = article.title || 'Export';
   const destination = article.destination || '';
   const dateRange = fmtDateRange(article);
@@ -289,9 +309,19 @@ export async function exportWordDocx(article, env) {
   // would still have lost images.
   const imageBlocks = blocks.filter(b => b.type === 'image').slice(0, 400);
   const resolved = new Map();
+  const scaled = prescaled || {};
+  // Anything the browser already downscaled is used as-is - no fetch, no
+  // full-size decode. Only images it couldn't handle (canvas failure, or an
+  // image not present in the rendered page) fall back to being fetched here.
+  const missing = [];
+  for (const b of imageBlocks) {
+    const hit = scaled[b.url] ? decodeDataUri(scaled[b.url]) : null;
+    if (hit) resolved.set(b, hit);
+    else missing.push(b);
+  }
   const BATCH = 12;
-  for (let i = 0; i < imageBlocks.length; i += BATCH) {
-    const batch = imageBlocks.slice(i, i + BATCH);
+  for (let i = 0; i < missing.length; i += BATCH) {
+    const batch = missing.slice(i, i + BATCH);
     await Promise.all(batch.map(async b => {
       resolved.set(b, await loadImage(b.url, env, publicUrl));
     }));
@@ -601,10 +631,19 @@ function renderContent(raw) {
     img.removeAttribute('decoding');
   });
 
-  // Rewrite relative R2 URLs to absolute
+  // Keep /r2/ images on the CURRENT origin rather than rewriting them to
+  // PUBLIC_URL: the Word export downscales them through a <canvas>, and a
+  // cross-origin image taints the canvas, making toDataURL() throw. The
+  // original path is kept in data-export-src so the server can still resolve
+  // the image from R2 for any that fail to downscale.
   wrapper.querySelectorAll('img').forEach(img => {
     const src = img.getAttribute('src') || '';
-    if (src.startsWith('/r2/')) img.src = PUBLIC_URL + src;
+    if (src.startsWith('/r2/')) img.setAttribute('data-export-src', src);
+    // Images served from another origin (older articles stored with an
+    // absolute URL) taint the canvas and can't be downscaled. Requesting them
+    // with CORS keeps the canvas clean; if the server declines, the export
+    // still falls back to fetching that image server-side.
+    else if (/^https?:[/][/]/i.test(src)) img.crossOrigin = 'anonymous';
   });
 
   // Wrap lone/multiple images in figure or image grid
@@ -635,13 +674,58 @@ function renderContent(raw) {
 renderContent(RAW_CONTENT);
 
 // ── Word export ──────────────────────────────────────────────
+// Downscale every image already rendered on this page to a print-sized JPEG,
+// keyed by its original URL. The server used to fetch and embed the full-size
+// originals itself, which on a 133-photo article meant ~50MB of image data and
+// blew the Worker's CPU budget outright ("Worker exceeded resource limits",
+// HTTP 1102). The browser has no such limit, already holds every image
+// decoded, and 1600px/JPEG-82 is well beyond what an A4 page can show.
+async function collectDownscaledImages(onProgress) {
+  var imgs = [...document.querySelectorAll('#article-body img')];
+  var out = {};
+  // 1100px wide at JPEG q0.72: an A4 text column is ~6in, so even at 150dpi
+  // that is more than the page can resolve. Bigger settings produced a ~53MB
+  // document that still tripped the Worker's CPU limit on assembly.
+  var MAX_W = 1100;
+  for (var i = 0; i < imgs.length; i++) {
+    var img = imgs[i];
+    var src = img.getAttribute('data-export-src') || img.currentSrc || img.src;
+    if (!src || out[src]) { if (onProgress) onProgress(i + 1, imgs.length); continue; }
+    try {
+      if (!img.complete || !img.naturalWidth) {
+        await new Promise(function (r) { img.addEventListener('load', r, { once: true }); img.addEventListener('error', r, { once: true }); });
+      }
+      if (!img.naturalWidth) { if (onProgress) onProgress(i + 1, imgs.length); continue; }
+      var scale = Math.min(1, MAX_W / img.naturalWidth);
+      var w = Math.max(1, Math.round(img.naturalWidth * scale));
+      var h = Math.max(1, Math.round(img.naturalHeight * scale));
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      // JPEG keeps photos small; quality 0.82 is visually indistinguishable
+      // in print at this size.
+      out[src] = canvas.toDataURL('image/jpeg', 0.72);
+    } catch (e) { /* tainted canvas or decode failure: server falls back to fetching it */ }
+    if (onProgress) onProgress(i + 1, imgs.length);
+  }
+  return out;
+}
+
 async function exportWord() {
   var btn = document.querySelector('.tb-btn-word');
   var prev = btn ? btn.innerHTML : '';
-  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; btn.innerHTML = 'Export…'; }
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; btn.innerHTML = 'Préparation…'; }
   try {
     var id = window.location.pathname.split('/')[3];
-    var res = await fetch('/admin/articles/' + id + '/export-word');
+    var images = await collectDownscaledImages(function (done, total) {
+      if (btn && total > 1) btn.innerHTML = 'Images ' + done + '/' + total;
+    });
+    if (btn) btn.innerHTML = 'Génération…';
+    var res = await fetch('/admin/articles/' + id + '/export-word', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ images: images }),
+    });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var blob = await res.blob();
 

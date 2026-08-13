@@ -1488,7 +1488,15 @@ export default {
           'SELECT * FROM articles WHERE id = ?'
         ).bind(parseInt(wordMatch.id)).first();
         if (!art) return notFound();
-        const docBuffer = await exportWordDocx(art, env);
+        // The browser POSTs downscaled copies of the article's images (see
+        // collectDownscaledImages): embedding the full-size originals here
+        // blew the Worker's CPU budget on photo-heavy articles and returned
+        // HTTP 1102. GET still works and simply falls back to fetching them.
+        let prescaled = null;
+        if (request.method === 'POST') {
+          try { prescaled = (await request.json())?.images || null; } catch { /* ignore malformed body */ }
+        }
+        const docBuffer = await exportWordDocx(art, env, prescaled);
         // Build a readable, filesystem-safe filename that keeps accents via
         // the RFC 5987 filename* form, with an ASCII fallback for old clients.
         const safeName = (art.title || 'export')
