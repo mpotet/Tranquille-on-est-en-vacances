@@ -1779,6 +1779,14 @@ export function editorPage(articleId = null) {
    flags an image still missing its description, so it should read as a
    pending task and vanish once filled in (see _refreshAltBtn). */
 #e-content .img-alt{right:70px;font-size:.7rem;background:rgba(var(--apricot-rgb),.92);color:var(--ink)}
+/* Description already written: back to the neutral dark of the other
+   controls, so only the images still missing one stand out. */
+#e-content .img-alt.is-set{background:rgba(0,0,0,.65);color:#fff}
+/* Inline preview of the alt text, so the description is readable at a glance
+   instead of only via the button's tooltip. Editor-only: stripped on save,
+   copy and export (see stripEditorOnly / the clipboard cleanup). */
+#e-content .img-alt-preview{margin-top:.35rem;font-size:.78rem;font-style:italic;color:var(--ink-muted);text-align:center;user-select:none;-webkit-user-select:none}
+#e-content .img-pair .img-alt-preview{font-size:.72rem}
 #e-content figure:hover .img-delete,#e-content figure:hover .img-split,#e-content figure:hover .img-expand,#e-content figure:hover .img-alt{opacity:1}
 /* Touch devices have no :hover state, so opacity:0-until-hover would leave
    these buttons effectively untappable - an admin on a phone could never
@@ -2330,7 +2338,16 @@ function esc(s){return (s==null? '': String(s)).replace(/&/g,'&amp;').replace(/<
 // data-original-src - la restaurer avant toute sauvegarde/brouillon est
 // impératif : sinon stripDataUris() blanchirait le src placeholder
 // (c'est une data: URI) et l'article perdrait la photo pour de bon.
-function restorePlaceholderSrcs(html){return(html||'').replace(/<img([^>]*) data-original-src=["']([^"']+)["']([^>]*) src=["'][^"']*["']/gi,'<img$1$3 src="$2"').replace(/<img([^>]*) src=["'][^"']*["']([^>]*) data-original-src=["']([^"']+)["']/gi,'<img$1$2 src="$3"');}
+function restorePlaceholderSrcs(html){return stripEditorOnly((html||'').replace(/<img([^>]*) data-original-src=["']([^"']+)["']([^>]*) src=["'][^"']*["']/gi,'<img$1$3 src="$2"').replace(/<img([^>]*) src=["'][^"']*["']([^>]*) data-original-src=["']([^"']+)["']/gi,'<img$1$2 src="$3"'));}
+// The alt-text preview rendered under each photo (see _refreshAltBtn) is
+// editor-only furniture: it must never reach storage, or it would be saved as
+// real content and shown to readers as a caption. Folded into
+// restorePlaceholderSrcs because every save path already goes through it.
+// NB: no \s\S / \/ escapes in this regex on purpose - this whole file is one
+// big template literal, which eats a single backslash before it ever reaches
+// the browser ([\s\S] arrived as [sS] and silently matched nothing, leaving
+// the preview in saved content). [^] and [/] need no escaping and survive.
+function stripEditorOnly(html){return(html||'').replace(/<div[^>]*data-editor-only="1"[^>]*>[^]*?<[/]div>/gi,'');}
 function stripDataUris(html){return(html||'').replace(/\bsrc="data:[^"]*"/g,'src=""').replace(/\bsrc='data:[^']*'/g,"src=''");}
 function dataUrlToFile(dataUrl,name){const arr=dataUrl.split(','),mime=arr[0].match(/:(.*?);/)[1],bstr=atob(arr[1]);let n=bstr.length;const u8=new Uint8Array(n);while(n--)u8[n]=bstr.charCodeAt(n);return new File([u8],name||'photo.jpg',{type:mime});}
 
@@ -3152,7 +3169,7 @@ function _doRedo() {
   // and plain-text clipboard flavors.
   function _cleanClipboardHtml(range) {
     const frag = range.cloneContents();
-    frag.querySelectorAll('.img-delete, .img-split, .img-expand, .img-alt, .img-pair-add').forEach(el => el.remove());
+    frag.querySelectorAll('.img-delete, .img-split, .img-expand, .img-alt, .img-pair-add, .img-alt-preview').forEach(el => el.remove());
     const div = document.createElement('div');
     div.appendChild(frag);
     return div;
@@ -3560,21 +3577,42 @@ function _makeImgFigure(urlOrImg, caption, size) {
   _refreshAltBtn(figure);
   return figure;
 }
-// Only shown while the image has no alt text, so it doubles as the "this one
-// still needs a description" marker and disappears once handled.
+// Always present, but styled differently depending on whether a description
+// exists. It used to be removed once filled in, which left no way to re-read
+// or correct what had been typed - and since alt is never displayed in the
+// editor, the text became both invisible and unreachable (reported: "I can
+// see there's a text because the icon is gone, but I don't know what I put").
 function _refreshAltBtn(figure) {
   const img = figure.querySelector('img');
   if (!img) return;
-  const has = !!(img.alt || '').trim();
+  const alt = (img.alt || '').trim();
   let btn = figure.querySelector('.img-alt');
-  if (has) { if (btn) btn.remove(); return; }
   if (!btn) {
     btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'img-alt';
     btn.innerHTML = '<i class="ph-bold ph-text-aa"></i>';
     figure.appendChild(btn);
   }
-  btn.title = 'Ajouter une description (texte alternatif)';
+  // .is-set drops the "pending task" amber tint (see the CSS) so a described
+  // image reads as done, while still being one click from editing.
+  btn.classList.toggle('is-set', !!alt);
+  btn.title = alt ? 'Description : ' + alt : 'Ajouter une description (texte alternatif)';
+
+  // Show the description inline, not just in a tooltip: having to hover each
+  // photo to find out what was written is exactly the "I can't tell what text
+  // I put" problem. Marked data-editor-only so it is stripped from anything
+  // that leaves the editor (save, clipboard, public render) - it is a preview
+  // of the alt attribute, not content.
+  let preview = figure.querySelector('.img-alt-preview');
+  if (!alt) { if (preview) preview.remove(); return; }
+  if (!preview) {
+    preview = document.createElement('div');
+    preview.className = 'img-alt-preview';
+    preview.setAttribute('contenteditable', 'false');
+    preview.setAttribute('data-editor-only', '1');
+    figure.appendChild(preview);
+  }
+  preview.textContent = alt;
 }
 function _editImgAlt(figure) {
   const img = figure.querySelector('img');

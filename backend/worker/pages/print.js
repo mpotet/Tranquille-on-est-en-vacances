@@ -590,7 +590,7 @@ function renderContent(raw) {
   // straight through into the exported PDF/Word - the "×" rendering as a
   // stray cross above every photo (reported). They are editing chrome, never
   // content: strip them before anything else looks at the markup.
-  wrapper.querySelectorAll('.img-delete, .img-split, .img-expand, .img-alt, .img-pair-add').forEach(el => el.remove());
+  wrapper.querySelectorAll('.img-delete, .img-split, .img-expand, .img-alt, .img-pair-add, .img-alt-preview, [data-editor-only]').forEach(el => el.remove());
   // contenteditable/draggable/lazy-loading are editor concerns too, and
   // loading="lazy" in particular can leave images unrendered in a print
   // snapshot that never scrolls.
