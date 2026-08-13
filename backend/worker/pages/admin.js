@@ -209,11 +209,22 @@ ${ADMIN_NAV()}
                  meant scrolling the whole page. Both filter client-side over
                  the already-loaded list, so there is no extra request. -->
             <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
-              <div class="relative flex-1 min-w-0">
-                <i class="ph-bold ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style="color:var(--ink-light)"></i>
+              <!-- The icon sits in normal flow inside a flex row rather than
+                   being absolutely positioned over the input: an absolute +
+                   -translate-y-1/2 icon renders misaligned (spilling out of
+                   the field's top-left) whenever the transform or the
+                   containing block doesn't resolve as expected - reported in
+                   the wild, though it looks correct in Chromium at every
+                   width and zoom tested. In flow there is nothing to
+                   mis-resolve, and the border moves to the wrapper so the
+                   whole thing still reads as one field. -->
+              <div class="flex items-center gap-2 flex-1 min-w-0 rounded-xl px-3"
+                   style="border:2px solid var(--line);background:var(--cream)">
+                <i class="ph-bold ph-magnifying-glass shrink-0" style="color:var(--ink-light)" aria-hidden="true"></i>
                 <input type="search" id="admin-search" placeholder="Rechercher un titre, une destination…"
-                       class="w-full rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none"
-                       style="border:2px solid var(--line);background:var(--cream);color:var(--ink)">
+                       aria-label="Rechercher un article"
+                       class="w-full min-w-0 py-2 text-sm bg-transparent focus:outline-none"
+                       style="border:none;color:var(--ink)">
               </div>
               <select id="admin-status-filter" class="rounded-xl px-3 py-2 text-sm font-semibold focus:outline-none" style="border:2px solid var(--line);background:var(--cream);color:var(--ink)">
                 <option value="">Tous les statuts</option>
