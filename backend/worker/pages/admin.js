@@ -4053,7 +4053,7 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // (one blank line, exactly like Word shows it), a normal paragraph
   // becomes a <p> with its text (one line, no extra gap).
   const _htmlOrderedSegments = (() => {
-    if (!html || !unreachableFileUrlsPreCheck(html)) return null;
+    if (!html || !htmlHasImgPreCheck(html)) return null;
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const segments = [];
     const BLOCK_TAGS = new Set(['P','DIV','LI','H1','H2','H3','H4','H5','H6']);
@@ -4129,10 +4129,18 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
     for (const child of doc.body.childNodes) walk(child);
     return segments;
   })();
-  // Cheap pre-check so DOMParser only runs when the HTML actually contains
-  // a file:// image (the only case ordered interleaving is needed for -
-  // every other paste path already works fine without it).
-  function unreachableFileUrlsPreCheck(h) { return h.indexOf('file:') !== -1; }
+  // Cheap pre-check so DOMParser only runs when the HTML actually mixes
+  // text and at least one image - a text-only paste has nothing to
+  // interleave, so building segments would be pure overhead for the
+  // common case. Originally gated on file:// specifically (only the
+  // Word Desktop/RTF case), which meant copying an image+text selection
+  // FROM this editor and pasting it back in (a real http(s):///r2/ src,
+  // no file:// or RTF involved at all) skipped this path entirely and
+  // fell through to the bucket-based one below, which still bunches
+  // every image before all the text (reported: copy/paste within the
+  // app didn't alternate like the source, even though the Word Desktop
+  // multi-image case had already been fixed to alternate correctly).
+  function htmlHasImgPreCheck(h) { return h.indexOf('<img') !== -1; }
   // Word/Word Online/Outlook only puts pasted images inline as base64
   // data: URIs inside the text/html flavor, never as a plain image/* item.
   const dataImageUrls = allImgSrcs.filter(src => src.indexOf('data:image/') === 0);
@@ -4267,18 +4275,22 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
     r2.collapse(true);
     sel.addRange(r2);
   };
-  if (_htmlOrderedSegments && rtfImageFiles.length) {
-    // Word Desktop multi-image paste: walk the HTML in real document
-    // order and insert each text run / image exactly where it was in the
-    // source, instead of bucketing all images together first (see
-    // _htmlOrderedSegments above for why that made pasted images end up
-    // bunched together with all the text after, instead of interleaved
-    // like the original document - reported bug). Each file:// <img>
-    // segment is matched to its RTF-extracted image by encounter order -
-    // both lists come from the same document in the same order, so the
-    // Nth file:// src in the HTML corresponds to the Nth \pict group in
-    // the RTF (_extractRtfImages already only returns real photos,
-    // matching what Word emits file:// paths for).
+  if (_htmlOrderedSegments && _htmlOrderedSegments.some(s => s.type === 'img')) {
+    // Any paste that mixes text and image(s) - Word Desktop's file://
+    // multi-image case, but also a plain copy/paste of image+text FROM
+    // this editor itself (a real http(s):///r2/ src, no RTF involved at
+    // all - reported bug: that case still bunched every image before all
+    // the text, since this branch used to require rtfImageFiles.length,
+    // which is always 0 for an already-hosted image). Walk the HTML in
+    // real document order and insert each text run/image exactly where
+    // it was in the source, instead of bucketing all images together
+    // first (see _htmlOrderedSegments above for why that reorders
+    // things). Each file:// <img> segment is matched to its
+    // RTF-extracted image by encounter order - both lists come from the
+    // same document in the same order, so the Nth file:// src in the
+    // HTML corresponds to the Nth \pict group in the RTF
+    // (_extractRtfImages already only returns real photos, matching what
+    // Word emits file:// paths for).
     let rtfIdx = 0;
     for (const seg of _htmlOrderedSegments) {
       if (seg.type === 'text') {
