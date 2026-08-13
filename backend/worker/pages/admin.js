@@ -4057,27 +4057,39 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const segments = [];
     const BLOCK_TAGS = new Set(['P','DIV','LI','H1','H2','H3','H4','H5','H6']);
+    // Word's HTML source wraps its own markup at a fixed column width for
+    // readability (pure formatting of the HTML text itself, invisible in
+    // Word) - that puts a literal newline character INSIDE a text node
+    // wherever a sentence happened to cross that column, with no relation
+    // to how the sentence actually displays in the document (reported
+    // bug: prose broke mid-sentence exactly where the raw HTML source had
+    // wrapped, e.g. "pas très / correctes"). Browsers collapse that kind
+    // of incidental whitespace when rendering HTML (a lone newline inside
+    // running text is just a word separator, same as a space) - normalize
+    // text-node content the same way here, so only an explicit <br> tag
+    // (a real intentional Shift+Enter line break) survives as one.
+    const normalizeText = (s) => s.replace(/[\\t\\n\\r ]+/g, ' ');
     // A paragraph's own text, collecting inline <br> as a newline WITHIN
     // that one paragraph (a real soft line-break, e.g. Shift+Enter) without
     // touching the segment boundaries the caller uses for <p> vs <p> gaps.
     const paragraphText = (el) => {
       let buf = '';
       const collect = (node) => {
-        if (node.nodeType === Node.TEXT_NODE) { buf += node.nodeValue; return; }
+        if (node.nodeType === Node.TEXT_NODE) { buf += normalizeText(node.nodeValue); return; }
         if (node.nodeType !== Node.ELEMENT_NODE) return;
         if (node.tagName === 'BR') { buf += '\\n'; return; }
         if (node.tagName === 'IMG') return; // handled separately below
         for (const child of node.childNodes) collect(child);
       };
       for (const child of el.childNodes) collect(child);
-      return buf;
+      return buf.trim();
     };
     const walk = (node) => {
       if (node.nodeType !== Node.ELEMENT_NODE) {
         if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim()) {
           // Bare text directly under <body>/a non-block wrapper (no <p> of
           // its own) - treat as its own paragraph rather than dropping it.
-          segments.push({ type: 'text', text: node.nodeValue });
+          segments.push({ type: 'text', text: normalizeText(node.nodeValue).trim() });
         }
         return;
       }
@@ -4097,10 +4109,11 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
         }
         let buf = '';
         const collectSplit = (n) => {
-          if (n.nodeType === Node.TEXT_NODE) { buf += n.nodeValue; return; }
+          if (n.nodeType === Node.TEXT_NODE) { buf += normalizeText(n.nodeValue); return; }
           if (n.nodeType !== Node.ELEMENT_NODE) return;
           if (n.tagName === 'IMG') {
-            if (buf) { segments.push({ type: 'text', text: buf }); buf = ''; }
+            if (buf.trim()) { segments.push({ type: 'text', text: buf.trim() }); }
+            buf = '';
             segments.push({ type: 'img', src: n.getAttribute('src') || '' });
             return;
           }
@@ -4108,7 +4121,7 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
           for (const child of n.childNodes) collectSplit(child);
         };
         for (const child of node.childNodes) collectSplit(child);
-        if (buf) segments.push({ type: 'text', text: buf });
+        if (buf.trim()) segments.push({ type: 'text', text: buf.trim() });
         return;
       }
       for (const child of node.childNodes) walk(child);
@@ -4148,9 +4161,15 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // paste before this was added). Persisted (not auto-dismissed) since a
   // slow connection can make this take well past the normal 3s toast
   // window - cleared explicitly once every image has actually finished.
+  // Threshold is 1, not "more than 1": even a single embedded photo can
+  // sit inside a huge multi-megabyte RTF blob (Word embeds every open
+  // document's full formatting info, not just the picture), so parsing
+  // time isn't actually proportional to the image count shown to the
+  // user - the loader has to cover the RTF-parsing time too, not just
+  // the per-image upload loop after it.
   let _pasteProgressShown = false;
-  if (unreachableFileUrls.length > 1) {
-    toast('Collage en cours (' + unreachableFileUrls.length + ' images) - ça peut prendre quelques instants…', 'info', true);
+  if (unreachableFileUrls.length >= 1) {
+    toast('Collage en cours' + (unreachableFileUrls.length > 1 ? ' (' + unreachableFileUrls.length + ' images)' : '') + ' - ça peut prendre quelques instants…', 'info', true);
     _pasteProgressShown = true;
   }
   // The actual fix for those file:// images: Word Desktop also puts a
@@ -4307,7 +4326,7 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   } else if (_pasteProgressShown) {
     // Replace the persisted "en cours" toast with a normal auto-dismissing
     // confirmation now that every image has actually finished uploading.
-    toast(unreachableFileUrls.length + ' images collées !', 'ok');
+    toast(unreachableFileUrls.length === 1 ? 'Image collée !' : unreachableFileUrls.length + ' images collées !', 'ok');
   }
 });
 
