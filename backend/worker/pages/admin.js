@@ -1777,12 +1777,14 @@ export function editorPage(articleId = null) {
     padding-bottom: 1.5rem;
   }
   /* Both were sticky only to survive the old window scroll; inside a pane
-     that scrolls on its own, sticky at top:4rem would float them 4rem down
-     from the pane's top and leave a permanent gap. The toolbar still needs
-     to stay pinned while the text scrolls under it, hence top:0 rather than
-     dropping sticky entirely. The sidebar just scrolls with its own pane. */
-  #editor-toolbar { top: 0; }
-  #editor-sidebar { position: static; max-height: none; }
+     that scrolls on its own, sticky at top:4rem would pin them 4rem BELOW
+     the pane's top - leaving a strip of text scrolling past above the
+     toolbar instead of under it (reported: the toolbar floats mid-text
+     rather than sticking to the top). !important because top:4rem is an
+     inline style on the element, which a stylesheet rule can't otherwise
+     override. The sidebar just scrolls with its own pane now. */
+  #editor-toolbar { top: 0 !important; }
+  #editor-sidebar { position: static !important; max-height: none !important; }
 }
 @media (max-width: 1023px) {
   /* Everything in #editor-sidebar (Statut, Informations, photo de
@@ -3254,6 +3256,13 @@ function _doRedo() {
     document.removeEventListener('mouseup', _imgDragEnd);
   }
   editor.addEventListener('mousedown', e => {
+    // Left button only. A middle-click (button 1) is the browser's
+    // autoscroll gesture: preventDefault()ing it below killed autoscroll
+    // outright whenever the pointer happened to be over a photo, so
+    // scrolling a photo-heavy article meant hunting for a patch of blank
+    // text first (reported). Right-click (button 2) must likewise keep its
+    // native context menu.
+    if (e.button !== 0) return;
     _imgMouseDownPos = { x: e.clientX, y: e.clientY };
     const img = e.target.closest('img');
     if (!img || !editor.contains(img)) return;
