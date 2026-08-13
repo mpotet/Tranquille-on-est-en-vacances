@@ -20,6 +20,18 @@ const INK = '#1A2B3C';
 const INK_MUTED = '#5A6A7A';
 const CREAM = '#FFFDF9';
 
+/** Escape text before interpolating it into an email's HTML. Comment emails
+ *  quote reader-written names and bodies, so this is the difference between a
+ *  quoted apostrophe and broken (or injected) markup landing in an inbox. */
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function shell({ title, badge, badgeColor, heading, bodyHtml, ctaUrl, ctaLabel, footerNote }) {
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -238,4 +250,42 @@ export function sendPasswordChangedEmail(env, to) {
     footerNote: "Vous recevez cet email car le mot de passe de votre compte a été modifié.",
   });
   return send(env, { to, subject: 'Votre mot de passe a été modifié', html, emailType: 'password_changed' });
+}
+
+// ── A reader posted a comment: tell the admin ─────────────────────────────────
+// Comments appear on the site immediately (the secret-question gate is the only
+// filter), so without this the only way to notice one was to browse the article.
+export function sendNewCommentEmail(env, to, { articleTitle, articleSlug, authorName, body, isReply }) {
+  const url = `${publicBase(env)}/voyage/${encodeURIComponent(articleSlug)}#comments`;
+  const heading = isReply ? 'Nouvelle réponse sur un récit' : 'Nouveau commentaire sur un récit';
+  const html = shell({
+    title: heading,
+    badge: '💬 Commentaire',
+    badgeColor: '#0057B8',
+    heading,
+    bodyHtml: `<p style="font-size:15px;color:${INK_MUTED};line-height:1.72;margin:0 0 4px"><strong>${esc(authorName)}</strong> a écrit sur <strong>${esc(articleTitle)}</strong> :</p>
+    <blockquote style="margin:14px 0 22px;padding:12px 16px;border-left:3px solid rgba(0,87,184,.28);background:#F8FAFC;border-radius:0 8px 8px 0;font-size:15px;color:${INK_MUTED};line-height:1.7">${esc(body)}</blockquote>`,
+    ctaUrl: url,
+    ctaLabel: 'Lire et répondre',
+    footerNote: "Vous recevez cet email car vous administrez ce blog.",
+  });
+  return send(env, { to, subject: `${heading} : ${articleTitle}`, html, emailType: 'new_comment' });
+}
+
+// ── Someone replied to a reader's comment ─────────────────────────────────────
+// Only sent when the reader chose to leave an address on the comment form.
+export function sendCommentReplyEmail(env, to, { articleTitle, articleSlug, authorName, body }) {
+  const url = `${publicBase(env)}/voyage/${encodeURIComponent(articleSlug)}#comments`;
+  const html = shell({
+    title: 'On a répondu à votre commentaire',
+    badge: '💬 Réponse',
+    badgeColor: '#0057B8',
+    heading: 'On a répondu à votre commentaire',
+    bodyHtml: `<p style="font-size:15px;color:${INK_MUTED};line-height:1.72;margin:0 0 4px"><strong>${esc(authorName)}</strong> vous a répondu sur <strong>${esc(articleTitle)}</strong> :</p>
+    <blockquote style="margin:14px 0 22px;padding:12px 16px;border-left:3px solid rgba(0,87,184,.28);background:#F8FAFC;border-radius:0 8px 8px 0;font-size:15px;color:${INK_MUTED};line-height:1.7">${esc(body)}</blockquote>`,
+    ctaUrl: url,
+    ctaLabel: 'Voir la réponse',
+    footerNote: "Vous recevez cet email car vous avez demandé à être prévenu des réponses à votre commentaire.",
+  });
+  return send(env, { to, subject: `On a répondu à votre commentaire : ${articleTitle}`, html, emailType: 'comment_reply' });
 }

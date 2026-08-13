@@ -69,6 +69,8 @@ CREATE TABLE IF NOT EXISTS comments (
   parent_id      INTEGER  REFERENCES comments(id) ON DELETE CASCADE,
   is_admin_reply INTEGER  NOT NULL DEFAULT 0,
   author_name    TEXT     NOT NULL,
+  author_email   TEXT,                       -- optional: to email them replies
+  push_endpoint  TEXT,                       -- optional: to push them replies
   body           TEXT     NOT NULL,
   created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -14,6 +14,8 @@
 
 import { json, notFound, badRequest, forbidden } from '../utils.js';
 import { checkRateLimit, recordFailedAttempt, clientKey } from '../rate-limit.js';
+import { sendNewCommentEmail, sendCommentReplyEmail } from '../admin-email.js';
+import { sendWebPush } from '../vapid.js';
 
 const MAX_AUTHOR_LEN = 80;
 const MAX_BODY_LEN = 2000;
@@ -63,7 +65,7 @@ function nestComments(flat) {
 // ──────────────────────────────────────────────────────────────
 // Submit a comment (gated by the secret question)
 // ──────────────────────────────────────────────────────────────
-export async function createComment(request, env, slugOrId, isAdmin) {
+export async function createComment(request, env, slugOrId, isAdmin, ctx) {
   const articleId = await resolveArticleId(env, slugOrId, isAdmin);
   if (articleId == null) return notFound('Article not found');
 
@@ -83,6 +85,10 @@ export async function createComment(request, env, slugOrId, isAdmin) {
   const authorName = String(body.author_name ?? '').trim();
   const commentBody = String(body.body ?? '').trim();
   const gateAnswer = String(body.gate_answer ?? '').trim().toLowerCase();
+  // Both optional: the reader only supplies them if they want to hear about
+  // replies. An address is never returned publicly (see listComments' SELECT).
+  const authorEmail = String(body.author_email ?? '').trim().slice(0, 254);
+  const pushEndpoint = String(body.push_endpoint ?? '').trim().slice(0, 500);
 
   if (!authorName) return badRequest('Merci d\'indiquer votre nom.');
   if (!commentBody) return badRequest('Votre commentaire est vide.');
@@ -126,8 +132,8 @@ export async function createComment(request, env, slugOrId, isAdmin) {
   }
 
   const result = await env.DB
-    .prepare('INSERT INTO comments (article_id, parent_id, author_name, body) VALUES (?, ?, ?, ?)')
-    .bind(articleId, parentId, authorName, commentBody)
+    .prepare('INSERT INTO comments (article_id, parent_id, author_name, author_email, push_endpoint, body) VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(articleId, parentId, authorName, authorEmail || null, pushEndpoint || null, commentBody)
     .run();
 
   // Count this against the post quota only once it actually succeeded, so a
@@ -139,7 +145,102 @@ export async function createComment(request, env, slugOrId, isAdmin) {
     .bind(result.meta.last_row_id)
     .first();
 
+  // Notifications run in the background: a reader must never wait on Mailjet
+  // or a push endpoint to see their own comment appear.
+  if (ctx) ctx.waitUntil(notifyAboutComment(env, { articleId, parentId, authorName, body: commentBody, isAdmin }));
+
   return json({ comment }, 201);
+}
+
+/**
+ * Fan-out for a freshly posted comment:
+ *   - always email the admin (comments appear on the site immediately, so
+ *     without this the only way to notice one is to browse the article)
+ *   - if it is a reply, also notify the parent's author by email and/or push,
+ *     through whichever channels they opted into on the form
+ * Every step is isolated: one failing channel must not stop the others, and
+ * none of them can fail the comment itself.
+ */
+export async function notifyAboutComment(env, { articleId, parentId, authorName, body, isAdmin }) {
+  try {
+    const article = await env.DB
+      .prepare('SELECT id, title, slug FROM articles WHERE id = ?')
+      .bind(articleId)
+      .first();
+    if (!article) return;
+
+    // ── Admin ──────────────────────────────────────────────────────────────
+    // Skipped when the admin is the author: no point emailing yourself.
+    if (!isAdmin) {
+      try {
+        const admin = await env.DB.prepare('SELECT email FROM admin_account WHERE id = 1').first();
+        if (admin?.email) {
+          await sendNewCommentEmail(env, admin.email, {
+            articleTitle: article.title,
+            articleSlug: article.slug,
+            authorName,
+            body,
+            isReply: !!parentId,
+          });
+        }
+      } catch (err) {
+        console.error('[Comments] Notification admin echouee:', err?.message || err);
+      }
+    }
+
+    // ── Author of the comment being replied to ─────────────────────────────
+    if (!parentId) return;
+    const parent = await env.DB
+      .prepare('SELECT author_name, author_email, push_endpoint FROM comments WHERE id = ?')
+      .bind(parentId)
+      .first();
+    if (!parent) return;
+
+    if (parent.author_email) {
+      try {
+        await sendCommentReplyEmail(env, parent.author_email, {
+          articleTitle: article.title,
+          articleSlug: article.slug,
+          authorName,
+          body,
+        });
+      } catch (err) {
+        console.error('[Comments] Email de reponse echoue:', err?.message || err);
+      }
+    }
+
+    if (parent.push_endpoint && env.VAPID_PRIVATE_KEY && env.VAPID_PUBLIC_KEY) {
+      try {
+        const sub = await env.DB
+          .prepare('SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE endpoint = ?')
+          .bind(parent.push_endpoint)
+          .first();
+        if (sub) {
+          const icon = `${(env.PUBLIC_URL || '').replace(/[/]+$/, '')}/icon-192.png`;
+          const payload = JSON.stringify({
+            title: 'On a repondu a votre commentaire',
+            body: `${authorName} : ${body.slice(0, 120)}`,
+            icon,
+            badge: icon,
+            url: `/voyage/${article.slug}#comments`,
+            tag: `comment-reply-${parentId}`,
+            renotify: true,
+          });
+          const res = await sendWebPush(sub, payload, env);
+          // A dead endpoint is cleaned up here as well as in notifications.js,
+          // otherwise it would be retried on every future reply.
+          if (res && (res.status === 410 || res.status === 404)) {
+            await env.DB.prepare('DELETE FROM push_subscriptions WHERE id = ?').bind(sub.id).run().catch(() => {});
+            await env.DB.prepare('UPDATE comments SET push_endpoint = NULL WHERE push_endpoint = ?').bind(parent.push_endpoint).run().catch(() => {});
+          }
+        }
+      } catch (err) {
+        console.error('[Comments] Push de reponse echoue:', err?.message || err);
+      }
+    }
+  } catch (err) {
+    console.error('[Comments] Notifications echouees:', err?.message || err);
+  }
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -171,7 +272,7 @@ export async function listRecentCommentsAdmin(env, limit = 20) {
 // ──────────────────────────────────────────────────────────────
 // Admin: reply to a comment (creates a threaded reply as admin)
 // ──────────────────────────────────────────────────────────────
-export async function replyToComment(request, env, commentId) {
+export async function replyToComment(request, env, commentId, ctx) {
   const orig = await env.DB.prepare('SELECT id, article_id, parent_id FROM comments WHERE id = ?').bind(commentId).first();
   if (!orig) return notFound('Comment not found');
   const body = await request.json().catch(() => null);
@@ -193,5 +294,19 @@ export async function replyToComment(request, env, commentId) {
   const comment = await env.DB.prepare('SELECT id, parent_id, is_admin_reply, author_name, body, created_at FROM comments WHERE id = ?')
     .bind(res.meta.last_row_id)
     .first();
+
+  // Replying from the dashboard is the main way a reader gets an answer, so
+  // this path has to notify them too - isAdmin skips the "new comment" email
+  // back to yourself while still reaching the person you replied to.
+  if (ctx) {
+    ctx.waitUntil(notifyAboutComment(env, {
+      articleId: orig.article_id,
+      parentId,
+      authorName: adminName,
+      body: replyText,
+      isAdmin: true,
+    }));
+  }
+
   return json({ comment, article_id: orig.article_id }, 201);
 }

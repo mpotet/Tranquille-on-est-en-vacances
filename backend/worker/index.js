@@ -720,6 +720,20 @@ ${TOAST}
             <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)" for="c-body">Votre commentaire</label>
             <textarea id="c-body" name="body" rows="3" maxlength="2000" required placeholder="Partagez votre réaction, un souvenir, une question..." class="w-full border-2 rounded-xl px-4 py-2.5 text-sm resize-none" style="border-color:rgba(var(--blue-rgb),.18)"></textarea>
           </div>
+          <!-- Both optional, and only useful for being told about a reply.
+               Kept visually secondary so the form still reads as "name +
+               comment + anti-spam question" at a glance. -->
+          <div>
+            <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)" for="c-email">Votre email <span class="font-normal normal-case" style="color:var(--ink-light)">(facultatif)</span></label>
+            <input type="email" id="c-email" name="author_email" maxlength="254" autocomplete="email" placeholder="votre@email.com" class="w-full border-2 rounded-xl px-4 py-2.5 text-sm" style="border-color:rgba(var(--blue-rgb),.18)">
+            <p class="text-xs mt-1" style="color:var(--ink-light)">Jamais affiché publiquement, uniquement pour vous prévenir si on vous répond.</p>
+          </div>
+          <div id="c-push-row" class="hidden">
+            <label class="flex items-start gap-2 text-sm cursor-pointer" style="color:var(--ink-muted)">
+              <input type="checkbox" id="c-push" class="mt-0.5" style="accent-color:var(--blue)">
+              <span>Me notifier sur cet appareil si on répond à mon commentaire</span>
+            </label>
+          </div>
           <div>
             <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)" for="c-gate"><i class="ph-bold ph-shield-check" style="color:var(--palm)"></i> ${safeText(gateQuestion)}</label>
             <input type="text" id="c-gate" name="gate_answer" required autocomplete="off" placeholder="Votre réponse" class="w-full border-2 rounded-xl px-4 py-2.5 text-sm" style="border-color:rgba(var(--blue-rgb),.18)">
@@ -1077,13 +1091,45 @@ function buildReplyForm(parentId, parentName){
     '</div>';
   return div;
 }
-async function submitComment({author_name, body, gate_answer, parent_id}){
+async function submitComment({author_name, body, gate_answer, parent_id, author_email, push_endpoint}){
   const payload={author_name, body, gate_answer};
   if(parent_id!=null) payload.parent_id=parent_id;
+  if(author_email) payload.author_email=author_email;
+  if(push_endpoint) payload.push_endpoint=push_endpoint;
   const res=await fetch('/api/articles/'+ARTICLE_ID+'/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(()=>null);
   const data=await res?.json().catch(()=>null);
   return {ok: !!(res&&res.ok), data};
 }
+// The push opt-in is only offered where it can actually work: Push support
+// present and permission not already denied. Permission itself is requested at
+// submit time, never on page load - prompting someone just for opening an
+// article would be hostile, and most readers never comment.
+const _pushRow=document.getElementById('c-push-row');
+if(_pushRow && 'serviceWorker' in navigator && 'PushManager' in window && Notification.permission!=='denied'){
+  _pushRow.classList.remove('hidden');
+}
+
+/** Resolve (or create) this device's push subscription and make sure the
+ *  server knows about it. Returns '' on any failure - a refused prompt or a
+ *  missing VAPID config must never block posting the comment.
+ *  Reuses shell.js's getServiceWorkerReady/urlB64ToUint8 and the same
+ *  /api/push/subscribe contract as the "follow the blog" button. */
+async function _resolvePushEndpoint(){
+  try{
+    const config=await fetch('/api/push/config').then(r=>r.json()).catch(()=>({}));
+    if(!config.vapidPublicKey) return '';
+    const reg=await getServiceWorkerReady();
+    if(!reg) return '';
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      sub=await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:urlB64ToUint8(config.vapidPublicKey)});
+    }
+    const res=await fetch('/api/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sub.toJSON())});
+    if(!res.ok) return '';
+    return sub.toJSON().endpoint||'';
+  }catch(e){ return ''; }
+}
+
 const _cform=document.getElementById('comment-form');
 if(_cform){
   _cform.addEventListener('submit', async (e)=>{
@@ -1094,11 +1140,17 @@ if(_cform){
     const author_name=document.getElementById('c-name').value.trim();
     const body=document.getElementById('c-body').value.trim();
     const gate_answer=document.getElementById('c-gate').value.trim();
+    const author_email=(document.getElementById('c-email')?.value||'').trim();
     if(!author_name||!body||!gate_answer){
       errEl.textContent='Merci de remplir tous les champs.'; errEl.classList.remove('hidden'); return;
     }
+    if(author_email && author_email.indexOf('@')<1){
+      errEl.textContent='Cette adresse email ne semble pas valide.'; errEl.classList.remove('hidden'); return;
+    }
     btn.disabled=true;
-    const {ok, data}=await submitComment({author_name, body, gate_answer});
+    const _wantPush=!!document.getElementById('c-push')?.checked;
+    const push_endpoint=_wantPush ? await _resolvePushEndpoint() : '';
+    const {ok, data}=await submitComment({author_name, body, gate_answer, author_email, push_endpoint});
     btn.disabled=false;
     if(!ok){
       errEl.textContent=(data&&data.error)||'Impossible de publier le commentaire.'; errEl.classList.remove('hidden'); return;
@@ -1701,7 +1753,7 @@ export default {
       const replyMatch = matchPath('/api/admin/comments/:id/reply', path);
       if (replyMatch && method === 'POST') {
         if (!authed) return unauthorized();
-        return replyToComment(request, env, parseInt(replyMatch.id));
+        return replyToComment(request, env, parseInt(replyMatch.id), ctx);
       }
 
       // Folders
@@ -1732,7 +1784,7 @@ export default {
       const commentsMatch = matchPath('/api/articles/:slug/comments', path);
       if (commentsMatch) {
         if (method === 'GET')  return listComments(env, commentsMatch.slug, authed);
-        if (method === 'POST') return createComment(request, env, commentsMatch.slug, authed);
+        if (method === 'POST') return createComment(request, env, commentsMatch.slug, authed, ctx);
       }
       // Delete a single comment (admin only)
       const commentIdMatch = matchPath('/api/comments/:id', path);
