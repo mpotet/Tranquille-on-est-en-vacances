@@ -1729,6 +1729,36 @@ export function editorPage(articleId = null) {
    shadowed panel that's visibly inset from the screen edges - so it reads
    as a window that opened on top, not a flat background swap that lets the
    article text show through underneath it. */
+/* The page scrolls as a whole (window scroll), so the scrollbar always sits
+   at the far right EDGE OF THE SCREEN - but max-w-7xl centers the content,
+   which on a wide monitor leaves a big empty margin between the sidebar and
+   that scrollbar (measured: 320px of nothing at 1920px wide). The eye looks
+   for the scrollbar right after the content it controls, not across an empty
+   gutter, so it reads as "detached" (reported). Shifting the centered block
+   toward the right on wide viewports brings the content's right edge up
+   against the scrollbar, without touching scroll behaviour itself: no fixed
+   height, no separate scroll container, nothing clipped - the whole page
+   still scrolls together exactly as before, only the horizontal placement
+   changes. A previous attempt DID make this container its own scroll region
+   (height:calc(100vh - nav) + overflow-y:auto) and that broke the sidebar's
+   layout, so deliberately not doing that again.
+   Widening the centered block (rather than shifting it right) keeps the page
+   balanced and stays aligned with the centered nav above it - pushing the
+   block against the right edge instead left a huge dead zone on the left and
+   visibly desynced it from the nav. */
+@media (min-width: 1440px) {
+  body > div.max-w-7xl { max-width: none; padding-left: 3rem; padding-right: 3rem; }
+  /* Letting the container go full-width would also stretch the writing area
+     to ~1200px, and an over-long line is genuinely harder to read and write
+     in. The editor column is a grid cell (lg:col-span-2), so capping it with
+     max-width alone does nothing - the track itself has to be sized. Fixing
+     the sidebar track and letting the surplus land in a leading spacer track
+     keeps the writing column at a comfortable measure while the sidebar
+     stays pinned right next to the scrollbar. */
+  body > div.max-w-7xl > div.lg\\:grid { grid-template-columns: minmax(0, 1fr) minmax(0, 68rem) 24rem; }
+  body > div.max-w-7xl > div.lg\\:grid > div.order-2 { grid-column: 2; }
+  body > div.max-w-7xl > div.lg\\:grid > aside#editor-sidebar { grid-column: 3; }
+}
 @media (max-width: 1023px) {
   /* Everything in #editor-sidebar (Statut, Informations, photo de
      couverture, Supprimer...) is now reachable from the "⋮ Options" drawer
