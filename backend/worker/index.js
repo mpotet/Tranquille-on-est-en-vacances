@@ -32,7 +32,7 @@ import { listFolders, createFolder, updateFolder, deleteFolder } from './api/fol
 import { listArticles, getArticle, createArticle, updateArticle, patchArticleStatus, deleteArticle, recordView, logPageView, isBotUserAgent, ensureVisitorId } from './api/articles.js';
 import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, deleteHeroImage, serveR2Object } from './api/photos.js';
 import { getSettings, updateSettings } from './api/settings.js';
-import { listComments, createComment, deleteComment, listRecentCommentsAdmin, replyToComment } from './api/comments.js';
+import { listComments, createComment, deleteComment, listRecentCommentsAdmin, replyToComment, countUnreadComments, markCommentsRead } from './api/comments.js';
 import { getAnalytics } from './api/analytics.js';
 import {
   listEmailLog, listSubscriberEmailLog, getEmailConfigStatus, saveEmailConfig, checkEmailSenderStatus, requestSenderVerification,
@@ -1767,6 +1767,17 @@ export default {
       if (path === '/api/admin/comments/recent' && method === 'GET') {
         if (!authed) return unauthorized();
         return listRecentCommentsAdmin(env);
+      }
+      // Unread badge on the "Commentaires" tab/nav - polled lightly, so kept
+      // separate from the full list above (a count is much cheaper to compute
+      // and to poll than re-fetching every comment).
+      if (path === '/api/admin/comments/unread-count' && method === 'GET') {
+        if (!authed) return unauthorized();
+        return countUnreadComments(env);
+      }
+      if (path === '/api/admin/comments/mark-read' && method === 'POST') {
+        if (!authed) return unauthorized();
+        return markCommentsRead(env);
       }
       const replyMatch = matchPath('/api/admin/comments/:id/reply', path);
       if (replyMatch && method === 'POST') {

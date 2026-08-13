@@ -261,12 +261,29 @@ export async function deleteComment(env, id) {
 // ──────────────────────────────────────────────────────────────
 export async function listRecentCommentsAdmin(env, limit = 20) {
   const { results } = await env.DB
-    .prepare(`SELECT c.id, c.article_id, c.parent_id, c.is_admin_reply, a.title AS article_title, a.slug AS article_slug, c.author_name, c.body, c.created_at
+    .prepare(`SELECT c.id, c.article_id, c.parent_id, c.is_admin_reply, c.is_read, a.title AS article_title, a.slug AS article_slug, c.author_name, c.body, c.created_at
               FROM comments c JOIN articles a ON a.id = c.article_id
               ORDER BY c.created_at DESC LIMIT ?`)
     .bind(limit)
     .all();
   return json({ comments: results || [] });
+}
+
+/** Count of reader comments the admin hasn't seen yet, for the dashboard's
+ *  unread badge. Admin's own replies never count - only readers writing in. */
+export async function countUnreadComments(env) {
+  const row = await env.DB
+    .prepare('SELECT COUNT(*) AS n FROM comments WHERE is_read = 0 AND is_admin_reply = 0')
+    .first();
+  return json({ count: row?.n || 0 });
+}
+
+/** Mark every reader comment as read - called when the admin opens the tab.
+ *  A per-comment "mark read" would be more precise but adds friction for no
+ *  real benefit here: the whole point is a quick "anything new?" glance. */
+export async function markCommentsRead(env) {
+  await env.DB.prepare('UPDATE comments SET is_read = 1 WHERE is_read = 0').run();
+  return json({ success: true });
 }
 
 // ──────────────────────────────────────────────────────────────

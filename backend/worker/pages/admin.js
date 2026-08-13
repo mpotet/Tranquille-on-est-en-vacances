@@ -140,7 +140,11 @@ ${ADMIN_NAV()}
     <button type="button" id="admintab-account" role="tab" data-tab="account" class="admin-tab" aria-selected="false" aria-controls="tab-account" tabindex="-1"><i class="ph-bold ph-user-circle"></i> Compte</button>
     <button type="button" id="admintab-emails" role="tab" data-tab="emails" class="admin-tab" aria-selected="false" aria-controls="tab-emails" tabindex="-1"><i class="ph-bold ph-envelope"></i> Emails</button>
     <button type="button" id="admintab-subscribers" role="tab" data-tab="subscribers" class="admin-tab" aria-selected="false" aria-controls="tab-subscribers" tabindex="-1"><i class="ph-bold ph-users-three"></i> Abonnés</button>
-    <button type="button" id="admintab-moderation" role="tab" data-tab="moderation" class="admin-tab" aria-selected="false" aria-controls="tab-moderation" tabindex="-1"><i class="ph-bold ph-shield-check"></i> Modération</button>
+    <!-- Renamed from "Modération" - the tab is really "read and reply to
+         comments", and "Modération" read as a moderation queue (approve/
+         reject) that doesn't exist here: every comment is already public the
+         moment it's posted. -->
+    <button type="button" id="admintab-moderation" role="tab" data-tab="moderation" class="admin-tab" aria-selected="false" aria-controls="tab-moderation" tabindex="-1"><i class="ph-bold ph-chat-circle-text"></i> Commentaires<span id="mod-unread-badge" class="hidden" style="display:inline-flex;align-items:center;justify-content:center;min-width:1.15rem;height:1.15rem;padding:0 .3rem;margin-left:.35rem;border-radius:999px;background:var(--danger);color:#fff;font-size:.68rem;font-weight:800;line-height:1"></span></button>
   </div>
 </div>
 <style>
@@ -868,6 +872,7 @@ async function init() {
   ]);
   _allArticles = artData.articles;
   _allFolders = folders;
+  refreshUnreadCommentBadge();
 
   document.getElementById('folder-tree').innerHTML = renderFolderTree(folders, null);
   document.getElementById('stat-total').textContent = artData.articles.length;
@@ -1607,9 +1612,26 @@ function renderModComment(c) {
     + '</div>'
   + '</article>';
 }
+// Red badge on the "Commentaires" tab so a new reader comment is visible
+// without opening the tab first - checked on dashboard load and refreshed
+// whenever the tab itself is opened (see the moderation switchTab hook).
+async function refreshUnreadCommentBadge() {
+  const badge = document.getElementById('mod-unread-badge');
+  if (!badge) return;
+  const data = await fetch('/api/admin/comments/unread-count').then(r => r.json()).catch(() => null);
+  const n = data?.count || 0;
+  badge.textContent = n > 99 ? '99+' : String(n);
+  badge.classList.toggle('hidden', n === 0);
+}
 async function loadRecentComments() {
   const box = document.getElementById('recent-comments-list');
   if (!box) return;
+  // Opening the tab is the "I've seen these" signal - mark everything read
+  // and clear the badge immediately rather than waiting for a full reload.
+  fetch('/api/admin/comments/mark-read', { method: 'POST' }).then(() => {
+    const badge = document.getElementById('mod-unread-badge');
+    if (badge) badge.classList.add('hidden');
+  }).catch(() => {});
   box.innerHTML = '<div class="text-stone-400 p-6 text-center">Chargement…</div>';
   const data = await fetch('/api/admin/comments/recent').then(r=>r.json()).catch(()=>null);
   const comments = data?.comments || [];

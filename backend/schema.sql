@@ -72,11 +72,13 @@ CREATE TABLE IF NOT EXISTS comments (
   author_email   TEXT,                       -- optional: to email them replies
   push_endpoint  TEXT,                       -- optional: to push them replies
   body           TEXT     NOT NULL,
+  is_read        INTEGER  NOT NULL DEFAULT 0, -- has the admin seen this in the dashboard?
   created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_comments_article ON comments(article_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_comments_parent  ON comments(parent_id);
+CREATE INDEX IF NOT EXISTS idx_comments_is_read ON comments(is_read);
 
 -- Indexes for common query patterns
 CREATE INDEX IF NOT EXISTS idx_articles_status     ON articles(status);
