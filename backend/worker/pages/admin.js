@@ -1663,6 +1663,26 @@ export function editorPage(articleId = null) {
 #e-content .img-pair{outline:2px dashed rgba(var(--blue-rgb),.35);outline-offset:3px;border-radius:.75rem}
 #e-content .img-pair figure{max-width:49%;min-width:0}
 #e-content figure{position:relative}
+/* A pasted (or imported) image with no explicit sizing renders at its own
+   NATURAL pixel size, capped only by the global max-width:100% reset - a
+   large photo happens to already exceed the editor's width so it looks
+   full-bleed regardless, but any smaller image (a screenshot, a diagram,
+   a small Word inline picture) instead renders small inside a full-width
+   figure box. The img-split button is positioned absolutely relative to
+   the figure (top:6px;right:38px) - on a full-width figure whose actual
+   image is much narrower than that, the button ends up floating far to
+   the right of the visible image, off past its edge or even outside the
+   figure's own now content-sized box, making it effectively unclickable
+   even though it's still technically in the DOM (reported: "le bouton
+   colonnes ne fait rien" specifically on pasted images, which "ne font
+   pas 100% width" - both symptoms of the same missing rule). Forcing
+   full-width figures' images to the figure's own full width makes every
+   image the same predictable size the split button is positioned for,
+   regardless of the source image's natural dimensions. .img-pair (half-
+   width) images already get width:100% from shell.js's rule (needed
+   for a consistent side-by-side grid) - this mirrors that for the
+   full-width case, which never had an equivalent rule. */
+#e-content figure.img-full img{width:100%;height:auto}
 /* user-select:none keeps these decorative buttons' glyphs (×, the split
    icon) out of any text selection spanning the figure - without it, a
    selection/copy/cut that includes the image also grabs their textContent
