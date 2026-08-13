@@ -174,6 +174,23 @@ function statusMeta(status){
   if(status==='publish_when_online') return {label:'Dès connexion',icon:'ph-bold ph-wifi-high',bg:'var(--pending)',color:'#fff'};
   return {label:'Archivé',icon:'ph-bold ph-archive',bg:'rgba(90,106,122,.85)',color:'#fff'};
 }
+// Mirror of estimateReadingMinutes() on the server (see voyagePage): 200 wpm
+// for the text, plus a tapering allowance per photo (10s down to a 3s floor),
+// so a card and the article it opens always show the same number.
+function readMinutes(a){
+  const text=String(a.content||'')
+    .replace(/<[^>]+>/g,' ')
+    .replace(/&[a-z]+;|&#[0-9]+;/gi,' ');
+  // Whitespace class built from char codes rather than an escape sequence:
+  // this page's markup is a template literal, which converts such escapes
+  // into real control characters and splits the regex across lines. Writing
+  // them in the comment breaks it the same way, hence the wording here.
+  const words=text.split(new RegExp('[' + String.fromCharCode(32,9,13,10) + ']+')).filter(Boolean).length;
+  const photos=(String(a.content||'').match(/<img/gi)||[]).length;
+  let seconds=(words/200)*60;
+  for(let i=0;i<photos;i++) seconds+=Math.max(3, 10-i*0.5);
+  return Math.max(1, Math.round(seconds/60));
+}
 function card(a, minViews=0, maxViews=0){
   const slug = safeAttr(a.slug || '');
   const title = safeText(a.title || '');
@@ -212,6 +229,7 @@ function card(a, minViews=0, maxViews=0){
       '<div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem">' +
         '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph-bold ph-calendar-blank" style="color:var(--blue)"></i> ' + fmtDateCard(a) + '</span>' +
         (dest ? '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph-bold ph-map-pin" style="color:var(--blue)"></i> ' + dest + '</span>' : '') +
+        (a.content ? '<span style="display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;background:var(--sand);color:var(--ink-light)"><i class="ph-bold ph-clock" style="color:var(--blue)"></i> ' + readMinutes(a) + ' min</span>' : '') +
       '</div>' +
       '<h3 class="font-display font-bold" style="font-size:1.05rem;line-height:1.35;margin-bottom:.5rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink)">' + title + '</h3>' +
       '<p style="font-size:.875rem;line-height:1.55;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink-muted);margin-bottom:1rem">' + desc + '</p>' +
