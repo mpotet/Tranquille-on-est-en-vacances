@@ -4206,6 +4206,15 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // time isn't actually proportional to the image count shown to the
   // user - the loader has to cover the RTF-parsing time too, not just
   // the per-image upload loop after it.
+  // Read the RTF flavor synchronously, BEFORE any await below - per the
+  // Clipboard API, e.clipboardData is only guaranteed valid during the
+  // synchronous dispatch of the paste event; once anything yields to the
+  // event loop (even a 0ms setTimeout), the browser can invalidate it, so
+  // a getData() call after that point silently returns '' instead of the
+  // real RTF (broke RTF image extraction entirely - regression from the
+  // paste-loader fix below, which added exactly that kind of yield before
+  // this used to run).
+  const _rtfData = unreachableFileUrls.length ? e.clipboardData.getData('text/rtf') : '';
   let _pasteProgressShown = false;
   if (unreachableFileUrls.length >= 1) {
     toast('Collage en cours' + (unreachableFileUrls.length > 1 ? ' (' + unreachableFileUrls.length + ' images)' : '') + ' - ça peut prendre quelques instants…', 'info', true);
@@ -4218,7 +4227,9 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
     // frozen with the toast never appearing until parsing is already
     // done (reported: loader never actually shows) - one microtask/paint
     // tick is enough for the browser to render the toast before the
-    // expensive parse blocks the main thread.
+    // expensive parse blocks the main thread. Safe to yield here (unlike
+    // before _rtfData was read above) since nothing after this point
+    // still needs live e.clipboardData access.
     await new Promise(r => setTimeout(r, 0));
   }
   // The actual fix for those file:// images: Word Desktop also puts a
@@ -4229,7 +4240,7 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // paste and every other source (Word Online, a single Word Desktop
   // image, non-Word sources) already has a working path through the
   // buckets above without it.
-  const rtfImageFiles = unreachableFileUrls.length ? _extractRtfImages(e.clipboardData.getData('text/rtf')) : [];
+  const rtfImageFiles = unreachableFileUrls.length ? _extractRtfImages(_rtfData) : [];
   // Force plain-text for the text part in all cases. Sources like Samsung
   // Notes or a copy from the site's own rendered preview carry inline
   // style="--tw-..." (Tailwind) attributes on every element - left alone,
