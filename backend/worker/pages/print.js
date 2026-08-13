@@ -394,35 +394,61 @@ export function printPage(article) {
   }
 
   /* ── Screen-only toolbar ─────── */
+  /* Lighter, current-looking bar: the previous one was a heavy dark slab
+     with a flat drop shadow. Now a translucent frosted surface matching the
+     rest of the site, with the title centred and actions grouped right. */
   .toolbar {
     position: fixed;
     top: 0; left: 0; right: 0;
     z-index: 100;
-    background: #1A2B3C;
-    color: #fff;
+    background: rgba(255,255,255,.86);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    backdrop-filter: saturate(180%) blur(12px);
+    color: var(--ink);
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: .75rem 1.5rem;
+    gap: .75rem;
+    padding: .7rem 1.25rem;
     font-family: 'Montserrat', sans-serif;
     font-size: .85rem;
-    box-shadow: 0 2px 12px rgba(0,0,0,.25);
+    border-bottom: 1px solid rgba(26,43,60,.10);
   }
-  .toolbar strong { font-size: .9rem; font-weight: 700; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .toolbar a { color: rgba(255,255,255,.65); text-decoration: none; font-size: .8rem; }
-  .toolbar a:hover { color: #fff; }
+  .toolbar strong {
+    font-size: .92rem; font-weight: 700; flex: 1; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    color: var(--ink);
+  }
+  .tb-back {
+    display: inline-flex; align-items: center; gap: .35rem;
+    color: var(--ink-muted); text-decoration: none; font-size: .82rem;
+    font-weight: 600; padding: .45rem .7rem; border-radius: 999px;
+    transition: background .15s, color .15s;
+  }
+  .tb-back:hover { background: rgba(26,43,60,.06); color: var(--ink); }
   .tb-btn {
     display: inline-flex; align-items: center; gap: .4rem;
-    padding: .45rem 1rem; border-radius: 999px; font-weight: 700;
-    font-size: .8rem; cursor: pointer; border: none; transition: opacity .15s;
+    padding: .5rem 1.05rem; border-radius: 999px; font-weight: 700;
+    font-size: .82rem; cursor: pointer; border: none;
+    transition: transform .12s, box-shadow .15s, background .15s;
     font-family: 'Montserrat', sans-serif;
   }
-  .tb-btn:hover { opacity: .85; }
-  .tb-btn-pdf  { background: var(--blue); color: #fff; }
-  .tb-btn-word { background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.25); }
+  .tb-btn:hover { transform: translateY(-1px); }
+  .tb-btn:active { transform: none; }
+  .tb-btn:disabled { opacity: .55; cursor: progress; transform: none; }
+  .tb-btn-pdf  { background: var(--blue); color: #fff; box-shadow: 0 2px 8px rgba(0,87,184,.28); }
+  .tb-btn-pdf:hover { box-shadow: 0 4px 14px rgba(0,87,184,.34); }
+  .tb-btn-word { background: #fff; color: var(--ink); border: 1px solid rgba(26,43,60,.16); }
+  .tb-btn-word:hover { background: #F8FAFC; }
+  @media (max-width: 640px) {
+    .toolbar { padding: .6rem .75rem; gap: .4rem; }
+    .toolbar strong { display: none; }
+    .tb-btn { padding: .5rem .8rem; }
+  }
 
   /* ── Page layout (screen) ─────── */
-  body { padding-top: 56px; }
+  /* Matches the fixed toolbar's real height (measured 61px) - at 56px the
+     top of the article slid under the bar. */
+  body { padding-top: 64px; }
   .book { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
 
   /* ── Header ─────────────────────
@@ -562,7 +588,13 @@ export function printPage(article) {
 <body>
 
 <div class="toolbar no-print">
-  <a href="javascript:history.back()">< Retour</a>
+  <!-- A real link, not history.back(): this page is opened with
+       target="_blank" from the editor, so the new tab has no history to go
+       back to and the button did nothing (reported). -->
+  <a href="/admin/editor/${article.id}" class="tb-back">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    Retour
+  </a>
   <strong>${title}</strong>
   <button class="tb-btn tb-btn-word" onclick="exportWord()">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
@@ -576,16 +608,15 @@ export function printPage(article) {
 
 <div class="book" id="book-root">
 
-  <!-- ── Cover ─────────────────────────────────── -->
+  <!-- Masthead. The cover image markup was removed with the cover page:
+       it was hidden by CSS but the browser still downloaded it, and it
+       duplicated the article's own first photo. -->
   <div class="cover">
-    ${coverUrl ? "<img class=\"cover-img\" src=\"" + (coverUrl.startsWith('/r2/') ? publicUrl + coverUrl : coverUrl) + "\" alt=\"\">" : '<svg class="cover-img" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0057B8;stop-opacity:1" /><stop offset="100%" style="stop-color:#003D82;stop-opacity:1" /></linearGradient><pattern id="dots" patternUnits="userSpaceOnUse" width="40" height="40"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="1200" height="800" fill="url(#grad1)"/><rect width="1200" height="800" fill="url(#dots)"/></svg>'}
-    <div class="cover-overlay"></div>
     <div class="cover-body">
-      ${destination ? "<div class=\"cover-eyebrow\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"currentColor\" style=\"vertical-align:-1px;margin-right:.3em\"><path d=\"M22 16.5v-2l-8.5-5V3.5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v6l-8.5 5v2l8.5-2.6V19l-2.5 1.5V22l4-1 4 1v-1.5L14 19v-5.6l8 2.6z\"/></svg> " + destination + "</div>" : ''}
+      ${destination ? '<div class="cover-eyebrow">' + destination + '</div>' : ''}
       <h1 class="cover-title">${title}</h1>
       <div class="cover-meta">
-        ${dateRange ? "<span><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:-2px;margin-right:.3em\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"M16 2v4M8 2v4M3 10h18\"/></svg>" + dateRange + "</span>" : ''}
-        ${destination ? "<span><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" style=\"vertical-align:-2px;margin-right:.3em\"><path d=\"M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/></svg>" + destination + "</span>" : ''}
+        ${dateRange ? '<span>' + dateRange + '</span>' : ''}
       </div>
     </div>
   </div>
