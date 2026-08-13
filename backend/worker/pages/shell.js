@@ -398,6 +398,32 @@ a, button, .action-btn, .action-btn-sm, .btn-primary, .btn-ghost, .subtle-btn, .
 .img-pair { display:flex; gap:.75rem; margin:1.5rem 0; }
 .img-pair figure { flex:1; min-width:0; margin:0 !important; }
 .img-pair figure img { width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:.75rem; }
+
+/* ── Trip gallery: collapsed by default ────────────────────
+   A trip gallery routinely holds 100+ photos; showing them all made the
+   page enormous and buried the comments/next-article links under an endless
+   grid. It starts clipped with a fade at the cut so it is visibly "more
+   below", and expands on demand. Collapsing is purely a max-height, so every
+   photo stays in the DOM for the lightbox and for crawlers. */
+#gallery-wrap { position: relative; }
+#gallery-wrap.gallery-collapsed { max-height: 60vh; overflow: hidden; }
+#gallery-wrap.gallery-collapsed .gallery-fade {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 9rem;
+  background: linear-gradient(to bottom, rgba(var(--cream-rgb),0), rgba(var(--cream-rgb),.95) 85%);
+  pointer-events: none;
+}
+/* Once expanded the fade would sit over real photos, so it is removed. */
+#gallery-wrap:not(.gallery-collapsed) .gallery-fade { display: none; }
+.gallery-more-btn {
+  display: inline-flex; align-items: center; gap: .45rem;
+  padding: .6rem 1.4rem; border-radius: 999px;
+  font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: .85rem;
+  color: var(--blue); background: var(--cream);
+  border: 2px solid rgba(var(--blue-rgb),.35); cursor: pointer;
+  transition: background .15s, border-color .15s, transform .12s;
+}
+.gallery-more-btn:hover { background: var(--blue-light); border-color: var(--blue); transform: translateY(-1px); }
+.gallery-more-btn:active { transform: none; }
 @media(max-width:640px){ .img-pair { flex-direction:column; } }
 /* ── Rich text editor toolbar ────────────────────────────────── */
 .toolbar-btn { display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:.5rem; font-size:1rem; cursor:pointer; background:transparent; border:none; color:var(--ink-muted); transition:background .12s,color .12s; }

@@ -846,6 +846,28 @@ document.getElementById('main').addEventListener('click',(e)=>{
 });
 document.querySelectorAll('button[data-share-btn]').forEach(b=>b.addEventListener('click',share));
 
+// ── Galerie : repliee par defaut, bouton "afficher plus" ──────
+// La galerie d'un voyage contient souvent 100+ photos. Elle est rendue en
+// entier (lightbox + referencement) mais tronquee en hauteur par une classe
+// CSS, avec un degrade indiquant qu'il y a une suite. Le bouton retire
+// simplement la classe : rien n'est charge en plus au clic.
+(function(){
+  var btn = document.getElementById('gallery-toggle');
+  var wrap = document.getElementById('gallery-wrap');
+  if (!btn || !wrap) return;
+  btn.addEventListener('click', function(){
+    var collapsed = wrap.classList.toggle('gallery-collapsed');
+    if (collapsed) {
+      btn.textContent = 'Afficher les ' + (btn.dataset.count || '') + ' photos';
+      // Replier depuis le bas de la page laisserait le lecteur perdu tres
+      // loin sous la galerie : on le ramene a son debut.
+      wrap.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    } else {
+      btn.textContent = 'Reduire la galerie';
+    }
+  });
+})();
+
 // ── Recherche de mot-clé dans le texte de l'article ────────────
 // Surligne les occurrences dans .prose-vacation (le récit peut être très
 // long) et permet de naviguer entre elles sans dépendre du Ctrl+F natif
