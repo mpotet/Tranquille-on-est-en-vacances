@@ -149,13 +149,29 @@ function parseBlocks(content) {
   };
 
   if (raw.startsWith('<')) {
-    // HTML: split on block-level tags, keep the tag name to map to a style.
-    const blockRe = /<(h1|h2|h3|h4|p|li|blockquote)[^>]*>([\s\S]*?)<\/\1>/gi;
+    // Walk block-level elements AND <figure> in document order. The previous
+    // version only matched h1-h4/p/li/blockquote, so every photo - which the
+    // editor stores as <figure><img>...</figure>, outside all of those - was
+    // silently dropped: a real article exported 0 of its 133 images. Scanning
+    // both in one pass also keeps text and photos in their true order rather
+    // than approximating it.
+    const blockRe = /<(h1|h2|h3|h4|p|li|blockquote|figure|div)\b([^>]*)>([\s\S]*?)<\/\1>/gi;
     let m;
     while ((m = blockRe.exec(raw)) !== null) {
       const tag = m[1].toLowerCase();
-      const inner = m[2].trim();
-      // Extract any images in this block first (order is approximate but fine).
+      const attrs = m[2] || '';
+      const inner = m[3].trim();
+
+      // A .img-pair wraps two <figure>s meant to sit side by side. Word has no
+      // simple equivalent here, so emit them as consecutive images (flagged so
+      // the caller can lay them out) rather than losing them: blockRe would
+      // otherwise consume the wrapper and skip past its children.
+      if (tag === 'div') {
+        if (/img-pair/i.test(attrs)) pushImages(inner);
+        continue;
+      }
+      if (tag === 'figure') { pushImages(inner); continue; }
+
       if (/<img/i.test(inner)) pushImages(inner);
       const textOnly = inner.replace(/<img[^>]*>/gi, '').trim();
       if (!textOnly) continue;
@@ -262,12 +278,24 @@ export async function exportWordDocx(article, env) {
 
   const blocks = parseBlocks(article.content);
 
-  // Resolve every image in parallel (cap to avoid pathological documents).
-  const imageBlocks = blocks.filter(b => b.type === 'image').slice(0, 60);
+  // Resolve every image. The old hard cap of 60 silently dropped every photo
+  // past that point - a real 133-image article exported barely half of them,
+  // with no warning. Travel articles here routinely run to 130+ photos, so
+  // the cap has to clear that comfortably.
+  //
+  // Loading them in bounded batches rather than all at once: firing 130+
+  // concurrent fetches at the same origin makes the slowest ones exceed
+  // loadImage's own timeout and come back empty, so raising the cap alone
+  // would still have lost images.
+  const imageBlocks = blocks.filter(b => b.type === 'image').slice(0, 400);
   const resolved = new Map();
-  await Promise.all(imageBlocks.map(async b => {
-    resolved.set(b, await loadImage(b.url, env, publicUrl));
-  }));
+  const BATCH = 12;
+  for (let i = 0; i < imageBlocks.length; i += BATCH) {
+    const batch = imageBlocks.slice(i, i + BATCH);
+    await Promise.all(batch.map(async b => {
+      resolved.set(b, await loadImage(b.url, env, publicUrl));
+    }));
+  }
 
   const bodyParagraphs = [];
   for (const b of blocks) {
@@ -289,7 +317,12 @@ export async function exportWordDocx(article, env) {
     }],
   });
 
-  return await Packer.toBuffer(doc);
+  // Packer.toBuffer() asks JSZip for a "nodebuffer", which only exists in
+  // Node - on the Workers runtime it throws "nodebuffer is not supported by
+  // this platform" and the whole export 500s (every Word export was failing).
+  // toBlob() uses a plain Blob, which Workers supports natively.
+  const blob = await Packer.toBlob(doc);
+  return new Uint8Array(await blob.arrayBuffer());
 }
 
 export function printPage(article) {
@@ -362,54 +395,42 @@ export function printPage(article) {
   body { padding-top: 56px; }
   .book { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
 
-  /* ── Cover page ─────────────── */
+  /* ── Header ─────────────────────
+     Was a full-bleed cover image with page-break-after, which burned an
+     entire sheet on a title before the story even started (a travel diary
+     export is meant to be read/printed, not published as a book). Now a
+     compact masthead: same title/destination/dates, but text-only, in flow,
+     and the article starts right underneath on page 1. */
   .cover {
     position: relative;
-    width: 100%;
-    min-height: 520px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    border-radius: 1rem;
-    overflow: hidden;
-    margin-bottom: 3rem;
-    page-break-after: always;
-    break-after: page;
+    margin-bottom: 2rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 2px solid var(--line);
   }
-  .cover-img {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    object-fit: cover;
-  }
-  .cover-overlay {
-    position: absolute; inset: 0;
-    background: linear-gradient(to top, rgba(10,20,35,.85) 40%, rgba(10,20,35,.25) 100%);
-  }
-  .cover-body {
-    position: relative; z-index: 2;
-    padding: 2.5rem 2.5rem 2.5rem;
-    color: #fff;
-  }
+  /* The cover photo is dropped entirely - it duplicated the first image of
+     the article in every export seen. */
+  .cover-img, .cover-overlay { display: none; }
+  .cover-body { padding: 0; color: var(--ink); }
   .cover-eyebrow {
     font-family: 'Crimson Pro', serif;
     font-size: .9rem;
     font-style: italic;
-    opacity: .8;
-    margin-bottom: .6rem;
+    color: var(--ink-muted);
+    margin-bottom: .3rem;
     letter-spacing: .04em;
   }
   .cover-title {
     font-family: 'Playfair Display', Georgia, serif;
-    font-size: 2.6rem;
+    font-size: 2rem;
     font-weight: 800;
-    line-height: 1.15;
-    margin-bottom: 1rem;
-    text-shadow: 0 2px 8px rgba(0,0,0,.35);
+    line-height: 1.2;
+    margin-bottom: .5rem;
+    color: var(--ink);
   }
   .cover-meta {
     display: flex; flex-wrap: wrap; gap: .75rem;
     font-size: .85rem; font-family: 'Crimson Pro', serif;
-    opacity: .85;
+    color: var(--ink-muted);
   }
   .cover-meta span { display: flex; align-items: center; gap: .3rem; }
 
@@ -472,16 +493,28 @@ export function printPage(article) {
     width: 100%; max-width: 100%;
     height: auto; display: block;
   }
-  .img-pair { display: flex; gap: .5rem; margin: 1.5rem 0; }
-  .img-pair img { width: 50%; max-width: 50%; height: auto; display: block; border-radius: .5rem; object-fit: cover; }
+  /* Side-by-side pairs. The editor stores these as
+     .img-pair > figure.img-half > img, so the old ".img-pair img { width:50% }"
+     sized the IMAGE to half of its figure - and the figure itself still took
+     the full line, so the two photos ended up stacked and half-width instead
+     of side by side (reported). Size the figures, not the images. */
+  .img-pair {
+    display: flex; gap: .5rem; margin: 1.5rem 0;
+    align-items: flex-start;
+    page-break-inside: avoid; break-inside: avoid;
+  }
+  .img-pair > figure,
+  .img-pair > * { flex: 1 1 0; min-width: 0; margin: 0; }
+  .img-pair img { width: 100%; max-width: 100%; height: auto; display: block; border-radius: .5rem; }
 
   /* ── Print-specific ────────────── */
   @media print {
     .toolbar { display: none !important; }
     body { padding-top: 0; }
     .book { max-width: 100%; padding: 0; }
-    .cover { border-radius: 0; min-height: 100vh; margin-bottom: 0; }
-    .cover-title { font-size: 3rem; }
+    /* No min-height/page-break here any more: the header is a masthead the
+       article follows directly, not a standalone cover page. */
+    .cover { border-radius: 0; }
     .img-row, .img-row-2, .img-row-3 {
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     }
@@ -491,10 +524,9 @@ export function printPage(article) {
     size: A4 portrait;
     margin: 2.2cm 2.5cm 2.2cm 3cm;
   }
-
-  @page :first {
-    margin: 0;
-  }
+  /* @page :first used to drop the margins so the cover image could bleed to
+     the paper edge. With no cover page, page 1 must keep the same margins as
+     every other page or the header would sit flush against the edge. */
 </style>
 </head>
 <body>
@@ -552,6 +584,22 @@ function renderContent(raw) {
   wrapper.innerHTML = trimmed.startsWith('<')
     ? trimmed
     : marked.parse(fixMd(raw));
+
+  // The editor's per-image controls are saved INTO the article HTML (the
+  // delete "×", the split-to-half and alt-text buttons), so they came
+  // straight through into the exported PDF/Word - the "×" rendering as a
+  // stray cross above every photo (reported). They are editing chrome, never
+  // content: strip them before anything else looks at the markup.
+  wrapper.querySelectorAll('.img-delete, .img-split, .img-expand, .img-alt, .img-pair-add').forEach(el => el.remove());
+  // contenteditable/draggable/lazy-loading are editor concerns too, and
+  // loading="lazy" in particular can leave images unrendered in a print
+  // snapshot that never scrolls.
+  wrapper.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+  wrapper.querySelectorAll('img').forEach(img => {
+    img.removeAttribute('draggable');
+    img.removeAttribute('loading');
+    img.removeAttribute('decoding');
+  });
 
   // Rewrite relative R2 URLs to absolute
   wrapper.querySelectorAll('img').forEach(img => {
