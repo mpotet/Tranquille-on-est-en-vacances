@@ -4037,33 +4037,83 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // result visually identical to the source document. Built with the
   // browser's own HTML parser (DOMParser), not regex, since it has to
   // track true document order across arbitrarily nested tags.
+  // Each segment is either an image or ONE Word paragraph's worth of text
+  // (mapped straight to one <p> on insertion below, matching how the rest
+  // of the editor already represents a paragraph - see insertPhotoAtRange
+  // appending <p><br></p> after a figure). Flattening every paragraph into
+  // one shared newline-joined blob (an earlier version of this) miscounted
+  // blank lines: a real "next paragraph, no blank line" (single Enter in
+  // Word) and "next paragraph WITH a blank line" (Enter twice) both
+  // produce one <p> boundary in Word's HTML, distinguished only by
+  // whether an extra empty/nbsp-only <p> sits between them - conflating
+  // that with a flat newline count doubled the gap on ordinary paragraph
+  // breaks (reported bug: every "just one Enter" break showed as 2 blank
+  // lines). Keeping one <p> per source paragraph sidesteps counting
+  // newlines entirely: an empty paragraph becomes an empty <p><br></p>
+  // (one blank line, exactly like Word shows it), a normal paragraph
+  // becomes a <p> with its text (one line, no extra gap).
   const _htmlOrderedSegments = (() => {
     if (!html || !unreachableFileUrlsPreCheck(html)) return null;
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const segments = [];
-    let textBuf = '';
-    const flushText = () => {
-      if (textBuf.trim()) segments.push({ type: 'text', text: textBuf });
-      textBuf = '';
+    const BLOCK_TAGS = new Set(['P','DIV','LI','H1','H2','H3','H4','H5','H6']);
+    // A paragraph's own text, collecting inline <br> as a newline WITHIN
+    // that one paragraph (a real soft line-break, e.g. Shift+Enter) without
+    // touching the segment boundaries the caller uses for <p> vs <p> gaps.
+    const paragraphText = (el) => {
+      let buf = '';
+      const collect = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) { buf += node.nodeValue; return; }
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        if (node.tagName === 'BR') { buf += '\\n'; return; }
+        if (node.tagName === 'IMG') return; // handled separately below
+        for (const child of node.childNodes) collect(child);
+      };
+      for (const child of el.childNodes) collect(child);
+      return buf;
     };
-    const BLOCK_TAGS = new Set(['P','DIV','LI','TR','H1','H2','H3','H4','H5','H6']);
     const walk = (node) => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        textBuf += node.nodeValue;
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim()) {
+          // Bare text directly under <body>/a non-block wrapper (no <p> of
+          // its own) - treat as its own paragraph rather than dropping it.
+          segments.push({ type: 'text', text: node.nodeValue });
+        }
         return;
       }
-      if (node.nodeType !== Node.ELEMENT_NODE) return;
       if (node.tagName === 'IMG') {
-        flushText();
         segments.push({ type: 'img', src: node.getAttribute('src') || '' });
         return;
       }
-      if (node.tagName === 'BR') { textBuf += '\\n'; return; }
+      if (BLOCK_TAGS.has(node.tagName)) {
+        // A paragraph can itself contain an <img> (Word puts a photo
+        // inline inside its own <p>) - split on those so the image still
+        // gets its own segment instead of being silently dropped by
+        // paragraphText, which only reads the surrounding text.
+        const imgsInside = node.querySelectorAll('img');
+        if (!imgsInside.length) {
+          segments.push({ type: 'text', text: paragraphText(node) });
+          return;
+        }
+        let buf = '';
+        const collectSplit = (n) => {
+          if (n.nodeType === Node.TEXT_NODE) { buf += n.nodeValue; return; }
+          if (n.nodeType !== Node.ELEMENT_NODE) return;
+          if (n.tagName === 'IMG') {
+            if (buf) { segments.push({ type: 'text', text: buf }); buf = ''; }
+            segments.push({ type: 'img', src: n.getAttribute('src') || '' });
+            return;
+          }
+          if (n.tagName === 'BR') { buf += '\\n'; return; }
+          for (const child of n.childNodes) collectSplit(child);
+        };
+        for (const child of node.childNodes) collectSplit(child);
+        if (buf) segments.push({ type: 'text', text: buf });
+        return;
+      }
       for (const child of node.childNodes) walk(child);
-      if (BLOCK_TAGS.has(node.tagName)) textBuf += '\\n';
     };
     for (const child of doc.body.childNodes) walk(child);
-    flushText();
     return segments;
   })();
   // Cheap pre-check so DOMParser only runs when the HTML actually contains
@@ -4091,6 +4141,18 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // reporting - and that pasting each image individually (or via drag &
   // drop / the toolbar's image picker) is the workaround.
   const unreachableFileUrls = allImgSrcs.filter(src => src.indexOf('file:') === 0);
+  // A big Word Desktop paste (dozens of embedded photos) can take a real,
+  // noticeable while to process - parsing a huge RTF blob, then uploading
+  // every image one by one. Without any feedback this looked identical to
+  // the editor being frozen/broken (reported confusion on a 36-image
+  // paste before this was added). Persisted (not auto-dismissed) since a
+  // slow connection can make this take well past the normal 3s toast
+  // window - cleared explicitly once every image has actually finished.
+  let _pasteProgressShown = false;
+  if (unreachableFileUrls.length > 1) {
+    toast('Collage en cours (' + unreachableFileUrls.length + ' images) - ça peut prendre quelques instants…', 'info', true);
+    _pasteProgressShown = true;
+  }
   // The actual fix for those file:// images: Word Desktop also puts a
   // full RTF representation of the copy on the clipboard, which embeds
   // each image as real binary data rather than a filesystem reference
@@ -4147,6 +4209,36 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
       sel.addRange(r2);
     }
   };
+  // Inserts ONE Word paragraph as its own <p> at the live selection -
+  // used only by the ordered-segments path (multi-image Word Desktop
+  // paste), where each segment already corresponds to exactly one source
+  // paragraph (see _htmlOrderedSegments). A real <p> per paragraph avoids
+  // counting newlines to reproduce Word's spacing: an empty paragraph
+  // becomes an empty <p><br></p> (one blank line), same as Word shows it,
+  // with no risk of doubling a gap that a flat newline-joined blob had
+  // (fixed bug: every ordinary paragraph break rendered as 2 blank lines).
+  const insertParagraphAtLiveSelection = (segText) => {
+    const range = getRange();
+    if (!range) return;
+    range.deleteContents();
+    const p = document.createElement('p');
+    const lines = segText.split('\\n');
+    if (lines.every(l => !l.replace(/ /g, '').trim())) {
+      p.innerHTML = '<br>';
+    } else {
+      lines.forEach((line, i) => {
+        if (i > 0) p.appendChild(document.createElement('br'));
+        if (line) p.appendChild(document.createTextNode(line));
+      });
+    }
+    range.insertNode(p);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    const r2 = document.createRange();
+    r2.setStartAfter(p);
+    r2.collapse(true);
+    sel.addRange(r2);
+  };
   if (_htmlOrderedSegments && rtfImageFiles.length) {
     // Word Desktop multi-image paste: walk the HTML in real document
     // order and insert each text run / image exactly where it was in the
@@ -4162,11 +4254,14 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
     let rtfIdx = 0;
     for (const seg of _htmlOrderedSegments) {
       if (seg.type === 'text') {
-        insertTextAtLiveSelection(seg.text);
+        insertParagraphAtLiveSelection(seg.text);
       } else if (seg.type === 'img') {
         if (seg.src.indexOf('file:') === 0) {
           const file = rtfImageFiles[rtfIdx++];
           if (file) await uploadAndInsertAtRange(file, getRange());
+          if (_pasteProgressShown) {
+            toast('Collage en cours - image ' + rtfIdx + '/' + unreachableFileUrls.length + '…', 'info', true);
+          }
         } else if (seg.src.indexOf('data:image/') === 0) {
           await uploadAndInsertAtRange(dataUrlToFile(seg.src, 'image-' + (rtfIdx + 1) + '.png'), getRange());
         } else if (/^(https?:)?[/][/]/i.test(seg.src) || seg.src.indexOf('/r2/') === 0) {
@@ -4209,6 +4304,10 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
         : stillMissingCount + " images du collage n'ont pas pu être récupérées - collez-les individuellement",
       'err'
     );
+  } else if (_pasteProgressShown) {
+    // Replace the persisted "en cours" toast with a normal auto-dismissing
+    // confirmation now that every image has actually finished uploading.
+    toast(unreachableFileUrls.length + ' images collées !', 'ok');
   }
 });
 
