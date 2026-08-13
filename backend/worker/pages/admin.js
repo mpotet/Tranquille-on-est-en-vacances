@@ -3941,6 +3941,80 @@ document.getElementById('e-content')?.addEventListener('drop', async e => {
 // as separate items, so both must be handled here, not just whichever is
 // found first (an earlier version returned right after handling images,
 // silently dropping any text that came in the same paste).
+// Word DESKTOP puts a full RTF representation of a rich copy on the
+// clipboard alongside HTML/plain text (confirmed present via
+// e.clipboardData.types - 'text/rtf' is readable in Chromium, unlike the
+// file:/// paths the HTML flavor uses for multi-image copies, which a
+// browser can never resolve). RTF embeds each image as actual binary
+// data: a {\pict ...<hex bytes>...} group tagged with its format
+// (\pngblip, \jpegblip - Word always emits one of these for photos, never
+// the legacy metafile formats for a plain picture paste). Extracting
+// directly from the hex bytes sidesteps the file:// dead end entirely -
+// no filesystem access needed, everything required is already inline in
+// the RTF text.
+// Finds the matching closing brace for the { at rtf[openIdx], honoring
+// nested groups - a real Word paste wraps \pict in shape/property groups
+// of its own (e.g. {\*\shppict{\pict{\*\picprop\shplid1060{\sp{\sn
+// shapeType}{\sv 75}}...}\jpegblip...}}), so a naive [^{}]* stops at the
+// FIRST nested group's opening brace and never reaches \jpegblip or the
+// hex payload at all (confirmed against a real 117MB Word Desktop RTF:
+// every \pict block was preceded by ~1000 characters of shape-property
+// sub-groups before the actual image data).
+function _findMatchingBrace(rtf, openIdx) {
+  let depth = 0;
+  for (let i = openIdx; i < rtf.length; i++) {
+    const c = rtf[i];
+    if (c === '{') depth++;
+    else if (c === '}') { depth--; if (depth === 0) return i; }
+  }
+  return -1;
+}
+function _extractRtfImages(rtf) {
+  if (!rtf) return [];
+  const files = [];
+  let i = 0;
+  let searchFrom = 0;
+  while (true) {
+    const pictIdx = rtf.indexOf('\\\\pict', searchFrom);
+    if (pictIdx < 0) break;
+    // Walk back to the { that opens this \pict's own group (immediately
+    // before it, per the RTF spec - \pict always starts a group).
+    const openIdx = rtf.lastIndexOf('{', pictIdx);
+    if (openIdx < 0) { searchFrom = pictIdx + 5; continue; }
+    const closeIdx = _findMatchingBrace(rtf, openIdx);
+    if (closeIdx < 0) break; // unterminated - malformed/truncated RTF, stop
+    const group = rtf.slice(pictIdx + 5, closeIdx); // +5 skips "\pict" itself
+    searchFrom = closeIdx + 1;
+
+    let mime = null;
+    if (group.indexOf('\\\\pngblip') !== -1) mime = 'image/png';
+    else if (group.indexOf('\\\\jpegblip') !== -1) mime = 'image/jpeg';
+    if (!mime) continue; // skip metafile/WMF-only pictures - not real photo data
+
+    // The hex payload is everything after the last recognized control
+    // word/nested group up to the group's end - strip all \controlword
+    // tokens (with optional numeric params), any leftover nested groups
+    // (shape properties etc.), and remaining whitespace, leaving just the
+    // hex digit stream.
+    // Shape-property sub-groups can themselves nest multiple levels deep
+    // (e.g. {\sp{\sn shapeType}{\sv 75}}) - repeat innermost-group removal
+    // until nothing changes, which fully unwraps any depth.
+    let withoutNestedGroups = group;
+    let prevLen;
+    do {
+      prevLen = withoutNestedGroups.length;
+      withoutNestedGroups = withoutNestedGroups.replace(/[{][^{}]*[}]/g, '');
+    } while (withoutNestedGroups.length !== prevLen);
+    const hex = withoutNestedGroups.replace(/\\\\[a-zA-Z]+-?[0-9]* ?/g, '').replace(/[^0-9a-fA-F]/g, '');
+    if (hex.length < 100) continue; // too short to be real image data (parsing noise)
+    const byteCount = hex.length >> 1;
+    const bytes = new Uint8Array(byteCount);
+    for (let b = 0; b < byteCount; b++) bytes[b] = parseInt(hex.substr(b * 2, 2), 16);
+    const ext = mime === 'image/png' ? 'png' : 'jpg';
+    files.push(new File([bytes], 'word-image-' + (++i) + '.' + ext, { type: mime }));
+  }
+  return files;
+}
 document.getElementById('e-content')?.addEventListener('paste', async e => {
   e.preventDefault();
   const items = [...e.clipboardData.items].filter(i => i.type.startsWith('image/'));
@@ -3973,6 +4047,15 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // reporting - and that pasting each image individually (or via drag &
   // drop / the toolbar's image picker) is the workaround.
   const unreachableFileUrls = allImgSrcs.filter(src => src.indexOf('file:') === 0);
+  // The actual fix for those file:// images: Word Desktop also puts a
+  // full RTF representation of the copy on the clipboard, which embeds
+  // each image as real binary data rather than a filesystem reference
+  // (see _extractRtfImages) - only worth parsing when file:// images were
+  // actually found above, since RTF parsing has a real cost on a large
+  // paste and every other source (Word Online, a single Word Desktop
+  // image, non-Word sources) already has a working path through the
+  // buckets above without it.
+  const rtfImageFiles = unreachableFileUrls.length ? _extractRtfImages(e.clipboardData.getData('text/rtf')) : [];
   // Force plain-text for the text part in all cases. Sources like Samsung
   // Notes or a copy from the site's own rendered preview carry inline
   // style="--tw-..." (Tailwind) attributes on every element - left alone,
@@ -3992,7 +4075,7 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // which silently reordered "image then caption" pastes into "caption
   // then image" (reported bug). Re-reading the selection right before
   // each step instead keeps them in the order the user actually pasted.
-  if (items.length || dataImageUrls.length || hostedImageUrls.length) {
+  if (items.length || dataImageUrls.length || hostedImageUrls.length || rtfImageFiles.length) {
     const getRange = () => {
       const sel = window.getSelection();
       return sel && sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
@@ -4000,6 +4083,7 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
     for (const item of items) { const file = item.getAsFile(); if (file) await uploadAndInsertAtRange(file, getRange()); }
     for (let i = 0; i < dataImageUrls.length; i++) { await uploadAndInsertAtRange(dataUrlToFile(dataImageUrls[i], 'image-' + (i + 1) + '.png'), getRange()); }
     for (const src of hostedImageUrls) { insertPhotoAtRange(src, '', getRange()); }
+    for (const file of rtfImageFiles) { await uploadAndInsertAtRange(file, getRange()); }
     // execCommand('insertText', ...) silently no-ops (returns false, does
     // nothing) once called after an await on a real network request - it
     // needs to run synchronously within the trusted user-gesture call
@@ -4033,16 +4117,22 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   } else if (text) {
     document.execCommand('insertText', false, text);
   }
-  if (unreachableFileUrls.length) {
-    // Genuine platform limitation, not a bug: a browser can never read a
-    // file:/// path off the clipboard for security reasons, no matter
-    // what this editor does. Word Desktop only does this for
-    // multi-image copies - a single image usually comes through fine via
-    // the image/* clipboard item handled above.
+  // RTF extraction (see _extractRtfImages) covers Word Desktop's normal
+  // case - a photo pasted straight from a document. It intentionally
+  // skips non-photo picture types (WMF/EMF vector metafiles, older clip
+  // art) since those aren't \pngblip/\jpegblip - if the RTF still didn't
+  // account for every file:// image the HTML flavor listed, whatever's
+  // left really is unrecoverable, so only warn about the remainder
+  // instead of the raw file:// count.
+  const stillMissingCount = unreachableFileUrls.length - rtfImageFiles.length;
+  if (stillMissingCount > 0) {
+    // Genuine platform limitation for what's left, not a bug: a browser
+    // can never read a file:/// path off the clipboard for security
+    // reasons, and RTF only carries standard bitmap formats.
     toast(
-      unreachableFileUrls.length === 1
-        ? "1 image du collage n'a pas pu être récupérée (limitation de Word) - collez-la individuellement"
-        : unreachableFileUrls.length + " images du collage n'ont pas pu être récupérées (limitation de Word) - collez-les individuellement",
+      stillMissingCount === 1
+        ? "1 image du collage n'a pas pu être récupérée - collez-la individuellement"
+        : stillMissingCount + " images du collage n'ont pas pu être récupérées - collez-les individuellement",
       'err'
     );
   }
