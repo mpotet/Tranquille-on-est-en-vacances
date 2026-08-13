@@ -1709,6 +1709,24 @@ export function editorPage(articleId = null) {
    shadowed panel that's visibly inset from the screen edges - so it reads
    as a window that opened on top, not a flat background swap that lets the
    article text show through underneath it. */
+@media (min-width: 1024px) {
+  /* Makes THIS container the scroll owner instead of the window (see the
+     comment on [data-lg-scroll] itself for why) - bounding its height to
+     "rest of the viewport below the fixed nav" is what actually turns
+     lg:overflow-y-auto into a real scroll region instead of a no-op. */
+  [data-lg-scroll] { height: calc(100vh - var(--nav-h) - var(--extra-top, 0px)); }
+  /* #editor-toolbar/#editor-sidebar's sticky top:4rem/max-height originally
+     accounted for the fixed nav overlapping the WINDOW's own scroll (nav
+     sits on top of the page, so a sticky element pinned at top:0 would
+     have gone under it). Now that [data-lg-scroll] is the scroll
+     container and it already starts right below the nav (no overlap -
+     they're siblings, not stacked), the nav no longer intrudes into this
+     container's own coordinate space, so top:0 is the correct pin point
+     here - top:4rem would double-count the nav's height as extra empty
+     space above the toolbar/sidebar every time you scrolled. */
+  #editor-toolbar { top: 0 !important; }
+  #editor-sidebar { top: 0 !important; max-height: 100% !important; }
+}
 @media (max-width: 1023px) {
   /* Everything in #editor-sidebar (Statut, Informations, photo de
      couverture, Supprimer...) is now reachable from the "⋮ Options" drawer
@@ -1759,7 +1777,19 @@ export function editorPage(articleId = null) {
 <body class="font-sans antialiased pt-14 pb-20 lg:pb-0" style="background:var(--cream);color:var(--ink)">
 ${ADMIN_NAV()}
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-8">
+<!-- lg+: this container itself scrolls (own scrollbar), instead of the
+     whole window - on a wide viewport, max-w-7xl centers the editor+
+     sidebar with equal margins on both sides, so the WINDOW's scrollbar
+     ends up pinned to the far edge of the screen, nowhere near the actual
+     content (reported: felt like editor, then sidebar with its own
+     scroll, then a THIRD scrollbar further out still). Scrolling this
+     container instead puts its scrollbar right at the content's own
+     right edge, next to the sidebar, with the page's actual vertical
+     extent unchanged (still scrolls all the way down normally, nothing
+     clipped or boxed in - only WHICH element owns the scrollbar changes).
+     Mobile/tablet (below lg) keeps the normal window scroll - narrower
+     viewports don't have the wide-margin gap this is fixing. -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-8 lg:overflow-y-auto" style="--nav-h:3.5rem" data-lg-scroll>
   <div class="flex flex-col lg:grid lg:grid-cols-3 lg:items-start gap-5 lg:gap-8">
 
     <!-- Editor main: second on mobile (after sidebar), cols 1-2 on desktop -->
@@ -2365,16 +2395,25 @@ function _showDraftBar(draft) {
   // (reported: "ça passe par-dessus le bouton sauvegarder"). Push the
   // whole page's content down by the bar's real height instead, same
   // pattern already used for the PWA "update available" banner in
-  // shell.js - nothing underneath ever ends up hidden behind it.
+  // shell.js - nothing underneath ever ends up hidden behind it. On lg+,
+  // the container ([data-lg-scroll]) has a fixed height (100vh - nav) so
+  // it can own its own scrollbar right next to the editor/sidebar (see
+  // the [data-lg-scroll] comment) - a plain marginTop push there would
+  // shove that fixed-height box below the viewport instead of shrinking
+  // it, hiding its bottom instead of nothing at all. --extra-top feeds
+  // into that height's calc() so the box shrinks by the same amount
+  // marginTop pushes it down, keeping its bottom edge exactly where it
+  // was (matches what naturally happens on mobile/tablet, where the
+  // container has no fixed height to begin with).
   const h = bar.offsetHeight;
   const container = document.querySelector('body > div.max-w-7xl');
-  if (container) container.style.marginTop = h + 'px';
+  if (container) { container.style.marginTop = h + 'px'; container.style.setProperty('--extra-top', h + 'px'); }
 }
 function _applyDraft() {
   if (_pendingDraft) { fillFromDraft(_pendingDraft); _pendingDraft = null; }
   document.getElementById('draft-bar')?.remove();
   const container = document.querySelector('body > div.max-w-7xl');
-  if (container) container.style.marginTop = '';
+  if (container) { container.style.marginTop = ''; container.style.removeProperty('--extra-top'); }
   toast('Brouillon restauré ✓', 'ok');
 }
 function _dismissDraft() {
@@ -2382,7 +2421,7 @@ function _dismissDraft() {
   _pendingDraft = null;
   document.getElementById('draft-bar')?.remove();
   const container = document.querySelector('body > div.max-w-7xl');
-  if (container) container.style.marginTop = '';
+  if (container) { container.style.marginTop = ''; container.style.removeProperty('--extra-top'); }
 }
 
 // ── Auto-create draft if article has no ID yet ────────────────
@@ -4171,6 +4210,16 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   if (unreachableFileUrls.length >= 1) {
     toast('Collage en cours' + (unreachableFileUrls.length > 1 ? ' (' + unreachableFileUrls.length + ' images)' : '') + ' - ça peut prendre quelques instants…', 'info', true);
     _pasteProgressShown = true;
+    // toast() only flips the DOM's hidden class - the browser doesn't
+    // actually paint that change until the current synchronous call stack
+    // finishes. _extractRtfImages right below is a heavy, purely
+    // synchronous CPU-bound parse (a real Word RTF blob can be 100MB+),
+    // so without yielding here first, the whole page stays visually
+    // frozen with the toast never appearing until parsing is already
+    // done (reported: loader never actually shows) - one microtask/paint
+    // tick is enough for the browser to render the toast before the
+    // expensive parse blocks the main thread.
+    await new Promise(r => setTimeout(r, 0));
   }
   // The actual fix for those file:// images: Word Desktop also puts a
   // full RTF representation of the copy on the clipboard, which embeds
