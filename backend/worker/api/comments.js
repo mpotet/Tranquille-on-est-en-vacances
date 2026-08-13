@@ -173,9 +173,20 @@ export async function notifyAboutComment(env, { articleId, parentId, authorName,
     // Skipped when the admin is the author: no point emailing yourself.
     if (!isAdmin) {
       try {
-        const admin = await env.DB.prepare('SELECT email FROM admin_account WHERE id = 1').first();
-        if (admin?.email) {
-          await sendNewCommentEmail(env, admin.email, {
+        // contact_email (Paramètres du site) is the address the admin actually
+        // configured to be reached at - NOT admin_account.email, which is only
+        // the login identity and can be a different address entirely (this
+        // was the bug: notifications silently went to the wrong inbox, with
+        // no error since the send itself succeeded). Falls back to the login
+        // email only if no contact address was ever set.
+        const contactRow = await env.DB.prepare("SELECT value FROM site_settings WHERE key = 'contact_email'").first();
+        let notifyEmail = contactRow?.value?.trim();
+        if (!notifyEmail) {
+          const admin = await env.DB.prepare('SELECT email FROM admin_account WHERE id = 1').first();
+          notifyEmail = admin?.email;
+        }
+        if (notifyEmail) {
+          await sendNewCommentEmail(env, notifyEmail, {
             articleTitle: article.title,
             articleSlug: article.slug,
             authorName,

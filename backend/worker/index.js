@@ -1097,17 +1097,49 @@ function buildReplyForm(parentId, parentName){
   const div=document.createElement('div');
   div.className='reply-form mt-3 p-4 rounded-xl';
   div.style.cssText='background:var(--sand-light,rgba(0,0,0,.02));border:1px solid var(--line)';
+  // Prefilled from what was remembered from a previous comment on this
+  // device (see _commentPrefs) - answering a second time shouldn't mean
+  // retyping the email or re-checking the notify box.
+  const _prefs=_commentPrefs();
+  const pushRowId='reply-push-row-'+parentId;
   div.innerHTML=
     '<p class="text-xs font-semibold mb-2" style="color:var(--ink-muted)">Répondre à '+_escC(parentName)+'</p>'+
     '<input type="text" class="reply-name w-full border-2 rounded-xl px-3 py-2 text-sm mb-2" placeholder="Votre prénom / nom" style="border-color:rgba(var(--blue-rgb),.18)">'+
     '<textarea class="reply-body w-full border-2 rounded-xl px-3 py-2 text-sm resize-none mb-2" rows="2" placeholder="Votre réponse..." style="border-color:rgba(var(--blue-rgb),.18)"></textarea>'+
+    '<input type="email" class="reply-email w-full border-2 rounded-xl px-3 py-2 text-sm mb-2" autocomplete="email" placeholder="Votre email (facultatif)" value="'+_escC(_prefs.email)+'" style="border-color:rgba(var(--blue-rgb),.18)">'+
+    '<div id="'+pushRowId+'" class="reply-push-row hidden mb-2">'+
+    '<label class="flex items-start gap-2 text-xs cursor-pointer" style="color:var(--ink-muted)">'+
+    '<input type="checkbox" class="reply-push mt-0.5"'+(_prefs.push?' checked':'')+' style="accent-color:var(--blue)">'+
+    '<span>Me notifier sur cet appareil si on répond à mon commentaire</span>'+
+    '</label></div>'+
     '<input type="text" class="reply-gate w-full border-2 rounded-xl px-3 py-2 text-sm mb-2" autocomplete="off" placeholder="'+_escC(GATE_QUESTION)+'" style="border-color:rgba(var(--blue-rgb),.18)">'+
     '<p class="reply-error hidden text-xs font-semibold mb-2" style="color:var(--danger)"></p>'+
     '<div class="flex justify-end gap-2">'+
     '<button type="button" class="reply-cancel ghost-btn" style="padding:.4rem .8rem;font-size:.75rem">Annuler</button>'+
     '<button type="button" class="reply-submit action-btn-sm" style="padding:.4rem .9rem;font-size:.75rem" data-parent-id="'+parentId+'"><i class="ph-bold ph-paper-plane-tilt"></i> Répondre</button>'+
     '</div>';
+  // Same eligibility check as the main form's push row: only offered where
+  // it can actually work, permission requested at submit time (see
+  // _resolvePushEndpoint), never just for opening the reply box.
+  if('serviceWorker' in navigator && 'PushManager' in window && Notification.permission!=='denied'){
+    div.querySelector('#'+pushRowId)?.classList.remove('hidden');
+  }
   return div;
+}
+// Remembers the email address and push opt-in across comments on this
+// device, so answering a second time doesn't mean retyping either one -
+// this is a convenience, never sent anywhere but this browser's own storage.
+const COMMENT_PREFS_KEY='tranquille_comment_prefs';
+function _commentPrefs(){
+  try{
+    const raw=localStorage.getItem(COMMENT_PREFS_KEY);
+    if(!raw) return {email:'', push:false};
+    const p=JSON.parse(raw);
+    return {email:String(p.email||''), push:!!p.push};
+  }catch(e){ return {email:'', push:false}; }
+}
+function _saveCommentPrefs(email, push){
+  try{ localStorage.setItem(COMMENT_PREFS_KEY, JSON.stringify({email:email||'', push:!!push})); }catch(e){}
 }
 async function submitComment({author_name, body, gate_answer, parent_id, author_email, push_endpoint}){
   const payload={author_name, body, gate_answer};
@@ -1122,6 +1154,14 @@ async function submitComment({author_name, body, gate_answer, parent_id, author_
 // present and permission not already denied. Permission itself is requested at
 // submit time, never on page load - prompting someone just for opening an
 // article would be hostile, and most readers never comment.
+// Prefill the main form from whatever was remembered on this device.
+(function(){
+  const _prefs=_commentPrefs();
+  const emailEl=document.getElementById('c-email');
+  if(emailEl && _prefs.email) emailEl.value=_prefs.email;
+  const pushEl=document.getElementById('c-push');
+  if(pushEl) pushEl.checked=_prefs.push;
+})();
 const _pushRow=document.getElementById('c-push-row');
 if(_pushRow && 'serviceWorker' in navigator && 'PushManager' in window && Notification.permission!=='denied'){
   _pushRow.classList.remove('hidden');
@@ -1173,6 +1213,7 @@ if(_cform){
     if(!ok){
       errEl.textContent=(data&&data.error)||'Impossible de publier le commentaire.'; errEl.classList.remove('hidden'); return;
     }
+    _saveCommentPrefs(author_email, _wantPush);
     // Success: append the new comment, reset form
     const list=document.getElementById('comments-list');
     const empty=document.getElementById('comments-empty');
@@ -1225,16 +1266,23 @@ document.getElementById('comments')?.addEventListener('click', async (e)=>{
     const author_name=formEl.querySelector('.reply-name').value.trim();
     const body=formEl.querySelector('.reply-body').value.trim();
     const gate_answer=formEl.querySelector('.reply-gate').value.trim();
+    const author_email=(formEl.querySelector('.reply-email')?.value||'').trim();
     errEl.classList.add('hidden');
     if(!author_name||!body||!gate_answer){
       errEl.textContent='Merci de remplir tous les champs.'; errEl.classList.remove('hidden'); return;
     }
+    if(author_email && author_email.indexOf('@')<1){
+      errEl.textContent='Cette adresse email ne semble pas valide.'; errEl.classList.remove('hidden'); return;
+    }
     submitBtn.disabled=true;
-    const {ok, data}=await submitComment({author_name, body, gate_answer, parent_id:submitBtn.dataset.parentId});
+    const _wantPush=!!formEl.querySelector('.reply-push')?.checked;
+    const push_endpoint=_wantPush ? await _resolvePushEndpoint() : '';
+    const {ok, data}=await submitComment({author_name, body, gate_answer, author_email, push_endpoint, parent_id:submitBtn.dataset.parentId});
     submitBtn.disabled=false;
     if(!ok){
       errEl.textContent=(data&&data.error)||'Impossible de publier la réponse.'; errEl.classList.remove('hidden'); return;
     }
+    _saveCommentPrefs(author_email, _wantPush);
     // Nest visually under the thread ROOT (matches server-side flattening).
     const rootId=data.comment.parent_id||data.comment.id;
     const rootItem=document.getElementById('comment-'+rootId);
