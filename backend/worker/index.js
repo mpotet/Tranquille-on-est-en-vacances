@@ -582,6 +582,32 @@ function renderCommentItem(c, isAdmin) {
   </article>`;
 }
 
+/**
+ * Estimated reading time, in minutes.
+ *
+ * Words are counted on the text with the markup stripped. 200 wpm is the usual
+ * figure for adult reading of ordinary prose in French - deliberately not the
+ * 250-275 some blogs use, which flatters the number and then reads as wrong on
+ * a long trip diary.
+ *
+ * Photos count too: this is a photo blog, and an article can hold 150+ of them,
+ * so ignoring them would badly understate the time. Following the common
+ * Medium-style ramp, the first photos get ~10s each and later ones less (people
+ * skim once there are many), floored at 3s.
+ */
+function estimateReadingMinutes(content, photoCount) {
+  const text = String(content || '')
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z]+;|&#\d+;/gi, ' ');
+  const words = text.split(/\s+/).filter(Boolean).length;
+  let seconds = (words / 200) * 60;
+  for (let i = 0; i < (photoCount || 0); i++) {
+    seconds += Math.max(3, 10 - i * 0.5);
+  }
+  return Math.max(1, Math.round(seconds / 60));
+}
+
 async function voyagePage(env, slug, authed = false, origin = '') {
   // ── Fetch the article server-side ──────────────────────────
   const isNumericId = /^\d+$/.test(String(slug));
@@ -652,6 +678,7 @@ ${TOAST}
 
   const renderedContent = ssrVoyageContent(article.content || '', allPhotos);
   const galleryHtml = allPhotos.length ? ssrGallery(allPhotos) : '';
+  const readingMinutes = estimateReadingMinutes(article.content, allPhotos.length);
   const writingDaysHtml = ssrWritingDays(writingDays);
   const shortDesc = ssrStripMd(article.short_description);
 
@@ -792,6 +819,7 @@ ${NAV('', authed)}
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph-bold ph-calendar-blank" style="color:var(--blue);flex-shrink:0"></i>${safeText(fmtDateRangeSSR(article))}</span>
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph-bold ph-map-pin" style="color:var(--blue);flex-shrink:0"></i>${safeText(article.destination)}</span>
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph-bold ph-camera" style="color:var(--blue);flex-shrink:0"></i>${allPhotos.length} photo${allPhotos.length !== 1 ? 's' : ''}</span>
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph-bold ph-clock" style="color:var(--blue);flex-shrink:0"></i>${readingMinutes} min de lecture</span>
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background:var(--sand);color:var(--ink)"><i class="ph-bold ph-eye" style="color:var(--blue);flex-shrink:0"></i>${article.view_count || 0} lecture${(article.view_count || 0) !== 1 ? 's' : ''}&ensp;${popularityBarsSSR(article.view_count || 0)}</span>
         <a href="#comments" data-scroll-comments class="subtle-btn text-sm" style="padding:.35rem .85rem"><i class="ph-bold ph-chat-circle-text"></i> Commenter${flatComments.length ? ` (${flatComments.length})` : ''}</a>
         <button data-share-btn class="subtle-btn text-sm" style="padding:.35rem .85rem"><i class="ph-bold ph-share-network"></i> Partager</button>
