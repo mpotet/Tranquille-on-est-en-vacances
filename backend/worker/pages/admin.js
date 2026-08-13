@@ -180,6 +180,10 @@ ${ADMIN_NAV()}
           <div class="rounded-2xl p-2.5 sm:p-4 text-center" style="background:rgba(var(--apricot-rgb),.18);border:1px solid rgba(var(--apricot-rgb),.4)">
             <div id="stat-draft" class="text-lg sm:text-2xl font-black" style="color:var(--pending)">-</div>
             <div class="text-[.65rem] sm:text-xs font-bold mt-1 leading-tight" style="color:var(--pending)">Archivés</div>
+            <!-- Drafts / "publier dès connexion" used to be lumped into the
+                 Archivés count with no label of their own; shown here so a
+                 half-finished article is never silently invisible. -->
+            <div id="stat-pending" class="hidden text-[.6rem] sm:text-[.7rem] font-semibold mt-0.5 leading-tight" style="color:var(--ink-muted)"></div>
           </div>
         </div>
 
@@ -200,7 +204,24 @@ ${ADMIN_NAV()}
 
           <!-- Articles list -->
           <main class="lg:col-span-3">
-            <div class="flex justify-end mb-4">
+            <!-- Search + status filter: the list is rendered in full with no
+                 pagination, so past a couple of dozen articles finding one
+                 meant scrolling the whole page. Both filter client-side over
+                 the already-loaded list, so there is no extra request. -->
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+              <div class="relative flex-1 min-w-0">
+                <i class="ph-bold ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style="color:var(--ink-light)"></i>
+                <input type="search" id="admin-search" placeholder="Rechercher un titre, une destination…"
+                       class="w-full rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none"
+                       style="border:2px solid var(--line);background:var(--cream);color:var(--ink)">
+              </div>
+              <select id="admin-status-filter" class="rounded-xl px-3 py-2 text-sm font-semibold focus:outline-none" style="border:2px solid var(--line);background:var(--cream);color:var(--ink)">
+                <option value="">Tous les statuts</option>
+                <option value="published">Publiés</option>
+                <option value="archived">Archivés</option>
+                <option value="draft">Brouillons</option>
+                <option value="publish_when_online">Dès connexion</option>
+              </select>
               <select id="admin-sort-select" class="rounded-xl px-3 py-2 text-sm font-semibold focus:outline-none" style="border:2px solid var(--line);background:var(--cream);color:var(--ink)">
                 <option value="date_desc">Plus récents</option>
                 <option value="date_asc">Plus anciens</option>
@@ -797,10 +818,36 @@ const ADMIN_SORTERS = {
 };
 let _allArticles = [];
 let _allFolders = [];
+// Accent/case-insensitive so "ecosse" finds "Écosse" - the whole point is
+// typing fast without worrying about accents.
+function _adminNorm(s) {
+  // Combining-marks range built from char codes rather than written as a
+  // literal range: this file is one big template literal, so a \\u escape
+  // written inline would be mangled before it ever reaches the browser.
+  const COMBINING = new RegExp('[' + String.fromCharCode(0x300) + '-' + String.fromCharCode(0x36f) + ']', 'g');
+  return (s||'').normalize('NFD').replace(COMBINING, '').toLowerCase();
+}
 function applyArticleSort() {
   const key = document.getElementById('admin-sort-select')?.value || 'date_desc';
-  const sorted = [..._allArticles].sort(ADMIN_SORTERS[key] || ADMIN_SORTERS.date_desc);
+  const status = document.getElementById('admin-status-filter')?.value || '';
+  const q = _adminNorm(document.getElementById('admin-search')?.value.trim() || '');
+  let list = _allArticles;
+  if (status) list = list.filter(a => a.status === status);
+  if (q) list = list.filter(a =>
+    _adminNorm(a.title).includes(q) ||
+    _adminNorm(a.destination).includes(q) ||
+    _adminNorm(a.folder_name).includes(q) ||
+    _adminNorm(a.short_description).includes(q)
+  );
+  const sorted = [...list].sort(ADMIN_SORTERS[key] || ADMIN_SORTERS.date_desc);
   renderArticles(sorted, _allFolders);
+}
+function clearArticleFilters() {
+  const s = document.getElementById('admin-search');
+  const f = document.getElementById('admin-status-filter');
+  if (s) s.value = '';
+  if (f) f.value = '';
+  applyArticleSort();
 }
 
 async function init() {
@@ -814,10 +861,22 @@ async function init() {
   document.getElementById('folder-tree').innerHTML = renderFolderTree(folders, null);
   document.getElementById('stat-total').textContent = artData.articles.length;
   document.getElementById('stat-pub').textContent = artData.articles.filter(a=>a.status==='published').length;
-  document.getElementById('stat-draft').textContent = artData.articles.filter(a=>a.status==='draft'||a.status==='archived').length;
+  // "Archivés" used to also swallow drafts and publish_when_online articles,
+  // so anything not yet published was reported as archived and a draft had no
+  // count of its own anywhere on the dashboard. Keep the tile literal, and
+  // surface the not-yet-published ones underneath rather than hiding them.
+  document.getElementById('stat-draft').textContent = artData.articles.filter(a=>a.status==='archived').length;
+  const nbPending = artData.articles.filter(a=>a.status==='draft'||a.status==='publish_when_online').length;
+  const pendingEl = document.getElementById('stat-pending');
+  if (pendingEl) {
+    pendingEl.textContent = nbPending ? (nbPending === 1 ? '1 en attente' : nbPending + ' en attente') : '';
+    pendingEl.classList.toggle('hidden', !nbPending);
+  }
   document.getElementById('stat-views').textContent = artData.articles.reduce((s,a)=>s+(a.view_count||0),0);
   applyArticleSort();
   document.getElementById('admin-sort-select')?.addEventListener('change', applyArticleSort);
+  document.getElementById('admin-status-filter')?.addEventListener('change', applyArticleSort);
+  document.getElementById('admin-search')?.addEventListener('input', applyArticleSort);
 
   // Pré-chargement en cache de l'éditeur pour tous les articles < 1 an (édition hors-ligne)
   if (navigator.onLine) {
@@ -858,13 +917,25 @@ function renderFolderTree(folders, parentId, depth=0) {
 
 function renderArticles(arts, folders) {
   if (!arts.length) {
-    document.getElementById('articles-list').innerHTML =
-      '<div class="sm:col-span-2 section-panel majorelle-frame rounded-2xl text-center py-16 px-6" style="border:1px solid var(--line)">' +
-      '<i class="ph-bold ph-notebook" style="font-size:3rem;display:block;margin-bottom:.75rem;color:var(--ink-light)"></i>' +
-      '<p class="text-base font-semibold mb-1" style="color:var(--ink)">Aucun article pour l’instant</p>' +
-      '<p class="text-sm mb-4" style="color:var(--ink-muted)">Commencez par écrire votre premier récit de voyage.</p>' +
-      '<a href="/admin/editor" class="action-btn-sm"><i class="ph-bold ph-plus-circle"></i> Nouvel article</a>' +
-      '</div>';
+    // Two very different empty states: a genuinely empty blog (invite to
+    // write) vs. a search/filter that matched nothing (invite to clear it).
+    // Showing the "write your first article" pitch while 50 articles sit
+    // behind an active filter would just be confusing.
+    const filtering = !!(document.getElementById('admin-search')?.value.trim() ||
+                         document.getElementById('admin-status-filter')?.value);
+    document.getElementById('articles-list').innerHTML = filtering
+      ? '<div class="sm:col-span-2 section-panel majorelle-frame rounded-2xl text-center py-16 px-6" style="border:1px solid var(--line)">' +
+        '<i class="ph-bold ph-magnifying-glass" style="font-size:3rem;display:block;margin-bottom:.75rem;color:var(--ink-light)"></i>' +
+        '<p class="text-base font-semibold mb-1" style="color:var(--ink)">Aucun résultat</p>' +
+        '<p class="text-sm mb-4" style="color:var(--ink-muted)">Aucun article ne correspond à cette recherche.</p>' +
+        '<button type="button" onclick="clearArticleFilters()" class="action-btn-sm"><i class="ph-bold ph-x"></i> Effacer les filtres</button>' +
+        '</div>'
+      : '<div class="sm:col-span-2 section-panel majorelle-frame rounded-2xl text-center py-16 px-6" style="border:1px solid var(--line)">' +
+        '<i class="ph-bold ph-notebook" style="font-size:3rem;display:block;margin-bottom:.75rem;color:var(--ink-light)"></i>' +
+        '<p class="text-base font-semibold mb-1" style="color:var(--ink)">Aucun article pour l’instant</p>' +
+        '<p class="text-sm mb-4" style="color:var(--ink-muted)">Commencez par écrire votre premier récit de voyage.</p>' +
+        '<a href="/admin/editor" class="action-btn-sm"><i class="ph-bold ph-plus-circle"></i> Nouvel article</a>' +
+        '</div>';
     return;
   }
   const STATUS_META = {
@@ -1689,18 +1760,23 @@ export function editorPage(articleId = null) {
    (reported: pasting after cutting an image inserted a stray "×" line -
    the delete button's own "×" glyph had been swept into the clipboard
    alongside the image). */
-#e-content .img-delete,#e-content .img-split,#e-content .img-expand{position:absolute;top:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;font-weight:700;opacity:0;transition:opacity .15s;z-index:10;padding:0;user-select:none;-webkit-user-select:none}
+#e-content .img-delete,#e-content .img-split,#e-content .img-expand,#e-content .img-alt{position:absolute;top:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;font-weight:700;opacity:0;transition:opacity .15s;z-index:10;padding:0;user-select:none;-webkit-user-select:none}
 #e-content .img-delete{right:6px}
 #e-content .img-split{right:38px;font-size:.7rem}
 #e-content .img-expand{left:6px;font-size:.7rem}
-#e-content figure:hover .img-delete,#e-content figure:hover .img-split,#e-content figure:hover .img-expand{opacity:1}
+/* Amber rather than the neutral dark of the other controls: this one
+   flags an image still missing its description, so it should read as a
+   pending task and vanish once filled in (see _refreshAltBtn). */
+#e-content .img-alt{right:70px;font-size:.7rem;background:rgba(var(--apricot-rgb),.92);color:var(--ink)}
+#e-content figure:hover .img-delete,#e-content figure:hover .img-split,#e-content figure:hover .img-expand,#e-content figure:hover .img-alt{opacity:1}
 /* Touch devices have no :hover state, so opacity:0-until-hover would leave
    these buttons effectively untappable - an admin on a phone could never
    discover or reliably hit a 26px invisible button. Make them always visible
    and bump them to the ~44px minimum touch target size instead. */
 @media (pointer: coarse) {
-  #e-content .img-delete,#e-content .img-split,#e-content .img-expand{opacity:1;width:40px;height:40px;font-size:1.1rem}
+  #e-content .img-delete,#e-content .img-split,#e-content .img-expand,#e-content .img-alt{opacity:1;width:40px;height:40px;font-size:1.1rem}
   #e-content .img-split{right:46px;font-size:.85rem}
+  #e-content .img-alt{right:92px;font-size:.85rem}
   #e-content .img-expand{font-size:.85rem}
 }
 #e-content .img-pair-add{flex:1;min-width:0;max-width:49%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;border:2px dashed rgba(var(--blue-rgb),.5);border-radius:.75rem;cursor:pointer;color:rgba(var(--blue-rgb),.8);font-size:.8rem;font-weight:600;padding:1.5rem .5rem;transition:all .15s;background:rgba(var(--blue-rgb),.04)}
@@ -2623,10 +2699,12 @@ async function init() {
     }
   }
 
-  // Set default dates
-  const today = new Date().toISOString().slice(0,10);
-  document.getElementById('e-start-date').value = today;
-  document.getElementById('e-end-date').value = today;
+  // Deliberately NOT pre-filled with today's date. A travel diary entry is
+  // almost never written on the day of the trip, but a field that already
+  // looks filled in doesn't get corrected - so articles silently ended up
+  // dated the day they were typed, which is what orders them publicly.
+  // Leaving them empty makes the required-field check below actually catch
+  // the omission instead of rubber-stamping a wrong date.
   setStatus('archived'); // initialise le sélecteur visuel
 
   if (ARTICLE_ID) {
@@ -3063,7 +3141,7 @@ function _doRedo() {
   // and plain-text clipboard flavors.
   function _cleanClipboardHtml(range) {
     const frag = range.cloneContents();
-    frag.querySelectorAll('.img-delete, .img-split, .img-expand, .img-pair-add').forEach(el => el.remove());
+    frag.querySelectorAll('.img-delete, .img-split, .img-expand, .img-alt, .img-pair-add').forEach(el => el.remove());
     const div = document.createElement('div');
     div.appendChild(frag);
     return div;
@@ -3399,6 +3477,10 @@ function insertPhotoAtRange(url, caption, range) {
 // article) - that <p> gets replaced by the figure directly, same
 // placement, same "full width" sizing as a freshly inserted photo.
 function _wrapBareImages(editor) {
+  // Figures stored before the alt button existed (i.e. every article already
+  // written) keep their saved markup verbatim, so they'd never get one -
+  // add it on load for any that are still missing a description.
+  editor.querySelectorAll('figure').forEach(fig => { try { _refreshAltBtn(fig); } catch (e) {} });
   const bareImgs = Array.from(editor.querySelectorAll('img')).filter(img => !img.closest('figure'));
   bareImgs.forEach(img => {
     // Both captured BEFORE _makeImgFigure, which reparents img into the
@@ -3459,12 +3541,51 @@ function _makeImgFigure(urlOrImg, caption, size) {
     split.innerHTML = '<i class="ph-bold ph-columns"></i>';
     figure.appendChild(split);
   }
+  // Alt text can only be typed in the insert-image modal, which pasted images
+  // never go through - so every photo coming from a Word paste (now the main
+  // way images get in) landed with alt="", which hurts both SEO and anyone
+  // using a screen reader. A per-image button is the only workable place to
+  // fix that: prompting during a 36-image paste would be unusable.
+  _refreshAltBtn(figure);
   return figure;
+}
+// Only shown while the image has no alt text, so it doubles as the "this one
+// still needs a description" marker and disappears once handled.
+function _refreshAltBtn(figure) {
+  const img = figure.querySelector('img');
+  if (!img) return;
+  const has = !!(img.alt || '').trim();
+  let btn = figure.querySelector('.img-alt');
+  if (has) { if (btn) btn.remove(); return; }
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'img-alt';
+    btn.innerHTML = '<i class="ph-bold ph-text-aa"></i>';
+    figure.appendChild(btn);
+  }
+  btn.title = 'Ajouter une description (texte alternatif)';
+}
+function _editImgAlt(figure) {
+  const img = figure.querySelector('img');
+  if (!img) return;
+  const val = prompt('Description de l\\'image (texte alternatif, utile pour le r\u00e9f\u00e9rencement et les lecteurs d\\'\u00e9cran) :', img.alt || '');
+  if (val === null) return; // annul\u00e9
+  _pushUndoSnapshotForAction();
+  img.alt = val.trim();
+  _refreshAltBtn(figure);
+  saveDraftLocal();
 }
 (function() {
   const editor = document.getElementById('e-content');
   if (!editor) return;
   editor.addEventListener('click', e => {
+    const altBtn = e.target.closest('.img-alt');
+    if (altBtn) {
+      e.stopPropagation();
+      const figure = altBtn.closest('figure');
+      if (figure) _editImgAlt(figure);
+      return;
+    }
     const delBtn = e.target.closest('.img-delete');
     if (delBtn) {
       e.stopPropagation();
