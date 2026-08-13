@@ -564,6 +564,32 @@ export function printPage(article) {
   .img-pair img { width: 100%; max-width: 100%; height: auto; display: block; border-radius: .5rem; }
 
   /* ── Print-specific ────────────── */
+  /* Word export progress overlay. Building a 130-photo document takes tens
+     of seconds of canvas work + zipping; without this the tab just appears
+     to hang. */
+  #export-overlay {
+    position: fixed; inset: 0; z-index: 200; display: none;
+    align-items: center; justify-content: center;
+    background: rgba(26,43,60,.55);
+    -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  }
+  .eo-card {
+    background: #fff; border-radius: 1rem; padding: 1.75rem 2rem;
+    width: min(360px, 88vw); text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,.28);
+    font-family: 'Montserrat', sans-serif;
+  }
+  .eo-spinner {
+    width: 34px; height: 34px; margin: 0 auto .9rem;
+    border: 3px solid rgba(0,87,184,.18); border-top-color: var(--blue);
+    border-radius: 50%; animation: eo-spin .8s linear infinite;
+  }
+  @keyframes eo-spin { to { transform: rotate(360deg); } }
+  .eo-label { font-size: .9rem; font-weight: 700; color: var(--ink); margin-bottom: .75rem; }
+  .eo-bar { height: 6px; border-radius: 999px; background: rgba(26,43,60,.10); overflow: hidden; }
+  .eo-bar-fill { height: 100%; width: 0%; border-radius: 999px; background: var(--blue); transition: width .25s ease; }
+  .eo-hint { margin-top: .7rem; font-size: .74rem; color: var(--ink-muted); }
+
   @media print {
     .toolbar { display: none !important; }
     body { padding-top: 0; }
@@ -630,6 +656,9 @@ export function printPage(article) {
 <script>
 const RAW_CONTENT = ${contentJson};
 const PUBLIC_URL  = ${publicJson};
+// Title/destination/dates for the Word export, which is generated in the
+// browser (see exportWord) and so needs them client-side.
+const EXPORT_META = ${JSON.stringify({ title, destination, dateRange })};
 
 function fixMd(s) {
   return (s||'')
@@ -705,81 +734,193 @@ function renderContent(raw) {
 renderContent(RAW_CONTENT);
 
 // ── Word export ──────────────────────────────────────────────
-// Downscale every image already rendered on this page to a print-sized JPEG,
-// keyed by its original URL. The server used to fetch and embed the full-size
-// originals itself, which on a 133-photo article meant ~50MB of image data and
-// blew the Worker's CPU budget outright ("Worker exceeded resource limits",
-// HTTP 1102). The browser has no such limit, already holds every image
-// decoded, and 1600px/JPEG-82 is well beyond what an A4 page can show.
-async function collectDownscaledImages(onProgress) {
-  var imgs = [...document.querySelectorAll('#article-body img')];
-  var out = {};
-  // 1100px wide at JPEG q0.72: an A4 text column is ~6in, so even at 150dpi
-  // that is more than the page can resolve. Bigger settings produced a ~53MB
-  // document that still tripped the Worker's CPU limit on assembly.
+// The .docx is built HERE, in the browser, not on the Worker. Assembling a
+// photo-heavy article server-side meant fetching ~50MB of full-size originals
+// and zipping them inside Cloudflare's per-request CPU budget, which failed
+// outright with "Worker exceeded resource limits" (HTTP 1102). Downscaling the
+// images first still wasn't enough - the zipping alone blew the budget. The
+// browser has no such limit and already holds every image decoded, so it does
+// the whole job and the server is not involved at all.
+var DOCX_CDN = 'https://cdn.jsdelivr.net/npm/docx@9.7.1/dist/index.iife.js';
+var _docxLib = null;
+function loadDocxLib() {
+  if (_docxLib) return Promise.resolve(_docxLib);
+  return new Promise(function (resolve, reject) {
+    var s = document.createElement('script');
+    s.src = DOCX_CDN;
+    s.onload = function () {
+      _docxLib = window.docx;
+      _docxLib ? resolve(_docxLib) : reject(new Error('librairie Word indisponible'));
+    };
+    s.onerror = function () { reject(new Error('telechargement de la librairie Word impossible')); };
+    document.head.appendChild(s);
+  });
+}
+
+// Full-screen progress overlay: generating a 130-photo document takes tens of
+// seconds, and without feedback the page just looks frozen.
+function exportOverlay() {
+  var el = document.getElementById('export-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'export-overlay';
+    el.className = 'no-print';
+    el.innerHTML =
+      '<div class="eo-card">' +
+      '<div class="eo-spinner"></div>' +
+      '<div class="eo-label" id="eo-label">Preparation...</div>' +
+      '<div class="eo-bar"><div class="eo-bar-fill" id="eo-bar-fill"></div></div>' +
+      '<div class="eo-hint">Ne fermez pas cet onglet</div>' +
+      '</div>';
+    document.body.appendChild(el);
+  }
+  return {
+    show: function () { el.style.display = 'flex'; },
+    hide: function () { el.style.display = 'none'; },
+    set: function (label, pct) {
+      var l = document.getElementById('eo-label');
+      var f = document.getElementById('eo-bar-fill');
+      if (l) l.textContent = label;
+      if (f) f.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    },
+  };
+}
+
+// Downscale one <img> to a print-sized JPEG and return raw bytes.
+// 1100px at q0.72 is already beyond what an A4 text column (~6in) resolves.
+function imageToBytes(img) {
   var MAX_W = 1100;
-  for (var i = 0; i < imgs.length; i++) {
-    var img = imgs[i];
-    var src = img.getAttribute('data-export-src') || img.currentSrc || img.src;
-    if (!src || out[src]) { if (onProgress) onProgress(i + 1, imgs.length); continue; }
-    try {
-      if (!img.complete || !img.naturalWidth) {
-        await new Promise(function (r) { img.addEventListener('load', r, { once: true }); img.addEventListener('error', r, { once: true }); });
+  var scale = Math.min(1, MAX_W / img.naturalWidth);
+  var w = Math.max(1, Math.round(img.naturalWidth * scale));
+  var h = Math.max(1, Math.round(img.naturalHeight * scale));
+  var canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+  return new Promise(function (resolve) {
+    canvas.toBlob(function (blob) {
+      if (!blob) { resolve(null); return; }
+      blob.arrayBuffer().then(function (buf) {
+        resolve({ data: new Uint8Array(buf), w: w, h: h });
+      }).catch(function () { resolve(null); });
+    }, 'image/jpeg', 0.72);
+  });
+}
+
+// Walk the rendered article in document order so the Word file mirrors what
+// is on screen - same sequence of paragraphs, headings and photos.
+async function buildDocxBlocks(D, onProgress) {
+  var body = document.getElementById('article-body');
+  var nodes = body.querySelectorAll('p, h1, h2, h3, h4, blockquote, li, figure, img');
+  var out = [];
+  var seen = new Set();
+  var totalImgs = body.querySelectorAll('img').length, doneImgs = 0;
+
+  for (var i = 0; i < nodes.length; i++) {
+    var n = nodes[i];
+    if (n.tagName === 'IMG' || n.tagName === 'FIGURE') {
+      var img = n.tagName === 'IMG' ? n : n.querySelector('img');
+      if (!img || seen.has(img)) continue;
+      seen.add(img);
+      var bytes = null;
+      try {
+        if (img.complete && img.naturalWidth) bytes = await imageToBytes(img);
+      } catch (e) { /* undecodable image: skipped rather than failing the export */ }
+      doneImgs++;
+      if (onProgress) onProgress(doneImgs, totalImgs);
+      if (bytes) {
+        var maxW = 600;
+        var dw = bytes.w, dh = bytes.h;
+        if (dw > maxW) { dh = Math.round(dh * (maxW / dw)); dw = maxW; }
+        out.push(new D.Paragraph({
+          alignment: D.AlignmentType.CENTER,
+          spacing: { before: 120, after: 200 },
+          children: [new D.ImageRun({ type: 'jpg', data: bytes.data, transformation: { width: dw, height: dh } })],
+        }));
       }
-      if (!img.naturalWidth) { if (onProgress) onProgress(i + 1, imgs.length); continue; }
-      var scale = Math.min(1, MAX_W / img.naturalWidth);
-      var w = Math.max(1, Math.round(img.naturalWidth * scale));
-      var h = Math.max(1, Math.round(img.naturalHeight * scale));
-      var canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      // JPEG keeps photos small; quality 0.82 is visually indistinguishable
-      // in print at this size.
-      out[src] = canvas.toDataURL('image/jpeg', 0.72);
-    } catch (e) { /* tainted canvas or decode failure: server falls back to fetching it */ }
-    if (onProgress) onProgress(i + 1, imgs.length);
+      continue;
+    }
+    if (n.closest('figure')) continue;
+    // Built with String.fromCharCode rather than written as escape
+    // sequences: this page is a template literal, which converts such
+    // escapes into real control characters and splits the regex in two -
+    // the same trap applies to writing them in a comment, which is how
+    // this very line broke the page the first time round.
+    var WS = new RegExp('[' + String.fromCharCode(32, 9, 13, 10) + ']+', 'g');
+    var text = (n.textContent || '').replace(WS, ' ').trim();
+    if (!text) continue;
+    var tag = n.tagName.toLowerCase();
+    if (tag === 'h1' || tag === 'h2' || tag === 'h3' || tag === 'h4') {
+      var levels = { h1: D.HeadingLevel.HEADING_1, h2: D.HeadingLevel.HEADING_2, h3: D.HeadingLevel.HEADING_3, h4: D.HeadingLevel.HEADING_4 };
+      out.push(new D.Paragraph({ heading: levels[tag], spacing: { before: 280, after: 140 }, children: [new D.TextRun({ text: text })] }));
+    } else if (tag === 'li') {
+      out.push(new D.Paragraph({ bullet: { level: 0 }, spacing: { after: 60 }, children: [new D.TextRun({ text: text })] }));
+    } else if (tag === 'blockquote') {
+      out.push(new D.Paragraph({ spacing: { before: 120, after: 120, line: 300 }, indent: { left: 480 }, children: [new D.TextRun({ text: text, italics: true })] }));
+    } else {
+      out.push(new D.Paragraph({ spacing: { after: 160, line: 320 }, children: [new D.TextRun({ text: text })] }));
+    }
   }
   return out;
 }
 
 async function exportWord() {
   var btn = document.querySelector('.tb-btn-word');
-  var prev = btn ? btn.innerHTML : '';
-  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; btn.innerHTML = 'Préparation…'; }
+  var ov = exportOverlay();
+  if (btn) { btn.disabled = true; }
+  ov.show();
+  ov.set('Chargement du generateur...', 5);
   try {
-    var id = window.location.pathname.split('/')[3];
-    var images = await collectDownscaledImages(function (done, total) {
-      if (btn && total > 1) btn.innerHTML = 'Images ' + done + '/' + total;
-    });
-    if (btn) btn.innerHTML = 'Génération…';
-    var res = await fetch('/admin/articles/' + id + '/export-word', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ images: images }),
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var blob = await res.blob();
+    var D = await loadDocxLib();
 
-    // Prefer the filename the server sent (RFC 5987 filename* first).
-    var name = 'export.docx';
-    var cd = res.headers.get('Content-Disposition') || '';
-    var star = cd.match(/filename\\*=UTF-8''([^;]+)/i);
-    var plain = cd.match(/filename="([^"]+)"/i);
-    if (star) name = decodeURIComponent(star[1]);
-    else if (plain) name = plain[1];
+    ov.set('Preparation des images...', 10);
+    var blocks = await buildDocxBlocks(D, function (done, total) {
+      var pct = total ? 10 + Math.round((done / total) * 70) : 40;
+      ov.set('Images ' + done + '/' + total, pct);
+    });
 
+    ov.set('Assemblage du document...', 85);
+    var header = [];
+    if (EXPORT_META.destination) {
+      header.push(new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { after: 80 },
+        children: [new D.TextRun({ text: EXPORT_META.destination.toUpperCase(), bold: true, color: '0057B8', size: 22 })] }));
+    }
+    header.push(new D.Paragraph({ heading: D.HeadingLevel.TITLE, alignment: D.AlignmentType.CENTER, spacing: { after: 120 },
+      children: [new D.TextRun({ text: EXPORT_META.title })] }));
+    if (EXPORT_META.dateRange) {
+      header.push(new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { after: 400 },
+        children: [new D.TextRun({ text: EXPORT_META.dateRange, italics: true, color: '666666' })] }));
+    }
+
+    var doc = new D.Document({
+      creator: 'Tranquille, on est en vacances',
+      title: EXPORT_META.title,
+      description: 'Recit de voyage : ' + EXPORT_META.title,
+      styles: { default: { document: { run: { font: 'Calibri', size: 24 } } } },
+      sections: [{
+        properties: { page: { margin: { top: 1134, bottom: 1134, left: 1418, right: 1418 } } },
+        children: header.concat(blocks),
+      }],
+    });
+
+    ov.set('Creation du fichier...', 95);
+    var blob = await D.Packer.toBlob(doc);
+
+    // Same escaping trap: shorthand character classes don't survive the
+    // template literal, so the allowed set is spelled out as ranges.
+    var BAD = new RegExp('[^A-Za-z0-9 ._-]', 'g');
+    var name = (EXPORT_META.title || 'export').replace(BAD, '').replace(/[ ]+/g, ' ').trim().substring(0, 80) + '.docx';
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
-    a.href = url;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+    ov.set('Termine', 100);
+    setTimeout(function () { ov.hide(); }, 600);
   } catch (err) {
-    alert('Échec de l\\'export Word : ' + err.message);
+    ov.hide();
+    alert('Echec de l export Word : ' + (err && err.message ? err.message : err));
   } finally {
-    if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.innerHTML = prev; }
+    if (btn) { btn.disabled = false; }
   }
 }
 </script>
