@@ -810,13 +810,60 @@ function imageToBytes(img) {
 // is on screen - same sequence of paragraphs, headings and photos.
 async function buildDocxBlocks(D, onProgress) {
   var body = document.getElementById('article-body');
-  var nodes = body.querySelectorAll('p, h1, h2, h3, h4, blockquote, li, figure, img');
+  var nodes = body.querySelectorAll('p, h1, h2, h3, h4, blockquote, li, .img-pair, figure, img');
   var out = [];
   var seen = new Set();
   var totalImgs = body.querySelectorAll('img').length, doneImgs = 0;
 
+  // Photos the editor placed side by side (a .img-pair row) are emitted as a
+  // borderless 2-column table - that is how Word represents "these two sit on
+  // the same line". Rendered as plain consecutive paragraphs they would stack
+  // vertically, losing the layout the article was written with.
+  var makeImageParagraph = function (bytes, maxW) {
+    var dw = bytes.w, dh = bytes.h;
+    if (dw > maxW) { dh = Math.round(dh * (maxW / dw)); dw = maxW; }
+    return new D.Paragraph({
+      alignment: D.AlignmentType.CENTER,
+      spacing: { before: 0, after: 0 },
+      children: [new D.ImageRun({ type: 'jpg', data: bytes.data, transformation: { width: dw, height: dh } })],
+    });
+  };
+  var noBorder = { style: D.BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+
   for (var i = 0; i < nodes.length; i++) {
     var n = nodes[i];
+
+    if (n.classList && n.classList.contains('img-pair')) {
+      var pairImgs = [].slice.call(n.querySelectorAll('img')).filter(function (im) { return !seen.has(im); });
+      if (!pairImgs.length) continue;
+      var cells = [];
+      for (var q = 0; q < pairImgs.length; q++) {
+        seen.add(pairImgs[q]);
+        var pb = null;
+        try {
+          if (pairImgs[q].complete && pairImgs[q].naturalWidth) pb = await imageToBytes(pairImgs[q]);
+        } catch (e) { /* skip an undecodable photo rather than fail the export */ }
+        doneImgs++;
+        if (onProgress) onProgress(doneImgs, totalImgs);
+        // Half the text column, minus a little breathing room between cells.
+        cells.push(new D.TableCell({
+          width: { size: Math.floor(100 / pairImgs.length), type: D.WidthType.PERCENTAGE },
+          margins: { top: 60, bottom: 60, left: 60, right: 60 },
+          borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
+          children: [pb ? makeImageParagraph(pb, Math.floor(560 / pairImgs.length)) : new D.Paragraph({ children: [] })],
+        }));
+      }
+      out.push(new D.Table({
+        width: { size: 100, type: D.WidthType.PERCENTAGE },
+        borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder, insideHorizontal: noBorder, insideVertical: noBorder },
+        rows: [new D.TableRow({ children: cells })],
+      }));
+      // Word collapses two adjacent tables into one; a spacer paragraph keeps
+      // consecutive pairs visually separate.
+      out.push(new D.Paragraph({ spacing: { after: 160 }, children: [] }));
+      continue;
+    }
+
     if (n.tagName === 'IMG' || n.tagName === 'FIGURE') {
       var img = n.tagName === 'IMG' ? n : n.querySelector('img');
       if (!img || seen.has(img)) continue;
