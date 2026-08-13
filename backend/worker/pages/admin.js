@@ -1729,35 +1729,60 @@ export function editorPage(articleId = null) {
    shadowed panel that's visibly inset from the screen edges - so it reads
    as a window that opened on top, not a flat background swap that lets the
    article text show through underneath it. */
-/* The page scrolls as a whole (window scroll), so the scrollbar always sits
-   at the far right EDGE OF THE SCREEN - but max-w-7xl centers the content,
-   which on a wide monitor leaves a big empty margin between the sidebar and
-   that scrollbar (measured: 320px of nothing at 1920px wide). The eye looks
-   for the scrollbar right after the content it controls, not across an empty
-   gutter, so it reads as "detached" (reported). Shifting the centered block
-   toward the right on wide viewports brings the content's right edge up
-   against the scrollbar, without touching scroll behaviour itself: no fixed
-   height, no separate scroll container, nothing clipped - the whole page
-   still scrolls together exactly as before, only the horizontal placement
-   changes. A previous attempt DID make this container its own scroll region
-   (height:calc(100vh - nav) + overflow-y:auto) and that broke the sidebar's
-   layout, so deliberately not doing that again.
-   Widening the centered block (rather than shifting it right) keeps the page
-   balanced and stays aligned with the centered nav above it - pushing the
-   block against the right edge instead left a huge dead zone on the left and
-   visibly desynced it from the nav. */
-@media (min-width: 1440px) {
-  body > div.max-w-7xl { max-width: none; padding-left: 3rem; padding-right: 3rem; }
-  /* Letting the container go full-width would also stretch the writing area
-     to ~1200px, and an over-long line is genuinely harder to read and write
-     in. The editor column is a grid cell (lg:col-span-2), so capping it with
-     max-width alone does nothing - the track itself has to be sized. Fixing
-     the sidebar track and letting the surplus land in a leading spacer track
-     keeps the writing column at a comfortable measure while the sidebar
-     stays pinned right next to the scrollbar. */
-  body > div.max-w-7xl > div.lg\\:grid { grid-template-columns: minmax(0, 1fr) minmax(0, 68rem) 24rem; }
-  body > div.max-w-7xl > div.lg\\:grid > div.order-2 { grid-column: 2; }
-  body > div.max-w-7xl > div.lg\\:grid > aside#editor-sidebar { grid-column: 3; }
+/* Desktop: two independently scrolling panes, not one page scroll.
+   Before, the whole window scrolled, so the only scrollbar sat at the far
+   right EDGE OF THE SCREEN - i.e. to the right of the SIDEBAR, nowhere near
+   the editor text it actually drives (reported twice: it reads as detached,
+   the eye looks for it right where the text column ends). Merely re-centering
+   the block didn't fix that, because a window scrollbar can only ever live at
+   the viewport edge, past the sidebar.
+   So each column now owns its own scroll region, and the editor's scrollbar
+   lands exactly where it belongs - between the text and the sidebar. Side
+   benefit: Sauvegarder/Annuler/Exporter stay on screen at any depth of a long
+   article, since the sidebar no longer scrolls away with the text.
+   Bounding each COLUMN (rather than the shared max-w-7xl container, which is
+   what an earlier attempt did and what broke the sidebar's layout) keeps the
+   grid itself untouched - the two panes just size themselves to the viewport
+   independently. */
+@media (min-width: 1024px) {
+  /* The window must not scroll at all, otherwise a phantom page scrollbar
+     reappears at the screen edge next to the two real ones. */
+  html, body { height: 100%; overflow: hidden; }
+  /* --shell-h = viewport minus the fixed nav (body's pt-14 = 3.5rem), minus
+     the container's own py-8 padding (2rem top + 2rem bottom at lg). */
+  /* --extra-top is set by _showDraftBar, which pushes the container down by
+     the draft bar's height; without subtracting it here the two panes would
+     keep their full height and overflow past the bottom of the screen. */
+  body > div.max-w-7xl { --shell-h: calc(100vh - 3.5rem - 4rem - var(--extra-top, 0px)); }
+  /* With both panes bounded to the viewport there is no page scroll left to
+     re-center, so the block can safely span the full width - which puts the
+     sidebar against the right edge instead of stranding it mid-screen with a
+     dead gutter beside it. The editor track is capped so the writing column
+     keeps a readable line length and the surplus lands on the left. */
+  @media (min-width: 1440px) {
+    body > div.max-w-7xl { max-width: none; padding-left: 3rem; padding-right: 3rem; }
+    body > div.max-w-7xl > div.lg\\:grid { grid-template-columns: minmax(0, 1fr) minmax(0, 68rem) 24rem; }
+    body > div.max-w-7xl > div.lg\\:grid > div.order-2 { grid-column: 2; }
+    body > div.max-w-7xl > div.lg\\:grid > aside#editor-sidebar { grid-column: 3; }
+  }
+  body > div.max-w-7xl > div.lg\\:grid > div.order-2,
+  body > div.max-w-7xl > div.lg\\:grid > aside#editor-sidebar {
+    height: var(--shell-h);
+    overflow-y: auto;
+    /* Keeps each pane's scrollbar from sitting flush against its content. */
+    padding-right: .5rem;
+    /* Without this the last line of text / last sidebar card ends flush
+       against the bottom of the pane, which reads as cut off rather than
+       scrolled to the end. */
+    padding-bottom: 1.5rem;
+  }
+  /* Both were sticky only to survive the old window scroll; inside a pane
+     that scrolls on its own, sticky at top:4rem would float them 4rem down
+     from the pane's top and leave a permanent gap. The toolbar still needs
+     to stay pinned while the text scrolls under it, hence top:0 rather than
+     dropping sticky entirely. The sidebar just scrolls with its own pane. */
+  #editor-toolbar { top: 0; }
+  #editor-sidebar { position: static; max-height: none; }
 }
 @media (max-width: 1023px) {
   /* Everything in #editor-sidebar (Statut, Informations, photo de
@@ -2418,13 +2443,17 @@ function _showDraftBar(draft) {
   // shell.js - nothing underneath ever ends up hidden behind it.
   const h = bar.offsetHeight;
   const container = document.querySelector('body > div.max-w-7xl');
-  if (container) container.style.marginTop = h + 'px';
+  // --extra-top feeds the desktop two-pane layout's height calc (see the
+  // lg media query): the panes are sized to the viewport, so pushing the
+  // container down without shrinking them by the same amount would run
+  // their bottoms off the bottom of the screen.
+  if (container) { container.style.marginTop = h + 'px'; container.style.setProperty('--extra-top', h + 'px'); }
 }
 function _applyDraft() {
   if (_pendingDraft) { fillFromDraft(_pendingDraft); _pendingDraft = null; }
   document.getElementById('draft-bar')?.remove();
   const container = document.querySelector('body > div.max-w-7xl');
-  if (container) container.style.marginTop = '';
+  if (container) { container.style.marginTop = ''; container.style.removeProperty('--extra-top'); }
   toast('Brouillon restauré ✓', 'ok');
 }
 function _dismissDraft() {
@@ -2432,7 +2461,7 @@ function _dismissDraft() {
   _pendingDraft = null;
   document.getElementById('draft-bar')?.remove();
   const container = document.querySelector('body > div.max-w-7xl');
-  if (container) container.style.marginTop = '';
+  if (container) { container.style.marginTop = ''; container.style.removeProperty('--extra-top'); }
 }
 
 // ── Auto-create draft if article has no ID yet ────────────────
