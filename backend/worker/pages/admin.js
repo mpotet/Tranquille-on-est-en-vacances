@@ -4026,6 +4026,50 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // any) and treat each one as an image to upload, same as a direct paste.
   const html = e.clipboardData.getData('text/html');
   const allImgSrcs = html ? [...html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)].map(m => m[1]) : [];
+  // Word Desktop's HTML flavor keeps images and paragraphs in real
+  // document order (confirmed: <p>text</p><p><img></p><p>more text</p> for
+  // a doc with photos between paragraphs). A multi-image Word Desktop
+  // paste used to insert every image first, then dump the ENTIRE text as
+  // one block afterward (reported: images all bunched together, all text
+  // after, instead of interleaved like the original document). Parsing
+  // the HTML into an ordered walk of text/image segments and inserting
+  // each one at the live selection in that same order keeps the pasted
+  // result visually identical to the source document. Built with the
+  // browser's own HTML parser (DOMParser), not regex, since it has to
+  // track true document order across arbitrarily nested tags.
+  const _htmlOrderedSegments = (() => {
+    if (!html || !unreachableFileUrlsPreCheck(html)) return null;
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const segments = [];
+    let textBuf = '';
+    const flushText = () => {
+      if (textBuf.trim()) segments.push({ type: 'text', text: textBuf });
+      textBuf = '';
+    };
+    const BLOCK_TAGS = new Set(['P','DIV','LI','TR','H1','H2','H3','H4','H5','H6']);
+    const walk = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        textBuf += node.nodeValue;
+        return;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      if (node.tagName === 'IMG') {
+        flushText();
+        segments.push({ type: 'img', src: node.getAttribute('src') || '' });
+        return;
+      }
+      if (node.tagName === 'BR') { textBuf += '\\n'; return; }
+      for (const child of node.childNodes) walk(child);
+      if (BLOCK_TAGS.has(node.tagName)) textBuf += '\\n';
+    };
+    for (const child of doc.body.childNodes) walk(child);
+    flushText();
+    return segments;
+  })();
+  // Cheap pre-check so DOMParser only runs when the HTML actually contains
+  // a file:// image (the only case ordered interleaving is needed for -
+  // every other paste path already works fine without it).
+  function unreachableFileUrlsPreCheck(h) { return h.indexOf('file:') !== -1; }
   // Word/Word Online/Outlook only puts pasted images inline as base64
   // data: URIs inside the text/html flavor, never as a plain image/* item.
   const dataImageUrls = allImgSrcs.filter(src => src.indexOf('data:image/') === 0);
@@ -4075,11 +4119,62 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // which silently reordered "image then caption" pastes into "caption
   // then image" (reported bug). Re-reading the selection right before
   // each step instead keeps them in the order the user actually pasted.
-  if (items.length || dataImageUrls.length || hostedImageUrls.length || rtfImageFiles.length) {
-    const getRange = () => {
+  const getRange = () => {
+    const sel = window.getSelection();
+    return sel && sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+  };
+  // Inserts a run of plain text (turning newlines into <br>) at the live
+  // selection - factored out so the ordered-segments path below can call
+  // it once per text run instead of once for the whole paste.
+  const insertTextAtLiveSelection = (segText) => {
+    const range = getRange();
+    if (!range) return;
+    range.deleteContents();
+    const lines = segText.split('\\n');
+    const frag = document.createDocumentFragment();
+    lines.forEach((line, i) => {
+      if (i > 0) frag.appendChild(document.createElement('br'));
+      if (line) frag.appendChild(document.createTextNode(line));
+    });
+    const lastNode = frag.lastChild;
+    range.insertNode(frag);
+    if (lastNode) {
       const sel = window.getSelection();
-      return sel && sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
-    };
+      sel.removeAllRanges();
+      const r2 = document.createRange();
+      r2.setStartAfter(lastNode);
+      r2.collapse(true);
+      sel.addRange(r2);
+    }
+  };
+  if (_htmlOrderedSegments && rtfImageFiles.length) {
+    // Word Desktop multi-image paste: walk the HTML in real document
+    // order and insert each text run / image exactly where it was in the
+    // source, instead of bucketing all images together first (see
+    // _htmlOrderedSegments above for why that made pasted images end up
+    // bunched together with all the text after, instead of interleaved
+    // like the original document - reported bug). Each file:// <img>
+    // segment is matched to its RTF-extracted image by encounter order -
+    // both lists come from the same document in the same order, so the
+    // Nth file:// src in the HTML corresponds to the Nth \pict group in
+    // the RTF (_extractRtfImages already only returns real photos,
+    // matching what Word emits file:// paths for).
+    let rtfIdx = 0;
+    for (const seg of _htmlOrderedSegments) {
+      if (seg.type === 'text') {
+        insertTextAtLiveSelection(seg.text);
+      } else if (seg.type === 'img') {
+        if (seg.src.indexOf('file:') === 0) {
+          const file = rtfImageFiles[rtfIdx++];
+          if (file) await uploadAndInsertAtRange(file, getRange());
+        } else if (seg.src.indexOf('data:image/') === 0) {
+          await uploadAndInsertAtRange(dataUrlToFile(seg.src, 'image-' + (rtfIdx + 1) + '.png'), getRange());
+        } else if (/^(https?:)?[/][/]/i.test(seg.src) || seg.src.indexOf('/r2/') === 0) {
+          insertPhotoAtRange(seg.src, '', getRange());
+        }
+      }
+    }
+  } else if (items.length || dataImageUrls.length || hostedImageUrls.length || rtfImageFiles.length) {
     for (const item of items) { const file = item.getAsFile(); if (file) await uploadAndInsertAtRange(file, getRange()); }
     for (let i = 0; i < dataImageUrls.length; i++) { await uploadAndInsertAtRange(dataUrlToFile(dataImageUrls[i], 'image-' + (i + 1) + '.png'), getRange()); }
     for (const src of hostedImageUrls) { insertPhotoAtRange(src, '', getRange()); }
@@ -4092,28 +4187,7 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
     // current selection instead, which has no such restriction (found by
     // instrumenting execCommand directly: it returned false here, and the
     // pasted caption silently vanished even though the image landed fine).
-    if (text) {
-      const range = getRange();
-      if (range) {
-        range.deleteContents();
-        const lines = text.split('\\n');
-        const frag = document.createDocumentFragment();
-        lines.forEach((line, i) => {
-          if (i > 0) frag.appendChild(document.createElement('br'));
-          frag.appendChild(document.createTextNode(line));
-        });
-        const lastNode = frag.lastChild;
-        range.insertNode(frag);
-        if (lastNode) {
-          const sel = window.getSelection();
-          sel.removeAllRanges();
-          const r2 = document.createRange();
-          r2.setStartAfter(lastNode);
-          r2.collapse(true);
-          sel.addRange(r2);
-        }
-      }
-    }
+    if (text) insertTextAtLiveSelection(text);
   } else if (text) {
     document.execCommand('insertText', false, text);
   }
