@@ -1011,15 +1011,33 @@ function getServiceWorkerReady() {
 // the submit to clear the SW's page cache first, then navigate for real.
 function doLogout(event) {
   event.preventDefault();
-  const finish = () => { window.location.href = '/'; };
+  // Navigate only once the SW confirms the page cache is gone. postMessage is
+  // fire-and-forget: the previous version navigated in the same tick, so the
+  // SW was usually still deleting entries when the new page was requested and
+  // happily served the stale authenticated copy - the header kept showing
+  // "Admin" until a manual reload (reported). MessageChannel gives us a reply
+  // to wait for; the timeout means a wedged or missing SW can never strand the
+  // user on the page instead of logging them out.
+  const clearPageCache = () => new Promise(resolve => {
+    if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return resolve();
+    let done = false;
+    const settle = () => { if (!done) { done = true; resolve(); } };
+    const channel = new MessageChannel();
+    channel.port1.onmessage = settle;
+    try {
+      navigator.serviceWorker.controller.postMessage('clear-page-cache', [channel.port2]);
+    } catch (e) { return settle(); }
+    setTimeout(settle, 1500);
+  });
   fetch('/admin/logout', { method: 'POST' })
-    .then(() => {
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage('clear-page-cache');
-      }
-    })
     .catch(() => {})
-    .finally(finish);
+    .then(clearPageCache)
+    .catch(() => {})
+    .finally(() => {
+      // replace(), not href: going "back" would otherwise return to a cached
+      // admin page that looks logged in.
+      window.location.replace('/');
+    });
   return false;
 }
 

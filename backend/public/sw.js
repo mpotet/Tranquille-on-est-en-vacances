@@ -21,7 +21,7 @@
  *   revalide silencieusement le cache.
  */
 
-const VERSION = 'v45';
+const VERSION = 'v46';
 const PAGES_CACHE = `tranquille-pages-${VERSION}`;
 const ASSETS_CACHE = `tranquille-assets-${VERSION}`;
 const API_CACHE = `tranquille-api-${VERSION}`;
@@ -557,7 +557,16 @@ self.addEventListener('message', event => {
   // navigation to '/' can't serve back the stale authed=true copy while the
   // real logged-out page is being fetched in the background.
   if (event.data === 'clear-page-cache') {
-    event.waitUntil(caches.open(PAGES_CACHE).then(cache => cache.keys().then(keys => Promise.all(keys.map(k => cache.delete(k))))));
+    // Reply on the sender's port when a MessagePort was transferred, so the
+    // page can wait for the clear to finish before navigating. Without it the
+    // caller had no way to know when this completed and navigated too early,
+    // getting the stale authed copy served straight back.
+    const reply = event.ports && event.ports[0];
+    const done = caches.open(PAGES_CACHE)
+      .then(cache => cache.keys().then(keys => Promise.all(keys.map(k => cache.delete(k)))))
+      .catch(() => {})
+      .then(() => { if (reply) { try { reply.postMessage('cleared'); } catch (e) {} } });
+    event.waitUntil(done);
   }
   // Sent to a specific *waiting* worker (reg.waiting.postMessage(...) in
   // shell.js's "Mettre à jour" button) - only that instance receives it, so
