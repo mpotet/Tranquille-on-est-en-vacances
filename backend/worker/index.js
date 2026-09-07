@@ -919,6 +919,78 @@ document.getElementById('main').addEventListener('click',(e)=>{
 });
 document.querySelectorAll('button[data-share-btn]').forEach(b=>b.addEventListener('click',share));
 
+// ── Mode economie de donnees ──────────────────────────────────
+// Le retrait des src est fait tres tot (script en tete de <head>) pour qu'aucune
+// image ne parte. Ici on gere seulement le bouton, l'etiquette et la bascule.
+(function(){
+  var btn=document.getElementById('data-saver-btn');
+  if(!btn) return;
+  var label=document.getElementById('data-saver-label');
+  var n=btn.dataset.count||'';
+
+  function lire(){ try{ return localStorage.getItem('dataSaver')==='1'; }catch(e){ return false; } }
+
+  function refleter(actif){
+    btn.setAttribute('aria-pressed',actif?'true':'false');
+    if(label) label.textContent = actif ? 'Afficher les photos' : 'Ne pas charger les photos';
+    btn.title = actif
+      ? 'Les photos ne sont pas telechargees. Cliquez pour les afficher.'
+      : 'Ne charger que le texte — utile en voyage ou en connexion limitee ('+n+' photos)';
+  }
+
+  // Place un aplat a la place de chaque vignette non chargee, pour que la
+  // galerie ne s'effondre pas en une colonne de cases vides.
+  function poserPlaceholders(){
+    document.querySelectorAll('img[data-gallery-index]').forEach(function(im){
+      if(im.getAttribute('src')) return;
+      var p=im.parentNode;
+      if(p && !p.querySelector('.gallery-ph')){
+        var d=document.createElement('div');
+        d.className='gallery-ph';
+        d.innerHTML='<i class="ph ph-image" aria-hidden="true"></i>';
+        im.style.display='none';
+        p.appendChild(d);
+      }
+    });
+  }
+
+  function activer(){
+    try{ localStorage.setItem('dataSaver','1'); }catch(e){}
+    document.documentElement.setAttribute('data-saver','1');
+    document.querySelectorAll('img[data-gallery-index]').forEach(function(im){
+      if(im.getAttribute('src')){ im.dataset.saverSrc=im.getAttribute('src'); im.removeAttribute('src'); }
+    });
+    poserPlaceholders();
+    refleter(true);
+  }
+
+  function desactiver(){
+    try{ localStorage.setItem('dataSaver','0'); }catch(e){}
+    document.documentElement.removeAttribute('data-saver');
+    document.querySelectorAll('.gallery-ph').forEach(function(d){ d.remove(); });
+    document.querySelectorAll('img[data-gallery-index]').forEach(function(im){
+      im.style.display='';
+      if(!im.getAttribute('src') && im.dataset.saverSrc) im.setAttribute('src',im.dataset.saverSrc);
+    });
+    refleter(false);
+  }
+
+  btn.addEventListener('click',function(){ lire()?desactiver():activer(); });
+
+  if(lire()){ poserPlaceholders(); refleter(true); } else { refleter(false); }
+})();
+
+// ── Repli vignette → original ─────────────────────────────────
+// Les vignettes WebP (.w600.webp) sont generees par lot ; certaines photos
+// peuvent ne pas encore en avoir. Plutot qu'une case vide, on recharge
+// l'original. Capture en phase descendante : "error" ne remonte pas.
+document.addEventListener('error',function(e){
+  var img=e.target;
+  if(img&&img.tagName==='IMG'&&img.dataset.full&&img.src!==img.dataset.full){
+    img.src=img.dataset.full;
+  }
+},true);
+
 // ── Galerie : repliee par defaut, bouton "afficher plus" ──────
 // La galerie d'un voyage contient souvent 100+ photos. Elle est rendue en
 // entier (lightbox + referencement) mais tronquee en hauteur par une classe

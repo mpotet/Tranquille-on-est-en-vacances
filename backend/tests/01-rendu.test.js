@@ -15,7 +15,7 @@
  */
 import {
   renderGallery, renderVoyageContent, dedupePhotos, extractInlineImages,
-  toHtml, stripMdText, renderWritingDays,
+  toHtml, stripMdText, renderWritingDays, thumbUrl,
 } from '../worker/helpers/render.js';
 import { phase, test, endPhase, ok, eq, match, noMatch, count } from './runner.js';
 
@@ -128,6 +128,55 @@ export default async function run() {
     const r = renderVoyageContent('<img src="/r2/bare.webp" alt="word image 99">', []);
     noMatch(r, /data-photo-caption="[^"]+"/, '"word image 99" en plein ecran serait pire que rien');
     match(r, /data-photo-caption=""/, 'attribut conserve vide : le JS client lit dataset.photoCaption');
+  });
+
+  endPhase();
+
+  // ─────────────────────────────────────────────────────────────────────────
+  phase('Rendu › Vignettes legeres (economie de donnees)');
+  // Une galerie servait l'original (~341 Ko) dans une case de 400 px, soit
+  // ~102 Mo pour un article de 307 photos. Les vignettes WebP ramenent cela a
+  // ~16 Mo. Ces tests garantissent que la galerie sert bien la vignette, et que
+  // le plein ecran garde l'original.
+
+  await test('la galerie sert la vignette, pas l original', () => {
+    const g = renderGallery([{ url: '/r2/photos/2026/86/a.jpg', caption: '' }]);
+    match(g, /src="\/r2\/photos\/2026\/86\/a\.jpg\.w600\.webp"/,
+      'la vignette WebP doit etre servie dans la grille');
+  });
+
+  await test('l original reste accessible pour le plein ecran', () => {
+    const g = renderGallery([{ url: '/r2/photos/2026/86/a.jpg', caption: '' }]);
+    match(g, /data-full="\/r2\/photos\/2026\/86\/a\.jpg"/,
+      'sans data-full, la visionneuse afficherait une image degradee');
+  });
+
+  await test('les images externes ne sont pas transformees', () => {
+    // Nous n hebergeons pas les fichiers de l ancien blog : leur inventer une
+    // URL de vignette produirait une image cassee.
+    const ext = 'https://storage.canalblog.com/76/90/1250329/133189461_o.jpg';
+    eq(thumbUrl(ext), ext);
+    const g = renderGallery([{ url: ext, caption: '' }]);
+    match(g, /src="https:\/\/storage\.canalblog\.com[^"]*_o\.jpg"/);
+  });
+
+  await test('une URL deja vignette n est pas suffixee deux fois', () => {
+    eq(thumbUrl('/r2/a.jpg.w600.webp'), '/r2/a.jpg.w600.webp',
+      'un double suffixe pointerait vers un fichier inexistant');
+  });
+
+  await test('le suffixe se derive par simple concatenation', () => {
+    // Le suffixe s ajoute APRES l extension d origine, ce qui evite d avoir a
+    // analyser le nom de fichier - et fonctionne quelle que soit l extension.
+    eq(thumbUrl('/r2/imported/x.jpg'), '/r2/imported/x.jpg.w600.webp');
+    eq(thumbUrl('/r2/photos/2026/1/y.png'), '/r2/photos/2026/1/y.png.w600.webp');
+    eq(thumbUrl(''), '');
+  });
+
+  await test('les vignettes restent en chargement differe', () => {
+    const g = renderGallery([{ url: '/r2/a.jpg', caption: '' }]);
+    match(g, /loading="lazy"/, 'sans lazy, 300 vignettes se chargeraient d un coup');
+    match(g, /decoding="async"/, 'le decodage ne doit pas bloquer l affichage');
   });
 
   endPhase();

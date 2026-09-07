@@ -19,6 +19,38 @@ export const HEAD = (
   } = opts;
   return `
 <meta charset="UTF-8">
+<!-- Mode economie de donnees : doit s'appliquer AVANT que le navigateur ne
+     commence a telecharger les images. Ce script est volontairement place en
+     tete de <head>, synchrone : des que <html> porte data-saver, l'observateur
+     ci-dessous retire le src des vignettes au moment meme ou elles sont
+     analysees, donc aucune requete d'image n'est emise. Le faire au chargement
+     complet serait trop tard - les photos seraient deja parties.
+     Le try/catch couvre le mode navigation privee, ou localStorage jette. -->
+<script>
+(function(){
+  var on=false;
+  try{ on = localStorage.getItem('dataSaver')==='1'; }catch(e){}
+  if(!on) return;
+  document.documentElement.setAttribute('data-saver','1');
+  new MutationObserver(function(muts){
+    for(var i=0;i<muts.length;i++){
+      var n=muts[i].addedNodes;
+      for(var j=0;j<n.length;j++){
+        var el=n[j];
+        if(el.nodeType!==1) continue;
+        var imgs = el.tagName==='IMG' ? [el] : (el.querySelectorAll?el.querySelectorAll('img[data-gallery-index]'):[]);
+        for(var k=0;k<imgs.length;k++){
+          var im=imgs[k];
+          if(im.dataset && im.dataset.galleryIndex!==undefined && im.src){
+            im.dataset.saverSrc=im.getAttribute('src');
+            im.removeAttribute('src');
+          }
+        }
+      }
+    }
+  }).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
 <!-- interactive-widget=resizes-content: makes the on-screen keyboard actually
      shrink the layout viewport instead of just overlaying it while the
      layout viewport stays full-height underneath. Without it, a
@@ -531,6 +563,29 @@ input:focus, textarea:focus, select:focus { border-color: rgba(var(--blue-rgb),.
 #dropzone { background: var(--blue-light)!important; border-color: rgba(var(--blue-rgb),.22)!important; }
 #navbar { background: rgba(var(--cream-rgb),.94)!important; border-bottom: 1px solid rgba(var(--blue-rgb),.08)!important; box-shadow: 0 2px 14px rgba(26,43,60,.06)!important; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 #site-footer { background: linear-gradient(180deg, var(--cream) 0%, var(--sand) 100%)!important; border-top: 1px solid rgba(var(--sand-rgb),.8)!important; }
+
+/* ── Mode economie de donnees ───────────────────────────────────
+   Quand <html> porte data-saver, les images de galerie ne sont pas chargees :
+   leur src a ete retire avant le rendu (voir le script en tete de page), et un
+   aplat discret occupe la place pour que la mise en page ne s effondre pas. */
+.data-saver-btn {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-size: .78rem; font-weight: 600; padding: .45rem .8rem;
+  border-radius: .75rem; cursor: pointer;
+  background: var(--cream); color: var(--ink-muted);
+  border: 1px solid var(--line); transition: all .15s;
+}
+.data-saver-btn:hover { border-color: var(--blue); color: var(--blue); }
+.data-saver-btn[aria-pressed="true"] { background: var(--blue-light); color: var(--blue); border-color: rgba(var(--blue-rgb),.35); }
+
+html[data-saver] .gallery-ph {
+  background: repeating-linear-gradient(45deg, var(--sand), var(--sand) 8px, var(--cream) 8px, var(--cream) 16px);
+  border-radius: 1rem; aspect-ratio: 4 / 3; width: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-light); font-size: 1.4rem; opacity: .5;
+}
+html[data-saver] #gallery-wrap.gallery-collapsed { max-height: none; }
+html[data-saver] .gallery-fade, html[data-saver] #gallery-toggle { display: none; }
 
 /* ── Pastille "i" du pied de page + son infobulle ──────────────
    Survol a la souris, focus au clavier (tabindex sur la pastille), et appui
