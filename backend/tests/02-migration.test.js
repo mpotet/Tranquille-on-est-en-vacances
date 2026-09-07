@@ -17,6 +17,7 @@ import { phase, test, skip, endPhase, ok, eq } from './runner.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const MIGRATION = join(here, '..', 'migrations', '011-dedupe-photos-and-clear-captions.sql');
+const ROLLBACK = join(here, '..', 'migrations', '011-rollback.sql');
 
 // node:sqlite existe depuis Node 22 ; sur une version plus ancienne on saute
 // cette phase plutot que de faire echouer un deploiement pour une raison qui
@@ -42,6 +43,15 @@ function freshDb(rows) {
 
 function applyMigration(db) {
   db.exec(readFileSync(MIGRATION, 'utf8'));
+}
+
+function applyRollback(db) {
+  db.exec(readFileSync(ROLLBACK, 'utf8'));
+}
+
+/** Etat complet de la table, pour comparer avant / apres rollback. */
+function snapshot(db) {
+  return db.prepare('SELECT id, article_id, r2_key, url, caption, sort_order FROM photos ORDER BY id').all();
 }
 
 function allRows(db) {
@@ -172,6 +182,83 @@ export default async function run() {
     eq(rows.length, 6, 'une seule ligne en trop doit disparaitre');
     ok(!rows.some(r => r.r2_key === 'e'));
     ok(rows.every(r => r.caption === ''));
+  });
+
+  endPhase();
+
+  // ─────────────────────────────────────────────────────────────────────────
+  phase('Migration 011 › Reversibilite (rollback)');
+  // La migration supprime des lignes. Elle n est acceptable que si elle est
+  // annulable : ces tests le prouvent sur des donnees, pas sur une promesse.
+
+  await test('le fichier de rollback est present', () => {
+    const sql = readFileSync(ROLLBACK, 'utf8');
+    ok(sql.includes('INSERT OR IGNORE INTO photos'), 'la restauration des lignes a disparu');
+    ok(sql.includes('UPDATE photos'), 'la restauration des legendes a disparu');
+  });
+
+  await test('la migration sauvegarde les lignes avant de les supprimer', () => {
+    const db = freshDb([
+      { article_id: 1, r2_key: 'k1', caption: 'word image 36' },
+      { article_id: 1, r2_key: 'k2', caption: 'word image 36' },
+    ]);
+    applyMigration(db);
+    const bak = db.prepare('SELECT id, r2_key, caption, was_deleted FROM photos_backup_011 ORDER BY id').all();
+    eq(bak.length, 2, 'les deux lignes portant une legende doivent etre sauvegardees');
+    eq(bak.filter(r => r.was_deleted === 1).length, 1, 'une seule est marquee supprimee');
+    ok(bak.every(r => r.caption === 'word image 36'), 'les legendes d origine sont conservees dans l instantane');
+  });
+
+  await test('ROLLBACK : l etat d origine est restaure a l identique', () => {
+    const rows = [
+      { article_id: 1, r2_key: 'k1', caption: 'word image 35' },
+      { article_id: 1, r2_key: 'k2', caption: 'word image 36' },
+      { article_id: 1, r2_key: 'k3', caption: 'word image 36' }, // doublon supprime
+      { article_id: 1, r2_key: 'k4', caption: '' },
+      { article_id: 2, r2_key: 'k5', caption: 'word image 36' },
+    ];
+    const db = freshDb(rows);
+    const avant = snapshot(db);
+
+    applyMigration(db);
+    const pendant = snapshot(db);
+    eq(pendant.length, 4, 'la migration doit bien avoir supprime le doublon');
+    ok(pendant.every(r => r.caption === ''), 'et vide les legendes');
+
+    applyRollback(db);
+    const apres = snapshot(db);
+    eq(apres, avant, 'apres rollback, la table doit etre STRICTEMENT identique a l origine');
+  });
+
+  await test('ROLLBACK : les photos restaurees gardent leur URL (image affichable)', () => {
+    const db = freshDb([
+      { article_id: 1, r2_key: 'k1', url: '/r2/photos/2026/9/aaa.webp', caption: 'word image 36' },
+      { article_id: 1, r2_key: 'k2', url: '/r2/photos/2026/9/bbb.webp', caption: 'word image 36' },
+    ]);
+    applyMigration(db);
+    applyRollback(db);
+    const rows = db.prepare("SELECT url FROM photos WHERE r2_key='k2'").all();
+    eq(rows.length, 1, 'la ligne supprimee doit revenir');
+    eq(rows[0].url, '/r2/photos/2026/9/bbb.webp',
+      'URL restauree : les objets R2 n ayant jamais ete effaces, la photo se reaffiche');
+  });
+
+  await test('rejouer la migration n ecrase pas les legendes sauvegardees', () => {
+    // Piege reel : au second passage, les legendes en base valent ''. Sans le
+    // INSERT OR IGNORE, l instantane serait ecrase par des valeurs vides et le
+    // rollback ne restaurerait plus rien.
+    const db = freshDb([
+      { article_id: 1, r2_key: 'k1', caption: 'word image 36' },
+      { article_id: 1, r2_key: 'k2', caption: 'word image 36' },
+    ]);
+    applyMigration(db);
+    applyMigration(db); // second passage
+    const bak = db.prepare('SELECT caption FROM photos_backup_011').all();
+    ok(bak.every(r => r.caption === 'word image 36'),
+      'les legendes d origine doivent survivre a une migration rejouee');
+    applyRollback(db);
+    const rows = db.prepare('SELECT caption FROM photos ORDER BY id').all();
+    ok(rows.every(r => r.caption === 'word image 36'), 'le rollback reste fiable apres un double passage');
   });
 
   endPhase();

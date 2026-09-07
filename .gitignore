@@ -12,3 +12,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Exports D1 (volumineux, contiennent les donnees du site)
+backend/backup*.sql
