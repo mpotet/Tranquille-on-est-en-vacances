@@ -5,6 +5,8 @@
   "scripts": {
     "dev:back": "npm run dev --prefix backend",
     "dev:front": "npm run dev --prefix frontend",
+    "tnr": "npm run tnr --prefix backend",
+    "tnr:rapide": "npm run tnr:rapide --prefix backend",
     "deploy": "npm run deploy --prefix backend",
     "deploy:prod": "npm run deploy:prod --prefix backend"
   }

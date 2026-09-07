@@ -716,9 +716,10 @@ function renderContent(raw) {
 
     if (imgs.length === 1) {
       const fig = document.createElement('figure');
-      const alt = imgs[0].alt;
+      // No figcaption from alt: the stored alts are Word-import filenames
+      // ("word image 36"), not descriptions, so printing them put a line of
+      // noise under every photo. Matches the public render (helpers/render.js).
       fig.appendChild(imgs[0].cloneNode());
-      if (alt) { const cap = document.createElement('figcaption'); cap.textContent = alt; fig.appendChild(cap); }
       p.replaceWith(fig);
     } else if (imgs.length >= 2) {
       const wrapper = document.createElement('div');

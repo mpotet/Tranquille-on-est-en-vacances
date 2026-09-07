@@ -114,9 +114,16 @@ export async function uploadPhotos(request, env, articleId) {
     // against the current origin. The worker serves /r2/* from the same origin.
     const publicUrl = `/r2/${r2Key}`;
 
+    // Caption starts EMPTY. It used to be seeded from the filename, which for
+    // a Word paste (the main way photos arrive) means "word image 36" - a
+    // generated name, never a description. Those captions were then shown to
+    // readers under every gallery tile and as the image's alt text, and the
+    // response below already returned caption:'' while the row stored the
+    // filename, so the editor and the public page disagreed. A caption is now
+    // only ever what an admin types.
     const result = await env.DB
       .prepare('INSERT INTO photos (article_id, r2_key, url, caption, sort_order) VALUES (?, ?, ?, ?, ?)')
-      .bind(articleId, r2Key, publicUrl, file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '), sortOrder++)
+      .bind(articleId, r2Key, publicUrl, '', sortOrder++)
       .run();
 
     uploaded.push({

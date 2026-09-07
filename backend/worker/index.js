@@ -24,7 +24,7 @@ import { checkRateLimit, recordFailedAttempt, clearAttempts, clientKey } from '.
 import {
   renderVoyageContent as ssrVoyageContent, renderGallery as ssrGallery,
   renderWritingDays as ssrWritingDays, extractInlineImages as ssrExtractImages,
-  stripMdText as ssrStripMd,
+  stripMdText as ssrStripMd, dedupePhotos as ssrDedupePhotos,
 } from './helpers/render.js';
 
 // API handlers
@@ -689,10 +689,16 @@ ${TOAST}
   // Compare via a normalized (decoded) URL so a gallery photo and the same
   // image referenced inline with different percent-encoding (e.g. a raw space
   // vs "%20") are recognized as the same photo instead of appearing twice.
+  //
+  // URL matching alone is not enough: cutting an image in the editor and
+  // re-pasting it re-uploads the file under a fresh UUID key, so the same
+  // picture comes back with a different URL and appeared twice in the gallery.
+  // ssrDedupePhotos also collapses on the caption, which is identical for such
+  // a pair (the alt travels with the image through the copy/paste).
   const normalizeUrl = (u) => { try { return decodeURI(u); } catch { return u; } };
   const inlineImgs = ssrExtractImages(article.content || '');
   const photoUrlSet = new Set(photos.map(p => normalizeUrl(p.url)));
-  const allPhotos = [...photos, ...inlineImgs.filter(img => !photoUrlSet.has(normalizeUrl(img.url)))];
+  const allPhotos = ssrDedupePhotos([...photos, ...inlineImgs.filter(img => !photoUrlSet.has(normalizeUrl(img.url)))]);
 
   const renderedContent = ssrVoyageContent(article.content || '', allPhotos);
   const galleryHtml = allPhotos.length ? ssrGallery(allPhotos) : '';
@@ -883,7 +889,13 @@ const ARTICLE_ID = ${JSON.stringify(article.id)};
 const IS_ADMIN = ${JSON.stringify(authed)};
 const GATE_QUESTION = ${JSON.stringify(gateQuestion)};
 // Photo list for the lightbox (matches server-rendered data-photo-index order).
-window.photos = ${JSON.stringify(allPhotos.map(p => ({ url: p.url, caption: p.caption || '' })))};
+// Captions are deliberately NOT sent: they are generated Word-import
+// filenames, and this list feeds the full-screen viewer, which kept printing
+// them under the photo long after they were removed from the gallery tiles and
+// the article body. Covered by a TNR (smoke HTTP).
+// NB: this comment ships inline to the browser, so it avoids quoting a literal
+// example - the TNR asserts the string is absent from the whole served page.
+window.photos = ${JSON.stringify(allPhotos.map(p => ({ url: p.url, caption: '' })))};
 
 function share(){if(navigator.share)navigator.share({title:document.title,url:location.href}).catch(()=>{});else navigator.clipboard.writeText(location.href).then(()=>toast('Lien copié !','ok'))}
 
