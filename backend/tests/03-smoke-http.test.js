@@ -211,6 +211,16 @@ INSERT INTO photos (article_id, r2_key, url, caption, sort_order) VALUES
     ok('deployedAt' in d, 'date de mise en ligne manquante');
     ok(typeof d.articles === 'number', 'nombre d articles manquant');
     ok(typeof d.photos === 'number', 'nombre de photos manquant');
+    // La version affichee doit etre celle de package.json, pas un numero
+    // fabrique : un "0.249.abc1234" ne veut rien dire pour un lecteur.
+    match(d.version, /^\d+\.\d+\.\d+(\+local)?$/,
+      `la version doit suivre package.json (obtenu ${JSON.stringify(d.version)})`);
+    // Le compteur de photos doit inclure les <img> du corps des articles. Les
+    // compter depuis la seule table `photos` affichait 39 au lieu de ~3800.
+    const html = await (await fetch(BASE + '/voyage/jordanie-tnr')).text();
+    const inline = (html.match(/data-gallery-index=/g) || []).length;
+    ok(d.photos >= inline,
+      `le compte de photos (${d.photos}) doit couvrir les images affichees (${inline} rien que sur l article de test)`);
     // L article de test est publie : il doit ressortir comme derniere modif.
     ok(d.lastArticle && d.lastArticle.slug === 'jordanie-tnr',
       `dernier article modifie attendu, obtenu ${JSON.stringify(d.lastArticle)}`);

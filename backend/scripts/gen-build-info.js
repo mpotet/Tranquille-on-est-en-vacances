@@ -13,11 +13,12 @@
  * un numero a la main.
  */
 import { spawnSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const backend = dirname(dirname(fileURLToPath(import.meta.url)));
+const racine = dirname(backend);
 
 function git(args, secours = '') {
   const r = spawnSync('git', args, {
@@ -35,7 +36,19 @@ const nb = git(['rev-list', '--count', 'HEAD'], '0');
 // correspond a aucun commit : on le signale plutot que d afficher une version
 // faussement precise.
 const sale = git(['status', '--porcelain'], '') !== '';
-const version = `0.${nb}.${commit}${sale ? '+local' : ''}`;
+
+// La version du site est celle declaree dans package.json a la racine - la
+// seule que le projet maintienne reellement. Un numero fabrique a partir du
+// nombre de commits ne correspondait a rien pour qui regarde le site.
+let versionPkg = '0.0.0';
+try {
+  versionPkg = JSON.parse(readFileSync(join(racine, 'package.json'), 'utf8')).version || versionPkg;
+} catch { /* package.json illisible : on garde la valeur par defaut */ }
+
+const version = `${versionPkg}${sale ? '+local' : ''}`;
+// Le rang du commit reste utile pour distinguer deux livraisons portant la
+// meme version de package.json ; il est expose a part, pas mele au numero.
+const build = nb;
 
 const contenu = `/**
  * worker/build-info.js - Informations de version du site.
@@ -51,6 +64,7 @@ const contenu = `/**
  */
 export const BUILD_INFO = ${JSON.stringify({
   version,
+  build,
   commit,
   commitDate,
   builtAt: new Date().toISOString(),
@@ -59,4 +73,4 @@ export const BUILD_INFO = ${JSON.stringify({
 `;
 
 writeFileSync(join(backend, 'worker', 'build-info.js'), contenu, 'utf8');
-console.log(`  version ${version}${sale ? '  (depot modifie non commite)' : ''}`);
+console.log(`  version ${version} (build ${build}, ${commit})${sale ? '  — depot modifie non commite' : ''}`);

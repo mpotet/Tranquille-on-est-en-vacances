@@ -1330,7 +1330,11 @@ fetch('/api/folders').then(r=>r.json()).then(data=>{const roots=data.filter(f=>!
     if (charge) return; charge = true;
     fetch('/api/site-info').then(function(r){ return r.json(); }).then(function(d){
       var h = '<div class="sio-title">Informations du site</div>';
-      h += ligne('Version', '<code>'+escFooter(d.version||'—')+'</code>');
+      // La version vient de package.json ; build et commit servent a identifier
+      // precisement la livraison, en retrait pour ne pas noyer l essentiel.
+      var v = 'v' + escFooter(d.version||'—');
+      if (d.build) v += ' <span style="opacity:.55">(build '+escFooter(String(d.build))+' · <code>'+escFooter(d.commit||'')+'</code>)</span>';
+      h += ligne('Version', v);
       h += ligne('Mise en ligne', escFooter(dateFr(d.deployedAt))+escFooter(ilYA(d.deployedAt)));
       h += '<div class="sio-sep"></div>';
       if (d.lastArticle) {
@@ -1339,7 +1343,7 @@ fetch('/api/folders').then(r=>r.json()).then(data=>{const roots=data.filter(f=>!
         h += ligne('Le', escFooter(dateFr(d.lastArticle.updatedAt))+escFooter(ilYA(d.lastArticle.updatedAt)));
         h += '<div class="sio-sep"></div>';
       }
-      h += ligne('Voyages publiés', escFooter(String(d.articles)));
+      h += ligne('Voyages', escFooter(String(d.articles)));
       h += ligne('Photos', escFooter(String(d.photos)));
       pop.innerHTML = h;
     }).catch(function(){
