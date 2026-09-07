@@ -957,8 +957,11 @@ document.querySelectorAll('button[data-share-btn]').forEach(b=>b.addEventListene
   function activer(){
     try{ localStorage.setItem('dataSaver','1'); }catch(e){}
     document.documentElement.setAttribute('data-saver','1');
+    // Les images deja chargees restent en cache : les retirer maintenant
+    // n'economise rien sur cette page, mais empeche le chargement de toutes
+    // celles que le defilement aurait declenchees ensuite - le vrai gain.
     document.querySelectorAll('img[data-gallery-index]').forEach(function(im){
-      if(im.getAttribute('src')){ im.dataset.saverSrc=im.getAttribute('src'); im.removeAttribute('src'); }
+      im.removeAttribute('src');
     });
     poserPlaceholders();
     refleter(true);
@@ -970,7 +973,8 @@ document.querySelectorAll('button[data-share-btn]').forEach(b=>b.addEventListene
     document.querySelectorAll('.gallery-ph').forEach(function(d){ d.remove(); });
     document.querySelectorAll('img[data-gallery-index]').forEach(function(im){
       im.style.display='';
-      if(!im.getAttribute('src') && im.dataset.saverSrc) im.setAttribute('src',im.dataset.saverSrc);
+      // data-src est pose au rendu et survit au retrait du src.
+      if(!im.getAttribute('src') && im.dataset.src) im.setAttribute('src',im.dataset.src);
     });
     refleter(false);
   }
@@ -986,6 +990,9 @@ document.querySelectorAll('button[data-share-btn]').forEach(b=>b.addEventListene
 // l'original. Capture en phase descendante : "error" ne remonte pas.
 document.addEventListener('error',function(e){
   var img=e.target;
+  // En mode economie, ne jamais retomber sur l'original : ce serait charger
+  // une image PLUS lourde que celle que le lecteur vient de refuser.
+  if(document.documentElement.hasAttribute('data-saver')) return;
   if(img&&img.tagName==='IMG'&&img.dataset.full&&img.src!==img.dataset.full){
     img.src=img.dataset.full;
   }

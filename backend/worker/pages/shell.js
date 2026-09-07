@@ -32,23 +32,32 @@ export const HEAD = (
   try{ on = localStorage.getItem('dataSaver')==='1'; }catch(e){}
   if(!on) return;
   document.documentElement.setAttribute('data-saver','1');
+
+  // Retire le src des vignettes AVANT que le navigateur ne les demande.
+  // L'observateur voit chaque <img> des son insertion par l'analyseur HTML,
+  // donc avant tout telechargement. L'URL reste dans data-src : c'est elle qui
+  // permet de tout recharger si le lecteur ressort du mode.
+  function nettoyer(racine){
+    if(!racine||!racine.querySelectorAll) return;
+    var imgs=racine.querySelectorAll('img[data-gallery-index][src]');
+    for(var i=0;i<imgs.length;i++) imgs[i].removeAttribute('src');
+  }
   new MutationObserver(function(muts){
     for(var i=0;i<muts.length;i++){
       var n=muts[i].addedNodes;
       for(var j=0;j<n.length;j++){
         var el=n[j];
         if(el.nodeType!==1) continue;
-        var imgs = el.tagName==='IMG' ? [el] : (el.querySelectorAll?el.querySelectorAll('img[data-gallery-index]'):[]);
-        for(var k=0;k<imgs.length;k++){
-          var im=imgs[k];
-          if(im.dataset && im.dataset.galleryIndex!==undefined && im.src){
-            im.dataset.saverSrc=im.getAttribute('src');
-            im.removeAttribute('src');
-          }
-        }
+        if(el.tagName==='IMG'){
+          if(el.hasAttribute('data-gallery-index')&&el.hasAttribute('src')) el.removeAttribute('src');
+        } else nettoyer(el);
       }
     }
   }).observe(document.documentElement,{childList:true,subtree:true});
+
+  // Filet : toute vignette ayant echappe a l'observateur est nettoyee des que
+  // le DOM est complet, avant que le defilement ne declenche leur chargement.
+  document.addEventListener('DOMContentLoaded',function(){ nettoyer(document); });
 })();
 </script>
 <!-- interactive-widget=resizes-content: makes the on-screen keyboard actually
