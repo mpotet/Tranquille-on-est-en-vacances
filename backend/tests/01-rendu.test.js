@@ -15,7 +15,7 @@
  */
 import {
   renderGallery, renderVoyageContent, dedupePhotos, extractInlineImages,
-  toHtml, stripMdText, renderWritingDays, thumbUrl,
+  toHtml, stripMdText, renderWritingDays, thumbUrl, wideUrl,
 } from '../worker/helpers/render.js';
 import { phase, test, endPhase, ok, eq, match, noMatch, count } from './runner.js';
 
@@ -177,6 +177,41 @@ export default async function run() {
     const g = renderGallery([{ url: '/r2/a.jpg', caption: '' }]);
     match(g, /loading="lazy"/, 'sans lazy, 300 vignettes se chargeraient d un coup');
     match(g, /decoding="async"/, 'le decodage ne doit pas bloquer l affichage');
+  });
+
+  await test('les images du CORPS servent la variante 1200 px', () => {
+    // Une image inline s affiche en pleine largeur de colonne : la vignette de
+    // 600 px serait floue, l original de 2000 px inutilement lourd.
+    const r = renderVoyageContent('<img src="/r2/photos/2026/1/a.jpg">', []);
+    match(r, /src="\/r2\/photos\/2026\/1\/a\.jpg\.w1200\.webp"/);
+    match(r, /data-full="\/r2\/photos\/2026\/1\/a\.jpg"/, 'l original doit rester joignable');
+  });
+
+  await test('une figure de l editeur sert aussi la variante 1200 px', () => {
+    const r = renderVoyageContent(
+      '<figure class="img-full"><img src="/r2/photos/2026/1/b.jpg" alt="x"></figure>', []);
+    match(r, /src="\/r2\/photos\/2026\/1\/b\.jpg\.w1200\.webp"/);
+    match(r, /data-full="\/r2\/photos\/2026\/1\/b\.jpg"/);
+  });
+
+  await test('une grille multi-images utilise la vignette 600', () => {
+    // 2 a 3 images par ligne : ~350 px chacune a l ecran.
+    const r = renderVoyageContent('<p><img src="/r2/1.jpg"><img src="/r2/2.jpg"></p>', []);
+    match(r, /src="\/r2\/1\.jpg\.w600\.webp"/);
+    match(r, /data-full="\/r2\/1\.jpg"/);
+  });
+
+  await test('wideUrl laisse les images externes intactes', () => {
+    const ext = 'https://storage.canalblog.com/76/90/1250329/133189461_o.jpg';
+    eq(wideUrl(ext), ext);
+    eq(wideUrl('/r2/a.jpg.w1200.webp'), '/r2/a.jpg.w1200.webp', 'pas de double suffixe');
+    eq(wideUrl('/r2/a.jpg.w600.webp'), '/r2/a.jpg.w600.webp', 'une derivee n est pas re-derivee');
+    eq(wideUrl(''), '');
+  });
+
+  await test('les deux tailles ne se marchent pas dessus', () => {
+    eq(thumbUrl('/r2/x.jpg'), '/r2/x.jpg.w600.webp');
+    eq(wideUrl('/r2/x.jpg'), '/r2/x.jpg.w1200.webp');
   });
 
   endPhase();

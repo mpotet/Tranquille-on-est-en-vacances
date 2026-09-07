@@ -43,10 +43,40 @@ const LIMIT = Number((args.find(a => a.startsWith('--limit=')) || '').split('=')
 const BUCKET = 'tranquille-vacances-photos';
 const BASE = process.env.SITE_BASE || 'https://tranquille-vacances.esti-archi.workers.dev';
 
-// Reglages issus de la mesure sur 41 photos reelles (voir en-tete).
-export const THUMB_WIDTH = 600;
-export const THUMB_QUALITY = 72;
-export const THUMB_SUFFIX = '.w600.webp';
+/**
+ * Formats derives. Reglages issus de la mesure sur 41 photos reelles.
+ *
+ * - w600 : vignette de galerie. Une case fait ~400 px a l'ecran ; 600 px couvre
+ *   aussi les ecrans a haute densite. Mesure : -84 %.
+ * - w1200 : image du corps de l'article, affichee sur toute la largeur de la
+ *   colonne de texte (~700 px max). 1200 px couvre le Retina sans exces.
+ *
+ * Ajouter un format ici suffit a le rendre generable : le script prend
+ * `--format=<cle>`. Cote worker, la fonction thumbUrl() de helpers/render.js
+ * derive l'URL par simple concatenation du suffixe.
+ */
+export const FORMATS = {
+  w600:  { width: 600,  quality: 72, suffix: '.w600.webp' },
+  w1200: { width: 1200, quality: 78, suffix: '.w1200.webp' },
+};
+
+const FORMAT_CLE = (args.find(a => a.startsWith('--format=')) || '').split('=')[1] || 'w600';
+const FMT = FORMATS[FORMAT_CLE];
+if (!FMT) {
+  console.error(`Format inconnu : ${FORMAT_CLE}. Disponibles : ${Object.keys(FORMATS).join(', ')}`);
+  process.exit(2);
+}
+const THUMB_WIDTH = FMT.width;
+const THUMB_QUALITY = FMT.quality;
+const THUMB_SUFFIX = FMT.suffix;
+
+// Photos traitees de front. Chaque travailleur ecrit dans SON fichier
+// temporaire : un nom partage ferait televerser a l'un l'image d'un autre.
+//
+// 6 travailleurs saturaient la connexion : 2316 echecs "fetch failed" sur un
+// lot de 4189. 3 est le reglage retenu - le lot reste rapide sans que les
+// telechargements ne s'etranglent mutuellement.
+const CONCURRENCE = Number((args.find(a => a.startsWith('--concurrence=')) || '').split('=')[1] || 3);
 
 const tty = process.stdout.isTTY && !process.env.NO_COLOR;
 const c = (n) => (s) => (tty ? `\x1b[${n}m${s}\x1b[0m` : String(s));
@@ -102,7 +132,8 @@ const hhmmss = (ms) => {
 
 dire(`\n${bold(blue('Generation des vignettes WebP'))}`);
 dire(grey(`  mode      : ${APPLY ? 'ECRITURE' : 'simulation (aucune ecriture)'}`));
-dire(grey(`  vignette  : ${THUMB_WIDTH} px, qualite ${THUMB_QUALITY}, suffixe ${THUMB_SUFFIX}`));
+dire(grey(`  format    : ${FORMAT_CLE} — ${THUMB_WIDTH} px, qualite ${THUMB_QUALITY}, suffixe ${THUMB_SUFFIX}`));
+dire(grey(`  parallele : ${CONCURRENCE}`));
 dire(grey('  les originaux ne sont NI modifies NI supprimes\n'));
 
 // ── Inventaire : toutes les URL /r2/ reellement affichees ───────────────────
@@ -111,16 +142,26 @@ const arts = await (await fetch(BASE + '/api/articles')).json();
 const articles = Array.isArray(arts) ? arts : (arts.articles || arts.results || []);
 
 const cles = new Set();
+const estDerivee = (u) => Object.values(FORMATS).some(f => u.endsWith(f.suffix));
+
 for (const a of articles) {
   const h = await (await fetch(`${BASE}/voyage/${a.slug}`)).text();
+
+  // Deux sources d'images sur une page : la galerie (window.photos) et le corps
+  // de l'article (<img> inline). Les deux meritent une version allegee - les
+  // images du corps representent la moitie du poids d'une page.
+  const urls = [];
   const m = h.match(/window\.photos\s*=\s*(\[[\s\S]*?\]);/);
-  if (!m) continue;
-  for (const p of JSON.parse(m[1])) {
+  if (m) for (const p of JSON.parse(m[1])) if (p.url) urls.push(p.url);
+  for (const t of h.match(/<img\b[^>]*>/gi) || []) {
+    const src = (t.match(/\bsrc\s*=\s*["']([^"']+)["']/i) || [])[1];
+    if (src) urls.push(src);
+  }
+
+  for (const u of urls) {
     // Seules les images hebergees chez nous sont traitables ; celles pointant
     // encore vers l'ancien blog ne nous appartiennent pas.
-    if (p.url && p.url.startsWith('/r2/') && !p.url.endsWith(THUMB_SUFFIX)) {
-      cles.add(p.url.slice('/r2/'.length));
-    }
+    if (u.startsWith('/r2/') && !estDerivee(u)) cles.add(u.slice('/r2/'.length));
   }
 }
 let liste = [...cles];
@@ -141,11 +182,29 @@ function point(forcer = false) {
        `reste ${reste} · generees ${generes} · ecoule ${hhmmss(Date.now() - t0)} · reste ~${eta}`);
 }
 
-// Plusieurs photos sont traitees de front. Chaque travailleur ecrit dans SON
-// fichier temporaire : un nom partage ferait televerser a l'un l'image d'un
-// autre. 6 est un compromis entre debit et charge (chaque envoi lance un npx).
-const CONCURRENCE = 6;
 const file = [...liste];
+
+/**
+ * Telecharge avec reessais.
+ *
+ * Un "fetch failed" est presque toujours passager (connexion saturee, coupure
+ * breve). Abandonner a la premiere tentative gaspillait le travail : on
+ * reessaie en espacant, plutot que de compter la photo comme perdue.
+ */
+async function fetchRetry(url, essais = 3) {
+  let derniere;
+  for (let i = 0; i < essais; i++) {
+    try {
+      const r = await fetch(url);
+      if (r.ok) return r;
+      // 404 : l'objet n'existe pas, inutile d'insister.
+      if (r.status === 404) return r;
+      derniere = new Error(`HTTP ${r.status}`);
+    } catch (e) { derniere = e; }
+    await new Promise(r => setTimeout(r, 800 * (i + 1)));
+  }
+  throw derniere || new Error('echec');
+}
 
 async function travailleur(no) {
   const localRel = `.wrangler/thumbs/v${no}.webp`;
@@ -155,12 +214,15 @@ async function travailleur(no) {
     const cleVignette = cle + THUMB_SUFFIX;
     try {
       // Deja generee ? On ne refait pas le travail (le script est relancable).
+      // En cas d'echec reseau sur ce test, on regenere : refaire une vignette
+      // deja presente est sans consequence, la sauter a tort laisserait une
+      // photo lourde en ligne.
       if (!FORCE) {
         const dejaLa = await fetch(`${BASE}/r2/${cleVignette}`, { method: 'HEAD' }).catch(() => null);
         if (dejaLa && dejaLa.ok) { ignores++; faits++; point(); continue; }
       }
 
-      const r = await fetch(`${BASE}/r2/${cle}`);
+      const r = await fetchRetry(`${BASE}/r2/${cle}`);
       if (!r.ok) { echecs++; faits++; dire(`  ${yellow('⊘')} ${cle} — original introuvable (${r.status})`); point(); continue; }
       const src = Buffer.from(await r.arrayBuffer());
 

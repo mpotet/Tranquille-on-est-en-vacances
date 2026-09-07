@@ -11,10 +11,10 @@
  * moment du build.
  */
 export const BUILD_INFO = {
-  "version": "1.0.0",
-  "build": "251",
-  "commit": "4c6e5f2",
-  "commitDate": "2026-09-07T15:25:44+02:00",
-  "builtAt": "2026-09-07T13:26:04.440Z",
+  "version": "1.1.0",
+  "build": "253",
+  "commit": "6a8c843",
+  "commitDate": "2026-09-07T15:55:11+02:00",
+  "builtAt": "2026-09-07T13:55:50.853Z",
   "branch": "main"
 };
