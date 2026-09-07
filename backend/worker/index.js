@@ -1001,14 +1001,28 @@ document.addEventListener('error',function(e){
 // ── Galerie : repliee par defaut, bouton "afficher plus" ──────
 // La galerie d'un voyage contient souvent 100+ photos. Elle est rendue en
 // entier (lightbox + referencement) mais tronquee en hauteur par une classe
-// CSS, avec un degrade indiquant qu'il y a une suite. Le bouton retire
-// simplement la classe : rien n'est charge en plus au clic.
+// CSS, avec un degrade indiquant qu'il y a une suite.
+//
+// Les photos au-dela du pli n'ont PAS de src au rendu : le repli est un simple
+// max-height, donc le navigateur telechargeait tout ce qui tombait dans sa
+// marge de prechargement, meme masque - 130 images mesurees sur une galerie
+// que personne n'avait ouverte. Le src n'est pose qu'au premier deploiement.
 (function(){
   var btn = document.getElementById('gallery-toggle');
   var wrap = document.getElementById('gallery-wrap');
   if (!btn || !wrap) return;
+
+  // Pose le src des vignettes differees. loading="lazy" prend le relais : seules
+  // celles qui approchent de l'ecran sont reellement telechargees.
+  function activerImages(){
+    if (document.documentElement.hasAttribute('data-saver')) return;
+    var imgs = wrap.querySelectorAll('img[data-src]:not([src])');
+    for (var i = 0; i < imgs.length; i++) imgs[i].setAttribute('src', imgs[i].dataset.src);
+  }
+
   btn.addEventListener('click', function(){
     var collapsed = wrap.classList.toggle('gallery-collapsed');
+    if (!collapsed) activerImages();
     if (collapsed) {
       btn.textContent = 'Afficher les ' + (btn.dataset.count || '') + ' photos';
       // Replier depuis le bas de la page laisserait le lecteur perdu tres

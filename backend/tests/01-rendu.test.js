@@ -179,6 +179,33 @@ export default async function run() {
     match(g, /decoding="async"/, 'le decodage ne doit pas bloquer l affichage');
   });
 
+  await test('au-dela du pli, les vignettes n ont PAS de src', () => {
+    // La galerie repliee est un simple max-height : sans cette precaution, le
+    // navigateur telechargeait les photos masquees. Mesure avant correction :
+    // 130 images chargees sur une galerie que personne n avait ouverte.
+    const photos = Array.from({ length: 40 }, (_, i) => ({ url: `/r2/p${i}.jpg`, caption: '' }));
+    const g = renderGallery(photos);
+    const avecSrc = (g.match(/<img src=/g) || []).length;
+    eq(avecSrc, 12, 'seules les 12 premieres vignettes doivent porter un src');
+    const total = (g.match(/data-gallery-index=/g) || []).length;
+    eq(total, 40, 'toutes les photos restent dans le DOM (lightbox + referencement)');
+  });
+
+  await test('les vignettes differees gardent data-src pour le clic', () => {
+    const photos = Array.from({ length: 20 }, (_, i) => ({ url: `/r2/p${i}.jpg`, caption: '' }));
+    const g = renderGallery(photos);
+    // Sans data-src, le bouton "Afficher les N photos" n aurait aucune URL a
+    // poser et la galerie resterait vide une fois depliee.
+    eq((g.match(/data-src="/g) || []).length, 20);
+  });
+
+  await test('une petite galerie charge tout de suite', () => {
+    // En dessous du seuil de repli il n y a pas de bouton : differer laisserait
+    // des cases vides que rien ne viendrait remplir.
+    const g = renderGallery([{ url: '/r2/a.jpg', caption: '' }, { url: '/r2/b.jpg', caption: '' }]);
+    eq((g.match(/<img src=/g) || []).length, 2);
+  });
+
   await test('les images du CORPS servent la variante 1200 px', () => {
     // Une image inline s affiche en pleine largeur de colonne : la vignette de
     // 600 px serait floue, l original de 2000 px inutilement lourd.

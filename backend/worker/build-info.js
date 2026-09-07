@@ -12,9 +12,9 @@
  */
 export const BUILD_INFO = {
   "version": "1.1.0",
-  "build": "253",
-  "commit": "6a8c843",
-  "commitDate": "2026-09-07T15:55:11+02:00",
-  "builtAt": "2026-09-07T13:55:50.853Z",
+  "build": "256",
+  "commit": "3aae482",
+  "commitDate": "2026-09-07T18:04:06+02:00",
+  "builtAt": "2026-09-07T16:04:23.026Z",
   "branch": "main"
 };
