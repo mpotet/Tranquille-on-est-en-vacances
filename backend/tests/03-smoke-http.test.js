@@ -203,6 +203,26 @@ INSERT INTO photos (article_id, r2_key, url, caption, sort_order) VALUES
     ok(body && typeof body === 'object', 'reponse JSON attendue');
   });
 
+  await test("/api/site-info alimente l'infobulle du pied de page", async () => {
+    const r = await fetch(BASE + '/api/site-info');
+    eq(r.status, 200, 'sans cette route, le "i" du pied de page reste sur "Chargement…"');
+    const d = await r.json();
+    ok(typeof d.version === 'string' && d.version, 'version manquante');
+    ok('deployedAt' in d, 'date de mise en ligne manquante');
+    ok(typeof d.articles === 'number', 'nombre d articles manquant');
+    ok(typeof d.photos === 'number', 'nombre de photos manquant');
+    // L article de test est publie : il doit ressortir comme derniere modif.
+    ok(d.lastArticle && d.lastArticle.slug === 'jordanie-tnr',
+      `dernier article modifie attendu, obtenu ${JSON.stringify(d.lastArticle)}`);
+  });
+
+  await test('le pied de page expose la pastille "i"', async () => {
+    const html = await (await fetch(BASE + '/')).text();
+    match(html, /id="site-info"/, 'la pastille doit etre presente sur toutes les pages');
+    match(html, /id="site-info-pop"/, 'le conteneur d infobulle doit exister');
+    match(html, /\/api\/site-info/, 'le script de chargement doit etre injecte');
+  });
+
   endPhase();
   await stopServer();
 }

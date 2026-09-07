@@ -32,6 +32,7 @@ import { listFolders, createFolder, updateFolder, deleteFolder } from './api/fol
 import { listArticles, getArticle, createArticle, updateArticle, patchArticleStatus, deleteArticle, recordView, logPageView, isBotUserAgent, ensureVisitorId } from './api/articles.js';
 import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, deleteHeroImage, serveR2Object } from './api/photos.js';
 import { getSettings, updateSettings } from './api/settings.js';
+import { getSiteInfo } from './api/site-info.js';
 import { listComments, createComment, deleteComment, listRecentCommentsAdmin, replyToComment, countUnreadComments, markCommentsRead } from './api/comments.js';
 import { getAnalytics } from './api/analytics.js';
 import {
@@ -1695,6 +1696,12 @@ export default {
     // ── API routes ────────────────────────────────────────────
     if (path.startsWith('/api/')) {
       const authed = await isAuthenticated(request, env.SESSION_SECRET);
+
+      // Infos techniques du pied de page (version, dernier deploiement,
+      // derniere modification d article). Public : metadonnees de publication.
+      if (path === '/api/site-info' && method === 'GET') {
+        return getSiteInfo(env);
+      }
 
       // Settings
       if (path === '/api/settings') {

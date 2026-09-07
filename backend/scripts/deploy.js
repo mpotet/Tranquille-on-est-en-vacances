@@ -32,6 +32,7 @@ const etapes = [
   'Verification de la syntaxe du worker',
   'TNR — tests de non-regression',
   'Compilation des styles (Tailwind)',
+  'Marquage de la version (build-info)',
   `Deploiement Cloudflare (${CIBLE})`,
 ];
 let courante = 0;
@@ -138,12 +139,22 @@ debutEtape(etapes[2]);
   etapeOk('public/tailwind.css genere');
 }
 
-// Etape 4 — mise en ligne.
+// Etape 4 — figer la version affichee en pied de page.
+// Juste avant la mise en ligne, pour que le commit et l heure inscrits soient
+// exactement ceux du code qui part.
 debutEtape(etapes[3]);
+{
+  const code = await run('node', ['scripts/gen-build-info.js']);
+  if (code !== 0) echec(etapes[3], 'La generation de build-info a echoue.');
+  etapeOk('worker/build-info.js mis a jour');
+}
+
+// Etape 5 — mise en ligne.
+debutEtape(etapes[4]);
 {
   const wrArgs = isProd ? ['wrangler', 'deploy', '--env', 'production'] : ['wrangler', 'deploy'];
   const code = await run('npx', wrArgs);
-  if (code !== 0) echec(etapes[3], 'Le deploiement Cloudflare a echoue.');
+  if (code !== 0) echec(etapes[4], 'Le deploiement Cloudflare a echoue.');
   etapeOk(`Worker deploye (${CIBLE})`);
 }
 

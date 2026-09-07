@@ -531,6 +531,55 @@ input:focus, textarea:focus, select:focus { border-color: rgba(var(--blue-rgb),.
 #dropzone { background: var(--blue-light)!important; border-color: rgba(var(--blue-rgb),.22)!important; }
 #navbar { background: rgba(var(--cream-rgb),.94)!important; border-bottom: 1px solid rgba(var(--blue-rgb),.08)!important; box-shadow: 0 2px 14px rgba(26,43,60,.06)!important; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 #site-footer { background: linear-gradient(180deg, var(--cream) 0%, var(--sand) 100%)!important; border-top: 1px solid rgba(var(--sand-rgb),.8)!important; }
+
+/* ── Pastille "i" du pied de page + son infobulle ──────────────
+   Survol a la souris, focus au clavier (tabindex sur la pastille), et appui
+   au doigt : sur mobile il n y a pas de survol, un tap bascule la classe
+   .is-open posee par le script. */
+#site-info { position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 1.15rem; height: 1.15rem; margin-left: .45rem; border-radius: 999px; cursor: help;
+  color: var(--ink-light); opacity: .55; transition: opacity .15s, color .15s; vertical-align: middle;
+  font-size: .8rem; -webkit-tap-highlight-color: transparent; }
+#site-info:hover, #site-info:focus-visible, #site-info.is-open { opacity: 1; color: var(--blue); outline: none; }
+#site-info:focus-visible { box-shadow: 0 0 0 3px rgba(var(--blue-rgb),.25); }
+
+#site-info-pop {
+  position: absolute; bottom: calc(100% + .6rem); left: 50%; transform: translateX(-50%) translateY(.25rem);
+  min-width: 17rem; max-width: min(22rem, calc(100vw - 2rem));
+  background: var(--ink); color: var(--cream);
+  border-radius: .85rem; padding: .8rem .95rem; z-index: 60;
+  font-size: .76rem; line-height: 1.55; text-align: left; font-weight: 400;
+  box-shadow: 0 10px 34px rgba(0,0,0,.28);
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity .16s ease, transform .16s ease, visibility .16s;
+  white-space: normal; cursor: default;
+}
+#site-info:hover #site-info-pop,
+#site-info:focus-visible #site-info-pop,
+#site-info.is-open #site-info-pop { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+/* Petite fleche vers la pastille. */
+#site-info-pop::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  border: .4rem solid transparent; border-top-color: var(--ink); }
+
+#site-info-pop .sio-row { display: flex; justify-content: space-between; gap: 1rem; padding: .15rem 0; }
+#site-info-pop .sio-k { opacity: .62; white-space: nowrap; }
+#site-info-pop .sio-v { text-align: right; font-variant-numeric: tabular-nums; }
+#site-info-pop .sio-sep { height: 1px; background: rgba(255,255,255,.14); margin: .45rem 0; }
+#site-info-pop .sio-title { font-weight: 700; letter-spacing: .01em; margin-bottom: .35rem; }
+#site-info-pop code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem;
+  background: rgba(255,255,255,.12); padding: .05rem .3rem; border-radius: .3rem; }
+#site-info-pop a { color: var(--cream); text-decoration: underline; text-underline-offset: 2px; }
+#site-info-pop .sio-load { opacity: .7; }
+
+/* Pres du bord de l ecran, une infobulle centree deborderait : on la recale
+   sur la droite du pied de page. */
+@media (max-width: 30rem) {
+  #site-info-pop { left: auto; right: -.5rem; transform: translateY(.25rem); }
+  #site-info:hover #site-info-pop,
+  #site-info:focus-visible #site-info-pop,
+  #site-info.is-open #site-info-pop { transform: translateY(0); }
+  #site-info-pop::after { left: auto; right: 1rem; transform: none; }
+}
 /* ── Easter egg : scène saharienne (voir tvPlayCamel dans NAV) ── */
 /* Easter egg - mise en scène : le dromadaire commence à marcher sur le blog,
    PUIS un panneau (ciel/soleil/dunes) tombe du haut comme un décor de cinéma
@@ -903,7 +952,13 @@ export const FOOTER = `
     </div>
     <div class="divider mb-6"></div>
     <div class="text-center text-sm" style="color:var(--ink-light)">
-      &copy; <span id="footer-year">2026</span> Famille Potet
+      &copy; <span id="footer-year">2026</span> Famille Potet<!--
+      --><span id="site-info" tabindex="0" role="button" aria-label="Informations techniques sur le site" aria-describedby="site-info-pop">
+        <i class="ph-bold ph-info" aria-hidden="true"></i>
+        <span id="site-info-pop" role="tooltip">
+          <span class="sio-load">Chargement…</span>
+        </span>
+      </span>
     </div>
   </div>
 </footer>
@@ -1235,6 +1290,79 @@ function escFooter(s){return (s==null? '': String(s)).replace(/&/g,'&amp;').repl
 function flagImg(icon){if(!icon)return '';const cp=[...icon].map(c=>c.codePointAt(0));if(cp.length>=2&&cp[0]>=0x1F1E6&&cp[0]<=0x1F1FF&&cp[1]>=0x1F1E6&&cp[1]<=0x1F1FF){const code=[cp[0],cp[1]].map(c=>String.fromCodePoint(c-0x1F1E6+65)).join('').toLowerCase();return '<img src="https://flagcdn.com/w20/'+code+'.png" width="20" height="15" alt="'+code.toUpperCase()+'" style="vertical-align:middle;border-radius:2px;flex-shrink:0">';}return '<span>'+escFooter(icon)+'</span>';}
 fetch('/api/folders').then(r=>r.json()).then(data=>{const roots=data.filter(f=>!f.parent_id);const el=document.getElementById('footer-dest');if(el)el.innerHTML=roots.length?roots.map(f=>\`<li><a href="/voyages?folder=\${encodeURIComponent(f.slug)}" style="color:var(--ink-muted)" class="hover:underline transition-colors flex items-center gap-1.5">\${flagImg(f.icon)}<span>\${escFooter(f.name)}</span></a></li>\`).join(''):'';}).catch(()=>{const el=document.getElementById('footer-dest');if(el)el.innerHTML='';});
 (function(){var y=document.getElementById('footer-year');if(y)y.textContent=new Date().getFullYear();})();
+
+// ── Pastille "i" : infos techniques du site ───────────────────
+// Chargement PARESSEUX : /api/site-info n est appele qu au premier survol (ou
+// focus, ou tap). Le pied de page est present sur chaque page du site - le
+// charger systematiquement ajouterait une requete a chaque visite pour une
+// information que presque personne ne regarde.
+(function(){
+  var pastille = document.getElementById('site-info');
+  if (!pastille) return;
+  var pop = document.getElementById('site-info-pop');
+  var charge = false;
+
+  function dateFr(iso){
+    if(!iso) return '—';
+    // SQLite stocke "YYYY-MM-DD HH:MM:SS" en UTC, sans fuseau : sans le "Z" le
+    // navigateur l interprete en heure locale et la date affichee derive.
+    var s = String(iso).indexOf('T') < 0 ? String(iso).replace(' ','T') + 'Z' : iso;
+    var d = new Date(s);
+    if (isNaN(d)) return '—';
+    return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})
+         + ' à ' + d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  }
+  function ilYA(iso){
+    if(!iso) return '';
+    var s = String(iso).indexOf('T') < 0 ? String(iso).replace(' ','T') + 'Z' : iso;
+    var d = new Date(s); if (isNaN(d)) return '';
+    var min = Math.round((Date.now() - d.getTime())/60000);
+    if (min < 1) return " (à l'instant)";
+    if (min < 60) return ' (il y a ' + min + ' min)';
+    var h = Math.round(min/60);
+    if (h < 24) return ' (il y a ' + h + ' h)';
+    var j = Math.round(h/24);
+    return ' (il y a ' + j + ' jour' + (j>1?'s':'') + ')';
+  }
+  function ligne(k,v){ return '<div class="sio-row"><span class="sio-k">'+k+'</span><span class="sio-v">'+v+'</span></div>'; }
+
+  function charger(){
+    if (charge) return; charge = true;
+    fetch('/api/site-info').then(function(r){ return r.json(); }).then(function(d){
+      var h = '<div class="sio-title">Informations du site</div>';
+      h += ligne('Version', '<code>'+escFooter(d.version||'—')+'</code>');
+      h += ligne('Mise en ligne', escFooter(dateFr(d.deployedAt))+escFooter(ilYA(d.deployedAt)));
+      h += '<div class="sio-sep"></div>';
+      if (d.lastArticle) {
+        h += ligne('Dernier article modifié',
+          '<a href="/voyage/'+encodeURIComponent(d.lastArticle.slug)+'">'+escFooter(d.lastArticle.title)+'</a>');
+        h += ligne('Le', escFooter(dateFr(d.lastArticle.updatedAt))+escFooter(ilYA(d.lastArticle.updatedAt)));
+        h += '<div class="sio-sep"></div>';
+      }
+      h += ligne('Voyages publiés', escFooter(String(d.articles)));
+      h += ligne('Photos', escFooter(String(d.photos)));
+      pop.innerHTML = h;
+    }).catch(function(){
+      pop.innerHTML = '<span class="sio-load">Informations indisponibles</span>';
+      charge = false; // laisse une nouvelle tentative au prochain survol
+    });
+  }
+
+  pastille.addEventListener('mouseenter', charger);
+  pastille.addEventListener('focus', charger);
+  // Mobile : pas de survol, un appui ouvre/ferme l infobulle.
+  pastille.addEventListener('click', function(e){
+    e.preventDefault(); e.stopPropagation();
+    charger();
+    pastille.classList.toggle('is-open');
+  });
+  document.addEventListener('click', function(e){
+    if (!pastille.contains(e.target)) pastille.classList.remove('is-open');
+  });
+  pastille.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') { pastille.classList.remove('is-open'); pastille.blur(); }
+  });
+})();
 </script>`;
 
 export const TOAST = `
