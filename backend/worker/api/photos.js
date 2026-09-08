@@ -143,6 +143,62 @@ export async function uploadPhotos(request, env, articleId) {
 }
 
 // ──────────────────────────────────────────────────────────────
+// Upload the lightweight variants of an already-stored photo
+// ──────────────────────────────────────────────────────────────
+/**
+ * POST /api/photo-variants  [admin]
+ *   multipart: key=<cle R2 de l'original>, plus un champ par variante
+ *   nomme par son suffixe (".w600.webp", ".w1200.webp").
+ *
+ * Les variantes sont produites par le navigateur de l'admin (voir
+ * genererVariantes dans pages/admin.js) : le worker ne sait pas redimensionner
+ * une image, et Cloudflare Image Resizing n'est pas actif sur ce compte.
+ * Le worker se contente donc d'entreposer, apres verification.
+ *
+ * La cle de la variante est TOUJOURS derivee de celle de l'original par
+ * concatenation du suffixe - jamais fournie par le client - pour qu'aucun
+ * appel ne puisse ecrire ailleurs que sur la derivee attendue.
+ */
+const VARIANT_SUFFIXES = ['.w600.webp', '.w1200.webp'];
+
+export async function uploadPhotoVariants(request, env) {
+  const contentType = request.headers.get('Content-Type') || '';
+  if (!contentType.includes('multipart/form-data')) return badRequest('Expected multipart/form-data');
+
+  const formData = await request.formData();
+  const key = String(formData.get('key') || '');
+
+  // La cle doit designer un objet existant de notre bucket. Sans ce controle,
+  // un appel pourrait deposer un fichier sous une cle arbitraire.
+  if (!key || key.includes('..') || !/^(photos|imported|covers)\//.test(key)) {
+    return badRequest('Cle invalide');
+  }
+  const original = await env.PHOTOS.head(key);
+  if (!original) return notFound('Original introuvable');
+
+  const stored = [];
+  for (const suffixe of VARIANT_SUFFIXES) {
+    const f = formData.get(suffixe);
+    if (!(f instanceof File)) continue;
+
+    const buf = await f.arrayBuffer();
+    // Verification par octets, comme pour les envois d'origine : le
+    // Content-Type du client n'est jamais digne de confiance.
+    const detected = detectImageType(buf);
+    if (!detected || detected.ext !== 'webp') continue;
+    // Une variante plus lourde que l'original n'apporte rien.
+    if (original.size && buf.byteLength >= original.size) continue;
+
+    await env.PHOTOS.put(key + suffixe, buf, {
+      httpMetadata: { contentType: 'image/webp' },
+    });
+    stored.push({ suffixe, bytes: buf.byteLength });
+  }
+
+  return json({ key, stored });
+}
+
+// ──────────────────────────────────────────────────────────────
 // Delete a photo
 // ──────────────────────────────────────────────────────────────
 export async function deletePhoto(env, photoId) {
@@ -152,8 +208,12 @@ export async function deletePhoto(env, photoId) {
     .first();
   if (!photo) return notFound('Photo not found');
 
-  // Remove from R2
+  // Remove from R2 - original AND its derived variants, which would otherwise
+  // stay behind as orphans nothing references.
   await env.PHOTOS.delete(photo.r2_key).catch(() => {});
+  for (const s of VARIANT_SUFFIXES) {
+    await env.PHOTOS.delete(photo.r2_key + s).catch(() => {});
+  }
 
   // Remove from DB
   await env.DB.prepare('DELETE FROM photos WHERE id = ?').bind(photoId).run();

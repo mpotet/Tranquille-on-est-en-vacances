@@ -30,7 +30,7 @@ import {
 // API handlers
 import { listFolders, createFolder, updateFolder, deleteFolder } from './api/folders.js';
 import { listArticles, getArticle, createArticle, updateArticle, patchArticleStatus, deleteArticle, recordView, logPageView, isBotUserAgent, ensureVisitorId } from './api/articles.js';
-import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, deleteHeroImage, serveR2Object } from './api/photos.js';
+import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, deleteHeroImage, serveR2Object, uploadPhotoVariants } from './api/photos.js';
 import { getSettings, updateSettings } from './api/settings.js';
 import { getSiteInfo } from './api/site-info.js';
 import { listComments, createComment, deleteComment, listRecentCommentsAdmin, replyToComment, countUnreadComments, markCommentsRead } from './api/comments.js';
@@ -2014,6 +2014,12 @@ export default {
       if (viewMatch && method === 'POST') {
         const id = parseInt(viewMatch.id);
         return !isNaN(id) ? recordView(env, id, request, authed) : recordView(env, viewMatch.id, request, authed);
+      }
+
+      // Variantes allegees (w600 / w1200) d'une photo deja stockee. Produites
+      // par le navigateur de l'admin faute de redimensionnement cote worker.
+      if (path === '/api/photo-variants' && method === 'POST') {
+        return authed ? uploadPhotoVariants(request, env) : unauthorized();
       }
 
       // Photos

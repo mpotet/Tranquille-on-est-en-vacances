@@ -57,6 +57,11 @@ const BASE = process.env.SITE_BASE || 'https://tranquille-vacances.esti-archi.wo
  */
 export const FORMATS = {
   w600:  { width: 600,  quality: 72, suffix: '.w600.webp' },
+  // Qualite 78 : mesure sur 10 images du corps, 253 Ko -> 166 Ko (-34 %).
+  // Descendre a 68 donnerait 134 Ko (-47 %) sans difference visible a 1200 px,
+  // mais les variantes deja generees le sont a 78 : melanger les deux
+  // qualites pour un gain de 19 % ne vaut pas de tout regenerer. A reprendre
+  // si un jour l'ensemble est refait (passer --format=w1200 --force).
   w1200: { width: 1200, quality: 78, suffix: '.w1200.webp' },
 };
 
@@ -76,7 +81,10 @@ const THUMB_SUFFIX = FMT.suffix;
 // 6 travailleurs saturaient la connexion : 2316 echecs "fetch failed" sur un
 // lot de 4189. 3 est le reglage retenu - le lot reste rapide sans que les
 // telechargements ne s'etranglent mutuellement.
-const CONCURRENCE = Number((args.find(a => a.startsWith('--concurrence=')) || '').split('=')[1] || 3);
+// Le format w1200 pese ~4x le w600 : les envois durent plus longtemps et
+// saturent plus vite. On abaisse donc la concurrence par defaut pour lui.
+const CONCURRENCE = Number((args.find(a => a.startsWith('--concurrence=')) || '').split('=')[1]
+  || (FORMAT_CLE === 'w600' ? 3 : 2));
 
 const tty = process.stdout.isTTY && !process.env.NO_COLOR;
 const c = (n) => (s) => (tty ? `\x1b[${n}m${s}\x1b[0m` : String(s));
@@ -169,6 +177,8 @@ if (LIMIT) liste = liste.slice(0, LIMIT);
 dire(`${liste.length} photo(s) a traiter\n`);
 
 let faits = 0, generes = 0, ignores = 0, echecs = 0;
+// Compteur partage par les travailleurs : sert au freinage automatique.
+let echecsDaffilee = 0;
 let poidsAvant = 0, poidsApres = 0;
 let dernierPoint = Date.now();
 
@@ -191,17 +201,21 @@ const file = [...liste];
  * breve). Abandonner a la premiere tentative gaspillait le travail : on
  * reessaie en espacant, plutot que de compter la photo comme perdue.
  */
-async function fetchRetry(url, essais = 3) {
+async function fetchRetry(url, essais = 5) {
   let derniere;
   for (let i = 0; i < essais; i++) {
     try {
-      const r = await fetch(url);
+      // Delai explicite : sans lui, une requete etranglee peut rester
+      // suspendue tres longtemps et bloquer son travailleur.
+      const r = await fetch(url, { signal: AbortSignal.timeout(45000) });
       if (r.ok) return r;
       // 404 : l'objet n'existe pas, inutile d'insister.
       if (r.status === 404) return r;
       derniere = new Error(`HTTP ${r.status}`);
     } catch (e) { derniere = e; }
-    await new Promise(r => setTimeout(r, 800 * (i + 1)));
+    // Attente croissante : 1s, 2s, 4s, 8s. Un "fetch failed" en rafale signale
+    // une connexion saturee - insister immediatement ne ferait qu'aggraver.
+    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
   }
   throw derniere || new Error('echec');
 }
@@ -240,9 +254,19 @@ async function travailleur(no) {
         await r2Put(cleVignette, localRel, 'image/webp');
       }
       generes++;
+      echecsDaffilee = 0;   // une reussite remet le compteur a zero
     } catch (e) {
       echecs++;
+      echecsDaffilee++;
       dire(`  ${red('✗')} ${cle} — ${String(e.message || e).slice(0, 120)}`);
+      // Freinage : une rafale d'echecs signale une connexion saturee. Plutot
+      // que de s'obstiner et de bruler le lot (72 % d'echecs observes sur un
+      // premier essai), on marque une pause pour la laisser se degager.
+      if (echecsDaffilee >= 5) {
+        const pause = Math.min(30000, 3000 * echecsDaffilee);
+        dire(grey(`  … ${echecsDaffilee} echecs d'affilee — pause de ${Math.round(pause / 1000)}s`));
+        await new Promise(r => setTimeout(r, pause));
+      }
     }
     faits++;
     point();

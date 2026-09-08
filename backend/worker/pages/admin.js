@@ -2349,6 +2349,92 @@ function compressImage(file) {
 async function compressFiles(fileList) {
   return Promise.all(Array.from(fileList).map(compressImage));
 }
+
+// ── Variantes allegees (w600 / w1200) ─────────────────────────
+// Le site sert une vignette de 600 px dans les galeries et une version de
+// 1200 px dans le corps des articles ; l'original n'est charge qu'en plein
+// ecran. Sans variante, le rendu retombe sur l'original - rien n'est casse,
+// mais le lecteur paie 5 a 10 fois plus de donnees.
+//
+// Les variantes sont produites ICI, dans le navigateur, avec le meme Canvas
+// que compressImage() : le worker Cloudflare ne sait pas redimensionner une
+// image, et le faire a l'envoi evite d'avoir a relancer un traitement par lot
+// apres chaque publication. Cote admin, rien ne change : c'est transparent.
+//
+// Les cles suivent la convention du lot existant : "photo.jpg.w600.webp",
+// suffixe AJOUTE apres l'extension d'origine (voir helpers/render.js).
+const VARIANTES = [
+  { suffixe: '.w600.webp',  largeur: 600,  qualite: 0.72 },
+  { suffixe: '.w1200.webp', largeur: 1200, qualite: 0.78 },
+];
+
+function _canvasVersBlob(canvas, type, qualite) {
+  return new Promise((resolve) => canvas.toBlob(resolve, type, qualite));
+}
+
+/**
+ * Fabrique les variantes WebP d'un fichier image.
+ * Renvoie [] si le navigateur ne sait pas encoder en WebP ou si l'image est
+ * illisible : l'envoi de l'original doit reussir dans tous les cas.
+ */
+async function genererVariantes(file) {
+  if (!file || !file.type || !file.type.startsWith('image/') || file.type === 'image/gif') return [];
+  try {
+    const bitmap = await createImageBitmap(file);
+    const out = [];
+    for (const v of VARIANTES) {
+      // Jamais d'agrandissement : une image de 800 px ne gagne rien a etre
+      // etiree en 1200, et le fichier serait plus lourd que l'original.
+      if (bitmap.width <= v.largeur && file.size < 200 * 1024) continue;
+      const echelle = Math.min(1, v.largeur / bitmap.width);
+      const w = Math.round(bitmap.width * echelle);
+      const h = Math.round(bitmap.height * echelle);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+      const blob = await _canvasVersBlob(c, 'image/webp', v.qualite);
+      // toBlob renvoie du PNG si WebP n'est pas supporte : on verifie le type
+      // plutot que de televerser un fichier qui ne correspond pas a sa cle.
+      if (!blob || blob.type !== 'image/webp') continue;
+      // Une variante plus lourde que l'original n'a aucun interet.
+      if (blob.size >= file.size) continue;
+      out.push({ suffixe: v.suffixe, blob });
+    }
+    bitmap.close && bitmap.close();
+    return out;
+  } catch (e) {
+    return []; // le repli sur l'original reste en place
+  }
+}
+
+/**
+ * Fabrique et televerse les variantes d'une ou plusieurs photos deja envoyees.
+ *
+ * Appelee APRES l'envoi de l'original et sans etre attendue : la photo est
+ * deja en ligne et affichable a ce stade. Si les variantes echouent (reseau
+ * coupe, WebP non supporte), le rendu retombe sur l'original - l'admin ne voit
+ * aucune difference et rien n'est bloque.
+ *
+ * @param {Array<{r2_key:string}>} photos  resultats renvoyes par l'API d'envoi
+ * @param {File[]} fichiers                fichiers sources correspondants
+ */
+async function televerserVariantes(photos, fichiers) {
+  for (let i = 0; i < photos.length; i++) {
+    const p = photos[i];
+    const f = fichiers[i];
+    if (!p || !p.r2_key || !f) continue;
+    try {
+      const variantes = await genererVariantes(f);
+      if (!variantes.length) continue;
+      const fd = new FormData();
+      fd.append('key', p.r2_key);
+      for (const v of variantes) fd.append(v.suffixe, v.blob, 'v' + v.suffixe);
+      await fetch('/api/photo-variants', {
+        method: 'POST', body: fd, signal: AbortSignal.timeout(45000),
+      });
+    } catch (e) { /* sans consequence : le repli sur l'original s'applique */ }
+  }
+}
 let newCoverFile = null;
 let _lastSaved = null;
 let _lastPublished = null;
@@ -2674,6 +2760,9 @@ async function uploadPhotoFile(articleId, file, { onProgress } = {}) {
       if (data.rejected && data.rejected.length) return { error: 'rejected', filename: data.rejected[0] };
       const p = data.uploaded?.[0];
       if (!p) return { error: 'empty' };
+      // Variantes en arriere-plan : la photo est deja en ligne, l'appelant n'a
+      // pas a attendre un traitement qui ne fait qu'alleger les futures visites.
+      televerserVariantes([p], [file]);
       return { photo: p };
     } catch (err) {
       if (attempt === 1) return { error: err?.name === 'TimeoutError' ? 'timeout' : 'network' };
@@ -3979,6 +4068,10 @@ function handleFiles(files) {
       existingPhotos.push(...uploaded);
       renderPhotoGrid();
       uploaded.forEach(p => insertPhotoInText(p.url, p.caption || 'photo', false));
+      // En arriere-plan : les photos sont deja en ligne, les variantes ne font
+      // qu'alleger les futures visites. Ne pas attendre evite d'immobiliser
+      // l'editeur sur une connexion lente.
+      televerserVariantes(uploaded, compressed);
       if (uploaded.length) {
         toast(uploaded.length === 1 ? 'Photo insérée !' : uploaded.length + ' photos insérées !','ok');
       }
@@ -4143,9 +4236,17 @@ async function saveArticle() {
           if (i !== -1) { usedIdx.add(i); return newPhotos[i]; }
           return newPhotos[idx];
         };
+        // Fichiers sources apparies, dans l'ordre du tableau uploaded : sert
+        // a generer les variantes une fois la boucle terminee. matchSource()
+        // consomme les indices, on ne peut donc pas le rappeler ensuite.
+        // (Pas de backtick dans ce commentaire : ce fichier est lui-meme un
+        // template literal, un backtick le refermerait.)
+        const sourcesAppariees = [];
         uploaded.forEach((p, i) => {
-          const src = matchSource(p, i)?.dataUrl;
-          if (matchSource(p, i)?.inline && src) {
+          const source = matchSource(p, i);
+          sourcesAppariees[i] = source?.file || null;
+          const src = source?.dataUrl;
+          if (source?.inline && src) {
             // Replace the data-URL placeholder already in the text with the real R2 URL
             editor.querySelectorAll('img').forEach(img => {
               if (img.getAttribute('src') === src) img.src = p.url;
@@ -4158,6 +4259,7 @@ async function saveArticle() {
             editor.appendChild(fig);
           }
         });
+        televerserVariantes(uploaded, sourcesAppariees);
         await fetch('/api/articles/'+savedId, {
           method: 'PUT',
           headers: {'Content-Type': 'application/json'},
