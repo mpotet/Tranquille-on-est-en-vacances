@@ -785,7 +785,10 @@ ${TOAST}
     #ipsearch-fields button:hover { background:var(--sand)!important; color:var(--ink)!important; }
     #ipsearch-input:focus { box-shadow:none!important; border-color:transparent!important; }
   </style>
-  <div id="ipsearch-wrap" style="position:fixed;bottom:1.25rem;right:1.5rem;z-index:50;display:flex;justify-content:flex-end;max-width:calc(100vw - 2rem)">
+  <div id="ipsearch-wrap" style="position:fixed;bottom:1.25rem;right:1.5rem;z-index:50;display:flex;align-items:center;justify-content:flex-end;gap:.6rem;max-width:calc(100vw - 2rem)">
+    <button type="button" id="scroll-jump" class="panel" aria-label="Aller en bas de l'article" title="Aller en bas de l'article" style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:3.1rem;height:3.1rem;border-radius:999px;background:var(--cream);color:var(--blue);border:none;font-size:1.2rem;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.15);transition:opacity .2s ease,transform .2s ease,visibility .2s">
+      <i class="ph-bold ph-arrow-down" id="scroll-jump-icon"></i>
+    </button>
     <div id="ipsearch-shell" class="panel" style="display:flex;align-items:center;width:3.1rem;height:3.1rem;border-radius:999px;box-shadow:0 4px 18px rgba(0,0,0,.15);max-width:calc(100vw - 2rem);overflow:hidden;transition:width .28s cubic-bezier(.4,0,.2,1),box-shadow .28s ease">
       <button type="button" id="ipsearch-toggle" aria-label="Rechercher dans le texte" title="Rechercher dans le texte" style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:3.1rem;height:3.1rem;border-radius:999px;background:transparent;color:var(--blue);border:none;font-size:1.2rem;cursor:pointer;transition:opacity .15s ease,transform .15s ease,width .28s cubic-bezier(.4,0,.2,1)">
         <i class="ph-bold ph-magnifying-glass"></i>
@@ -1149,6 +1152,8 @@ document.addEventListener('error',function(e){
     fields.style.opacity='1';
     fields.style.transform='translateX(0)';
     setTimeout(()=>input.focus(),280);
+    // Previent la pastille haut/bas, qui se masque pendant la recherche.
+    document.dispatchEvent(new CustomEvent('ipsearch-toggled'));
   }
   function closeBar(){
     if(!isOpen) return;
@@ -1165,6 +1170,7 @@ document.addEventListener('error',function(e){
     countEl.textContent='0/0';
     input.value='';
     toggleBtn.focus();
+    document.dispatchEvent(new CustomEvent('ipsearch-toggled'));
   }
 
   toggleBtn.addEventListener('click',openBar);
@@ -1176,6 +1182,59 @@ document.addEventListener('error',function(e){
   });
   prevBtn.addEventListener('click',()=>goTo(-1));
   nextBtn.addEventListener('click',()=>goTo(1));
+
+  // ── Bouton haut / bas, a cote de la loupe ───────────────────
+  // Un article de voyage fait plusieurs ecrans de haut : remonter au titre ou
+  // descendre aux commentaires demandait un long defilement. Une seule pastille
+  // suffit - sa direction depend de l'endroit ou on se trouve, plutot que
+  // d'occuper la place avec deux boutons dont un serait toujours inutile.
+  (function(){
+    const jump=document.getElementById('scroll-jump');
+    const icone=document.getElementById('scroll-jump-icon');
+    if(!jump||!icone) return;
+
+    // Zone morte en haut et en bas : a moins d'un demi-ecran d'une extremite,
+    // le bouton propose l'autre sens - sinon il inviterait a un deplacement de
+    // quelques pixels, sans interet.
+    const marge=()=>Math.max(200,window.innerHeight*0.5);
+    const versLeBas=()=>window.scrollY < marge();
+
+    function refleter(){
+      // Masque pendant que la recherche est deployee : les deux pastilles se
+      // chevaucheraient sur un ecran etroit.
+      if(isOpen){ jump.style.visibility='hidden'; jump.style.opacity='0'; return; }
+      const doc=document.documentElement;
+      const restant=doc.scrollHeight - window.scrollY - window.innerHeight;
+      // Page trop courte pour defiler : le bouton n'aurait rien a faire.
+      if(doc.scrollHeight <= window.innerHeight + 100){
+        jump.style.visibility='hidden'; jump.style.opacity='0'; return;
+      }
+      jump.style.visibility='visible'; jump.style.opacity='1';
+      const bas=versLeBas();
+      icone.className='ph-bold '+(bas?'ph-arrow-down':'ph-arrow-up');
+      jump.setAttribute('aria-label', bas?"Aller en bas de l'article":"Revenir en haut de l'article");
+      jump.title=jump.getAttribute('aria-label');
+      // Evite un etat trompeur : tout en bas, on ne propose plus "descendre".
+      if(restant<40){
+        icone.className='ph-bold ph-arrow-up';
+        jump.setAttribute('aria-label',"Revenir en haut de l'article");
+        jump.title=jump.getAttribute('aria-label');
+      }
+    }
+
+    jump.addEventListener('click',function(){
+      const doc=document.documentElement;
+      const restant=doc.scrollHeight - window.scrollY - window.innerHeight;
+      const bas=versLeBas() && restant>=40;
+      window.scrollTo({top: bas?doc.scrollHeight:0, behavior:'smooth'});
+    });
+
+    // passive:true - l'ecouteur ne bloque jamais le defilement.
+    window.addEventListener('scroll',refleter,{passive:true});
+    window.addEventListener('resize',refleter,{passive:true});
+    document.addEventListener('ipsearch-toggled',refleter);
+    refleter();
+  })();
 })();
 
 // ── Comment form (progressive enhancement) ────────────────────
