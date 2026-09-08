@@ -29,6 +29,11 @@ const page = await ctx.newPage();
 let images = 0, octetsImages = 0, octetsTotal = 0;
 page.on('response', async (r) => {
   try {
+    // Ne compter QUE ce qui a reellement traverse le reseau. Le service worker
+    // relaie chaque requete, si bien que Playwright voit deux reponses par
+    // ressource : celle de la page et celle du SW. Les additionner doublait
+    // toutes les mesures - verifie : 0 image reellement telechargee deux fois.
+    if (r.fromServiceWorker()) return;
     const b = await r.body();
     octetsTotal += b.length;
     if ((r.headers()['content-type'] || '').startsWith('image/')) { images++; octetsImages += b.length; }
