@@ -255,33 +255,37 @@ export function sendPasswordChangedEmail(env, to) {
 // ── A reader posted a comment: tell the admin ─────────────────────────────────
 // Comments appear on the site immediately (the secret-question gate is the only
 // filter), so without this the only way to notice one was to browse the article.
-export function sendNewCommentEmail(env, to, { articleTitle, articleSlug, authorName, body, isReply }) {
-  const url = `${publicBase(env)}/voyage/${encodeURIComponent(articleSlug)}#comments`;
+// dayLabel / anchor : commentaire sur une journee d'un article jour par jour
+// ("Jour 3 · dim. 8 fevr.") - le lien mene directement a ce jour.
+export function sendNewCommentEmail(env, to, { articleTitle, articleSlug, authorName, body, isReply, dayLabel, anchor }) {
+  const url = `${publicBase(env)}/voyage/${encodeURIComponent(articleSlug)}#${anchor || 'comments'}`;
+  const where = dayLabel ? ` · ${esc(dayLabel)}` : '';
   const heading = isReply ? 'Nouvelle réponse sur un récit' : 'Nouveau commentaire sur un récit';
   const html = shell({
     title: heading,
     badge: '💬 Commentaire',
     badgeColor: '#0057B8',
     heading,
-    bodyHtml: `<p style="font-size:15px;color:${INK_MUTED};line-height:1.72;margin:0 0 4px"><strong>${esc(authorName)}</strong> a écrit sur <strong>${esc(articleTitle)}</strong> :</p>
+    bodyHtml: `<p style="font-size:15px;color:${INK_MUTED};line-height:1.72;margin:0 0 4px"><strong>${esc(authorName)}</strong> a écrit sur <strong>${esc(articleTitle)}</strong>${where} :</p>
     <blockquote style="margin:14px 0 22px;padding:12px 16px;border-left:3px solid rgba(0,87,184,.28);background:#F8FAFC;border-radius:0 8px 8px 0;font-size:15px;color:${INK_MUTED};line-height:1.7">${esc(body)}</blockquote>`,
     ctaUrl: url,
     ctaLabel: 'Lire et répondre',
     footerNote: "Vous recevez cet email car vous administrez ce blog.",
   });
-  return send(env, { to, subject: `${heading} : ${articleTitle}`, html, emailType: 'new_comment' });
+  return send(env, { to, subject: `${heading} : ${articleTitle}${dayLabel ? ' (' + dayLabel.split(' · ').slice(0, 2).join(' · ') + ')' : ''}`, html, emailType: 'new_comment' });
 }
 
 // ── Someone replied to a reader's comment ─────────────────────────────────────
 // Only sent when the reader chose to leave an address on the comment form.
-export function sendCommentReplyEmail(env, to, { articleTitle, articleSlug, authorName, body }) {
-  const url = `${publicBase(env)}/voyage/${encodeURIComponent(articleSlug)}#comments`;
+export function sendCommentReplyEmail(env, to, { articleTitle, articleSlug, authorName, body, dayLabel, anchor }) {
+  const url = `${publicBase(env)}/voyage/${encodeURIComponent(articleSlug)}#${anchor || 'comments'}`;
+  const where = dayLabel ? ` · ${esc(dayLabel)}` : '';
   const html = shell({
     title: 'On a répondu à votre commentaire',
     badge: '💬 Réponse',
     badgeColor: '#0057B8',
     heading: 'On a répondu à votre commentaire',
-    bodyHtml: `<p style="font-size:15px;color:${INK_MUTED};line-height:1.72;margin:0 0 4px"><strong>${esc(authorName)}</strong> vous a répondu sur <strong>${esc(articleTitle)}</strong> :</p>
+    bodyHtml: `<p style="font-size:15px;color:${INK_MUTED};line-height:1.72;margin:0 0 4px"><strong>${esc(authorName)}</strong> vous a répondu sur <strong>${esc(articleTitle)}</strong>${where} :</p>
     <blockquote style="margin:14px 0 22px;padding:12px 16px;border-left:3px solid rgba(0,87,184,.28);background:#F8FAFC;border-radius:0 8px 8px 0;font-size:15px;color:${INK_MUTED};line-height:1.7">${esc(body)}</blockquote>`,
     ctaUrl: url,
     ctaLabel: 'Voir la réponse',

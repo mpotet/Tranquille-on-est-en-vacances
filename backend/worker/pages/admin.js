@@ -894,17 +894,24 @@ async function init() {
   document.getElementById('admin-status-filter')?.addEventListener('change', applyArticleSort);
   document.getElementById('admin-search')?.addEventListener('input', applyArticleSort);
 
-  // Pré-chargement en cache de l'éditeur pour tous les articles < 1 an (édition hors-ligne)
+  // Pré-chargement en cache de l'éditeur pour les articles récents (édition hors-ligne)
   if (navigator.onLine) {
-    // Cache le shell de création d'article (nouvel article hors-ligne)
+    // Cache le shell de l'éditeur : il sert aussi de repli hors ligne pour
+    // n'importe quel /admin/editor/:id jamais visité (voir sw.js).
     fetch('/admin/editor').catch(() => {});
+    // "Récent" = voyage de moins d'un an OU article touché depuis moins d'un
+    // an : un récit d'un voyage ancien qu'on est en train d'écrire était
+    // exclu, et donc introuvable hors ligne.
     const oneYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000;
+    const recent = (v) => { const d = new Date(String(v || '').replace(' ', 'T')).getTime(); return !isNaN(d) && d > oneYearAgo; };
     artData.articles
-      .filter(a => { const d = new Date(a.end_date || a.start_date || a.date).getTime(); return !isNaN(d) && d > oneYearAgo; })
+      .filter(a => recent(a.end_date || a.start_date || a.date) || recent(a.updated_at) || recent(a.created_at))
       .forEach((a, i) => {
         setTimeout(() => {
           fetch('/admin/editor/' + a.id).catch(() => {});
-          fetch('/api/articles/' + a.id).catch(() => {});
+          // no-cache : le SW va au réseau d'abord et remplace la copie hors
+          // ligne, au lieu de renvoyer l'ancienne et de rafraîchir après coup.
+          fetch('/api/articles/' + a.id, {cache:'no-store', headers:{'Cache-Control':'no-cache'}}).catch(() => {});
         }, i * 400);
       });
   }
@@ -1604,7 +1611,10 @@ function renderModComment(c) {
       + '<span class="text-xs" style="color:var(--ink-light)">' + esc(fmtDate(c.created_at)) + '</span>'
     + '</div>'
     + '<p class="text-sm leading-relaxed mb-1" style="color:var(--ink);white-space:pre-wrap;word-break:break-word">' + preview + '</p>'
-    + '<p class="text-xs mb-3" style="color:var(--ink-light)">sur <a href="' + commentUrl + '" target="_blank" rel="noopener" class="hover:underline" style="color:var(--blue)">' + esc(c.article_title) + '</a></p>'
+    + '<p class="text-xs mb-3" style="color:var(--ink-light)">sur <a href="' + commentUrl + '" target="_blank" rel="noopener" class="hover:underline" style="color:var(--blue)">' + esc(c.article_title) + '</a>'
+      // Article jour par jour : la journee commentee.
+      + (c.day ? ' <span class="inline-flex items-center gap-1 ml-1 px-2 py-0.5 rounded-full font-semibold" style="background:var(--blue-light);color:var(--blue)"><i class="ph-bold ph-calendar-dots"></i> ' + esc(new Date(c.day + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })) + '</span>' : '')
+    + '</p>'
     + '<div class="flex items-center gap-2 flex-wrap">'
       + '<a href="' + commentUrl + '" target="_blank" rel="noopener" class="ghost-btn" style="padding:.35rem .75rem;font-size:.75rem"><i class="ph-bold ph-arrow-square-out"></i> Voir en contexte</a>'
       + (c.is_admin_reply ? '' : '<button data-id="' + c.id + '" data-name="' + esc(c.author_name) + '" class="ghost-btn" style="padding:.35rem .75rem;font-size:.75rem" data-action="admin-reply"><i class="ph-bold ph-arrow-bend-up-left"></i> Répondre</button>')
@@ -1832,6 +1842,19 @@ export function editorPage(articleId = null) {
    layout or crop into the image itself. */
 #e-content figure.img-caret-adjacent,
 #e-content .img-pair.img-caret-adjacent { outline:3px solid var(--blue); outline-offset:3px; border-radius:.75rem; }
+/* Format de l'article (choisi a la creation) et barre des jours */
+.format-option{display:flex;align-items:flex-start;gap:.65rem;text-align:left;padding:.8rem .9rem;border-radius:1rem;border:2px solid var(--line);background:var(--cream);color:var(--ink-muted);cursor:pointer;transition:border-color .15s,background .15s}
+.format-option i{font-size:1.4rem;color:var(--ink-light);margin-top:.1rem}
+.format-option b{display:block;color:var(--ink);font-size:.9rem}
+.format-option small{display:block;font-size:.75rem;line-height:1.4}
+.format-option.is-active{border-color:var(--blue);background:var(--blue-light)}
+.format-option.is-active i{color:var(--blue)}
+.day-tab{flex:none;display:inline-flex;flex-direction:column;align-items:center;min-width:3.8rem;padding:.35rem .7rem;border-radius:.85rem;border:2px solid var(--line);background:var(--cream);color:var(--ink-muted);cursor:pointer;line-height:1.2}
+.day-tab b{font-size:.8rem;color:var(--ink)}
+.day-tab span{font-size:.68rem;white-space:nowrap}
+.day-tab.is-active{border-color:var(--blue);background:var(--blue);color:#fff}
+.day-tab.is-active b{color:#fff}
+.day-tab-add{flex:none;display:inline-flex;align-items:center;gap:.3rem;padding:.5rem .8rem;border-radius:.85rem;border:2px dashed rgba(var(--blue-rgb),.5);background:transparent;color:var(--blue);font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap}
 /* The default browser caret color is easy to lose against a photo or a
    dashed image-pair outline - pick the brand blue explicitly instead of
    inheriting an implicit black/text-color one. */
@@ -1962,19 +1985,47 @@ ${ADMIN_NAV()}
       <!-- Title -->
       <div>
         <label class="block text-xs font-bold mb-2 uppercase tracking-wide" style="color:var(--ink-muted)">Titre *</label>
-        <input type="text" id="e-title" placeholder="Ex: Notre été à Santorin"
+        <input type="text" id="e-title" spellcheck="true" lang="fr" autocorrect="on" autocapitalize="sentences" placeholder="Ex: Notre été à Santorin"
                class="w-full rounded-2xl px-4 py-3 focus:outline-none transition-colors font-bold text-lg" style="border:2px solid var(--line);color:var(--ink)">
       </div>
 
       <!-- Short description -->
       <div>
         <label class="block text-xs font-bold mb-2 uppercase tracking-wide" style="color:var(--ink-muted)">Description courte</label>
-        <textarea id="e-desc" rows="2" placeholder="Un résumé accrocheur de 1-2 phrases..."
+        <textarea id="e-desc" rows="2" spellcheck="true" lang="fr" autocorrect="on" autocapitalize="sentences" placeholder="Un résumé accrocheur de 1-2 phrases..."
                   class="w-full rounded-2xl px-4 py-3 focus:outline-none transition-colors resize-none text-sm" style="border:2px solid var(--line);color:var(--ink)"></textarea>
       </div>
 
       <!-- Rich text editor -->
       <div>
+        <!-- Format : choisi une fois, a la creation (masque des que l'article
+             existe en base). Un article existant garde son format. -->
+        <div id="format-choice" class="hidden mb-4">
+          <div class="text-xs font-bold mb-2 uppercase tracking-wide" style="color:var(--ink-muted)">Format de l'article</div>
+          <div class="grid sm:grid-cols-2 gap-2">
+            <button type="button" class="format-option is-active" data-format="text" onclick="chooseFormat('text')">
+              <i class="ph-bold ph-article"></i><span><b>Récit unique</b><small>Un seul texte, du début à la fin du voyage.</small></span>
+            </button>
+            <button type="button" class="format-option" data-format="days" onclick="chooseFormat('days')">
+              <i class="ph-bold ph-calendar-dots"></i><span><b>Jour par jour</b><small>Un bloc par journée. Les lecteurs ont une frise pour naviguer et sont prévenus de chaque nouveau jour.</small></span>
+            </button>
+          </div>
+        </div>
+        <div id="days-bar" class="hidden mb-3">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-xs font-bold uppercase tracking-wide" style="color:var(--ink-muted)"><i class="ph-bold ph-calendar-dots"></i> Jour par jour</span>
+          </div>
+          <div id="days-tabs" class="flex items-center gap-1.5 overflow-x-auto pb-1"></div>
+          <div class="flex flex-wrap items-end gap-2 mt-2">
+            <label class="text-xs font-semibold" style="color:var(--ink-muted)">Date du jour
+              <input type="date" id="day-date" class="block rounded-xl px-3 py-2 text-sm focus:outline-none" style="border:2px solid var(--line);color:var(--ink)">
+            </label>
+            <label class="text-xs font-semibold flex-1" style="color:var(--ink-muted);min-width:12rem">Titre du jour <span class="font-normal">(facultatif)</span>
+              <input type="text" id="day-title" maxlength="120" spellcheck="true" lang="fr" autocorrect="on" autocapitalize="sentences" placeholder="Ex : Arrivée à Atar" class="block w-full rounded-xl px-3 py-2 text-sm focus:outline-none" style="border:2px solid var(--line);color:var(--ink)">
+            </label>
+            <button type="button" id="day-delete" onclick="deleteCurrentDay()" class="text-xs font-semibold px-3 py-2 rounded-xl" style="color:var(--danger);border:1px solid var(--line);background:var(--cream)"><i class="ph-bold ph-trash"></i> Supprimer ce jour</button>
+          </div>
+        </div>
         <div class="mb-2">
           <label class="text-xs font-bold uppercase tracking-wide" style="color:var(--ink-muted)">Contenu</label>
         </div>
@@ -2007,7 +2058,7 @@ ${ADMIN_NAV()}
             <button type="button" class="toolbar-btn" style="color:var(--blue)" onclick="openInsertImg()" title="Insérer une image"><i class="ph-bold ph-image"></i></button>
           </div>
           <div style="position:relative">
-            <div id="e-content" contenteditable="true" spellcheck="true"
+            <div id="e-content" contenteditable="true" spellcheck="true" lang="fr" autocorrect="on" autocapitalize="sentences"
                  class="prose-vacation min-h-[360px] max-w-none p-5 rounded-b-2xl focus:outline-none"
                  data-placeholder="Commencez à écrire votre récit..."
                  style="color:var(--ink)"></div>
@@ -2285,6 +2336,13 @@ ${ADMIN_NAV()}
 ${TOAST}
 <script>
 let ARTICLE_ID = ${JSON.stringify(articleId)};
+// Offline, the service worker may answer /admin/editor/:id with the generic
+// editor shell (see networkFirst in sw.js), which carries no id - read it back
+// from the URL so the page still loads and saves the right article.
+if (ARTICLE_ID == null) {
+  const _idInUrl = location.pathname.match(/^[/]admin[/]editor[/]([0-9]+)$/);
+  if (_idInUrl) ARTICLE_ID = parseInt(_idInUrl[1], 10);
+}
 let existingPhotos = [];
 let newPhotos = [];
 let _pendingPhotoCount = 0;
@@ -2469,7 +2527,7 @@ function _draftPayload() {
     start_date:        document.getElementById('e-start-date')?.value || '',
     end_date:          document.getElementById('e-end-date')?.value || '',
     short_description: document.getElementById('e-desc')?.value.trim() || '',
-    content:           navigator.onLine ? stripDataUris(restorePlaceholderSrcs(document.getElementById('e-content')?.innerHTML || '')) : (document.getElementById('e-content')?.innerHTML || ''),
+    content:           navigator.onLine ? stripDataUris(restorePlaceholderSrcs(_editorHtml())) : _editorHtml(),
     status:            document.getElementById('pub-status')?.value || 'archived',
     folder_id:         parseInt(document.getElementById('e-folder')?.value) || null,
     cover_url:         document.getElementById('e-cover')?.value.trim() || null,
@@ -2490,6 +2548,22 @@ function loadDraftLocal() {
   try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch { return null; }
 }
 function clearDraftLocal() { localStorage.removeItem(DRAFT_KEY); }
+
+// Met à jour la copie hors ligne de l'article juste après une sauvegarde
+// réussie. Sans ça, la copie en cache restait celle de l'ouverture de
+// l'éditeur (ou n'existait pas du tout pour un article qui vient d'être
+// créé) : rouvert en mode avion, l'article revenait vide ou dans un état
+// antérieur. La requête no-cache passe par le SW (réseau d'abord) qui
+// enregistre la réponse. Plafonné à 5 s : une sauvegarde ne doit jamais
+// rester bloquée là-dessus.
+function _refreshOfflineCopy(id) {
+  if (!id || !navigator.onLine) return Promise.resolve();
+  const work = Promise.all([
+    fetch('/api/articles/' + id, {cache:'no-store', headers:{'Cache-Control':'no-cache'}}).catch(() => {}),
+    fetch('/admin/editor').catch(() => {}),
+  ]);
+  return Promise.race([work, new Promise(r => setTimeout(r, 5000))]);
+}
 
 // ── Offline sync queue (IndexedDB) ──────────────────────────────
 // localStorage isn't reachable from the Service Worker, so a save made while
@@ -2611,10 +2685,264 @@ window.addEventListener('online', () => {
   navigator.serviceWorker?.controller?.postMessage('sync-now');
 });
 
+// ── Articles jour par jour ─────────────────────────────────────
+// Un seul #e-content affiche le jour selectionne : toute la mecanique de
+// l'editeur (barre d'outils, images, collage, annuler, hors ligne) reste
+// donc celle d'un recit unique. Le contenu complet - une suite de
+// <section class="trip-day" data-day=... data-title=...> - n'est recompose
+// qu'a la sauvegarde, par _editorHtml(). Voir worker/helpers/days.js.
+let _daysMode = false;
+let _days = [];      // [{ date, title, html }], tries par date
+let _curDay = -1;
+
+function _isDaysHtml(h) {
+  const t = String(h || '').trim();
+  if (t.slice(0, 8).toLowerCase() !== '<section') return false;
+  return t.slice(0, t.indexOf('>')).indexOf('class="trip-day"') !== -1;
+}
+// DOMParser et pas un <div> : un document inerte ne telecharge pas les images.
+function _parseDaysHtml(h) {
+  const doc = new DOMParser().parseFromString('<body>' + (h || '') + '</body>', 'text/html');
+  const days = [];
+  let stray = '';
+  [...doc.body.childNodes].forEach(n => {
+    if (n.nodeType === 1 && n.tagName === 'SECTION' && n.classList.contains('trip-day')) {
+      days.push({ date: n.getAttribute('data-day') || '', title: n.getAttribute('data-title') || '', html: stray + n.innerHTML });
+      stray = '';
+    } else if (n.nodeType === 1 || (n.nodeType === 3 && n.textContent.trim())) {
+      stray += n.nodeType === 1 ? n.outerHTML : n.textContent;   // rien ne se perd
+    }
+  });
+  if (stray) { if (days.length) days[days.length - 1].html += stray; else days.push({ date: '', title: '', html: stray }); }
+  return days;
+}
+function _sortDays() {
+  const cur = _days[_curDay];
+  _days = _days.map((d, i) => ({ d, i })).sort((a, b) => (a.d.date || '9999').localeCompare(b.d.date || '9999') || a.i - b.i).map(x => x.d);
+  _curDay = cur ? _days.indexOf(cur) : -1;
+}
+function _isoToday() {
+  const n = new Date();
+  return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0') + '-' + String(n.getDate()).padStart(2, '0');
+}
+function _addDaysIso(iso, k) {
+  const t = Date.parse(iso + 'T12:00:00');
+  if (isNaN(t)) return _isoToday();
+  const d = new Date(t + k * 86400000);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+// Meme numerotation que le site public : Jour 1 = date de debut du voyage.
+function _dayNumber(date, i) {
+  const start = document.getElementById('e-start-date')?.value;
+  const d = Date.parse(date + 'T12:00:00'), s = Date.parse(start + 'T12:00:00');
+  if (!isNaN(d) && !isNaN(s) && d >= s) return Math.round((d - s) / 86400000) + 1;
+  return i + 1;
+}
+function _dayShort(date) {
+  const t = Date.parse(date + 'T12:00:00');
+  return isNaN(t) ? 'sans date' : new Date(t).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+// Range le contenu affiche dans le jour courant (avant tout changement de jour
+// et avant toute sauvegarde).
+function _stashDay() {
+  if (!_daysMode || !_days[_curDay]) return;
+  const ed = document.getElementById('e-content');
+  if (ed) _days[_curDay].html = ed.innerHTML;
+}
+function _renderDayTabs() {
+  const tabs = document.getElementById('days-tabs');
+  if (!tabs) return;
+  tabs.innerHTML = _days.map((d, i) =>
+    '<button type="button" class="day-tab' + (i === _curDay ? ' is-active' : '') + '" onclick="_showDay(' + i + ')" title="' + esc(d.title || '') + '">' +
+    '<b>Jour ' + _dayNumber(d.date, i) + '</b><span>' + esc(_dayShort(d.date)) + '</span></button>'
+  ).join('') + '<button type="button" class="day-tab-add" onclick="addDay()"><i class="ph-bold ph-plus"></i> Ajouter un jour</button>';
+  const active = tabs.querySelector('.day-tab.is-active');
+  if (active) active.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  const cur = _days[_curDay];
+  const dateIn = document.getElementById('day-date'), titleIn = document.getElementById('day-title');
+  if (dateIn && cur) dateIn.value = cur.date || '';
+  if (titleIn && cur && document.activeElement !== titleIn) titleIn.value = cur.title || '';
+}
+function _showDay(i) {
+  if (!_days[i]) return;
+  // Un prechargement d'images encore en cours afficherait plus tard le jour
+  // precedent par-dessus celui-ci : on le termine d'abord.
+  if (typeof _skipCurrentPreload === 'function') _skipCurrentPreload();
+  _stashDay();
+  _curDay = i;
+  const ed = document.getElementById('e-content');
+  ed.innerHTML = (_days[i].html || '').replace(/<img /gi, '<img draggable="false" loading="lazy" decoding="async" ');
+  _wrapBareImages(ed);
+  _ensureTrailingParagraph();
+  // L'historique "annuler" porte sur le jour affiche : il ne doit jamais
+  // restaurer le texte d'un autre jour dans celui-ci.
+  _commitUndoBaseline(); _undoStack = []; _redoStack = []; _undoBaseline = null;
+  _renderDayTabs();
+  updateSyncInfo();
+}
+function _enterDaysMode(days, showIndex) {
+  _daysMode = true;
+  _days = days.length ? days : [{ date: document.getElementById('e-start-date')?.value || _isoToday(), title: '', html: '' }];
+  _curDay = -1;
+  _sortDays();
+  document.getElementById('days-bar')?.classList.remove('hidden');
+  document.querySelectorAll('.format-option').forEach(b => b.classList.toggle('is-active', b.dataset.format === 'days'));
+  _curDay = Math.max(0, Math.min(showIndex == null ? _days.length - 1 : showIndex, _days.length - 1));
+  _renderDayTabs();
+}
+function _leaveDaysMode() {
+  _daysMode = false; _days = []; _curDay = -1;
+  document.getElementById('days-bar')?.classList.add('hidden');
+  document.querySelectorAll('.format-option').forEach(b => b.classList.toggle('is-active', b.dataset.format === 'text'));
+}
+// Contenu complet a enregistrer. Remplace toutes les lectures directes de
+// #e-content.innerHTML dans les chemins de sauvegarde.
+function _editorHtml() {
+  const ed = document.getElementById('e-content');
+  if (!_daysMode) return ed ? _stripTrailingEmpty(_wrapLooseText(ed.innerHTML)) : '';
+  _stashDay();
+  _sortDays();
+  // Une <section> collee depuis une page web casserait le decoupage : on
+  // n'en garde que le contenu.
+  return _days.map(d => '<section class="trip-day" data-day="' + esc(d.date) + '" data-title="' + esc(d.title) + '">' +
+    _stripTrailingEmpty(_wrapLooseText(String(d.html || '').replace(/<[/]?section[^>]*>/gi, ''))) + '</section>').join('');
+}
+// La premiere ligne tapee dans un editeur vide reste du texte nu, hors de
+// tout <p> : elle n'avait ni l'interligne ni l'espacement des paragraphes
+// suivants. Fait a l'enregistrement et pas pendant la frappe, ou deplacer le
+// texte perturberait la saisie des claviers mobiles. Les images nues restent
+// hors <p> : deux images regroupees dans un meme <p> s'afficheraient en grille.
+// Apres une photo finale, il n'existe aucune position valide pour le
+// curseur : un toucher "en bas" le renvoyait au DEBUT du texte, et une note
+// collee "a la fin" atterrissait en haut, fondue dans le premier paragraphe.
+// On garde donc toujours un paragraphe vide apres une photo finale ; il est
+// retire a l'enregistrement (_stripTrailingEmpty), sans blanc sur le site.
+function _ensureTrailingParagraph() {
+  const ed = document.getElementById('e-content');
+  if (!ed) return;
+  let last = ed.lastChild;
+  while (last && last.nodeType === 3 && !last.textContent.trim()) last = last.previousSibling;
+  if (!last || last.nodeType !== 1) return;
+  const bloque = last.tagName === 'FIGURE' || last.getAttribute('contenteditable') === 'false'
+    || last.classList.contains('img-pair') || last.classList.contains('img-row');
+  if (!bloque) return;
+  const p = document.createElement('p');
+  p.innerHTML = '<br>';
+  ed.appendChild(p);
+}
+function _stripTrailingEmpty(html) {
+  let s = String(html || '').trimEnd();
+  while (s.endsWith('<p><br></p>')) s = s.slice(0, -11).trimEnd();
+  return s;
+}
+const _BLOCK_TAGS = new Set(['P','DIV','H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','FIGURE','SECTION','HR','TABLE','PRE','IMG']);
+function _wrapLooseText(html) {
+  const src = String(html || '');
+  const doc = new DOMParser().parseFromString('<body>' + src + '</body>', 'text/html');
+  const body = doc.body;
+  const hasLoose = [...body.childNodes].some(n => (n.nodeType === 3 && n.textContent.trim()) || (n.nodeType === 1 && !_BLOCK_TAGS.has(n.tagName) && n.tagName !== 'BR'));
+  if (!hasLoose) return src;   // cas courant : rien a faire, HTML rendu a l'identique
+  let run = [];
+  const flush = (before) => {
+    const meaningful = run.some(n => (n.nodeType === 3 && n.textContent.trim()) || (n.nodeType === 1 && n.tagName !== 'BR'));
+    if (meaningful) {
+      const p = doc.createElement('p');
+      body.insertBefore(p, before);
+      run.forEach(n => p.appendChild(n));
+    }
+    run = [];
+  };
+  [...body.childNodes].forEach(n => {
+    if (n.nodeType === 1 && _BLOCK_TAGS.has(n.tagName)) flush(n);
+    else if (n.nodeType === 3 || n.nodeType === 1) run.push(n);
+  });
+  flush(null);
+  return body.innerHTML;
+}
+// Charge un contenu complet (brouillon local) dans l'editeur.
+function _setEditorHtml(h) {
+  const ed = document.getElementById('e-content');
+  if (_isDaysHtml(h)) {
+    _enterDaysMode(_parseDaysHtml(h));
+    ed.innerHTML = (_days[_curDay].html || '');
+    _wrapBareImages(ed);
+    _ensureTrailingParagraph();
+  } else {
+    if (_daysMode) _leaveDaysMode();
+    ed.innerHTML = h;
+  }
+}
+// Choix du format, uniquement a la creation.
+function chooseFormat(f) {
+  if (ARTICLE_ID) return;
+  const ed = document.getElementById('e-content');
+  if (f === 'days' && !_daysMode) {
+    // Ce qui est deja ecrit devient le Jour 1.
+    _enterDaysMode([{ date: document.getElementById('e-start-date')?.value || _isoToday(), title: '', html: ed.innerHTML }], 0);
+  } else if (f === 'text' && _daysMode) {
+    _stashDay();
+    const filled = _days.filter(d => (d.html || '').replace(/<[^>]*>/g, '').trim() || /<img/i.test(d.html || ''));
+    if (filled.length > 1 && !confirm('Les ' + filled.length + ' jours seront fusionnés en un seul texte. Continuer ?')) return;
+    const merged = _days.map(d => d.html || '').join('');
+    _leaveDaysMode();
+    ed.innerHTML = merged;
+  }
+  _scheduleAutoSave();
+}
+function _lockFormat() { document.getElementById('format-choice')?.classList.add('hidden'); }
+function addDay() {
+  if (!_daysMode) return;
+  _stashDay();
+  const used = new Set(_days.map(d => d.date));
+  const last = _days.reduce((m, d) => (d.date && d.date > m ? d.date : m), '');
+  let date = last ? _addDaysIso(last, 1) : (document.getElementById('e-start-date')?.value || _isoToday());
+  while (used.has(date)) date = _addDaysIso(date, 1);
+  const day = { date, title: '', html: '' };
+  _days.push(day);
+  _sortDays();
+  _showDay(_days.indexOf(day));
+  document.getElementById('e-content')?.focus();
+  _scheduleAutoSave();
+}
+function deleteCurrentDay() {
+  if (!_daysMode || !_days[_curDay]) return;
+  if (_days.length === 1) { toast('Un article jour par jour garde au moins un jour', 'err'); return; }
+  const d = _days[_curDay];
+  if (!confirm('Supprimer le Jour ' + _dayNumber(d.date, _curDay) + ' (' + _dayShort(d.date) + ') et tout son contenu ?')) return;
+  const idx = _curDay;
+  _days.splice(idx, 1);
+  _curDay = -1;   // rien a ranger : le jour vient d'etre retire
+  _showDay(Math.min(idx, _days.length - 1));
+  _scheduleAutoSave();
+}
+(function () {
+  const dateIn = document.getElementById('day-date'), titleIn = document.getElementById('day-title');
+  dateIn?.addEventListener('change', () => {
+    const cur = _days[_curDay];
+    if (!cur) return;
+    const v = dateIn.value;
+    if (!v) { dateIn.value = cur.date; return; }
+    if (_days.some(d => d !== cur && d.date === v)) { toast('Ce jour existe déjà', 'err'); dateIn.value = cur.date; return; }
+    _stashDay();
+    cur.date = v;
+    _sortDays();
+    _renderDayTabs();
+    _scheduleAutoSave();
+  });
+  titleIn?.addEventListener('input', () => {
+    const cur = _days[_curDay];
+    if (!cur) return;
+    cur.title = titleIn.value;
+    _renderDayTabs();
+  });
+  // La numerotation "Jour N" suit la date de debut du voyage.
+  document.getElementById('e-start-date')?.addEventListener('change', () => { if (_daysMode) _renderDayTabs(); });
+})();
+
 function fillFromDraft(d) {
   if (d.title)             document.getElementById('e-title').value = d.title;
   if (d.short_description) document.getElementById('e-desc').value = d.short_description;
-  if (d.content !== undefined) document.getElementById('e-content').innerHTML = d.content;
+  if (d.content !== undefined) _setEditorHtml(d.content);
   if (d.start_date)        document.getElementById('e-start-date').value = d.start_date;
   if (d.end_date)          document.getElementById('e-end-date').value = d.end_date;
   if (d.destination)       document.getElementById('e-dest').value = d.destination;
@@ -2629,7 +2957,7 @@ function _scheduleAutoSave() {
   _autoSaveTimer = setTimeout(saveDraftLocal, 8000);
 }
 function _attachAutoSave() {
-  ['e-title','e-desc','e-content','e-start-date','e-end-date','e-dest'].forEach(id => {
+  ['e-title','e-desc','e-content','e-start-date','e-end-date','e-dest','day-title','day-date'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', _scheduleAutoSave);
   });
 }
@@ -2664,6 +2992,10 @@ function _showDraftBar(draft) {
   if (container) { container.style.marginTop = h + 'px'; container.style.setProperty('--extra-top', h + 'px'); }
 }
 function _applyDraft() {
+  // Si les images de la version serveur sont encore en préchargement, leur
+  // affichage différé écraserait le brouillon qu'on restaure ici : on le
+  // termine d'abord.
+  if (typeof _skipCurrentPreload === 'function') _skipCurrentPreload();
   if (_pendingDraft) { fillFromDraft(_pendingDraft); _pendingDraft = null; }
   document.getElementById('draft-bar')?.remove();
   const container = document.querySelector('body > div.max-w-7xl');
@@ -2698,7 +3030,7 @@ async function ensureArticleId() {
       title, status: 'archived',
       start_date: document.getElementById('e-start-date')?.value || new Date().toISOString().slice(0,10),
       end_date: document.getElementById('e-end-date')?.value || new Date().toISOString().slice(0,10),
-      content: stripDataUris(restorePlaceholderSrcs(document.getElementById('e-content')?.innerHTML || '')),
+      content: stripDataUris(restorePlaceholderSrcs(_editorHtml())),
     })
   }).catch(() => null);
   if (!res?.ok) { toast('Erreur lors de la création du brouillon', 'err'); return false; }
@@ -2706,6 +3038,8 @@ async function ensureArticleId() {
   ARTICLE_ID = data.id;
   DRAFT_KEY = 'admin_draft_' + ARTICLE_ID;
   history.replaceState(null, '', '/admin/editor/' + ARTICLE_ID);
+  _lockFormat();
+  _refreshOfflineCopy(ARTICLE_ID);
   toast('Brouillon créé automatiquement', 'ok');
   return true;
 }
@@ -2715,7 +3049,8 @@ function updateSyncInfo() {
   const online = navigator.onLine;
   const dot = document.getElementById('sync-dot');
   const lbl = document.getElementById('sync-online-lbl');
-  const hasPending = !!document.getElementById('e-content')?.querySelector('img[src^="data:"]') || _pendingPhotoCount > 0;
+  const hasPending = !!document.getElementById('e-content')?.querySelector('img[src^="data:"]') || _pendingPhotoCount > 0
+    || (_daysMode && _days.some((d, i) => i !== _curDay && (d.html || '').indexOf('src="data:') !== -1));
   if (dot) dot.style.background = online ? (hasPending ? 'var(--apricot)' : 'var(--palm)') : 'var(--danger)';
   const photoWord = _pendingPhotoCount === 1 ? 'photo en attente' : 'photos en attente';
   const pendingLabel = _pendingPhotoCount > 0 ? (_pendingPhotoCount + ' ' + photoWord) : 'images en attente';
@@ -2783,6 +3118,18 @@ async function _processOfflineImgs() {
   const editor = document.getElementById('e-content');
   if (!editor) return;
   const pending = [...editor.querySelectorAll('img[src^="data:"]')];
+  // Jour par jour : les autres jours peuvent aussi contenir des photos prises
+  // hors ligne. Sans ca, la sauvegarde suivante (stripDataUris) les effacerait.
+  const otherDays = [];
+  if (_daysMode) {
+    _stashDay();
+    _days.forEach((d, i) => {
+      if (i === _curDay || (d.html || '').indexOf('src="data:') === -1) return;
+      const doc = new DOMParser().parseFromString('<body>' + d.html + '</body>', 'text/html');
+      const imgs = [...doc.body.querySelectorAll('img[src^="data:"]')];
+      if (imgs.length) { otherDays.push({ day: d, doc }); pending.push(...imgs); }
+    });
+  }
   if (!pending.length) return;
   const ok = await ensureArticleId();
   if (!ok) return;
@@ -2792,9 +3139,10 @@ async function _processOfflineImgs() {
     const dataUrl = img.getAttribute('src');
     const file = dataUrlToFile(dataUrl, 'photo.jpg');
     const result = await uploadPhotoFile(ARTICLE_ID, file);
-    if (result.photo) { img.src = result.photo.url; existingPhotos.push(result.photo); }
+    if (result.photo) { img.setAttribute('src', result.photo.url); existingPhotos.push(result.photo); }
     else failed++;
   }
+  otherDays.forEach(o => { o.day.html = o.doc.body.innerHTML; });
   renderPhotoGrid();
   updateSyncInfo();
   if (!failed) toast('Images synchronisées !', 'ok');
@@ -2860,8 +3208,17 @@ async function init() {
       previewCover(a.cover_url);
       setStatus(a.status || 'archived');
       if (a.folder_id) {
-        const opt = document.querySelector(\`#e-folder option[value="\${a.folder_id}"]\`);
-        if (opt) opt.selected = true;
+        let opt = document.querySelector(\`#e-folder option[value="\${a.folder_id}"]\`);
+        // Liste des dossiers indisponible (hors ligne sans copie) : sans cette
+        // option, la prochaine sauvegarde enverrait folder_id=null et
+        // sortirait l'article de son dossier.
+        if (!opt) {
+          opt = document.createElement('option');
+          opt.value = a.folder_id;
+          opt.textContent = a.folder_name || 'Dossier actuel';
+          document.getElementById('e-folder').appendChild(opt);
+        }
+        opt.selected = true;
       }
       existingPhotos = a.photos || [];
       renderPhotoGrid();
@@ -2874,13 +3231,21 @@ async function init() {
       // n'injecte le HTML dans #e-content qu'une fois tout prêt (ou après
       // un délai de sécurité) - l'éditeur reste soit complètement vide/masqué,
       // soit complètement rempli, jamais entre les deux.
-      _loadContentWithProgress(html);
+      if (_isDaysHtml(html)) {
+        // Jour par jour : on ouvre le dernier jour, celui qu'on complete.
+        _enterDaysMode(_parseDaysHtml(html));
+        _loadContentWithProgress(_days[_curDay].html || '');
+      } else {
+        _loadContentWithProgress(html);
+      }
     } else if (a && !a.title) {
       toast('Impossible de charger l’article','err');
     }
   }
 
   _attachAutoSave();
+  // Le format se choisit a la creation, et seulement la.
+  if (!ARTICLE_ID) document.getElementById('format-choice')?.classList.remove('hidden');
   enforceOfflineStatus();
   // Vérifier si un brouillon hors-ligne est en attente
   const draft = loadDraftLocal();
@@ -3017,6 +3382,7 @@ function _loadContentWithProgress(html) {
     // à l'ouverture, silencieusement (le HTML sauvegardé ensuite aura la
     // même structure <figure> que les images insérées depuis toujours).
     _wrapBareImages(ed);
+    _ensureTrailingParagraph();
     // Placer le curseur + scroller AVANT de retirer l'overlay : l'écran est
     // encore couvert par le fond plein de l'overlay à ce moment-là, donc
     // l'utilisateur ne voit jamais le saut vers la fin de l'article - juste
@@ -3248,6 +3614,10 @@ function _doRedo() {
 (function() {
   const editor = document.getElementById('e-content');
   if (!editor) return;
+  // Entrée crée un <p> partout. Par défaut Safari (iPhone) crée un <div>,
+  // Chrome un <p> ou un <div> selon le contexte : le même récit mélangeait
+  // les deux, avec des interlignes différents.
+  try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) {}
   editor.addEventListener('input', _scheduleUndoSnapshot);
   editor.addEventListener('keydown', e => {
     const mod = e.ctrlKey || e.metaKey;
@@ -4144,24 +4514,32 @@ function enforceOfflineStatus() {
 }
 
 // ── Save article ──────────────────────────────────────────────
+// Sauvegarde locale + file d'attente de synchro. Sert hors ligne, mais aussi
+// quand le navigateur se croit en ligne alors que la requête échoue (wifi
+// d'hôtel, réseau qui décroche) : avant, ce cas levait une erreur muette et
+// rien n'était mis en file.
+async function _saveForLater() {
+  saveDraftLocal();
+  const title = document.getElementById('e-title')?.value.trim();
+  if (title) {
+    const payload = _draftPayload();
+    // _draftPayload retire les images data: quand navigator.onLine est vrai ;
+    // ici elles n'ont pas encore été envoyées, il faut les garder.
+    payload.content = restorePlaceholderSrcs(_editorHtml());
+    payload.notify = false; // never auto-notify subscribers for a sync that happens unattended
+    try {
+      await queueOfflineArticleSave(ARTICLE_ID ? 'PUT' : 'POST', ARTICLE_ID ? ('/api/articles/'+ARTICLE_ID) : '/api/articles', payload);
+    } catch (e) { /* IndexedDB unavailable - the local draft above is still the fallback */ }
+  }
+  updateSyncInfo();
+  toast('Sauvegardé - sera envoyé dès que possible 📴', 'ok');
+  const lbl = document.getElementById('sticky-status-lbl');
+  if (lbl) lbl.textContent = '📴 En attente de connexion';
+}
+
 async function saveArticle() {
   // ── Offline : sauvegarde locale + file d'attente de synchro ───
-  if (!navigator.onLine) {
-    saveDraftLocal();
-    const title = document.getElementById('e-title')?.value.trim();
-    if (title) {
-      const payload = _draftPayload();
-      payload.notify = false; // never auto-notify subscribers for a sync that happens unattended
-      try {
-        await queueOfflineArticleSave(ARTICLE_ID ? 'PUT' : 'POST', ARTICLE_ID ? ('/api/articles/'+ARTICLE_ID) : '/api/articles', payload);
-      } catch (e) { /* IndexedDB unavailable - the local draft above is still the fallback */ }
-    }
-    updateSyncInfo();
-    toast('Sauvegardé - sera envoyé dès que possible 📴', 'ok');
-    const lbl = document.getElementById('sticky-status-lbl');
-    if (lbl) lbl.textContent = '📴 En attente de connexion';
-    return;
-  }
+  if (!navigator.onLine) { await _saveForLater(); return; }
 
   const title = document.getElementById('e-title').value.trim();
   if (!title) { toast('Le titre est obligatoire','err'); return; }
@@ -4191,7 +4569,7 @@ async function saveArticle() {
     start_date:        startDate,
     end_date:          endDate,
     short_description: document.getElementById('e-desc').value.trim(),
-    content:           stripDataUris(restorePlaceholderSrcs(document.getElementById('e-content').innerHTML)),
+    content:           stripDataUris(restorePlaceholderSrcs(_editorHtml())),
     status:            apiStatus,
     notify,
     folder_id:         parseInt(document.getElementById('e-folder').value) || null,
@@ -4202,12 +4580,18 @@ async function saveArticle() {
   let savedId = ARTICLE_ID;
   let savedSlug = null;
   let res;
-  if (ARTICLE_ID) {
-    res = await fetch('/api/articles/'+ARTICLE_ID, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-    if (res.ok) { const data=await res.json().catch(()=>({})); savedSlug=data.slug||null; }
-  } else {
-    res = await fetch('/api/articles', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-    if (res.ok) { const data=await res.json(); savedId=data.id; ARTICLE_ID=savedId; DRAFT_KEY='admin_draft_'+ARTICLE_ID; savedSlug=data.slug||null; }
+  try {
+    if (ARTICLE_ID) {
+      res = await fetch('/api/articles/'+ARTICLE_ID, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      if (res.ok) { const data=await res.json().catch(()=>({})); savedSlug=data.slug||null; }
+    } else {
+      res = await fetch('/api/articles', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      if (res.ok) { const data=await res.json(); savedId=data.id; ARTICLE_ID=savedId; DRAFT_KEY='admin_draft_'+ARTICLE_ID; savedSlug=data.slug||null; _lockFormat(); }
+    }
+  } catch (e) {
+    // Requête partie mais jamais arrivée : réseau mort malgré navigator.onLine.
+    await _saveForLater();
+    return;
   }
 
   if (!res.ok) { toast('Erreur lors de la sauvegarde','err'); return; }
@@ -4263,7 +4647,7 @@ async function saveArticle() {
         await fetch('/api/articles/'+savedId, {
           method: 'PUT',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ content: editor.innerHTML, notify: false })
+          body: JSON.stringify({ content: _editorHtml(), notify: false })
         }).catch(()=>{});
       }
     }
@@ -4280,9 +4664,12 @@ async function saveArticle() {
   updateSyncInfo();
   toast('Sauvegardé !','ok');
   clearDraftLocal(); // effacer le brouillon local après synchro serveur
+  // Attendu AVANT la redirection : quitter la page annulerait la requête.
+  const offlineCopy = _refreshOfflineCopy(savedId);
   if (apiStatus === 'published' && savedSlug) {
     // Publié → afficher l'article pour confirmer
-    setTimeout(()=>location.href='/voyage/'+savedSlug, 1000);
+    await Promise.all([offlineCopy, new Promise(r => setTimeout(r, 1000))]);
+    location.href='/voyage/'+savedSlug;
   } else if (wasNew && savedId) {
     // Nouvel article archivé → éditeur avec ID (si pas déjà redirigé via ensureArticleId)
     history.replaceState(null, '', '/admin/editor/' + savedId);
@@ -4397,6 +4784,138 @@ function _extractRtfImages(rtf) {
   }
   return files;
 }
+// Texte colle sans image (Samsung Notes, SMS, e-mail...) : un <p> par ligne,
+// exactement ce que produit Entree tapee dans l'editeur. insertText laissait
+// le navigateur decider : des <div> (Chrome), des <br> (certains navigateurs
+// mobiles) ou des <p> selon le contexte - d'ou un texte colle plus serre que
+// le texte tape juste en dessous. Une ligne vide reste une ligne vide. Les
+// retours finaux sont ignores (ils ajoutaient un blanc en fin de collage).
+// NB : backslashes doubles, ce fichier est un template literal.
+// La premiere ligne tapee dans un editeur vide reste du texte nu (hors <p>) ;
+// y coller plusieurs lignes, Chrome les degradait en <br> faute de bloc
+// englobant. On enveloppe donc d'abord la ligne du curseur dans un <p>.
+function _wrapCaretLineInParagraph() {
+  const ed = document.getElementById('e-content');
+  const sel = window.getSelection();
+  if (!ed || !sel || !sel.rangeCount) return;
+  const r = sel.getRangeAt(0);
+  const node = r.startContainer, off = r.startOffset;
+  if (!ed.contains(node) || node === ed) return;
+  let top = node;
+  while (top.parentNode && top.parentNode !== ed) top = top.parentNode;
+  const isBlock = n => n.nodeType === 1 && /^(P|DIV|H[1-6]|UL|OL|LI|BLOCKQUOTE|FIGURE|SECTION|PRE|TABLE|HR)$/.test(n.tagName);
+  if (isBlock(top)) return;
+  let start = top, end = top;
+  while (start.previousSibling && !isBlock(start.previousSibling)) start = start.previousSibling;
+  while (end.nextSibling && !isBlock(end.nextSibling)) end = end.nextSibling;
+  const p = document.createElement('p');
+  ed.insertBefore(p, start);
+  for (let n = start; n; ) { const next = n === end ? null : n.nextSibling; p.appendChild(n); n = next; }
+  // Deplacer le noeud a annule la selection : on la remet au meme endroit.
+  const r2 = document.createRange();
+  r2.setStart(node, off);
+  r2.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(r2);
+}
+function _insertPlainTextAsParagraphs(text) {
+  const lines = String(text).split('\\r\\n').join('\\n').split('\\r').join('\\n')
+    .split('\\u2028').join('\\n').split('\\u2029').join('\\n').split('\\n');
+  while (lines.length > 1 && !lines[lines.length - 1].trim()) lines.pop();
+  if (lines.length < 2) {
+    if (!document.execCommand('insertText', false, lines[0] || '')) _insertParagraphNodes([lines[0] || '']);
+    return;
+  }
+  _wrapCaretLineInParagraph();
+  const escH = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const html = lines.map(l => l.trim() ? '<p>' + escH(l) + '</p>' : '<p><br></p>').join('');
+  // Curseur entre deux blocs (typiquement apres la derniere photo d'un jour,
+  // "en bas") : insertHTML y echoue sans rien inserer, et le navigateur
+  // collait alors a sa facon (lignes en <br>, plus serrees que le reste).
+  // On insere les paragraphes nous-memes. Sinon insertHTML, qui garde
+  // l'annulation native, avec le meme repli s'il refuse.
+  const sel = window.getSelection();
+  const ed = document.getElementById('e-content');
+  const entreBlocs = sel && sel.rangeCount && sel.getRangeAt(0).startContainer === ed;
+  if (entreBlocs || !document.execCommand('insertHTML', false, html)) _insertParagraphNodes(lines);
+}
+// Insertion "a la main" d'un <p> par ligne au curseur, au premier niveau de
+// l'editeur (apres le bloc qui contient le curseur s'il y en a un), curseur
+// place en fin de derniere ligne. Previent l'editeur (sauvegarde auto,
+// annuler) par un evenement input, comme une frappe.
+function _insertParagraphNodes(lines) {
+  const ed = document.getElementById('e-content');
+  const sel = window.getSelection();
+  if (!ed || !sel || !sel.rangeCount) return;
+  const r = sel.getRangeAt(0);
+  let ref = null;   // noeud de premier niveau AVANT lequel inserer
+  if (r.startContainer === ed) ref = ed.childNodes[r.startOffset] || null;
+  else {
+    let top = r.startContainer;
+    while (top.parentNode && top.parentNode !== ed) top = top.parentNode;
+    ref = ed.contains(top) ? top.nextSibling : null;
+  }
+  let last = null;
+  lines.forEach(l => {
+    const p = document.createElement('p');
+    if (l.trim()) p.textContent = l; else p.innerHTML = '<br>';
+    ed.insertBefore(p, ref);
+    last = p;
+  });
+  if (!last) return;
+  const r2 = document.createRange();
+  r2.selectNodeContents(last);
+  r2.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(r2);
+  ed.dispatchEvent(new Event('input', { bubbles: true }));
+}
+// Filet de securite : certains claviers mobiles (presse-papier du clavier
+// Samsung, Gboard) inserent un texte copie SANS evenement paste - le
+// navigateur le decoupe alors en <br>. Juste apres une telle insertion, le
+// bloc du curseur est remis en un <p> par ligne. Seul ce bloc est touche,
+// et seulement pour ces types d'insertion (jamais Maj+Entree, qui reste un
+// retour a la ligne voulu).
+function _normalizeInsertedLines(e) {
+  const t = e.inputType || '';
+  const multi = t === 'insertFromPaste' || t === 'insertFromDrop' || t === 'insertReplacementText'
+    || (t === 'insertText' && typeof e.data === 'string' && e.data.indexOf('\\n') !== -1);
+  if (!multi) return;
+  const ed = document.getElementById('e-content');
+  const sel = window.getSelection();
+  if (!ed || !sel || !sel.rangeCount) return;
+  const node = sel.anchorNode, off = sel.anchorOffset;
+  let top = node;
+  while (top && top.parentNode && top.parentNode !== ed) top = top.parentNode;
+  if (!top || top === ed || top.nodeType !== 1 || !/^(P|DIV)$/.test(top.tagName) || top.className) return;
+  if (!top.querySelector(':scope > br')) return;
+  // Decoupe aux <br> directs : chaque morceau devient un <p>, en deplacant
+  // les noeuds (pas de copie) pour pouvoir remettre le curseur en place.
+  const parts = [[]];
+  [...top.childNodes].forEach(n => { if (n.nodeType === 1 && n.tagName === 'BR') parts.push([]); else parts[parts.length - 1].push(n); });
+  while (parts.length > 1 && !parts[parts.length - 1].some(n => n.textContent.trim())) parts.pop();
+  parts.forEach(nodes => {
+    const p = document.createElement('p');
+    if (nodes.length && nodes.some(n => n.textContent.trim() || n.nodeType === 1)) nodes.forEach(n => p.appendChild(n));
+    else p.innerHTML = '<br>';
+    ed.insertBefore(p, top);
+  });
+  top.remove();
+  try {
+    const r = document.createRange();
+    if (node && ed.contains(node)) r.setStart(node, Math.min(off, node.nodeType === 3 ? node.length : node.childNodes.length));
+    else { r.selectNodeContents(ed); }
+    r.collapse(node && ed.contains(node));
+    sel.removeAllRanges();
+    sel.addRange(r);
+  } catch (err) { /* curseur non restaurable : le contenu, lui, est correct */ }
+}
+document.getElementById('e-content')?.addEventListener('input', _normalizeInsertedLines);
+// Une photo inseree ou supprimee peut devenir le dernier bloc : on remet le
+// paragraphe de fin a chaque modification, et avant qu'un clic ne place le
+// curseur.
+['input', 'focus', 'mousedown', 'touchstart'].forEach(t =>
+  document.getElementById('e-content')?.addEventListener(t, _ensureTrailingParagraph, { passive: true }));
 document.getElementById('e-content')?.addEventListener('paste', async e => {
   e.preventDefault();
   const items = [...e.clipboardData.items].filter(i => i.type.startsWith('image/'));
@@ -4706,7 +5225,7 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
     // pasted caption silently vanished even though the image landed fine).
     if (text) insertTextAtLiveSelection(text);
   } else if (text) {
-    document.execCommand('insertText', false, text);
+    _insertPlainTextAsParagraphs(text);
   }
   // RTF extraction (see _extractRtfImages) covers Word Desktop's normal
   // case - a photo pasted straight from a document. It intentionally

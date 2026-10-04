@@ -12,6 +12,7 @@
 
 import { json, notFound, badRequest } from '../utils.js';
 import { notifySubscribers } from '../notifications.js';
+import { isDaysContent, diffDays, dayLabel, dayAnchor } from '../helpers/days.js';
 
 // ──────────────────────────────────────────────────────────────
 // List
@@ -249,9 +250,21 @@ export async function updateArticle(request, env, id, ctx) {
     if ('title' in body && body.title !== article.title) changes.push(`Titre : ${body.title}`);
     if ('destination' in body && body.destination !== article.destination) changes.push(`Destination : ${body.destination || '-'}`);
     if (('start_date' in body || 'end_date' in body) && (body.start_date !== article.start_date || body.end_date !== article.end_date)) changes.push('Dates modifiées');
-    if ('content' in body && body.content !== article.content) changes.push('Contenu mis à jour');
+    let days = null;
+    if ('content' in body && body.content !== article.content && isDaysContent(updated.content) && article.status === 'published') {
+      // Jour par jour : dire QUEL jour est nouveau ou modifie, plutot qu'un
+      // vague "Contenu mis a jour". Seulement si les lecteurs avaient deja
+      // l'article : a la premiere publication, "Jour 1 modifie" n'aurait pas
+      // de sens pour eux.
+      const { added, modified } = diffDays(article.content, updated.content);
+      const label = d => dayLabel(d, updated.start_date, d.position);
+      added.forEach(d => changes.push(`Nouveau jour : ${label(d)}`));
+      modified.forEach(d => changes.push(`${label(d)} (modifié)`));
+      const first = added[0] || modified[0];
+      if (first) days = { added: added.map(label), modified: modified.map(label), anchor: dayAnchor(first.date, first.position) };
+    } else if ('content' in body && body.content !== article.content) changes.push('Contenu mis à jour');
     if ('cover_url' in body && body.cover_url !== article.cover_url) changes.push('Photo de couverture modifiée');
-    notifySubscribers(env, ctx, normalizeArticle(updated), { isUpdate: true, changes });
+    notifySubscribers(env, ctx, normalizeArticle(updated), { isUpdate: true, changes, days });
   }
 
   return json(normalizeArticle(updated));

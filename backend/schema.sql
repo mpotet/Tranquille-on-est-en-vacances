@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS comments (
   push_endpoint  TEXT,                       -- optional: to push them replies
   body           TEXT     NOT NULL,
   is_read        INTEGER  NOT NULL DEFAULT 0, -- has the admin seen this in the dashboard?
+  day            TEXT,                       -- article jour par jour : date du jour commente (NULL = article entier)
   created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

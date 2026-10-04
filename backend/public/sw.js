@@ -21,7 +21,7 @@
  *   revalide silencieusement le cache.
  */
 
-const VERSION = 'v46';
+const VERSION = 'v47';
 const PAGES_CACHE = `tranquille-pages-${VERSION}`;
 const ASSETS_CACHE = `tranquille-assets-${VERSION}`;
 const API_CACHE = `tranquille-api-${VERSION}`;
@@ -175,6 +175,18 @@ self.addEventListener('fetch', event => {
     // no-cache request header - honour it by going straight to the network
     // instead of serving the stale-while-revalidate cached copy.
     const wantsFresh = (req.headers.get('cache-control') || '').includes('no-cache');
+    if (isPublicApiGet(url) && wantsFresh) {
+      // "Fresh" must never mean "network or nothing". The editor loads the
+      // article it is about to edit this way: going straight to the network
+      // used to return an error offline, and the editor opened with every
+      // field empty although a copy sat in this very cache (reported: article
+      // just published, reopened in airplane mode, no text at all). Network
+      // first, so an online admin still always gets current data - and every
+      // successful answer refreshes the copy the offline fallback relies on.
+      const cacheUrl = url.pathname === '/api/articles' ? stripLimitParam(url) : req.url;
+      event.respondWith(networkFirstJson(event, req, API_CACHE, cacheUrl));
+      return;
+    }
     if (isPublicApiGet(url) && !wantsFresh) {
       // /api/articles?limit=N is keyed ignoring `limit` specifically: the
       // client-side request-more-per-page value can change across a
@@ -249,6 +261,14 @@ async function networkFirst(req, cacheName) {
   } catch {
     const cached = await cache.match(req);
     if (cached) return cached;
+    // An article created in this session was reached by history.replaceState,
+    // never by a real navigation, so its own /admin/editor/:id page was never
+    // cached. Every editor page is the same shell (the id is read back from
+    // the URL when the server did not embed one), so the generic one serves.
+    if (/^\/admin\/editor\/\d+$/.test(new URL(req.url).pathname)) {
+      const shell = await cache.match('/admin/editor', { ignoreSearch: true });
+      if (shell) return shell;
+    }
     return new Response(offlineFallbackHtml(), {
       status: 200,
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -278,6 +298,40 @@ async function staleWhileRevalidateJson(event, req, cacheName, cacheKey) {
   const fresh = await revalidate;
   if (fresh) return fresh;
 
+  return new Response('{"error":"offline"}', {
+    status: 503,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+// Network first for JSON the page explicitly wants fresh, the cache being the
+// fallback only. A slow-but-not-dead travel connection can leave a request
+// hanging for minutes, so past NETWORK_GRACE_MS the cached copy is served if
+// there is one; the request still completes in the background and refreshes
+// the cache. A 5xx falls back too: a server hiccup must not empty the editor.
+const NETWORK_GRACE_MS = 10000;
+async function networkFirstJson(event, req, cacheName, cacheKey) {
+  const cache = await caches.open(cacheName);
+  const key = cacheKey || req.url;
+  const network = fetch(req).then(resp => {
+    if (resp && resp.ok) return cache.put(key, resp.clone()).then(() => resp, () => resp);
+    return resp;
+  });
+  event.waitUntil(network.catch(() => {}));
+
+  let timer;
+  const grace = new Promise(resolve => { timer = setTimeout(() => resolve('timeout'), NETWORK_GRACE_MS); });
+  const first = await Promise.race([network.catch(() => null), grace]);
+  clearTimeout(timer);
+
+  if (first && first !== 'timeout' && first.status < 500) return first;
+  const cached = await cache.match(key);
+  if (cached) return cached;
+  if (first && first !== 'timeout') return first;
+  if (first === 'timeout') {
+    const late = await network.catch(() => null);
+    if (late) return late;
+  }
   return new Response('{"error":"offline"}', {
     status: 503,
     headers: { 'Content-Type': 'application/json' },
@@ -463,6 +517,7 @@ async function syncPendingArticles() {
         // deleted article, etc.) - either way, stop retrying it.
         await deletePending(item.localId);
         const data = await res.json().catch(() => null);
+        if (res.ok) await refreshCachedArticle(data && data.id);
         await notifyClients({ type: 'article-synced', ok: res.ok, localId: item.localId, data });
       }
       // 5xx / thrown network error: leave it queued, will retry on next sync.
@@ -470,6 +525,18 @@ async function syncPendingArticles() {
       // Still offline or request failed - keep it queued for the next sync event.
     }
   }
+}
+
+// After a queued save reaches the server, the offline copy of that article
+// still holds the text from before it. Refresh it so the next offline
+// opening shows what was actually saved.
+async function refreshCachedArticle(id) {
+  if (!id) return;
+  try {
+    const url = new URL('/api/articles/' + id, self.location.origin).toString();
+    const resp = await fetch(url, { cache: 'no-store' });
+    if (resp.ok) await (await caches.open(API_CACHE)).put(url, resp);
+  } catch { /* offline again - the next online editor load refreshes it */ }
 }
 
 // ── Background sync : photos mises en attente (upload échoué / hors ligne) ──

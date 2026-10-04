@@ -39,12 +39,27 @@ function fmtDateRange(a) {
 
 // ── Email HTML template ───────────────────────────────────────────────────────
 
-function buildEmailHtml(article, articleUrl, unsubUrl, isUpdate = false, changes = []) {
+// Article jour par jour : ce qu'annonce la notification. `days` vient de
+// updateArticle ({ added: [libelles], modified: [libelles], anchor }) ; null
+// pour un recit unique, qui garde exactement les messages d'avant.
+function dayHeadline(article, days) {
+  if (!days) return null;
+  const a = days.added || [], m = days.modified || [];
+  if (a.length === 1) return { title: `📅 Nouveau jour : ${article.title}`, badge: '📅 Nouveau jour', body: a[0] };
+  if (a.length > 1)   return { title: `📅 ${a.length} nouveaux jours : ${article.title}`, badge: '📅 Nouveaux jours', body: a.join(' · ') };
+  if (m.length === 1) return { title: `✏️ Jour modifié : ${article.title}`, badge: '✏️ Jour modifié', body: m[0] + ' (modifié)' };
+  if (m.length > 1)   return { title: `✏️ ${m.length} jours modifiés : ${article.title}`, badge: '✏️ Jours modifiés', body: m.join(' · ') };
+  return null;
+}
+
+function buildEmailHtml(article, articleUrl, unsubUrl, isUpdate = false, changes = [], headline = null) {
   const dates = fmtDateRange(article);
   const dest  = article.destination ? ` · 📍 ${esc(article.destination)}` : '';
   const desc  = esc(article.short_description) || (isUpdate ? 'Le récit de voyage a été mis à jour.' : 'Un nouveau récit de voyage vient d\'être publié sur le blog !');
 
-  const badge = isUpdate
+  const badge = headline
+    ? `<div style="font-size:11px;font-weight:700;color:#7C5CBF;text-transform:uppercase;letter-spacing:.15em;margin-bottom:12px">${esc(headline.badge)}</div>`
+    : isUpdate
     ? `<div style="font-size:11px;font-weight:700;color:#7C5CBF;text-transform:uppercase;letter-spacing:.15em;margin-bottom:12px">✏️ Récit mis à jour</div>`
     : `<div style="font-size:11px;font-weight:700;color:#2E7D6B;text-transform:uppercase;letter-spacing:.15em;margin-bottom:12px">✦ Nouveau récit de voyage</div>`;
 
@@ -106,13 +121,16 @@ function buildEmailHtml(article, articleUrl, unsubUrl, isUpdate = false, changes
  * @param {object} ctx   - Cloudflare Workers ExecutionContext
  * @param {object} article - normalised article object (slug, title, etc.)
  */
-export function notifySubscribers(env, ctx, article, { isUpdate = false, changes = [] } = {}) {
-  ctx.waitUntil(_doNotify(env, article, isUpdate, changes));
+export function notifySubscribers(env, ctx, article, { isUpdate = false, changes = [], days = null } = {}) {
+  ctx.waitUntil(_doNotify(env, article, isUpdate, changes, days));
 }
 
-async function _doNotify(env, article, isUpdate, changes) {
+async function _doNotify(env, article, isUpdate, changes, days = null) {
   const publicUrl = (env.PUBLIC_URL || '').replace(/\/$/, '');
-  const articleUrl = `${publicUrl}/voyage/${article.slug}`;
+  const headline = dayHeadline(article, days);
+  // Le lien d'une notification "nouveau jour" ouvre directement ce jour.
+  const anchor = headline && days.anchor ? '#' + days.anchor : '';
+  const articleUrl = `${publicUrl}/voyage/${article.slug}${anchor}`;
 
   // ── Push notifications ────────────────────────────────────────────────────
   if (env.VAPID_PRIVATE_KEY && env.VAPID_PUBLIC_KEY) {
@@ -128,7 +146,10 @@ async function _doNotify(env, article, isUpdate, changes) {
 
         // Build notification content
         let notifTitle, notifBody;
-        if (isUpdate) {
+        if (headline) {
+          notifTitle = headline.title;
+          notifBody = headline.body;
+        } else if (isUpdate) {
           notifTitle = `✏️ ${article.title}`;
           notifBody = changes.length
             ? changes.join(' · ')
@@ -145,7 +166,7 @@ async function _doNotify(env, article, isUpdate, changes) {
           body:  notifBody,
           icon:  iconUrl,
           badge: iconUrl,
-          url:   `/voyage/${article.slug}`,
+          url:   `/voyage/${article.slug}${anchor}`,
           tag:   `article-${article.id}`,
           renotify: true,
         });
@@ -206,7 +227,7 @@ async function _doNotify(env, article, isUpdate, changes) {
         // invisible outside of a live `wrangler tail`.
         const results = await Promise.allSettled(emailSubs.map(async sub => {
           const unsubUrl = `${publicUrl}/unsubscribe?token=${sub.token}`;
-          const subject = isUpdate
+          const subject = headline ? headline.title : isUpdate
             ? `✏️ Récit mis à jour : ${article.title}`
             : `✈️ Nouveau voyage : ${article.title}`;
           const emailRes = await fetch('https://api.mailjet.com/v3.1/send', {
@@ -220,7 +241,7 @@ async function _doNotify(env, article, isUpdate, changes) {
                 From: { Email: fromAddress, Name: fromName },
                 To:   [{ Email: sub.email }],
                 Subject: subject,
-                HTMLPart: buildEmailHtml(article, articleUrl, unsubUrl, isUpdate, changes),
+                HTMLPart: buildEmailHtml(article, articleUrl, unsubUrl, isUpdate, changes, headline),
               }],
             }),
             signal: AbortSignal.timeout(10000),

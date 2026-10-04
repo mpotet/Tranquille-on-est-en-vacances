@@ -416,17 +416,82 @@ a, button, .action-btn, .action-btn-sm, .btn-primary, .btn-ghost, .subtle-btn, .
 .prose-vacation h1 { font-size: 2rem; margin: 2rem 0 1rem; font-weight: 700; }
 .prose-vacation h2 { font-size: 1.6rem; margin: 1.8rem 0 .9rem; font-weight: 700; }
 .prose-vacation h3 { font-size: 1.25rem; margin: 1.4rem 0 .7rem; font-weight: 700; }
-.prose-vacation p  { margin: 1rem 0; line-height: 1.85; color: var(--ink); }
+/* Safari (iPhone/iPad) creates a <div>, not a <p>, for each Enter in the
+   editor. Those lines got the page's default 1.5 line height and no margin,
+   so they sat glued together, tighter than the rest of the text, in the
+   editor and on the published page alike. Bare divs are paragraphs here. */
+.prose-vacation p, .prose-vacation > div:not([class])  { margin: .25em 0; line-height: 1.65; color: var(--ink); }
+/* Serre (et non plus 1rem / 1.85) : l'auteur ecrit ligne par ligne, comme
+   dans ses notes de voyage, et prefere des lignes rapprochees. Une ligne
+   vide garde un vrai blanc pour separer deux moments de la journee. */
 .prose-vacation figure { margin: 2rem auto; max-width: 100%; }
 .prose-vacation figure img { border-radius: 1rem; box-shadow: 0 8px 24px rgba(26,43,60,.12); margin: 0 auto; }
 .prose-vacation figcaption { margin-top: .6rem; font-size: .85rem; color: var(--ink-muted); text-align: center; font-style: italic; }
 .prose-vacation ul, .prose-vacation ol { margin: 1rem 0; padding-left: 1.5rem; color: var(--ink); }
-.prose-vacation li { margin: .4rem 0; }
+.prose-vacation li { margin: .25rem 0; line-height: 1.65; }
 .prose-vacation strong { color: var(--ink); font-weight: 700; }
 .prose-vacation em { color: var(--palm); font-weight: 600; }
 .prose-vacation blockquote { border-left: 4px solid rgba(var(--blue-rgb),.30); padding: .75rem 0 .75rem 1rem; margin: 1.5rem 0; color: var(--ink-muted); font-style: italic; background: var(--blue-light); border-radius: 0 16px 16px 0; }
 .prose-vacation a { color: var(--blue); text-decoration: underline; }
 .prose-vacation hr { margin: 2rem 0; border-color: var(--line); }
+
+/* ── Articles jour par jour : frise + blocs repliables ────────── */
+.day-timeline { position: sticky; top: 4.5rem; z-index: 30; display: flex; align-items: center; gap: .5rem;
+  margin: 0 0 1.5rem; padding: .5rem; border-radius: 999px; background: var(--cream);
+  border: 1px solid var(--line); box-shadow: var(--card-shadow); }
+/* Bande opaque au-dessus de la frise collante : sans elle, le texte qui
+   defile se voyait entre la barre de navigation et la frise. */
+.day-timeline::before { content: ''; position: absolute; left: -.5rem; right: -.5rem; bottom: 100%; height: .75rem; background: var(--cream); }
+.day-timeline-track { display: flex; gap: .35rem; overflow-x: auto; flex: 1; min-width: 0;
+  scrollbar-width: none; scroll-behavior: smooth; padding: .1rem; }
+.day-timeline-track::-webkit-scrollbar { display: none; }
+.day-chip { flex: none; display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 3.6rem; padding: .3rem .65rem; border-radius: 999px; text-decoration: none; line-height: 1.15;
+  color: var(--ink-muted); background: var(--sand); transition: background .15s, color .15s; }
+.day-chip:hover { color: var(--blue); background: var(--blue-light); }
+.day-chip.is-active { background: var(--blue); color: #fff; }
+.day-chip-num { font-weight: 800; font-size: .8rem; }
+.day-chip-date { font-size: .66rem; white-space: nowrap; opacity: .85; }
+.day-toggle-all { flex: none; display: inline-flex; align-items: center; gap: .3rem; padding: .45rem .75rem;
+  border-radius: 999px; border: none; background: transparent; color: var(--blue); font-weight: 700;
+  font-size: .75rem; cursor: pointer; white-space: nowrap; }
+.day-toggle-all:hover { background: var(--blue-light); }
+@media (max-width: 520px) { .day-toggle-all span { display: none; } }
+.prose-vacation details.trip-day { margin: 0 0 1.25rem; border-radius: 1.25rem; border: 1px solid var(--line);
+  background: var(--cream); scroll-margin-top: 9rem; }
+.prose-vacation .trip-day-head { list-style: none; cursor: pointer; display: flex; align-items: baseline; flex-wrap: wrap;
+  gap: .25rem .75rem; padding: 1rem 1.25rem; border-radius: 1.25rem; }
+.prose-vacation .trip-day-head::-webkit-details-marker { display: none; }
+.prose-vacation .trip-day-head:hover { background: var(--blue-light); }
+.prose-vacation .trip-day-num { font-family: "Playfair Display", Georgia, serif; font-weight: 700; font-size: 1.35rem; color: var(--ink); }
+.prose-vacation .trip-day-date { font-size: .85rem; font-weight: 600; color: var(--blue); }
+.prose-vacation .trip-day-title { font-size: 1rem; font-weight: 600; color: var(--ink-muted); flex-basis: 100%; }
+.prose-vacation .trip-day-caret { margin-left: auto; align-self: center; color: var(--ink-light); transition: transform .2s; }
+.prose-vacation details.trip-day:not([open]) .trip-day-caret { transform: rotate(-90deg); }
+.prose-vacation .trip-day-body { padding: 0 1.25rem 1rem; }
+.prose-vacation .trip-day-body > :first-child { margin-top: 0; }
+@media (max-width: 520px) { .prose-vacation .trip-day-body, .prose-vacation .trip-day-head { padding-left: .9rem; padding-right: .9rem; } }
+/* Commentaires d'une journee : sous son texte, separes par un filet. Ils
+   vivent dans .prose-vacation ; on y annule les marges, l'interligne et les
+   styles de lien/italique du recit pour qu'ils ressemblent a ceux du bas de
+   page. */
+.prose-vacation .trip-day-ccount { display: inline-flex; align-items: center; gap: .25rem; font-size: .78rem; font-weight: 700;
+  color: var(--blue); background: var(--blue-light); padding: .1rem .5rem; border-radius: 999px; }
+.prose-vacation .trip-day-ccount[hidden] { display: none; }
+.prose-vacation .day-comments { margin: 0 1.25rem 1.1rem; padding-top: .9rem; border-top: 1px dashed var(--line); font-size: 1rem; line-height: 1.5; }
+.prose-vacation .day-comments p { margin: 0; line-height: 1.6; }
+.prose-vacation .day-comments .comment-item p { margin-bottom: .5rem; }
+.prose-vacation .day-comments a { text-decoration: none; }
+.prose-vacation .day-comments em { color: inherit; font-weight: inherit; }
+.prose-vacation .day-comments-list:not(:empty) { margin-bottom: .75rem; }
+.prose-vacation .day-comment-btn { display: inline-flex; align-items: center; gap: .4rem; padding: .45rem .9rem; border-radius: 999px;
+  border: 1px solid rgba(var(--blue-rgb), .35); background: transparent; color: var(--blue); font-weight: 700; font-size: .82rem; cursor: pointer; }
+.prose-vacation .day-comment-btn:hover { background: var(--blue-light); }
+.prose-vacation .day-comment-slot:not(:empty) { margin-bottom: .6rem; }
+.prose-vacation .day-comments-show-more { display: inline-flex; align-items: center; gap: .35rem; padding: .2rem 0; border: none;
+  background: none; color: var(--blue); font-weight: 700; font-size: .85rem; cursor: pointer; }
+.prose-vacation .day-comments-show-more:hover { text-decoration: underline; }
+@media (max-width: 520px) { .prose-vacation .day-comments { margin-left: .9rem; margin-right: .9rem; } }
 
 /* ── Image grid rows (2 or 3 images side-by-side) ──────────── */
 .img-row { display:grid; gap:.5rem; margin:1.5rem 0; }

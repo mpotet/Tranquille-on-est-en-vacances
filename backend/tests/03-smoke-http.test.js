@@ -185,6 +185,81 @@ INSERT INTO photos (article_id, r2_key, url, caption, sort_order) VALUES
     if (r.status === 200) noMatch(await r.text(), /word image/i, 'meme regle a l impression');
   });
 
+  await test('un article jour par jour affiche sa frise et ses jours', async () => {
+    const r = d1(`
+INSERT INTO articles (title, slug, content, status, start_date, end_date, short_description, created_at, updated_at)
+VALUES ('Jours TNR', 'jours-tnr',
+  '<section class="trip-day" data-day="2026-08-02" data-title="Petra"><p>Deuxieme jour.</p></section><section class="trip-day" data-day="2026-08-01" data-title=""><p>Premier jour.</p></section>',
+  'published', '2026-08-01', '2026-08-05', 'Test jour par jour',
+  -- Date ancienne : le test site-info attend que "Jordanie TNR" reste le
+  -- dernier article modifie.
+  '2020-01-01 00:00:00', '2020-01-01 00:00:00');
+`);
+    ok(r.status === 0, `insertion echouee :
+${(r.stderr || r.stdout || '').slice(-800)}`);
+    const resp = await fetch(BASE + '/voyage/jours-tnr');
+    eq(resp.status, 200);
+    const html = await resp.text();
+    match(html, /class="day-timeline"/, 'frise absente');
+    match(html, /id="jour-2026-08-01"[\s\S]*id="jour-2026-08-02"/, 'les jours doivent apparaitre dans l ordre chronologique');
+    match(html, /Premier jour\.[\s\S]*Deuxieme jour\./, 'contenu des deux jours, dans l ordre');
+    // 600 : l'en-tete du jour contient aussi le compteur de commentaires.
+    match(html, /Jour 2<\/span>[\s\S]{0,600}Petra/, 'titre du jour affiche');
+  });
+
+  // Commentaires sur une journee. gate_answer ET turnstile_token : le worker
+  // de test lit .dev.vars, avec ou sans cles Turnstile de test selon le poste.
+  const commenter = (extra) => fetch(BASE + '/api/articles/jours-tnr/comments', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ author_name: 'TNR', body: 'Commentaire de test', gate_answer: 'wifi', turnstile_token: 'XXXX.DUMMY.TOKEN.XXXX', ...extra }),
+  });
+
+  await test('un commentaire peut viser une journee, la reponse en herite', async () => {
+    const r1 = await commenter({ day: '2026-08-02' });
+    eq(r1.status, 201, `commentaire de jour refuse : ${await r1.clone().text()}`);
+    const c1 = (await r1.json()).comment;
+    eq(c1.day, '2026-08-02');
+    const r2 = await commenter({ parent_id: c1.id, body: 'Reponse' });
+    eq(r2.status, 201);
+    eq((await r2.json()).comment.day, '2026-08-02', 'une reponse reste dans la journee de son commentaire');
+    const html = await (await fetch(BASE + '/voyage/jours-tnr')).text();
+    match(html, /data-day="2026-08-02">\s*<div class="day-comments-list[^"]*">[\s\S]*?Commentaire de test/, 'le commentaire doit etre affiche sous sa journee');
+    match(html, /1 commentaire est publié|2 commentaires sont publiés/, 'la section generale signale les commentaires des journees');
+  });
+
+  await test('au-dela de 3 fils sur un jour, les plus anciens sont replies', async () => {
+    // Insertion directe : l'API limite a 5 envois par 10 min et par IP.
+    const id = `(SELECT id FROM articles WHERE slug='jours-tnr')`;
+    const r = d1(`INSERT INTO comments (article_id, author_name, body, day, created_at) VALUES
+  (${id}, 'A', 'Recent 1', '2026-08-02', '2030-01-01 10:00:00'),
+  (${id}, 'B', 'Recent 2', '2026-08-02', '2030-01-01 11:00:00'),
+  (${id}, 'C', 'Recent 3', '2026-08-02', '2030-01-01 12:00:00');`);
+    ok(r.status === 0, `insertion echouee :\n${(r.stderr || r.stdout || '').slice(-800)}`);
+    const html = await (await fetch(BASE + '/voyage/jours-tnr')).text();
+    // 4 fils : le plus ancien (le commentaire de test + sa reponse) est replie.
+    match(html, /data-show-more[^>]*>[\s\S]{0,80}Voir les 2 commentaires précédents/, 'bouton "voir les precedents" absent');
+    match(html, /class="day-comments-more[^"]*" hidden>[\s\S]*?Commentaire de test[\s\S]*?<\/div>/, 'le plus ancien doit etre dans le bloc replie');
+    match(html, /Recent 1[\s\S]*Recent 2[\s\S]*Recent 3/, 'les 3 plus recents restent visibles, dans l ordre');
+  });
+
+  await test('une journee inexistante est refusee', async () => {
+    const r = await commenter({ day: '2030-01-01' });
+    eq(r.status, 400);
+  });
+
+  await test('un commentaire sans journee reste dans la section generale', async () => {
+    const r = await commenter({ body: 'Commentaire general' });
+    eq(r.status, 201);
+    const html = await (await fetch(BASE + '/voyage/jours-tnr')).text();
+    match(html, /id="comments-list"[^>]*>[\s\S]*?Commentaire general/);
+  });
+
+  await test('un recit unique n affiche pas de frise', async () => {
+    const html = await (await fetch(BASE + '/voyage/jordanie-tnr')).text();
+    noMatch(html, /class="day-timeline"/, 'un article existant ne doit pas changer de presentation');
+    noMatch(html, /<details class="trip-day"/);
+  });
+
   await test('une page inexistante renvoie 404 proprement', async () => {
     const r = await fetch(BASE + '/voyage/ce-slug-n-existe-pas');
     eq(r.status, 404, 'un 500 ici masquerait une vraie erreur de rendu');

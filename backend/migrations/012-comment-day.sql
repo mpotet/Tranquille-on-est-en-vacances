@@ -1,0 +1,12 @@
+-- 012 - Commentaires rattaches a une journee (articles "jour par jour").
+--
+-- Colonne facultative : NULL = commentaire sur l'article entier, comme tous
+-- les commentaires existants, qui ne changent donc ni de sens ni de place.
+-- Valeur = date du jour commente (AAAA-MM-JJ, cf. worker/helpers/days.js).
+--
+-- Ordre de mise en production indifferent : le worker detecte la colonne
+-- (voir commentDayColumn dans worker/api/comments.js) et se comporte comme
+-- avant tant qu'elle n'existe pas.
+--
+-- Retour arriere : migrations/012-rollback.sql
+ALTER TABLE comments ADD COLUMN day TEXT;

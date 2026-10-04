@@ -45,6 +45,17 @@ bucket_name = "tranquille-vacances-photos"
 # wrangler secret put RESEND_API_KEY      # re_xxxx  (from resend.com)
 # wrangler secret put NOTIFY_FROM_EMAIL   # Blog Potet <noreply@yourdomain.com>
 
+# ── Anti-robot des commentaires : Cloudflare Turnstile (optionnel) ────────────
+# Tant que ces deux valeurs ne sont pas definies, la question secrete reste en
+# place. Les deux definies => le widget Turnstile la remplace.
+# Widget a creer dans le tableau de bord Cloudflare > Turnstile > Add widget
+# (domaine : tranquille-vacances.esti-archi.workers.dev, mode Managed).
+#   TURNSTILE_SITE_KEY  - cle de site (publique) : a mettre dans [env.production.vars]
+#   wrangler secret put TURNSTILE_SECRET --env production   # cle secrete
+#   TURNSTILE_HOSTNAMES - optionnel, defaut = hote de PUBLIC_URL
+# En local, les cles de test officielles fonctionnent :
+#   npx wrangler dev --var TURNSTILE_SITE_KEY:1x00000000000000000000AA --var TURNSTILE_SECRET:1x0000000000000000000000000000000AA
+
 # ── Production environment overrides ─────────────────────────────────────────
 [env.production]
 name = "tranquille-vacances"

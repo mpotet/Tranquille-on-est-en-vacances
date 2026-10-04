@@ -33,7 +33,7 @@ import { listArticles, getArticle, createArticle, updateArticle, patchArticleSta
 import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, deleteHeroImage, serveR2Object, uploadPhotoVariants } from './api/photos.js';
 import { getSettings, updateSettings } from './api/settings.js';
 import { getSiteInfo } from './api/site-info.js';
-import { listComments, createComment, deleteComment, listRecentCommentsAdmin, replyToComment, countUnreadComments, markCommentsRead } from './api/comments.js';
+import { listComments, createComment, deleteComment, listRecentCommentsAdmin, replyToComment, countUnreadComments, markCommentsRead, turnstileEnabled, commentColumns } from './api/comments.js';
 import { getAnalytics } from './api/analytics.js';
 import {
   listEmailLog, listSubscriberEmailLog, getEmailConfigStatus, saveEmailConfig, checkEmailSenderStatus, requestSenderVerification,
@@ -48,6 +48,7 @@ import { homePage }     from './pages/home.js';
 import { showcasePage } from './pages/showcase.js';
 import { loginPage, dashboardPage, editorPage } from './pages/admin.js';
 import { printPage, exportWordDocx } from './pages/print.js';
+import { isDaysContent, parseDays, dayNumber, fmtDayShort, dayAnchor, daysToHeadings } from './helpers/days.js';
 
 // ──────────────────────────────────────────────────────────────
 // Simple voyages-list & voyage-detail pages (inline for brevity)
@@ -627,6 +628,154 @@ function estimateReadingMinutes(content, photoCount) {
   return Math.max(1, Math.round(seconds / 60));
 }
 
+// Frise des jours : clic = deplie le jour et y va ; le jour en cours de
+// lecture est surligne dans la frise ; un bouton replie/deplie tout.
+const DAYS_SCRIPT = `<script>
+(function(){
+  var frise=document.querySelector('.day-timeline');
+  if(!frise) return;
+  var jours=Array.prototype.slice.call(document.querySelectorAll('details.trip-day'));
+  var liens=Array.prototype.slice.call(frise.querySelectorAll('[data-day-link]'));
+  // Choisir un jour = lire a partir de ce jour : les jours precedents se
+  // replient, celui-ci et les suivants sont deplies. Rien ne peut donc plus
+  // grandir au-dessus du jour vise : le saut est immediat et exact. Avant,
+  // les photos des jours precedents (sans dimensions reservees) se
+  // chargeaient pendant le saut, repoussaient la page, et il fallait la
+  // recaler pendant de longues secondes. Les photos des jours replies ne
+  // sont pas telechargees du tout : des donnees mobiles en moins en voyage.
+  function concentrer(d){
+    var avant=true;
+    jours.forEach(function(j){ if(j===d) avant=false; j.open=!avant; });
+    majBouton();
+  }
+  window._concentrerJour=concentrer;
+  // behavior 'instant' explicite : le site a html{scroll-behavior:smooth},
+  // qui transformait sinon chaque saut en long defilement anime.
+  function aller(d){
+    d.scrollIntoView({block:'start',behavior:'instant'});
+    // Une image du jour lui-meme ne peut que pousser ce qui est SOUS son
+    // haut ; une seule verification a l'image suivante suffit.
+    requestAnimationFrame(function(){ d.scrollIntoView({block:'start',behavior:'instant'}); });
+  }
+  function ouvrir(id){
+    var d=document.getElementById(id);
+    if(!d) return;
+    concentrer(d);
+    aller(d);
+  }
+  liens.forEach(function(a){
+    a.addEventListener('click',function(e){
+      e.preventDefault();
+      var id=a.getAttribute('data-day-link');
+      ouvrir(id);
+      if(history.replaceState) history.replaceState(null,'','#'+id);
+    });
+  });
+  // Lien direct (notification "nouveau jour"), a l'ouverture de la page ou
+  // sur une page deja ouverte : meme comportement qu'un clic dans la frise.
+  function suivreAncre(){
+    var cible=location.hash && document.getElementById(location.hash.slice(1));
+    if(cible && cible.tagName==='DETAILS') ouvrir(cible.id);
+  }
+  window.addEventListener('hashchange',suivreAncre);
+  var bouton=frise.querySelector('[data-days-toggle]');
+  function majBouton(){
+    var tousOuverts=jours.every(function(d){return d.open;});
+    bouton.querySelector('span').textContent=tousOuverts?'Tout replier':'Tout déplier';
+    bouton.setAttribute('aria-label',tousOuverts?'Replier tous les jours':'Déplier tous les jours');
+    bouton.querySelector('i').className='ph-bold '+(tousOuverts?'ph-arrows-in-line-vertical':'ph-arrows-out-line-vertical');
+  }
+  bouton.addEventListener('click',function(){
+    // Le jour en cours de lecture reste a la meme place a l'ecran : deplier
+    // les jours du dessus ne doit pas faire perdre le fil.
+    var repere=actif||jours[0], haut=repere.getBoundingClientRect().top;
+    var tousOuverts=jours.every(function(d){return d.open;});
+    jours.forEach(function(d){ d.open=!tousOuverts; });
+    majBouton();
+    window.scrollBy({top:repere.getBoundingClientRect().top-haut, behavior:'instant'});
+  });
+  jours.forEach(function(d){ d.addEventListener('toggle',majBouton); });
+  // Jour en cours de lecture : le dernier dont le haut est passe sous la frise.
+  var actif=null;
+  function suivre(){
+    var limite=frise.getBoundingClientRect().bottom+24, courant=jours[0];
+    jours.forEach(function(d){ if(d.getBoundingClientRect().top<=limite) courant=d; });
+    if(!courant || courant===actif) return;
+    actif=courant;
+    liens.forEach(function(a){
+      var on=a.getAttribute('data-day-link')===courant.id;
+      a.classList.toggle('is-active',on);
+      if(on){ a.setAttribute('aria-current','true'); var piste=a.parentNode; piste.scrollTo({left:a.offsetLeft-piste.clientWidth/2+a.clientWidth/2,behavior:'smooth'}); }
+      else a.removeAttribute('aria-current');
+    });
+  }
+  var attente=false;
+  window.addEventListener('scroll',function(){ if(attente) return; attente=true; requestAnimationFrame(function(){ attente=false; suivre(); }); },{passive:true});
+  // En dernier : ouvrir() a besoin de tout ce qui precede (bouton, majBouton).
+  suivreAncre();
+  suivre();
+})();
+</script>`;
+
+// Vue lecteur d'un article jour par jour : la frise (liens vers chaque jour,
+// le jour visible surligne) et les blocs <details>, ouverts par defaut pour
+// qu'un lecteur qui fait simplement defiler lise tout, comme un recit unique.
+const DAYS_VISIBLE_COMMENTS = 3;
+function ssrDaysView(renderedHtml, startDate, { commentsByDay = new Map(), authed = false } = {}) {
+  const days = parseDays(renderedHtml);
+  if (!days.length) return null;
+  const items = days.map((d, i) => ({
+    ...d,
+    num: dayNumber(d.date, startDate, i),
+    short: fmtDayShort(d.date),
+    anchor: dayAnchor(d.date, i),
+  }));
+  const chips = items.map(d => `<a href="#${d.anchor}" class="day-chip" data-day-link="${d.anchor}" title="${safeAttr(['Jour ' + d.num, d.short, d.title].filter(Boolean).join(' · '))}"><span class="day-chip-num">J${d.num}</span>${d.short ? `<span class="day-chip-date">${safeText(d.short)}</span>` : ''}</a>`).join('');
+  const timeline = `
+    <nav class="day-timeline" aria-label="Les jours du voyage">
+      <div class="day-timeline-track">${chips}</div>
+      <button type="button" class="day-toggle-all" data-days-toggle aria-label="Replier tous les jours"><i class="ph-bold ph-arrows-in-line-vertical"></i><span>Tout replier</span></button>
+    </nav>`;
+  // Sous chaque journee datee : ses commentaires et un bouton pour la
+  // commenter. Le compteur dans l'en-tete reste visible jour replie.
+  const dayComments = (d) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date || '')) return '';
+    const list = commentsByDay.get(d.date) || [];
+    const label = ['Jour ' + d.num, d.short].filter(Boolean).join(' · ');
+    // Beaucoup de commentaires sur un jour : seuls les DAYS_VISIBLE_COMMENTS
+    // plus recents sont affiches (un lecteur qui vient de commenter voit donc
+    // toujours le sien), les plus anciens derriere un bouton.
+    const older = list.slice(0, Math.max(0, list.length - DAYS_VISIBLE_COMMENTS));
+    const recent = list.slice(older.length);
+    const olderCount = older.reduce((n, c) => n + 1 + (c.replies || []).length, 0);
+    const olderHtml = older.length
+      ? `<button type="button" class="day-comments-show-more" data-show-more><i class="ph-bold ph-caret-up"></i> Voir ${olderCount === 1 ? 'le commentaire précédent' : 'les ' + olderCount + ' commentaires précédents'}</button><div class="day-comments-more space-y-3" hidden>${renderCommentsList(older, authed)}</div>`
+      : '';
+    return `
+  <div class="day-comments" data-day="${d.date}">
+    <div class="day-comments-list space-y-3">${olderHtml}${recent.length ? renderCommentsList(recent, authed) : ''}</div>
+    <div class="reply-form-slot day-comment-slot"></div>
+    <button type="button" class="day-comment-btn" data-day-comment="${d.date}" data-day-label="${safeAttr(label)}"><i class="ph-bold ph-chat-circle-text"></i> Commenter ce jour</button>
+  </div>`;
+  };
+  const countFor = (d) => (commentsByDay.get(d.date) || []).reduce((n, c) => n + 1 + (c.replies || []).length, 0);
+  const body = items.map(d => {
+    const n = countFor(d);
+    return `
+<details class="trip-day" id="${d.anchor}" open>
+  <summary class="trip-day-head">
+    <span class="trip-day-num">Jour ${d.num}</span>
+    ${d.short ? `<span class="trip-day-date">${safeText(d.short)}</span>` : ''}
+    <span class="trip-day-ccount"${n ? '' : ' hidden'} title="Commentaires sur ce jour"><i class="ph-bold ph-chat-circle-text"></i> <span>${n}</span></span>
+    ${d.title ? `<span class="trip-day-title">${safeText(d.title)}</span>` : ''}
+    <i class="ph-bold ph-caret-down trip-day-caret" aria-hidden="true"></i>
+  </summary>
+  <div class="trip-day-body">${d.html}</div>${dayComments(d)}
+</details>`;
+  }).join('');
+  return { timeline, body };
+}
+
 async function voyagePage(env, slug, authed = false, origin = '') {
   // ── Fetch the article server-side ──────────────────────────
   const isNumericId = /^\d+$/.test(String(slug));
@@ -681,10 +830,23 @@ ${TOAST}
 
   // Comments
   const commentsRes = await env.DB
-    .prepare('SELECT id, parent_id, is_admin_reply, author_name, body, created_at FROM comments WHERE article_id = ? ORDER BY created_at ASC, id ASC')
+    .prepare(`SELECT ${await commentColumns(env)} FROM comments WHERE article_id = ? ORDER BY created_at ASC, id ASC`)
     .bind(article.id).all();
   const flatComments = commentsRes.results || [];
   const comments = nestCommentsSSR(flatComments);
+  // Jour par jour : les commentaires d'une journee s'affichent sous elle. Un
+  // commentaire dont le jour n'existe plus (jour supprime ou redate) retombe
+  // dans la section generale : il n'est jamais masque.
+  const articleDays = new Set(parseDays(article.content).map(d => d.date));
+  const commentsByDay = new Map();
+  const generalComments = [];
+  for (const c of comments) {
+    if (c.day && articleDays.has(c.day)) {
+      if (!commentsByDay.has(c.day)) commentsByDay.set(c.day, []);
+      commentsByDay.get(c.day).push(c);
+    } else generalComments.push(c);
+  }
+  const dayCommentCount = [...commentsByDay.values()].flat().reduce((n, c) => n + 1 + (c.replies || []).length, 0);
 
   // Build the combined photo list (gallery photos + inline images not already listed).
   // Compare via a normalized (decoded) URL so a gallery photo and the same
@@ -701,7 +863,14 @@ ${TOAST}
   const photoUrlSet = new Set(photos.map(p => normalizeUrl(p.url)));
   const allPhotos = ssrDedupePhotos([...photos, ...inlineImgs.filter(img => !photoUrlSet.has(normalizeUrl(img.url)))]);
 
-  const renderedContent = ssrVoyageContent(article.content || '', allPhotos);
+  const isDays = isDaysContent(article.content);
+  const renderedFull = ssrVoyageContent(article.content || '', allPhotos);
+  // Article jour par jour : frise en haut + un bloc repliable par journee.
+  // Rendu APRES ssrVoyageContent, sur le HTML final : les images de chaque
+  // jour ont ainsi exactement le meme traitement (lightbox, variantes) que
+  // dans un recit unique.
+  const daysView = isDays ? ssrDaysView(renderedFull, article.start_date, { commentsByDay, authed }) : null;
+  const renderedContent = daysView ? daysView.body : renderedFull;
   const galleryHtml = allPhotos.length ? ssrGallery(allPhotos) : '';
   const readingMinutes = estimateReadingMinutes(article.content, allPhotos.length);
   const writingDaysHtml = ssrWritingDays(writingDays);
@@ -729,11 +898,14 @@ ${TOAST}
   // Comment gate question (public; answer is validated server-side only)
   const gateRow = await env.DB.prepare("SELECT value FROM site_settings WHERE key = 'comment_gate_question'").first();
   const gateQuestion = gateRow?.value || 'Quel est le nom du chat roux de la famille Potet ?';
+  // Turnstile configure : il remplace la question secrete (voir api/comments.js).
+  const tsSiteKey = turnstileEnabled(env) ? env.TURNSTILE_SITE_KEY : '';
 
   const commentsSection = `
     <section id="comments" class="mb-12" style="scroll-margin-top:5rem">
       <h2 class="font-display text-2xl sm:text-3xl font-bold mb-6" style="color:var(--ink)"><i class="ph-bold ph-chats-circle"></i> Commentaires <span id="comments-count" style="color:var(--ink-light);font-weight:400">(${flatComments.length})</span></h2>
-      <div id="comments-list" class="space-y-3 mb-8">${renderCommentsList(comments, authed)}</div>
+      ${dayCommentCount ? `<p class="text-sm mb-4" style="color:var(--ink-muted)"><i class="ph-bold ph-calendar-dots" style="color:var(--blue)"></i> ${dayCommentCount === 1 ? '1 commentaire est publié' : dayCommentCount + ' commentaires sont publiés'} sous les journées du récit.</p>` : ''}
+      <div id="comments-list" class="space-y-3 mb-8">${renderCommentsList(generalComments, authed)}</div>
       <div class="panel rounded-[2rem] p-6 sm:p-8">
         <h3 class="font-bold text-base mb-4" style="color:var(--ink)"><i class="ph-bold ph-pencil-simple" style="color:var(--blue)"></i> Laisser un commentaire</h3>
         <form id="comment-form" class="space-y-4">
@@ -759,11 +931,13 @@ ${TOAST}
               <span>Me notifier sur cet appareil si on répond à mon commentaire</span>
             </label>
           </div>
-          <div>
+          ${tsSiteKey ? `<div>
+            <div id="c-turnstile" style="min-height:65px"></div>
+          </div>` : `<div>
             <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--ink-muted)" for="c-gate"><i class="ph-bold ph-shield-check" style="color:var(--palm)"></i> ${safeText(gateQuestion)}</label>
             <input type="text" id="c-gate" name="gate_answer" required autocomplete="off" placeholder="Votre réponse" class="w-full border-2 rounded-xl px-4 py-2.5 text-sm" style="border-color:rgba(var(--blue-rgb),.18)">
             <p class="text-xs mt-1" style="color:var(--ink-light)">Une petite question anti-spam pour vérifier que vous connaissez la famille.</p>
-          </div>
+          </div>`}
           <p id="comment-error" class="hidden text-sm font-semibold" style="color:var(--danger)"></p>
           <div class="flex justify-end">
             <button type="submit" id="comment-submit" class="action-btn-sm"><i class="ph-bold ph-paper-plane-tilt"></i> Publier</button>
@@ -870,6 +1044,7 @@ ${NAV('', authed)}
     <div class="panel rounded-[2rem] p-6 sm:p-8 mb-10" style="border-left:4px solid rgba(var(--blue-rgb),.22)">
       <p class="text-base sm:text-lg leading-relaxed font-medium italic" style="color:var(--ink-muted)">"${safeText(shortDesc)}"</p>
     </div>
+    ${daysView ? daysView.timeline : ''}
     <div class="prose-vacation text-base sm:text-lg leading-relaxed mb-12" style="color:var(--ink)">${renderedContent}</div>
     ${writingDaysHtml}
     ${galleryHtml}
@@ -888,10 +1063,42 @@ ${inPageSearchWidget}
 ${FOOTER}
 ${TOAST}
 ${LIGHTBOX}
+${daysView ? DAYS_SCRIPT : ''}
 <script>
 const ARTICLE_ID = ${JSON.stringify(article.id)};
 const IS_ADMIN = ${JSON.stringify(authed)};
 const GATE_QUESTION = ${JSON.stringify(gateQuestion)};
+const TURNSTILE_SITE_KEY = ${JSON.stringify(tsSiteKey)};
+// Turnstile : script charge seulement a l'approche du formulaire (un lecteur
+// qui ne commente pas ne le telecharge jamais), un widget par formulaire.
+let _tsLoading=null;
+function _tsLoad(){
+  if(!TURNSTILE_SITE_KEY) return Promise.resolve(null);
+  if(window.turnstile) return Promise.resolve(window.turnstile);
+  if(_tsLoading) return _tsLoading;
+  _tsLoading=new Promise((resolve,reject)=>{
+    window._tsOnload=()=>resolve(window.turnstile);
+    const s=document.createElement('script');
+    s.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=_tsOnload';
+    s.async=true;
+    s.onerror=()=>{ _tsLoading=null; reject(new Error('turnstile')); };
+    document.head.appendChild(s);
+  });
+  return _tsLoading;
+}
+async function _tsMount(el){
+  if(!el || el.dataset.tsId) return;
+  try{
+    const ts=await _tsLoad();
+    if(!ts || el.dataset.tsId) return;
+    el.dataset.tsId=ts.render(el,{sitekey:TURNSTILE_SITE_KEY, action:'comment', language:'fr', theme:'auto'});
+  }catch(e){
+    el.innerHTML='<p class="text-xs" style="color:var(--danger)">Vérification anti-robot indisponible (connexion ?). Rechargez la page pour commenter.</p>';
+  }
+}
+function _tsToken(el){ try{ return (el && el.dataset.tsId && window.turnstile) ? (window.turnstile.getResponse(el.dataset.tsId)||'') : ''; }catch(e){ return ''; } }
+// Un jeton ne sert qu'une fois : nouveau jeton apres chaque envoi, reussi ou non.
+function _tsReset(el){ try{ if(el && el.dataset.tsId && window.turnstile) window.turnstile.reset(el.dataset.tsId); }catch(e){} }
 // Photo list for the lightbox (matches server-rendered data-photo-index order).
 // Captions are deliberately NOT sent: they are generated Word-import
 // filenames, and this list feeds the full-screen viewer, which kept printing
@@ -1115,6 +1322,11 @@ document.addEventListener('error',function(e){
   function focusCurrent(){
     marks.forEach((m,i)=>{ m.style.background = i===current ? 'rgba(255,199,138,1)' : 'rgba(255,199,138,.55)'; });
     const m=marks[current];
+    // Un resultat dans un jour replie serait invisible : on deplie ce jour.
+    const replie=m && m.closest('details:not([open])');
+    if(replie) replie.open=true;
+    const cache=m && m.closest('.day-comments-more[hidden]');
+    if(cache){ cache.hidden=false; const b=cache.parentNode.querySelector('[data-show-more]'); if(b) b.remove(); }
     if(m) m.scrollIntoView({block:'center', behavior:'smooth'});
   }
 
@@ -1193,40 +1405,41 @@ document.addEventListener('error',function(e){
     const icone=document.getElementById('scroll-jump-icon');
     if(!jump||!icone) return;
 
-    // Zone morte en haut et en bas : a moins d'un demi-ecran d'une extremite,
-    // le bouton propose l'autre sens - sinon il inviterait a un deplacement de
-    // quelques pixels, sans interet.
-    const marge=()=>Math.max(200,window.innerHeight*0.5);
-    const versLeBas=()=>window.scrollY < marge();
+    // La direction se decide en comparant ce qui reste DE CHAQUE COTE, pas
+    // par un seuil fixe depuis le haut. Une premiere version basculait en
+    // "remonter" des ~400 px de defilement : on perdait le moyen d'aller en
+    // bas alors qu'il restait des milliers de pixels dessous.
+    // Tant qu'il reste plus a parcourir vers le bas que vers le haut, le
+    // bouton propose de descendre.
+    const SEUIL_FIN=40;   // a moins de 40 px d'une extremite, on y est
+    function sens(){
+      const doc=document.documentElement;
+      const dessus=window.scrollY;
+      const dessous=doc.scrollHeight - window.scrollY - window.innerHeight;
+      if(dessous<SEUIL_FIN) return 'haut';   // tout en bas : seul le haut reste
+      if(dessus<SEUIL_FIN)  return 'bas';    // tout en haut : seul le bas reste
+      return dessous>=dessus ? 'bas' : 'haut';
+    }
 
     function refleter(){
       // Masque pendant que la recherche est deployee : les deux pastilles se
       // chevaucheraient sur un ecran etroit.
       if(isOpen){ jump.style.visibility='hidden'; jump.style.opacity='0'; return; }
       const doc=document.documentElement;
-      const restant=doc.scrollHeight - window.scrollY - window.innerHeight;
       // Page trop courte pour defiler : le bouton n'aurait rien a faire.
       if(doc.scrollHeight <= window.innerHeight + 100){
         jump.style.visibility='hidden'; jump.style.opacity='0'; return;
       }
       jump.style.visibility='visible'; jump.style.opacity='1';
-      const bas=versLeBas();
+      const bas=sens()==='bas';
       icone.className='ph-bold '+(bas?'ph-arrow-down':'ph-arrow-up');
       jump.setAttribute('aria-label', bas?"Aller en bas de l'article":"Revenir en haut de l'article");
       jump.title=jump.getAttribute('aria-label');
-      // Evite un etat trompeur : tout en bas, on ne propose plus "descendre".
-      if(restant<40){
-        icone.className='ph-bold ph-arrow-up';
-        jump.setAttribute('aria-label',"Revenir en haut de l'article");
-        jump.title=jump.getAttribute('aria-label');
-      }
     }
 
     jump.addEventListener('click',function(){
       const doc=document.documentElement;
-      const restant=doc.scrollHeight - window.scrollY - window.innerHeight;
-      const bas=versLeBas() && restant>=40;
-      window.scrollTo({top: bas?doc.scrollHeight:0, behavior:'smooth'});
+      window.scrollTo({top: sens()==='bas'?doc.scrollHeight:0, behavior:'smooth'});
     });
 
     // passive:true - l'ecouteur ne bloque jamais le defilement.
@@ -1258,7 +1471,9 @@ function buildCommentEl(c){
     '<div class="reply-form-slot"></div>';
   return wrap;
 }
-function buildReplyForm(parentId, parentName){
+// Sert aussi au commentaire d'une journee (article jour par jour) : parentId
+// vide, day = date du jour, parentName = son libelle ("Jour 3 · dim. 8 fevr.").
+function buildReplyForm(parentId, parentName, day){
   const div=document.createElement('div');
   div.className='reply-form mt-3 p-4 rounded-xl';
   div.style.cssText='background:var(--sand-light,rgba(0,0,0,.02));border:1px solid var(--line)';
@@ -1266,22 +1481,24 @@ function buildReplyForm(parentId, parentName){
   // device (see _commentPrefs) - answering a second time shouldn't mean
   // retyping the email or re-checking the notify box.
   const _prefs=_commentPrefs();
-  const pushRowId='reply-push-row-'+parentId;
+  const pushRowId='reply-push-row-'+(parentId||('day-'+day));
   div.innerHTML=
-    '<p class="text-xs font-semibold mb-2" style="color:var(--ink-muted)">Répondre à '+_escC(parentName)+'</p>'+
+    '<p class="text-xs font-semibold mb-2" style="color:var(--ink-muted)">'+(day?'Votre commentaire sur '+_escC(parentName):'Répondre à '+_escC(parentName))+'</p>'+
     '<input type="text" class="reply-name w-full border-2 rounded-xl px-3 py-2 text-sm mb-2" placeholder="Votre prénom / nom" style="border-color:rgba(var(--blue-rgb),.18)">'+
-    '<textarea class="reply-body w-full border-2 rounded-xl px-3 py-2 text-sm resize-none mb-2" rows="2" placeholder="Votre réponse..." style="border-color:rgba(var(--blue-rgb),.18)"></textarea>'+
+    '<textarea class="reply-body w-full border-2 rounded-xl px-3 py-2 text-sm resize-none mb-2" rows="2" placeholder="'+(day?'Votre commentaire sur ce jour...':'Votre réponse...')+'" style="border-color:rgba(var(--blue-rgb),.18)"></textarea>'+
     '<input type="email" class="reply-email w-full border-2 rounded-xl px-3 py-2 text-sm mb-2" autocomplete="email" placeholder="Votre email (facultatif)" value="'+_escC(_prefs.email)+'" style="border-color:rgba(var(--blue-rgb),.18)">'+
     '<div id="'+pushRowId+'" class="reply-push-row hidden mb-2">'+
     '<label class="flex items-start gap-2 text-xs cursor-pointer" style="color:var(--ink-muted)">'+
     '<input type="checkbox" class="reply-push mt-0.5"'+(_prefs.push?' checked':'')+' style="accent-color:var(--blue)">'+
     '<span>Me notifier sur cet appareil si on répond à mon commentaire</span>'+
     '</label></div>'+
-    '<input type="text" class="reply-gate w-full border-2 rounded-xl px-3 py-2 text-sm mb-2" autocomplete="off" placeholder="'+_escC(GATE_QUESTION)+'" style="border-color:rgba(var(--blue-rgb),.18)">'+
+    (TURNSTILE_SITE_KEY
+      ? '<div class="reply-turnstile mb-2" style="min-height:65px"></div>'
+      : '<input type="text" class="reply-gate w-full border-2 rounded-xl px-3 py-2 text-sm mb-2" autocomplete="off" placeholder="'+_escC(GATE_QUESTION)+'" style="border-color:rgba(var(--blue-rgb),.18)">')+
     '<p class="reply-error hidden text-xs font-semibold mb-2" style="color:var(--danger)"></p>'+
     '<div class="flex justify-end gap-2">'+
     '<button type="button" class="reply-cancel ghost-btn" style="padding:.4rem .8rem;font-size:.75rem">Annuler</button>'+
-    '<button type="button" class="reply-submit action-btn-sm" style="padding:.4rem .9rem;font-size:.75rem" data-parent-id="'+parentId+'"><i class="ph-bold ph-paper-plane-tilt"></i> Répondre</button>'+
+    '<button type="button" class="reply-submit action-btn-sm" style="padding:.4rem .9rem;font-size:.75rem" data-parent-id="'+(parentId||'')+'"'+(day?' data-day="'+_escC(day)+'"':'')+'><i class="ph-bold ph-paper-plane-tilt"></i> '+(day?'Publier':'Répondre')+'</button>'+
     '</div>';
   // Same eligibility check as the main form's push row: only offered where
   // it can actually work, permission requested at submit time (see
@@ -1306,9 +1523,11 @@ function _commentPrefs(){
 function _saveCommentPrefs(email, push){
   try{ localStorage.setItem(COMMENT_PREFS_KEY, JSON.stringify({email:email||'', push:!!push})); }catch(e){}
 }
-async function submitComment({author_name, body, gate_answer, parent_id, author_email, push_endpoint}){
+async function submitComment({author_name, body, gate_answer, parent_id, author_email, push_endpoint, turnstile_token, day}){
   const payload={author_name, body, gate_answer};
-  if(parent_id!=null) payload.parent_id=parent_id;
+  if(turnstile_token) payload.turnstile_token=turnstile_token;
+  if(parent_id!=null && parent_id!=='') payload.parent_id=parent_id;
+  if(day) payload.day=day;
   if(author_email) payload.author_email=author_email;
   if(push_endpoint) payload.push_endpoint=push_endpoint;
   const res=await fetch('/api/articles/'+ARTICLE_ID+'/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(()=>null);
@@ -1354,6 +1573,16 @@ async function _resolvePushEndpoint(){
 }
 
 const _cform=document.getElementById('comment-form');
+if(_cform && TURNSTILE_SITE_KEY){
+  const tsEl=document.getElementById('c-turnstile');
+  if('IntersectionObserver' in window){
+    const io=new IntersectionObserver((entries)=>{
+      if(entries.some(e=>e.isIntersecting)){ io.disconnect(); _tsMount(tsEl); }
+    },{rootMargin:'800px'});
+    io.observe(_cform);
+  } else _tsMount(tsEl);
+  _cform.addEventListener('focusin',()=>_tsMount(tsEl));
+}
 if(_cform){
   _cform.addEventListener('submit', async (e)=>{
     e.preventDefault();
@@ -1362,10 +1591,16 @@ if(_cform){
     errEl.classList.add('hidden');
     const author_name=document.getElementById('c-name').value.trim();
     const body=document.getElementById('c-body').value.trim();
-    const gate_answer=document.getElementById('c-gate').value.trim();
+    const tsEl=document.getElementById('c-turnstile');
+    const gate_answer=TURNSTILE_SITE_KEY ? '' : document.getElementById('c-gate').value.trim();
+    const turnstile_token=TURNSTILE_SITE_KEY ? _tsToken(tsEl) : '';
     const author_email=(document.getElementById('c-email')?.value||'').trim();
-    if(!author_name||!body||!gate_answer){
+    if(!author_name||!body||(!TURNSTILE_SITE_KEY && !gate_answer)){
       errEl.textContent='Merci de remplir tous les champs.'; errEl.classList.remove('hidden'); return;
+    }
+    if(TURNSTILE_SITE_KEY && !turnstile_token){
+      _tsMount(tsEl);
+      errEl.textContent='Un instant : la vérification anti-robot n’est pas encore terminée.'; errEl.classList.remove('hidden'); return;
     }
     if(author_email && author_email.indexOf('@')<1){
       errEl.textContent='Cette adresse email ne semble pas valide.'; errEl.classList.remove('hidden'); return;
@@ -1373,7 +1608,8 @@ if(_cform){
     btn.disabled=true;
     const _wantPush=!!document.getElementById('c-push')?.checked;
     const push_endpoint=_wantPush ? await _resolvePushEndpoint() : '';
-    const {ok, data}=await submitComment({author_name, body, gate_answer, author_email, push_endpoint});
+    const {ok, data}=await submitComment({author_name, body, gate_answer, author_email, push_endpoint, turnstile_token});
+    _tsReset(tsEl);
     btn.disabled=false;
     if(!ok){
       errEl.textContent=(data&&data.error)||'Impossible de publier le commentaire.'; errEl.classList.remove('hidden'); return;
@@ -1385,14 +1621,44 @@ if(_cform){
     if(empty) empty.remove();
     list.appendChild(buildCommentEl(data.comment));
     const cnt=document.getElementById('comments-count');
-    if(cnt) cnt.textContent='('+list.querySelectorAll('.comment-item').length+')';
+    if(cnt) cnt.textContent='('+document.querySelectorAll('.comment-item').length+')';
     document.getElementById('c-body').value='';
-    document.getElementById('c-gate').value='';
+    const _gateEl=document.getElementById('c-gate'); if(_gateEl) _gateEl.value='';
     toast('Commentaire publié !','ok');
   });
 }
 // Reply / delete (delegation, works for both root comments and nested replies)
-document.getElementById('comments')?.addEventListener('click', async (e)=>{
+// Devoile les commentaires plus anciens d'un jour (et retire leur bouton).
+function _afficherPrecedents(bloc){
+  if(!bloc) return;
+  bloc.hidden=false;
+  const btn=bloc.parentNode.querySelector('[data-show-more]');
+  if(btn) btn.remove();
+}
+// Met a jour le compteur affiche dans l'en-tete d'une journee.
+function _majCompteJour(zone){
+  const det=zone && zone.closest('details.trip-day');
+  const badge=det && det.querySelector('.trip-day-ccount');
+  if(!badge) return;
+  const n=zone.querySelectorAll('.comment-item').length;
+  badge.hidden=!n;
+  badge.querySelector('span').textContent=n;
+}
+document.addEventListener('click', async (e)=>{
+  // Section commentaires de bas de page ET commentaires sous chaque journee.
+  if(!e.target.closest('#comments, .day-comments')) return;
+  const moreBtn=e.target.closest('[data-show-more]');
+  if(moreBtn){ _afficherPrecedents(moreBtn.parentNode.querySelector('.day-comments-more')); return; }
+  const dayBtn=e.target.closest('[data-day-comment]');
+  if(dayBtn){
+    const slot=dayBtn.closest('.day-comments').querySelector('.day-comment-slot');
+    if(slot.querySelector('.reply-form')){ slot.innerHTML=''; return; } // toggle off
+    slot.innerHTML='';
+    slot.appendChild(buildReplyForm('', dayBtn.dataset.dayLabel, dayBtn.dataset.dayComment));
+    _tsMount(slot.querySelector('.reply-turnstile'));
+    slot.querySelector('.reply-name')?.focus();
+    return;
+  }
   const delBtn=e.target.closest('[data-del-comment]');
   if(delBtn){
     if(!confirm('Supprimer ce commentaire ?')) return;
@@ -1400,10 +1666,12 @@ document.getElementById('comments')?.addEventListener('click', async (e)=>{
     const res=await fetch('/api/comments/'+id,{method:'DELETE'}).catch(()=>null);
     if(res&&res.ok){
       const item=delBtn.closest('.comment-item');
+      const zone=item.closest('.day-comments');
       item.remove(); // also removes nested reply elements (children of this node)
+      if(zone) _majCompteJour(zone);
       const list=document.getElementById('comments-list');
       const cnt=document.getElementById('comments-count');
-      if(cnt) cnt.textContent='('+list.querySelectorAll('.comment-item').length+')';
+      if(cnt) cnt.textContent='('+document.querySelectorAll('.comment-item').length+')';
       if(!list.querySelector('.comment-item')) list.innerHTML='<p id="comments-empty" class="text-sm" style="color:var(--ink-light)">Aucun commentaire pour le moment. Soyez le premier à réagir !</p>';
       toast('Commentaire supprimé','ok');
     } else toast('Erreur','err');
@@ -1417,6 +1685,7 @@ document.getElementById('comments')?.addEventListener('click', async (e)=>{
     if(slot.querySelector('.reply-form')){ slot.innerHTML=''; return; } // toggle off
     slot.innerHTML='';
     slot.appendChild(buildReplyForm(replyBtn.dataset.replyTo, replyBtn.dataset.replyName));
+    _tsMount(slot.querySelector('.reply-turnstile'));
     slot.querySelector('.reply-name')?.focus();
     return;
   }
@@ -1430,11 +1699,16 @@ document.getElementById('comments')?.addEventListener('click', async (e)=>{
     const errEl=formEl.querySelector('.reply-error');
     const author_name=formEl.querySelector('.reply-name').value.trim();
     const body=formEl.querySelector('.reply-body').value.trim();
-    const gate_answer=formEl.querySelector('.reply-gate').value.trim();
+    const tsEl=formEl.querySelector('.reply-turnstile');
+    const gate_answer=TURNSTILE_SITE_KEY ? '' : formEl.querySelector('.reply-gate').value.trim();
+    const turnstile_token=TURNSTILE_SITE_KEY ? _tsToken(tsEl) : '';
     const author_email=(formEl.querySelector('.reply-email')?.value||'').trim();
     errEl.classList.add('hidden');
-    if(!author_name||!body||!gate_answer){
+    if(!author_name||!body||(!TURNSTILE_SITE_KEY && !gate_answer)){
       errEl.textContent='Merci de remplir tous les champs.'; errEl.classList.remove('hidden'); return;
+    }
+    if(TURNSTILE_SITE_KEY && !turnstile_token){
+      errEl.textContent='Un instant : la vérification anti-robot n’est pas encore terminée.'; errEl.classList.remove('hidden'); return;
     }
     if(author_email && author_email.indexOf('@')<1){
       errEl.textContent='Cette adresse email ne semble pas valide.'; errEl.classList.remove('hidden'); return;
@@ -1442,12 +1716,18 @@ document.getElementById('comments')?.addEventListener('click', async (e)=>{
     submitBtn.disabled=true;
     const _wantPush=!!formEl.querySelector('.reply-push')?.checked;
     const push_endpoint=_wantPush ? await _resolvePushEndpoint() : '';
-    const {ok, data}=await submitComment({author_name, body, gate_answer, author_email, push_endpoint, parent_id:submitBtn.dataset.parentId});
+    const {ok, data}=await submitComment({author_name, body, gate_answer, author_email, push_endpoint, turnstile_token, parent_id:submitBtn.dataset.parentId, day:submitBtn.dataset.day});
+    _tsReset(tsEl);
     submitBtn.disabled=false;
     if(!ok){
       errEl.textContent=(data&&data.error)||'Impossible de publier la réponse.'; errEl.classList.remove('hidden'); return;
     }
     _saveCommentPrefs(author_email, _wantPush);
+    const dayZone=submitBtn.closest('.day-comments');
+    if(!data.comment.parent_id && submitBtn.dataset.day && dayZone){
+      // Nouveau commentaire sur une journee : sous cette journee.
+      dayZone.querySelector('.day-comments-list').appendChild(buildCommentEl(data.comment));
+    } else {
     // Nest visually under the thread ROOT (matches server-side flattening).
     const rootId=data.comment.parent_id||data.comment.id;
     const rootItem=document.getElementById('comment-'+rootId);
@@ -1459,10 +1739,12 @@ document.getElementById('comments')?.addEventListener('click', async (e)=>{
       rootItem.appendChild(repliesWrap);
     }
     repliesWrap?.appendChild(buildCommentEl(data.comment));
+    }
+    if(dayZone) _majCompteJour(dayZone);
     formEl.closest('.reply-form-slot').innerHTML='';
     const cnt=document.getElementById('comments-count');
     const list=document.getElementById('comments-list');
-    if(cnt) cnt.textContent='('+list.querySelectorAll('.comment-item').length+')';
+    if(cnt) cnt.textContent='('+document.querySelectorAll('.comment-item').length+')';
     toast('Réponse publiée !','ok');
   }
 });
@@ -1490,8 +1772,15 @@ document.querySelector('[data-scroll-comments]')?.addEventListener('click', (e)=
   if(hash && hash.indexOf('#comment-')===0){
     const target=document.querySelector(hash);
     if(target){
+      // Commentaire sous une journee : la deplier en repliant les precedentes
+      // (cf. la frise), et le devoiler s'il fait partie des plus anciens.
+      const det=target.closest('details.trip-day');
+      if(det){ if(window._concentrerJour) window._concentrerJour(det); else det.open=true; }
+      _afficherPrecedents(target.closest('.day-comments-more[hidden]'));
       setTimeout(()=>{
-        target.scrollIntoView({behavior:'smooth', block:'center'});
+        // Saut direct dans un article jour par jour : un defilement anime
+        // ferait charger (et grandir) les photos traversees.
+        target.scrollIntoView({behavior:det?'instant':'smooth', block:'center'});
         target.style.transition='background-color .3s ease';
         target.style.backgroundColor='var(--blue-light)';
         setTimeout(()=>{ target.style.backgroundColor=''; }, 2200);
@@ -1813,6 +2102,8 @@ export default {
         ).bind(parseInt(printMatch.id)).first();
         if (!art) return notFound();
         art.publicUrl = env.PUBLIC_URL || '';
+        // Jour par jour : chaque bloc devient un intertitre "Jour N · date".
+        art.content = daysToHeadings(art.content, art.start_date);
         return noStore(printPage(art));
       }
       const wordMatch = matchPath('/admin/articles/:id/export-word', path);
@@ -1829,6 +2120,7 @@ export default {
         if (request.method === 'POST') {
           try { prescaled = (await request.json())?.images || null; } catch { /* ignore malformed body */ }
         }
+        art.content = daysToHeadings(art.content, art.start_date);
         const docBuffer = await exportWordDocx(art, env, prescaled);
         // Build a readable, filesystem-safe filename that keeps accents via
         // the RFC 5987 filename* form, with an ASCII fallback for old clients.

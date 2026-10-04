@@ -29,6 +29,9 @@ try {
   const migration = (await import('./02-migration.test.js')).default;
   await migration();
 
+  const jours = (await import('./04-jours.test.js')).default;
+  await jours();
+
   if (!rapide) {
     const smoke = (await import('./03-smoke-http.test.js')).default;
     await smoke();

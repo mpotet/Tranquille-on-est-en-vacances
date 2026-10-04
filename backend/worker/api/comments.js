@@ -16,6 +16,87 @@ import { json, notFound, badRequest, forbidden } from '../utils.js';
 import { checkRateLimit, recordFailedAttempt, clientKey } from '../rate-limit.js';
 import { sendNewCommentEmail, sendCommentReplyEmail } from '../admin-email.js';
 import { sendWebPush } from '../vapid.js';
+import { parseDays, dayLabel, dayAnchor } from '../helpers/days.js';
+
+// ── Commentaires sur une journee (articles jour par jour) ──────────────────
+// La colonne comments.day arrive par la migration 012. Tant qu'elle n'existe
+// pas (code deploye avant la migration), tout fonctionne comme avant : les
+// commentaires sont simplement tous "sur l'article". Detection mise en cache,
+// reverifiee au plus une fois par minute pour prendre la migration en compte.
+let _dayColumn = null, _dayColumnCheckedAt = 0;
+export async function commentDayColumn(env) {
+  if (_dayColumn === true) return true;
+  if (_dayColumn === false && Date.now() - _dayColumnCheckedAt < 60000) return false;
+  try {
+    const { results } = await env.DB.prepare('PRAGMA table_info(comments)').all();
+    _dayColumn = (results || []).some(c => c.name === 'day');
+  } catch { _dayColumn = false; }
+  _dayColumnCheckedAt = Date.now();
+  return _dayColumn;
+}
+/** Colonnes publiques d'un commentaire, `day` compris quand elle existe. */
+export async function commentColumns(env, prefix = '') {
+  const base = ['id', 'parent_id', 'is_admin_reply', 'author_name', 'body', 'created_at'];
+  if (await commentDayColumn(env)) base.push('day');
+  return base.map(c => prefix + c).join(', ');
+}
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Libelle et ancre du jour d'un commentaire, pour les e-mails ("sur le Jour 3
+// · dim. 8 fevr.", lien direct vers ce jour). null si commentaire general ou
+// jour disparu de l'article.
+async function dayContext(env, articleId, day) {
+  if (!day) return null;
+  const art = await env.DB.prepare('SELECT content, start_date FROM articles WHERE id = ?').bind(articleId).first();
+  const days = parseDays(art?.content);
+  const i = days.findIndex(d => d.date === day);
+  if (i === -1) return null;
+  return { label: dayLabel(days[i], art.start_date, i), anchor: dayAnchor(day, i) };
+}
+
+// ── Cloudflare Turnstile (anti-robot des commentaires) ─────────────────────
+// Actif seulement si TURNSTILE_SITE_KEY (var) ET TURNSTILE_SECRET (secret)
+// sont definis ; sinon la question secrete reste en place, inchangee.
+export function turnstileEnabled(env) {
+  return !!(env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET);
+}
+
+const TURNSTILE_ACTION = 'comment';
+
+// Noms d'hote autorises pour le formulaire : TURNSTILE_HOSTNAMES (liste
+// separee par des virgules), a defaut celui de PUBLIC_URL.
+function turnstileHostnames(env) {
+  const list = String(env.TURNSTILE_HOSTNAMES || '').split(',').map(h => h.trim()).filter(Boolean);
+  if (list.length) return new Set(list);
+  try { return new Set([new URL(env.PUBLIC_URL).hostname]); } catch { return new Set(); }
+}
+
+export async function verifyTurnstile(env, token, request) {
+  const hostnames = turnstileHostnames(env);
+  if (typeof token !== 'string' || !token || token.length > 2048 || hostnames.size === 0) return false;
+  let result;
+  try {
+    const form = new URLSearchParams({ secret: env.TURNSTILE_SECRET, response: token });
+    const ip = request.headers.get('CF-Connecting-IP');
+    if (ip) form.set('remoteip', ip);
+    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form,
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!r.ok) return false;
+    result = await r.json();
+  } catch {
+    return false; // reseau, delai, reponse illisible : on refuse
+  }
+  if (!result || result.success !== true) return false;
+  // Les cles de test officielles (developpement local uniquement) renvoient
+  // toujours hostname "example.com" et aucune action : seul ce marqueur,
+  // impossible a obtenir avec une vraie cle, les fait accepter.
+  if (result.metadata && result.metadata.result_with_testing_key === true) return true;
+  return result.action === TURNSTILE_ACTION && hostnames.has(result.hostname);
+}
 
 const MAX_AUTHOR_LEN = 80;
 const MAX_BODY_LEN = 2000;
@@ -41,7 +122,7 @@ export async function listComments(env, slugOrId, isAdmin) {
   if (articleId == null) return notFound('Article not found');
 
   const { results } = await env.DB
-    .prepare('SELECT id, parent_id, is_admin_reply, author_name, body, created_at FROM comments WHERE article_id = ? ORDER BY created_at ASC, id ASC')
+    .prepare(`SELECT ${await commentColumns(env)} FROM comments WHERE article_id = ? ORDER BY created_at ASC, id ASC`)
     .bind(articleId)
     .all();
 
@@ -98,7 +179,9 @@ export async function createComment(request, env, slugOrId, isAdmin, ctx) {
   // Optional: reply to an existing comment on the same article. Flatten to
   // one level deep - replying to a reply re-parents onto its root, so the
   // thread never grows past root → replies.
+  const hasDay = await commentDayColumn(env);
   let parentId = null;
+  let day = null;
   if (body.parent_id != null) {
     // Coerce to an integer up front: a non-scalar parent_id (object/array) or a
     // non-numeric string bound into the query would make D1 throw → 500 on a
@@ -106,21 +189,40 @@ export async function createComment(request, env, slugOrId, isAdmin, ctx) {
     const pid = parseInt(body.parent_id, 10);
     if (!Number.isInteger(pid)) return badRequest('Commentaire parent invalide.');
     const parent = await env.DB
-      .prepare('SELECT id, article_id, parent_id FROM comments WHERE id = ?')
+      .prepare(`SELECT id, article_id, parent_id${hasDay ? ', day' : ''} FROM comments WHERE id = ?`)
       .bind(pid)
       .first();
     if (!parent || parent.article_id !== articleId) return badRequest('Commentaire parent introuvable.');
     parentId = parent.parent_id || parent.id;
+    // Une reponse reste dans la journee du commentaire auquel elle repond.
+    day = parent.day || null;
+  } else if (hasDay && body.day != null && body.day !== '') {
+    // Commentaire sur une journee : elle doit exister dans l'article.
+    const wanted = String(body.day);
+    if (!DAY_RE.test(wanted)) return badRequest('Journée invalide.');
+    const art = await env.DB.prepare('SELECT content FROM articles WHERE id = ?').bind(articleId).first();
+    if (!parseDays(art?.content).some(d => d.date === wanted)) return badRequest('Cette journée n\'existe pas dans le récit.');
+    day = wanted;
   }
 
-  // Validate the gate answer server-side (never trust the client).
-  const setting = await env.DB
-    .prepare("SELECT value FROM site_settings WHERE key = 'comment_gate_answer'")
-    .first();
-  const expected = String(setting?.value ?? DEFAULT_GATE_ANSWER).trim().toLowerCase();
-  if (!gateAnswer || gateAnswer !== expected) {
-    await recordFailedAttempt(env.DB, 'comment_gate', ip);
-    return forbidden('Mauvaise réponse à la question. Réessayez.');
+  if (turnstileEnabled(env)) {
+    // Cloudflare Turnstile remplace la question secrete des que ses deux
+    // cles sont configurees. Verifie cote serveur, jamais dans le navigateur.
+    const passed = await verifyTurnstile(env, body.turnstile_token, request);
+    if (!passed) {
+      await recordFailedAttempt(env.DB, 'comment_gate', ip);
+      return forbidden('La vérification anti-robot a échoué. Réessayez.');
+    }
+  } else {
+    // Validate the gate answer server-side (never trust the client).
+    const setting = await env.DB
+      .prepare("SELECT value FROM site_settings WHERE key = 'comment_gate_answer'")
+      .first();
+    const expected = String(setting?.value ?? DEFAULT_GATE_ANSWER).trim().toLowerCase();
+    if (!gateAnswer || gateAnswer !== expected) {
+      await recordFailedAttempt(env.DB, 'comment_gate', ip);
+      return forbidden('Mauvaise réponse à la question. Réessayez.');
+    }
   }
 
   // The gate above only throttles WRONG guesses - once the (single, shared)
@@ -131,23 +233,28 @@ export async function createComment(request, env, slugOrId, isAdmin, ctx) {
     return forbidden(`Trop de commentaires envoyés récemment. Réessayez dans ${Math.ceil(postLimit.retryAfterSeconds / 60)} min.`);
   }
 
-  const result = await env.DB
-    .prepare('INSERT INTO comments (article_id, parent_id, author_name, author_email, push_endpoint, body) VALUES (?, ?, ?, ?, ?, ?)')
-    .bind(articleId, parentId, authorName, authorEmail || null, pushEndpoint || null, commentBody)
-    .run();
+  const result = hasDay
+    ? await env.DB
+      .prepare('INSERT INTO comments (article_id, parent_id, author_name, author_email, push_endpoint, body, day) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .bind(articleId, parentId, authorName, authorEmail || null, pushEndpoint || null, commentBody, day)
+      .run()
+    : await env.DB
+      .prepare('INSERT INTO comments (article_id, parent_id, author_name, author_email, push_endpoint, body) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(articleId, parentId, authorName, authorEmail || null, pushEndpoint || null, commentBody)
+      .run();
 
   // Count this against the post quota only once it actually succeeded, so a
   // failed INSERT (e.g. constraint error) doesn't burn one of the 5 slots.
   await recordFailedAttempt(env.DB, 'comment_post', ip);
 
   const comment = await env.DB
-    .prepare('SELECT id, parent_id, is_admin_reply, author_name, body, created_at FROM comments WHERE id = ?')
+    .prepare(`SELECT ${await commentColumns(env)} FROM comments WHERE id = ?`)
     .bind(result.meta.last_row_id)
     .first();
 
   // Notifications run in the background: a reader must never wait on Mailjet
   // or a push endpoint to see their own comment appear.
-  if (ctx) ctx.waitUntil(notifyAboutComment(env, { articleId, parentId, authorName, body: commentBody, isAdmin }));
+  if (ctx) ctx.waitUntil(notifyAboutComment(env, { articleId, parentId, authorName, body: commentBody, isAdmin, day }));
 
   return json({ comment }, 201);
 }
@@ -161,13 +268,15 @@ export async function createComment(request, env, slugOrId, isAdmin, ctx) {
  * Every step is isolated: one failing channel must not stop the others, and
  * none of them can fail the comment itself.
  */
-export async function notifyAboutComment(env, { articleId, parentId, authorName, body, isAdmin }) {
+export async function notifyAboutComment(env, { articleId, parentId, authorName, body, isAdmin, day = null }) {
   try {
     const article = await env.DB
       .prepare('SELECT id, title, slug FROM articles WHERE id = ?')
       .bind(articleId)
       .first();
     if (!article) return;
+    // Commentaire sur une journee : les e-mails le disent et menent a ce jour.
+    const dayCtx = await dayContext(env, articleId, day).catch(() => null);
 
     // ── Admin ──────────────────────────────────────────────────────────────
     // Skipped when the admin is the author: no point emailing yourself.
@@ -192,6 +301,8 @@ export async function notifyAboutComment(env, { articleId, parentId, authorName,
             authorName,
             body,
             isReply: !!parentId,
+            dayLabel: dayCtx?.label,
+            anchor: dayCtx?.anchor,
           });
         }
       } catch (err) {
@@ -214,6 +325,8 @@ export async function notifyAboutComment(env, { articleId, parentId, authorName,
           articleSlug: article.slug,
           authorName,
           body,
+          dayLabel: dayCtx?.label,
+          anchor: dayCtx?.anchor,
         });
       } catch (err) {
         console.error('[Comments] Email de reponse echoue:', err?.message || err);
@@ -233,7 +346,7 @@ export async function notifyAboutComment(env, { articleId, parentId, authorName,
             body: `${authorName} : ${body.slice(0, 120)}`,
             icon,
             badge: icon,
-            url: `/voyage/${article.slug}#comments`,
+            url: `/voyage/${article.slug}#${dayCtx?.anchor || 'comments'}`,
             tag: `comment-reply-${parentId}`,
             renotify: true,
           });
@@ -271,8 +384,9 @@ export async function deleteComment(env, id) {
 // Admin: list recent comments across the site
 // ──────────────────────────────────────────────────────────────
 export async function listRecentCommentsAdmin(env, limit = 20) {
+  const dayCol = (await commentDayColumn(env)) ? ', c.day' : '';
   const { results } = await env.DB
-    .prepare(`SELECT c.id, c.article_id, c.parent_id, c.is_admin_reply, c.is_read, a.title AS article_title, a.slug AS article_slug, c.author_name, c.body, c.created_at
+    .prepare(`SELECT c.id, c.article_id, c.parent_id, c.is_admin_reply, c.is_read, a.title AS article_title, a.slug AS article_slug, c.author_name, c.body, c.created_at${dayCol}
               FROM comments c JOIN articles a ON a.id = c.article_id
               ORDER BY c.created_at DESC LIMIT ?`)
     .bind(limit)
@@ -301,7 +415,8 @@ export async function markCommentsRead(env) {
 // Admin: reply to a comment (creates a threaded reply as admin)
 // ──────────────────────────────────────────────────────────────
 export async function replyToComment(request, env, commentId, ctx) {
-  const orig = await env.DB.prepare('SELECT id, article_id, parent_id FROM comments WHERE id = ?').bind(commentId).first();
+  const hasDay = await commentDayColumn(env);
+  const orig = await env.DB.prepare(`SELECT id, article_id, parent_id${hasDay ? ', day' : ''} FROM comments WHERE id = ?`).bind(commentId).first();
   if (!orig) return notFound('Comment not found');
   const body = await request.json().catch(() => null);
   if (!body || !body.body) return badRequest('Missing reply body');
@@ -315,11 +430,16 @@ export async function replyToComment(request, env, commentId, ctx) {
   const row = await env.DB.prepare("SELECT value FROM site_settings WHERE key = 'admin_display_name'").first();
   const adminName = row?.value || 'Damien Potet';
 
-  const res = await env.DB.prepare('INSERT INTO comments (article_id, parent_id, is_admin_reply, author_name, body) VALUES (?, ?, 1, ?, ?)')
-    .bind(orig.article_id, parentId, adminName, replyText)
-    .run();
+  // La reponse de l'auteur reste dans la journee du commentaire.
+  const res = hasDay
+    ? await env.DB.prepare('INSERT INTO comments (article_id, parent_id, is_admin_reply, author_name, body, day) VALUES (?, ?, 1, ?, ?, ?)')
+      .bind(orig.article_id, parentId, adminName, replyText, orig.day || null)
+      .run()
+    : await env.DB.prepare('INSERT INTO comments (article_id, parent_id, is_admin_reply, author_name, body) VALUES (?, ?, 1, ?, ?)')
+      .bind(orig.article_id, parentId, adminName, replyText)
+      .run();
 
-  const comment = await env.DB.prepare('SELECT id, parent_id, is_admin_reply, author_name, body, created_at FROM comments WHERE id = ?')
+  const comment = await env.DB.prepare(`SELECT ${await commentColumns(env)} FROM comments WHERE id = ?`)
     .bind(res.meta.last_row_id)
     .first();
 
@@ -333,6 +453,7 @@ export async function replyToComment(request, env, commentId, ctx) {
       authorName: adminName,
       body: replyText,
       isAdmin: true,
+      day: orig.day || null,
     }));
   }
 
