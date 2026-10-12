@@ -6,23 +6,31 @@
 
 ## 🗂️ Structure du projet
 
+Il n'y a pas de séparation front / back : un seul Worker Cloudflare rend les
+pages HTML (publiques + admin) **et** sert l'API. Tout le site vit donc dans
+`backend/` - le nom est historique.
+
 ```
 .
-├── schema.sql                 # Schéma de la base de données Cloudflare D1
-├── wrangler.toml              # Configuration Cloudflare Workers
-├── worker/
-│   ├── index.js               # Point d'entrée principal du Worker (routeur)
-│   ├── auth.js                # Authentification (session HMAC-SHA256, cookie HttpOnly)
-│   ├── utils.js               # Helpers partagés (réponses JSON/HTML, match de routes)
-│   ├── api/
-│   │   ├── folders.js         # CRUD des dossiers
-│   │   ├── articles.js        # CRUD des articles
-│   │   └── photos.js          # Upload/suppression de photos (R2)
-│   └── pages/
-│       ├── shell.js           # Nav, footer, lightbox, toast (partagés)
-│       ├── home.js            # Page d'accueil publique
-│       └── admin.js           # Login, tableau de bord, éditeur d'articles
-└── README.md
+├── package.json               # Raccourcis (tnr, deploy…) qui délèguent à backend/
+├── backend/                   # LE site : Worker (pages + API), base, tests
+│   ├── wrangler.toml          # Configuration Cloudflare Workers
+│   ├── schema.sql             # Schéma de la base D1
+│   ├── migrations/            # Migrations SQL successives
+│   ├── dev.js                 # npm run dev : wrangler local + tunnel HTTPS
+│   ├── public/                # Fichiers statiques (service worker, manifest, icônes, CSS)
+│   ├── src/                   # Source Tailwind (compilée vers public/tailwind.css)
+│   ├── scripts/               # Déploiement, migrations d'images, maintenance
+│   ├── tests/                 # TNR (npm run tnr)
+│   └── worker/
+│       ├── index.js           # Point d'entrée du Worker (routeur)
+│       ├── auth.js            # Authentification (session HMAC-SHA256, cookie HttpOnly)
+│       ├── api/               # API REST (articles, dossiers, photos, commentaires…)
+│       ├── helpers/           # Rendu HTML, sanitisation, jour par jour
+│       └── pages/             # Pages rendues côté serveur (accueil, admin, éditeur…)
+└── frontend/                  # PAS le front du site - outils annexes :
+    ├── index.html             # Page qui redirige vers le site en production
+    └── proxy.js               # Proxy de dev :3000 → Worker :8787 (accès depuis le réseau local)
 ```
 
 ---
@@ -30,20 +38,23 @@
 ## 🎮 Développer en local
 
 ```bash
-# Terminal 1 : Worker Cloudflare (backend + rendu HTML)
 cd backend
-npm run dev        # http://localhost:8787
-
-# Terminal 2 : proxy frontend (optionnel, pour tester frontend/index.html)
-cd frontend
-npm run dev         # http://localhost:3000 → proxifie vers :8787
+npm run dev        # Worker sur http://localhost:8787 + URL HTTPS *.trycloudflare.com (PWA, push)
 ```
 
-Le site (pages publiques + admin) est entièrement rendu côté serveur par le Worker - il n'y a pas de démo statique séparée.
+Le site complet (pages publiques + admin + API) est servi par ce seul Worker.
+Optionnel, pour l'ouvrir depuis un autre appareil du réseau local via le port 3000 :
+
+```bash
+cd frontend
+npm run dev        # http://<ip-locale>:3000 → proxifie vers :8787
+```
 
 ---
 
 ## 🚀 Déploiement sur Cloudflare
+
+Toutes les commandes ci-dessous se lancent depuis `backend/`.
 
 ### Prérequis
 
@@ -105,7 +116,7 @@ bucket_name = "tranquille-vacances-photos"
 ### Étape 5 - Déployer
 
 ```bash
-wrangler deploy
+npm run deploy:prod   # TNR puis wrangler deploy --env production
 ```
 
 Votre blog est maintenant accessible à `https://tranquille-vacances.YOUR_SUBDOMAIN.workers.dev`.
@@ -207,18 +218,6 @@ async function toWebP(file, maxWidth = 1200, quality = 0.85) {
 | R2 | 10 Go stockage, 1 million requêtes/mois |
 
 Pour un blog familial, ces limites sont très largement suffisantes.
-
----
-
-## 🔧 Développement local
-
-```bash
-# Lancer en mode développement (D1 local + R2 local simulés)
-wrangler dev --local
-
-# Ou se connecter aux services Cloudflare en remote
-wrangler dev --remote
-```
 
 ---
 

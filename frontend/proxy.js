@@ -1,6 +1,8 @@
 /**
  * frontend/proxy.js
- * Proxifie localhost:3000 → backend Worker sur localhost:8787
+ * Proxy de dev : localhost:3000 → Worker (tout le site) sur localhost:8787.
+ * Le site n'a pas de front séparé ; ce proxy sert juste à l'ouvrir depuis
+ * un autre appareil du réseau local.
  * Aucune dépendance - Node.js built-ins uniquement.
  *
  * Usage: npm run dev  (depuis frontend/)
@@ -61,7 +63,7 @@ const server = http.createServer((clientReq, clientRes) => {
 
 server.listen(LISTEN_PORT, '0.0.0.0', () => {
   const localIp = getLocalIp();
-  console.log(`\n🌐  Frontend dev  →  http://localhost:${LISTEN_PORT}`);
+  console.log(`\n🌐  Proxy dev     →  http://localhost:${LISTEN_PORT}`);
   if (localIp) {
     console.log(`📱  Réseau local   →  http://${localIp}:${LISTEN_PORT}`);
   }
