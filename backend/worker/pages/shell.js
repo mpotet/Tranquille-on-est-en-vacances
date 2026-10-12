@@ -478,6 +478,65 @@ a, button, .action-btn, .action-btn-sm, .btn-primary, .btn-ghost, .subtle-btn, .
 .prose-vacation .trip-day-ccount { display: inline-flex; align-items: center; gap: .25rem; font-size: .78rem; font-weight: 700;
   color: var(--blue); background: var(--blue-light); padding: .1rem .5rem; border-radius: 999px; }
 .prose-vacation .trip-day-ccount[hidden] { display: none; }
+.prose-vacation .trip-day-city { display: inline-flex; align-items: center; gap: .2rem; font-size: .85rem; font-weight: 700; color: var(--palm); }
+/* Carte du voyage (jour par jour, si activee). Isolee dans son propre
+   contexte d'empilement : les z-index de la carte (popups, controles) passaient
+   sinon par-dessus la barre de navigation et la frise collante. */
+.trip-map { margin: 0 0 1.5rem; border-radius: 1.5rem; border: 1px solid var(--line); background: var(--cream);
+  box-shadow: var(--card-shadow); overflow: hidden; }
+.trip-map-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .85rem 1.15rem; }
+.trip-map-title { display: inline-flex; align-items: center; gap: .45rem; font-family: "Playfair Display", Georgia, serif;
+  font-weight: 700; font-size: 1.15rem; color: var(--ink); }
+.trip-map-title i { color: var(--blue); }
+.trip-map-meta { flex: none; font-size: .75rem; font-weight: 700; color: var(--blue); background: var(--blue-light);
+  padding: .15rem .65rem; border-radius: 999px; }
+.trip-map-canvas { position: relative; isolation: isolate; z-index: 0; height: clamp(240px, 58vw, 420px); background: var(--sand); }
+.trip-map-wait { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; color: var(--ink-light); opacity: .55; }
+.trip-map-canvas.is-ready .trip-map-wait { display: none; }
+.trip-map .maplibregl-map { font-family: inherit; }
+.trip-map .maplibregl-ctrl-group { background: var(--cream); border: 1px solid var(--line); border-radius: .75rem;
+  box-shadow: var(--card-shadow); overflow: hidden; }
+.trip-map .maplibregl-ctrl-group button + button { border-top: 1px solid var(--line); }
+.trip-map .maplibregl-ctrl-group button:hover { background: var(--blue-light); }
+[data-theme="dark"] .trip-map .maplibregl-ctrl-icon, [data-theme="dark"] .trip-map .maplibregl-ctrl-attrib-button { filter: invert(1); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .trip-map .maplibregl-ctrl-icon, :root:not([data-theme="light"]) .trip-map .maplibregl-ctrl-attrib-button { filter: invert(1); } }
+.trip-map .maplibregl-ctrl-attrib, .trip-map .maplibregl-ctrl-attrib.maplibregl-compact { background: rgba(var(--cream-rgb), .85); color: var(--ink-muted); font-size: .62rem; }
+.trip-map .maplibregl-ctrl-attrib a { color: var(--ink-muted); }
+.trip-map .maplibregl-cooperative-gesture-screen { font-family: inherit; font-weight: 700; font-size: 1rem;
+  background: rgba(var(--ink-rgb), .45); }
+.tm-marker { cursor: pointer; }
+.tm-marker:focus-visible { outline: none; }
+.tm-marker:focus-visible .tm-pin { box-shadow: 0 0 0 3px var(--apricot), 0 3px 10px rgba(0,0,0,.28); }
+.tm-pin { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 30px;
+  border-radius: 999px; background: var(--blue); color: #fff; border: 2.5px solid #fff; font-weight: 800; font-size: .78rem;
+  letter-spacing: .01em; box-shadow: 0 3px 10px rgba(0,0,0,.28); animation: tm-pop .5s cubic-bezier(.34,1.56,.64,1) both;
+  transition: transform .15s ease; }
+.tm-marker:hover .tm-pin, .tm-marker:focus .tm-pin { transform: scale(1.1); }
+/* Derniere etape : la ou en est le voyage. */
+.tm-pin.is-last { background: var(--apricot); color: #1A2B3C; }
+.tm-pin.is-last::after { content: ""; position: absolute; inset: -7px; border-radius: 999px; border: 2px solid var(--apricot);
+  animation: tm-pulse 2.4s ease-out 1.2s infinite; opacity: 0; }
+@keyframes tm-pop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes tm-pulse { 0% { transform: scale(.85); opacity: .9; } 100% { transform: scale(1.35); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .tm-pin, .tm-pin.is-last::after { animation: none; } }
+.trip-map .tm-popup .maplibregl-popup-content { background: var(--cream); color: var(--ink); border-radius: 1rem;
+  box-shadow: 0 8px 28px rgba(0,0,0,.22); padding: .75rem .8rem; line-height: 1.3; }
+.trip-map .tm-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--cream); }
+.trip-map .tm-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--cream); }
+.trip-map .tm-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--cream); }
+.trip-map .tm-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--cream); }
+.tm-pop-city { font-family: "Playfair Display", Georgia, serif; font-weight: 700; font-size: 1.05rem; color: var(--ink); margin: 0 0 .2rem .1rem; }
+.tm-pop-day { display: flex; align-items: center; gap: .5rem; width: 100%; margin-top: .35rem; padding: .45rem .6rem;
+  border: none; border-radius: .7rem; background: var(--sand); color: var(--ink); font: inherit; font-size: .8rem;
+  text-align: left; cursor: pointer; }
+.tm-pop-day:hover { background: var(--blue-light); }
+.tm-pop-day:focus { outline: none; }
+.tm-pop-day:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.tm-pop-day b { flex: none; color: var(--blue); }
+.tm-pop-day span { flex: 1; min-width: 0; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tm-pop-day i { flex: none; color: var(--blue); }
+@media (max-width: 520px) { .trip-map { border-radius: 1.25rem; } .trip-map-head { padding: .75rem .9rem; } .trip-map-title { font-size: 1.02rem; } }
 .prose-vacation .day-comments { margin: 0 1.25rem 1.1rem; padding-top: .9rem; border-top: 1px dashed var(--line); font-size: 1rem; line-height: 1.5; }
 .prose-vacation .day-comments p { margin: 0; line-height: 1.6; }
 .prose-vacation .day-comments .comment-item p { margin-bottom: .5rem; }

@@ -1852,6 +1852,22 @@ export function editorPage(articleId = null) {
 .day-tab{flex:none;display:inline-flex;flex-direction:column;align-items:center;min-width:3.8rem;padding:.35rem .7rem;border-radius:.85rem;border:2px solid var(--line);background:var(--cream);color:var(--ink-muted);cursor:pointer;line-height:1.2}
 .day-tab b{font-size:.8rem;color:var(--ink)}
 .day-tab span{font-size:.68rem;white-space:nowrap}
+.map-toggle{display:inline-flex;align-items:center;gap:.4rem;font-size:.75rem;font-weight:700;color:var(--ink-muted);cursor:pointer;user-select:none;position:relative}
+.map-toggle input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.map-toggle-track{flex:none;position:relative;width:2.1rem;height:1.2rem;border-radius:999px;background:var(--sand-deep);transition:background .2s}
+.map-toggle-track span{position:absolute;top:.15rem;left:.15rem;width:.9rem;height:.9rem;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.map-toggle input:checked+.map-toggle-track{background:var(--blue)}
+.map-toggle input:checked+.map-toggle-track span{transform:translateX(.9rem)}
+.map-toggle input:focus-visible+.map-toggle-track{outline:2px solid var(--blue);outline-offset:2px}
+.map-toggle:has(input:checked){color:var(--blue)}
+.city-suggest{position:absolute;left:0;right:0;top:100%;margin-top:.25rem;z-index:60;background:var(--cream);border:1px solid var(--line);border-radius:.85rem;box-shadow:0 8px 28px rgba(0,0,0,.16);overflow:hidden}
+.city-suggest button{display:flex;flex-direction:column;align-items:flex-start;width:100%;padding:.5rem .75rem;border:none;background:none;text-align:left;cursor:pointer;color:var(--ink)}
+.city-suggest button b{font-size:.85rem}
+.city-suggest button small{font-size:.7rem;font-weight:500;color:var(--ink-muted)}
+.city-suggest button.is-active,.city-suggest button:hover{background:var(--blue-light)}
+.city-state{font-weight:700}
+.city-state.ok{color:var(--palm)}
+.city-state.warn{color:var(--pending)}
 .day-tab.is-active{border-color:var(--blue);background:var(--blue);color:#fff}
 .day-tab.is-active b{color:#fff}
 .day-tab-add{flex:none;display:inline-flex;align-items:center;gap:.3rem;padding:.5rem .8rem;border-radius:.85rem;border:2px dashed rgba(var(--blue-rgb),.5);background:transparent;color:var(--blue);font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap}
@@ -2014,6 +2030,9 @@ ${ADMIN_NAV()}
         <div id="days-bar" class="hidden mb-3">
           <div class="flex items-center gap-2 mb-2">
             <span class="text-xs font-bold uppercase tracking-wide" style="color:var(--ink-muted)"><i class="ph-bold ph-calendar-dots"></i> Jour par jour</span>
+            <label class="map-toggle ml-auto" title="Affiche en haut de l'article une carte des villes du voyage">
+              <input type="checkbox" id="day-map-on"><span class="map-toggle-track"><span></span></span><i class="ph-bold ph-map-trifold"></i> Carte du voyage
+            </label>
           </div>
           <div id="days-tabs" class="flex items-center gap-1.5 overflow-x-auto pb-1"></div>
           <div class="flex flex-wrap items-end gap-2 mt-2">
@@ -2023,6 +2042,11 @@ ${ADMIN_NAV()}
             <label class="text-xs font-semibold flex-1" style="color:var(--ink-muted);min-width:12rem">Titre du jour <span class="font-normal">(facultatif)</span>
               <input type="text" id="day-title" maxlength="120" spellcheck="true" lang="fr" autocorrect="on" autocapitalize="sentences" placeholder="Ex : Arrivée à Atar" class="block w-full rounded-xl px-3 py-2 text-sm focus:outline-none" style="border:2px solid var(--line);color:var(--ink)">
             </label>
+            <div id="day-city-wrap" class="hidden relative text-xs font-semibold flex-1" style="color:var(--ink-muted);min-width:11rem">
+              <label for="day-city">Ville <span class="font-normal">(facultatif)</span> <span id="day-city-state" class="city-state"></span></label>
+              <input type="text" id="day-city" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Ex : Essaouira" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="day-city-list" class="block w-full rounded-xl px-3 py-2 text-sm focus:outline-none" style="border:2px solid var(--line);color:var(--ink)">
+              <div id="day-city-list" class="city-suggest hidden" role="listbox"></div>
+            </div>
             <button type="button" id="day-delete" onclick="deleteCurrentDay()" class="text-xs font-semibold px-3 py-2 rounded-xl" style="color:var(--danger);border:1px solid var(--line);background:var(--cream)"><i class="ph-bold ph-trash"></i> Supprimer ce jour</button>
           </div>
         </div>
@@ -2518,7 +2542,27 @@ function stripDataUris(html){return(html||'').replace(/\bsrc="data:[^"]*"/g,'src
 function dataUrlToFile(dataUrl,name){const arr=dataUrl.split(','),mime=arr[0].match(/:(.*?);/)[1],bstr=atob(arr[1]);let n=bstr.length;const u8=new Uint8Array(n);while(n--)u8[n]=bstr.charCodeAt(n);return new File([u8],name||'photo.jpg',{type:mime});}
 
 // ── Offline draft management ───────────────────────────────────
-let DRAFT_KEY = 'admin_draft_' + (ARTICLE_ID != null ? ARTICLE_ID : 'new');
+// Un nouvel article garde son brouillon sous une clé "new" tant qu'il n'a pas
+// d'id. Clé renommée : l'ancienne "admin_draft_new" n'était jamais effacée
+// après la première sauvegarde (seule la clé de l'id l'était), et ce
+// brouillon orphelin se restaurait en silence au "Nouvel article" suivant,
+// qui rouvrait l'article déjà créé (et l'aurait créé une deuxième fois).
+let DRAFT_KEY = 'admin_draft_' + (ARTICLE_ID != null ? ARTICLE_ID : 'new2');
+try { localStorage.removeItem('admin_draft_new'); } catch {}
+
+// L'article vient de recevoir son id : le brouillon "new" passe sous la clé
+// de l'id au lieu de rester derrière pour le prochain nouvel article.
+function _adoptArticleId(id) {
+  ARTICLE_ID = id;
+  const oldKey = DRAFT_KEY;
+  DRAFT_KEY = 'admin_draft_' + id;
+  if (oldKey === DRAFT_KEY) return;
+  try {
+    const d = localStorage.getItem(oldKey);
+    if (d && !localStorage.getItem(DRAFT_KEY)) localStorage.setItem(DRAFT_KEY, d);
+    localStorage.removeItem(oldKey);
+  } catch {}
+}
 
 function _draftPayload() {
   return {
@@ -2650,6 +2694,18 @@ if ('serviceWorker' in navigator) {
       const lbl = document.getElementById('sticky-status-lbl');
       if (lbl) lbl.textContent = '✓ Synchronisé';
       toast('Article envoyé automatiquement 🌴', 'ok');
+      // Création faite hors ligne : l'article existe maintenant côté serveur,
+      // son brouillon "new" ne doit pas resservir au prochain nouvel article.
+      const createdId = event.data.data && event.data.data.id;
+      if (createdId && String(event.data.localId || '').startsWith('draft-new-')) {
+        if (!ARTICLE_ID) {
+          _adoptArticleId(createdId);
+          history.replaceState(null, '', '/admin/editor/' + createdId);
+          _lockFormat();
+        } else {
+          try { localStorage.removeItem('admin_draft_new2'); } catch {}
+        }
+      }
     }
     // A queued photo just uploaded in the background - possibly while this
     // tab was closed or the article page wasn't even open. Only touch the
@@ -2692,8 +2748,12 @@ window.addEventListener('online', () => {
 // <section class="trip-day" data-day=... data-title=...> - n'est recompose
 // qu'a la sauvegarde, par _editorHtml(). Voir worker/helpers/days.js.
 let _daysMode = false;
-let _days = [];      // [{ date, title, html }], tries par date
+let _days = [];      // [{ date, title, html, city, lat, lon }], tries par date
 let _curDay = -1;
+// Carte du voyage : choix de l'auteur, porte par data-map="1" sur le premier
+// bloc. Chaque jour peut avoir une ville (data-city) et ses coordonnees
+// (data-lat/data-lon), trouvees via Photon (OpenStreetMap). Voir days.js.
+let _mapOn = false;
 
 function _isDaysHtml(h) {
   const t = String(h || '').trim();
@@ -2705,15 +2765,21 @@ function _parseDaysHtml(h) {
   const doc = new DOMParser().parseFromString('<body>' + (h || '') + '</body>', 'text/html');
   const days = [];
   let stray = '';
+  const num = (v) => { if (v == null || v === '') return null; const x = Number(v); return isFinite(x) ? x : null; };
+  _mapOn = false;
   [...doc.body.childNodes].forEach(n => {
     if (n.nodeType === 1 && n.tagName === 'SECTION' && n.classList.contains('trip-day')) {
-      days.push({ date: n.getAttribute('data-day') || '', title: n.getAttribute('data-title') || '', html: stray + n.innerHTML });
+      days.push({
+        date: n.getAttribute('data-day') || '', title: n.getAttribute('data-title') || '', html: stray + n.innerHTML,
+        city: n.getAttribute('data-city') || '', lat: num(n.getAttribute('data-lat')), lon: num(n.getAttribute('data-lon')),
+      });
+      if (n.getAttribute('data-map') === '1') _mapOn = true;
       stray = '';
     } else if (n.nodeType === 1 || (n.nodeType === 3 && n.textContent.trim())) {
       stray += n.nodeType === 1 ? n.outerHTML : n.textContent;   // rien ne se perd
     }
   });
-  if (stray) { if (days.length) days[days.length - 1].html += stray; else days.push({ date: '', title: '', html: stray }); }
+  if (stray) { if (days.length) days[days.length - 1].html += stray; else days.push({ date: '', title: '', html: stray, city: '', lat: null, lon: null }); }
   return days;
 }
 function _sortDays() {
@@ -2753,7 +2819,7 @@ function _renderDayTabs() {
   const tabs = document.getElementById('days-tabs');
   if (!tabs) return;
   tabs.innerHTML = _days.map((d, i) =>
-    '<button type="button" class="day-tab' + (i === _curDay ? ' is-active' : '') + '" onclick="_showDay(' + i + ')" title="' + esc(d.title || '') + '">' +
+    '<button type="button" class="day-tab' + (i === _curDay ? ' is-active' : '') + '" onclick="_showDay(' + i + ')" title="' + esc([d.title, _mapOn ? d.city : ''].filter(Boolean).join(' · ')) + '">' +
     '<b>Jour ' + _dayNumber(d.date, i) + '</b><span>' + esc(_dayShort(d.date)) + '</span></button>'
   ).join('') + '<button type="button" class="day-tab-add" onclick="addDay()"><i class="ph-bold ph-plus"></i> Ajouter un jour</button>';
   const active = tabs.querySelector('.day-tab.is-active');
@@ -2762,6 +2828,9 @@ function _renderDayTabs() {
   const dateIn = document.getElementById('day-date'), titleIn = document.getElementById('day-title');
   if (dateIn && cur) dateIn.value = cur.date || '';
   if (titleIn && cur && document.activeElement !== titleIn) titleIn.value = cur.title || '';
+  const cityIn = document.getElementById('day-city');
+  if (cityIn && cur && document.activeElement !== cityIn) cityIn.value = cur.city || '';
+  _renderCityState();
 }
 function _showDay(i) {
   if (!_days[i]) return;
@@ -2788,10 +2857,12 @@ function _enterDaysMode(days, showIndex) {
   document.getElementById('days-bar')?.classList.remove('hidden');
   document.querySelectorAll('.format-option').forEach(b => b.classList.toggle('is-active', b.dataset.format === 'days'));
   _curDay = Math.max(0, Math.min(showIndex == null ? _days.length - 1 : showIndex, _days.length - 1));
+  _syncMapUi();
   _renderDayTabs();
 }
 function _leaveDaysMode() {
-  _daysMode = false; _days = []; _curDay = -1;
+  _daysMode = false; _days = []; _curDay = -1; _mapOn = false;
+  _syncMapUi();
   document.getElementById('days-bar')?.classList.add('hidden');
   document.querySelectorAll('.format-option').forEach(b => b.classList.toggle('is-active', b.dataset.format === 'text'));
 }
@@ -2804,7 +2875,8 @@ function _editorHtml() {
   _sortDays();
   // Une <section> collee depuis une page web casserait le decoupage : on
   // n'en garde que le contenu.
-  return _days.map(d => '<section class="trip-day" data-day="' + esc(d.date) + '" data-title="' + esc(d.title) + '">' +
+  return _days.map((d, i) => '<section class="trip-day" data-day="' + esc(d.date) + '" data-title="' + esc(d.title) + '"' +
+    _dayGeoAttrs(d) + (i === 0 && _mapOn ? ' data-map="1"' : '') + '>' +
     _stripTrailingEmpty(_wrapLooseText(String(d.html || '').replace(/<[/]?section[^>]*>/gi, ''))) + '</section>').join('');
 }
 // La premiere ligne tapee dans un editeur vide reste du texte nu, hors de
@@ -2897,7 +2969,7 @@ function addDay() {
   const last = _days.reduce((m, d) => (d.date && d.date > m ? d.date : m), '');
   let date = last ? _addDaysIso(last, 1) : (document.getElementById('e-start-date')?.value || _isoToday());
   while (used.has(date)) date = _addDaysIso(date, 1);
-  const day = { date, title: '', html: '' };
+  const day = { date, title: '', html: '', city: '', lat: null, lon: null };
   _days.push(day);
   _sortDays();
   _showDay(_days.indexOf(day));
@@ -2939,6 +3011,142 @@ function deleteCurrentDay() {
   document.getElementById('e-start-date')?.addEventListener('change', () => { if (_daysMode) _renderDayTabs(); });
 })();
 
+// ── Carte du voyage : villes des jours ─────────────────────────
+function _dayGeoAttrs(d) {
+  if (!d.city) return '';
+  let a = ' data-city="' + esc(d.city) + '"';
+  if (d.lat != null && d.lon != null) a += ' data-lat="' + Number(d.lat).toFixed(5) + '" data-lon="' + Number(d.lon).toFixed(5) + '"';
+  return a;
+}
+function _syncMapUi() {
+  const box = document.getElementById('day-map-on');
+  if (box) box.checked = _mapOn;
+  document.getElementById('day-city-wrap')?.classList.toggle('hidden', !_mapOn);
+}
+// Etat de la ville du jour affiche, a cote du libelle : placee sur la carte,
+// ou pourquoi elle ne l'est pas (encore).
+function _renderCityState() {
+  const el = document.getElementById('day-city-state');
+  if (!el) return;
+  const cur = _days[_curDay];
+  let cls = 'city-state', html = '';
+  if (cur && cur.city) {
+    if (cur.lat != null && cur.lon != null) { cls += ' ok'; html = '<i class="ph-bold ph-map-pin"></i> sur la carte'; }
+    else if (!navigator.onLine) { cls += ' warn'; html = '<i class="ph-bold ph-wifi-slash"></i> placée à la prochaine connexion'; }
+    else if (cur._introuvable) { cls += ' warn'; html = '<i class="ph-bold ph-warning"></i> introuvable, absente de la carte'; }
+  }
+  el.className = cls;
+  el.innerHTML = html;
+}
+// Recherche de villes via Photon (OpenStreetMap, sans cle). D'abord les lieux
+// habites et les iles ; si rien ne sort (parc, plage, site...), sans filtre.
+const _CITY_TAGS = ['city', 'town', 'village', 'hamlet', 'suburb', 'locality', 'island', 'islet'];
+async function _searchCities(q, limit) {
+  const base = 'https://photon.komoot.io/api/?lang=fr&limit=' + (limit || 6) + '&q=' + encodeURIComponent(q);
+  const get = async (url) => {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      if (!r.ok) return [];
+      const j = await r.json();
+      return (j.features || []).map(f => {
+        const pr = f.properties || {}, c = (f.geometry && f.geometry.coordinates) || [];
+        const ctx = [pr.state, pr.country].filter((v, i, a) => v && v !== pr.name && a.indexOf(v) === i).join(', ');
+        return { name: pr.name || '', ctx, lat: Number(c[1]), lon: Number(c[0]) };
+      }).filter(x => x.name && isFinite(x.lat) && isFinite(x.lon));
+    } catch { return []; }
+  };
+  let res = await get(base + _CITY_TAGS.map(t => '&osm_tag=place:' + t).join(''));
+  if (!res.length) res = await get(base);
+  const vus = new Set();
+  return res.filter(x => { const k = x.name + '|' + x.ctx; if (vus.has(k)) return false; vus.add(k); return true; });
+}
+// Ville tapee sans choisir de suggestion : on prend le premier resultat.
+async function _geocodeDay(d) {
+  if (!d || !d.city || !navigator.onLine) return;
+  const q = d.city;
+  const r = await _searchCities(q, 1);
+  if (d.city !== q) return;   // modifiee entre-temps
+  if (r[0]) { d.lat = r[0].lat; d.lon = r[0].lon; d._introuvable = false; _scheduleAutoSave(); }
+  else d._introuvable = true;
+  if (d === _days[_curDay]) _renderCityState();
+}
+async function _geocodeMissingCities(maxMs) {
+  if (!_daysMode || !_mapOn || !navigator.onLine) return;
+  const todo = _days.filter(d => d.city && (d.lat == null || d.lon == null) && !d._introuvable);
+  if (!todo.length) return;
+  await Promise.race([Promise.all(todo.map(_geocodeDay)), new Promise(r => setTimeout(r, maxMs))]);
+}
+(function () {
+  const mapIn = document.getElementById('day-map-on');
+  const cityIn = document.getElementById('day-city');
+  const list = document.getElementById('day-city-list');
+  if (!mapIn || !cityIn || !list) return;
+  mapIn.addEventListener('change', () => {
+    _mapOn = mapIn.checked;
+    _syncMapUi();
+    _renderDayTabs();
+    _scheduleAutoSave();
+  });
+  let timer = null, seq = 0, items = [], active = -1;
+  function close() {
+    list.classList.add('hidden'); list.innerHTML = ''; items = []; active = -1;
+    cityIn.setAttribute('aria-expanded', 'false');
+  }
+  function render() {
+    if (!items.length) { close(); return; }
+    list.innerHTML = items.map((it, i) =>
+      '<button type="button" role="option" data-i="' + i + '" class="' + (i === active ? 'is-active' : '') + '" aria-selected="' + (i === active) + '">' +
+      '<b>' + esc(it.name) + '</b>' + (it.ctx ? '<small>' + esc(it.ctx) + '</small>' : '') + '</button>').join('');
+    list.classList.remove('hidden');
+    cityIn.setAttribute('aria-expanded', 'true');
+  }
+  function pick(it) {
+    const cur = _days[_curDay];
+    if (!cur || !it) return;
+    cur.city = it.name; cur.lat = it.lat; cur.lon = it.lon; cur._introuvable = false;
+    cityIn.value = it.name;
+    close();
+    _renderDayTabs();
+    _scheduleAutoSave();
+  }
+  cityIn.addEventListener('input', () => {
+    const cur = _days[_curDay];
+    if (!cur) return;
+    cur.city = cityIn.value.trim(); cur.lat = null; cur.lon = null; cur._introuvable = false;
+    _renderCityState();
+    clearTimeout(timer);
+    const q = cur.city, my = ++seq;
+    if (q.length < 2 || !navigator.onLine) { close(); return; }
+    timer = setTimeout(async () => {
+      const r = await _searchCities(q);
+      if (my !== seq || document.activeElement !== cityIn) return;
+      items = r; active = -1; render();
+    }, 280);
+  });
+  cityIn.addEventListener('keydown', (e) => {
+    if (list.classList.contains('hidden') || !items.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); active = (active + 1) % items.length; render(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); active = (active - 1 + items.length) % items.length; render(); }
+    else if (e.key === 'Enter') { e.preventDefault(); pick(items[Math.max(0, active)]); }
+    else if (e.key === 'Escape') { e.preventDefault(); close(); }
+  });
+  cityIn.addEventListener('blur', () => {
+    setTimeout(close, 150);
+    seq++;   // une recherche encore en vol ne doit plus rouvrir la liste
+    const cur = _days[_curDay];
+    if (cur && cur.city && cur.lat == null) _geocodeDay(cur);
+  });
+  // mousedown : garder le focus dans le champ, sinon le blur ferme la liste
+  // avant que le clic n'arrive.
+  list.addEventListener('mousedown', (e) => e.preventDefault());
+  list.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-i]');
+    if (b) pick(items[Number(b.getAttribute('data-i'))]);
+  });
+  window.addEventListener('online', _renderCityState);
+  window.addEventListener('offline', _renderCityState);
+})();
+
 function fillFromDraft(d) {
   if (d.title)             document.getElementById('e-title').value = d.title;
   if (d.short_description) document.getElementById('e-desc').value = d.short_description;
@@ -2957,7 +3165,7 @@ function _scheduleAutoSave() {
   _autoSaveTimer = setTimeout(saveDraftLocal, 8000);
 }
 function _attachAutoSave() {
-  ['e-title','e-desc','e-content','e-start-date','e-end-date','e-dest','day-title','day-date'].forEach(id => {
+  ['e-title','e-desc','e-content','e-start-date','e-end-date','e-dest','day-title','day-date','day-city'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', _scheduleAutoSave);
   });
 }
@@ -3035,8 +3243,7 @@ async function ensureArticleId() {
   }).catch(() => null);
   if (!res?.ok) { toast('Erreur lors de la création du brouillon', 'err'); return false; }
   const data = await res.json();
-  ARTICLE_ID = data.id;
-  DRAFT_KEY = 'admin_draft_' + ARTICLE_ID;
+  _adoptArticleId(data.id);
   history.replaceState(null, '', '/admin/editor/' + ARTICLE_ID);
   _lockFormat();
   _refreshOfflineCopy(ARTICLE_ID);
@@ -4547,6 +4754,7 @@ async function saveArticle() {
   const endDate = document.getElementById('e-end-date').value;
   if (!startDate || !endDate) { toast('Le voyage doit avoir un début et une fin','err'); return; }
   if (endDate < startDate) { toast('La fin doit être après le début','err'); return; }
+  await _geocodeMissingCities(4000);
 
   const status = getStatus();
   // Send the status honestly to the server - it used to be silently rewritten
@@ -4586,7 +4794,7 @@ async function saveArticle() {
       if (res.ok) { const data=await res.json().catch(()=>({})); savedSlug=data.slug||null; }
     } else {
       res = await fetch('/api/articles', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-      if (res.ok) { const data=await res.json(); savedId=data.id; ARTICLE_ID=savedId; DRAFT_KEY='admin_draft_'+ARTICLE_ID; savedSlug=data.slug||null; _lockFormat(); }
+      if (res.ok) { const data=await res.json(); savedId=data.id; _adoptArticleId(savedId); savedSlug=data.slug||null; _lockFormat(); }
     }
   } catch (e) {
     // Requête partie mais jamais arrivée : réseau mort malgré navigator.onLine.
@@ -4663,6 +4871,8 @@ async function saveArticle() {
   if (apiStatus === 'published') _lastPublished = Date.now();
   updateSyncInfo();
   toast('Sauvegardé !','ok');
+  // Un autosave encore en attente recréerait le brouillon juste après.
+  clearTimeout(_autoSaveTimer);
   clearDraftLocal(); // effacer le brouillon local après synchro serveur
   // Attendu AVANT la redirection : quitter la page annulerait la requête.
   const offlineCopy = _refreshOfflineCopy(savedId);

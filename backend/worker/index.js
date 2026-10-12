@@ -33,6 +33,7 @@ import { listArticles, getArticle, createArticle, updateArticle, patchArticleSta
 import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, deleteHeroImage, serveR2Object, uploadPhotoVariants } from './api/photos.js';
 import { getSettings, updateSettings } from './api/settings.js';
 import { getSiteInfo } from './api/site-info.js';
+import { getRoute } from './api/route.js';
 import { listComments, createComment, deleteComment, listRecentCommentsAdmin, replyToComment, countUnreadComments, markCommentsRead, turnstileEnabled, commentColumns } from './api/comments.js';
 import { getAnalytics } from './api/analytics.js';
 import {
@@ -48,7 +49,7 @@ import { homePage }     from './pages/home.js';
 import { showcasePage } from './pages/showcase.js';
 import { loginPage, dashboardPage, editorPage } from './pages/admin.js';
 import { printPage, exportWordDocx } from './pages/print.js';
-import { isDaysContent, parseDays, dayNumber, fmtDayShort, dayAnchor, daysToHeadings } from './helpers/days.js';
+import { isDaysContent, isMapEnabled, mapStops, parseDays, dayNumber, fmtDayShort, dayAnchor, daysToHeadings } from './helpers/days.js';
 
 // ──────────────────────────────────────────────────────────────
 // Simple voyages-list & voyage-detail pages (inline for brevity)
@@ -649,6 +650,8 @@ const DAYS_SCRIPT = `<script>
     majBouton();
   }
   window._concentrerJour=concentrer;
+  // La carte du voyage emmene au jour d'une etape, comme la frise.
+  window._ouvrirJour=function(id){ ouvrir(id); if(history.replaceState) history.replaceState(null,'','#'+id); };
   // behavior 'instant' explicite : le site a html{scroll-behavior:smooth},
   // qui transformait sinon chaque saut en long defilement anime.
   function aller(d){
@@ -717,11 +720,177 @@ const DAYS_SCRIPT = `<script>
 })();
 </script>`;
 
+// Carte du voyage (articles jour par jour, si l'auteur l'a activee).
+// MapLibre + fonds OpenFreeMap (OpenStreetMap, gratuits, sans cle ni compte ;
+// CARTO exige desormais une cle). Le trajet suit la route entre deux etapes
+// (/api/route, calcule une fois puis garde en cache) ; a defaut de route
+// credible (vol, mer, desert), un arc "a vol d'oiseau". MapLibre n'est telecharge qu'a l'approche
+// de la carte : un lecteur qui ne descend pas jusque-la ne paie rien. Sans
+// reseau ou sans WebGL, la carte disparait plutot que d'afficher un cadre
+// vide. Fond clair ou sombre selon le theme, rebascule a chaud.
+const MAP_SCRIPT = `<script>
+(function(){
+  var el=document.querySelector('[data-trip-map]');
+  if(!el) return;
+  var box=el.closest('.trip-map');
+  var stops;
+  try{ stops=JSON.parse(el.getAttribute('data-trip-map')); }catch(e){ stops=[]; }
+  if(!stops.length){ box.remove(); return; }
+  function echec(){ box.remove(); }
+  function webgl(){ try{ var c=document.createElement('canvas'); return !!(c.getContext('webgl2')||c.getContext('webgl')); }catch(e){ return false; } }
+  if(!webgl()){ echec(); return; }
+  function sombre(){
+    var t=document.documentElement.getAttribute('data-theme');
+    return t==='dark' || (t!=='light' && !!window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+  function fond(){ return 'https://tiles.openfreemap.org/styles/'+(sombre()?'dark':'liberty'); }
+  var BASE='https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/';
+  function charger(){
+    routesPretes=routes();
+    var css=document.createElement('link');
+    css.rel='stylesheet'; css.href=BASE+'maplibre-gl.min.css';
+    document.head.appendChild(css);
+    var js=document.createElement('script');
+    js.src=BASE+'maplibre-gl.min.js';
+    js.onload=dessiner; js.onerror=echec;
+    document.head.appendChild(js);
+  }
+  // Trajet en arcs legers plutot qu'en lignes droites : on lit un voyage,
+  // pas un itineraire routier. Points en [lon, lat].
+  function arc(a,b){
+    var pts=[], dx=b[0]-a[0], dy=b[1]-a[1], k=0.18;
+    var c=[(a[0]+b[0])/2-dy*k, (a[1]+b[1])/2+dx*k];
+    for(var i=0;i<=32;i++){ var t=i/32, u=1-t;
+      pts.push([u*u*a[0]+2*u*t*c[0]+t*t*b[0], u*u*a[1]+2*u*t*c[1]+t*t*b[1]]); }
+    return pts;
+  }
+  function etiquette(s){
+    var a=s.days[0].num, b=s.days[s.days.length-1].num;
+    return a===b ? 'J'+a : 'J'+a+'–'+b;
+  }
+  function bulle(g){
+    var d=document.createElement('div'); d.className='tm-pop';
+    if(g.city){ var v=document.createElement('div'); v.className='tm-pop-city'; v.textContent=g.city; d.appendChild(v); }
+    g.days.forEach(function(j){
+      var b=document.createElement('button'); b.type='button'; b.className='tm-pop-day';
+      var n=document.createElement('b'); n.textContent='Jour '+j.num; b.appendChild(n);
+      var t=document.createElement('span'); t.textContent=[j.short,j.title].filter(Boolean).join(' · '); b.appendChild(t);
+      var i=document.createElement('i'); i.className='ph-bold ph-arrow-right'; b.appendChild(i);
+      b.addEventListener('click',function(){ if(window._ouvrirJour) window._ouvrirJour(j.anchor); });
+      d.appendChild(b);
+    });
+    return d;
+  }
+  var ll=stops.map(function(s){ return [s.lon,s.lat]; });
+  // Trajet provisoire en arcs (cadrage de la carte), remplace par les routes
+  // des qu'elles arrivent.
+  function joindre(segs){ var t=[]; segs.forEach(function(seg){ seg=seg.slice(); if(t.length) seg.shift(); t=t.concat(seg); }); return t; }
+  var arcs=[];
+  for(var i=1;i<ll.length;i++) arcs.push(arc(ll[i-1],ll[i]));
+  var trace=joindre(arcs);
+  function routes(){
+    if(!arcs.length || arcs.length>40) return Promise.resolve(trace);
+    var delai=new Promise(function(r){ setTimeout(function(){ r(null); },9000); });
+    var legs=arcs.map(function(a,i){
+      var u='/api/route?from='+ll[i][0]+','+ll[i][1]+'&to='+ll[i+1][0]+','+ll[i+1][1];
+      return fetch(u).then(function(r){ return r.ok?r.json():null; }).then(function(j){ return j&&j.coords&&j.coords.length>1?j.coords:a; }).catch(function(){ return a; });
+    });
+    return Promise.race([Promise.all(legs),delai]).then(function(segs){ return segs?joindre(segs):trace; });
+  }
+  var routesPretes=null;
+  // Un lieu revisite (aller-retour par la meme ville) : un seul repere,
+  // "J2–3, J8", plutot que deux etiquettes empilees au meme endroit.
+  var groupes=[], parLieu={};
+  stops.forEach(function(s,i){
+    var k=s.lat+','+s.lon, g=parLieu[k];
+    if(!g){ g=parLieu[k]={ city:s.city, lngLat:[s.lon,s.lat], labels:[], days:[], last:false, first:i }; groupes.push(g); }
+    g.labels.push(etiquette(s)); g.days=g.days.concat(s.days);
+    if(i===stops.length-1 && stops.length>1) g.last=true;
+  });
+  var anime=!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  function dessiner(){
+    if(!window.maplibregl){ echec(); return; }
+    var opts={
+      container:el, style:fond(), attributionControl:{ compact:true },
+      // Ctrl + molette / deux doigts : la carte ne capture jamais le
+      // defilement de la page.
+      cooperativeGestures:true, dragRotate:false, pitchWithRotate:false, touchPitch:false,
+      locale:{
+        'CooperativeGesturesHandler.WindowsHelpText':'Ctrl + molette pour zoomer sur la carte',
+        'CooperativeGesturesHandler.MacHelpText':'⌘ + molette pour zoomer sur la carte',
+        'CooperativeGesturesHandler.MobileHelpText':'Deux doigts pour déplacer la carte',
+        'NavigationControl.ZoomIn':'Zoomer','NavigationControl.ZoomOut':'Dézoomer',
+        'AttributionControl.ToggleAttribution':'Sources de la carte'
+      }
+    };
+    if(ll.length===1){ opts.center=ll[0]; opts.zoom=8; }
+    else {
+      var b=new maplibregl.LngLatBounds(ll[0],ll[0]);
+      trace.forEach(function(p){ b.extend(p); });
+      opts.bounds=b; opts.fitBoundsOptions={ padding:{ top:56, bottom:40, left:48, right:56 }, maxZoom:10 };
+    }
+    var map;
+    try{ map=new maplibregl.Map(opts); }catch(e){ echec(); return; }
+    map.addControl(new maplibregl.NavigationControl({ showCompass:false }),'top-right');
+    el.classList.add('is-ready');
+    var deja=false;
+    function trajet(){
+      if(!trace.length || map.getSource('tm-route')) return;
+      if(!deja && routesPretes){ var p=routesPretes; routesPretes=null; p.then(function(t){ trace=t; trajet(); }); return; }
+      var depart=deja || !anime ? trace : trace.slice(0,2);
+      map.addSource('tm-route',{ type:'geojson', data:{ type:'Feature', geometry:{ type:'LineString', coordinates:depart } } });
+      map.addLayer({ id:'tm-route-casing', type:'line', source:'tm-route', layout:{ 'line-cap':'round','line-join':'round' },
+        paint:{ 'line-color':sombre()?'#0b1520':'#ffffff', 'line-width':7, 'line-opacity':.85 } });
+      map.addLayer({ id:'tm-route', type:'line', source:'tm-route', layout:{ 'line-cap':'round','line-join':'round' },
+        paint:{ 'line-color':'#0057B8', 'line-width':3.5 } });
+      if(deja || !anime){ deja=true; return; }
+      deja=true;
+      // Le trajet se dessine une fois, a l'apparition de la carte.
+      var t0=null, duree=1800, src=map.getSource('tm-route');
+      function pas(t){
+        if(t0===null) t0=t;
+        var x=Math.min(1,(t-t0)/duree), e=x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+        var n=Math.max(2,Math.round(e*trace.length));
+        src.setData({ type:'Feature', geometry:{ type:'LineString', coordinates:trace.slice(0,n) } });
+        if(x<1) requestAnimationFrame(pas);
+      }
+      requestAnimationFrame(pas);
+    }
+    map.on('load',trajet);
+    // Sources repliees derriere leur bouton (i) : depliees, elles masquaient
+    // le bas de la carte sur mobile.
+    map.on('load',function(){ var a=el.querySelector('.maplibregl-ctrl-attrib'); if(a) a.classList.remove('maplibregl-compact-show'); });
+    // Changement de style : MapLibre efface les couches ajoutees, on les remet.
+    map.on('style.load',function(){ if(deja) trajet(); });
+    map.on('error',function(e){ if(!map.loaded() && e && e.error && /style/i.test(String(e.error.message||''))) echec(); });
+    new MutationObserver(function(){ map.setStyle(fond()); }).observe(document.documentElement,{ attributes:true, attributeFilter:['data-theme'] });
+    groupes.forEach(function(g,i){
+      var txt=g.labels.join(', '), w=Math.max(34, 18+txt.length*7.5);
+      var m=document.createElement('div');
+      m.className='tm-marker'; m.style.width=w+'px'; m.style.height='30px';
+      m.setAttribute('role','button'); m.setAttribute('tabindex','0');
+      m.setAttribute('aria-label',(g.city ? g.city+' : ' : '')+g.days.map(function(j){ return 'jour '+j.num; }).join(', '));
+      var pin=document.createElement('span');
+      pin.className='tm-pin'+(g.last?' is-last':''); pin.textContent=txt;
+      pin.style.animationDelay=(400+g.first*90)+'ms';
+      m.appendChild(pin);
+      var pop=new maplibregl.Popup({ closeButton:false, focusAfterOpen:false, offset:18, maxWidth:'270px', className:'tm-popup' }).setDOMContent(bulle(g));
+      var mk=new maplibregl.Marker({ element:m, anchor:'center' }).setLngLat(g.lngLat).setPopup(pop).addTo(map);
+      m.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); mk.togglePopup(); } });
+    });
+  }
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){ if(es[0].isIntersecting){ io.disconnect(); charger(); } },{ rootMargin:'400px 0px' });
+    io.observe(el);
+  } else charger();
+})();
+</script>`;
+
 // Vue lecteur d'un article jour par jour : la frise (liens vers chaque jour,
 // le jour visible surligne) et les blocs <details>, ouverts par defaut pour
 // qu'un lecteur qui fait simplement defiler lise tout, comme un recit unique.
 const DAYS_VISIBLE_COMMENTS = 3;
-function ssrDaysView(renderedHtml, startDate, { commentsByDay = new Map(), authed = false } = {}) {
+function ssrDaysView(renderedHtml, startDate, { commentsByDay = new Map(), authed = false, withMap = false } = {}) {
   const days = parseDays(renderedHtml);
   if (!days.length) return null;
   const items = days.map((d, i) => ({
@@ -731,6 +900,17 @@ function ssrDaysView(renderedHtml, startDate, { commentsByDay = new Map(), authe
     anchor: dayAnchor(d.date, i),
   }));
   const chips = items.map(d => `<a href="#${d.anchor}" class="day-chip" data-day-link="${d.anchor}" title="${safeAttr(['Jour ' + d.num, d.short, d.title].filter(Boolean).join(' · '))}"><span class="day-chip-num">J${d.num}</span>${d.short ? `<span class="day-chip-date">${safeText(d.short)}</span>` : ''}</a>`).join('');
+  // Carte : seulement si l'auteur l'a activee ET qu'au moins un jour est
+  // place. Une carte activee sans aucune ville ne montre rien.
+  const stops = withMap ? mapStops(days, startDate) : [];
+  const map = stops.length ? `
+    <section class="trip-map" aria-label="Carte du voyage">
+      <div class="trip-map-head">
+        <span class="trip-map-title"><i class="ph-bold ph-map-trifold"></i> Le voyage sur la carte</span>
+        <span class="trip-map-meta">${stops.length === 1 ? '1 étape' : stops.length + ' étapes'}</span>
+      </div>
+      <div class="trip-map-canvas" data-trip-map="${safeAttr(JSON.stringify(stops))}"><span class="trip-map-wait"><i class="ph-bold ph-map-pin"></i></span></div>
+    </section>` : '';
   const timeline = `
     <nav class="day-timeline" aria-label="Les jours du voyage">
       <div class="day-timeline-track">${chips}</div>
@@ -767,13 +947,14 @@ function ssrDaysView(renderedHtml, startDate, { commentsByDay = new Map(), authe
     <span class="trip-day-num">Jour ${d.num}</span>
     ${d.short ? `<span class="trip-day-date">${safeText(d.short)}</span>` : ''}
     <span class="trip-day-ccount"${n ? '' : ' hidden'} title="Commentaires sur ce jour"><i class="ph-bold ph-chat-circle-text"></i> <span>${n}</span></span>
+    ${withMap && d.city ? `<span class="trip-day-city"><i class="ph-bold ph-map-pin"></i> ${safeText(d.city)}</span>` : ''}
     ${d.title ? `<span class="trip-day-title">${safeText(d.title)}</span>` : ''}
     <i class="ph-bold ph-caret-down trip-day-caret" aria-hidden="true"></i>
   </summary>
   <div class="trip-day-body">${d.html}</div>${dayComments(d)}
 </details>`;
   }).join('');
-  return { timeline, body };
+  return { timeline, body, map };
 }
 
 async function voyagePage(env, slug, authed = false, origin = '') {
@@ -869,7 +1050,7 @@ ${TOAST}
   // Rendu APRES ssrVoyageContent, sur le HTML final : les images de chaque
   // jour ont ainsi exactement le meme traitement (lightbox, variantes) que
   // dans un recit unique.
-  const daysView = isDays ? ssrDaysView(renderedFull, article.start_date, { commentsByDay, authed }) : null;
+  const daysView = isDays ? ssrDaysView(renderedFull, article.start_date, { commentsByDay, authed, withMap: isMapEnabled(article.content) }) : null;
   const renderedContent = daysView ? daysView.body : renderedFull;
   const galleryHtml = allPhotos.length ? ssrGallery(allPhotos) : '';
   const readingMinutes = estimateReadingMinutes(article.content, allPhotos.length);
@@ -1044,6 +1225,7 @@ ${NAV('', authed)}
     <div class="panel rounded-[2rem] p-6 sm:p-8 mb-10" style="border-left:4px solid rgba(var(--blue-rgb),.22)">
       <p class="text-base sm:text-lg leading-relaxed font-medium italic" style="color:var(--ink-muted)">"${safeText(shortDesc)}"</p>
     </div>
+    ${daysView ? daysView.map : ''}
     ${daysView ? daysView.timeline : ''}
     <div class="prose-vacation text-base sm:text-lg leading-relaxed mb-12" style="color:var(--ink)">${renderedContent}</div>
     ${writingDaysHtml}
@@ -1064,6 +1246,7 @@ ${FOOTER}
 ${TOAST}
 ${LIGHTBOX}
 ${daysView ? DAYS_SCRIPT : ''}
+${daysView && daysView.map ? MAP_SCRIPT : ''}
 <script>
 const ARTICLE_ID = ${JSON.stringify(article.id)};
 const IS_ADMIN = ${JSON.stringify(authed)};
@@ -1899,6 +2082,14 @@ ${FOOTER}
 </body></html>`, 500);
 }
 
+// En dev, le site est souvent ouvert en HTTP sur l'IP du PC (telephone sur le
+// wifi) : le navigateur y ignore un cookie Secure, la connexion admin
+// "reussissait" puis renvoyait sur la page de connexion sans rien dire. En
+// prod tout est en HTTPS, le cookie reste Secure.
+function sessionCookieFor(request, cookie) {
+  return new URL(request.url).protocol === 'http:' ? cookie.replace('; Secure', '') : cookie;
+}
+
 export default {
   async fetch(request, env, ctx) {
     try {
@@ -1953,7 +2144,7 @@ export default {
         return loginPage('Mot de passe incorrect. Réessayez.');
       }
       await clearAttempts(env.DB, 'login', ip);
-      const cookie = await issueSessionCookie(env.SESSION_SECRET);
+      const cookie = sessionCookieFor(request, await issueSessionCookie(env.SESSION_SECRET));
       return new Response(null, {
         status: 302,
         headers: { Location: '/admin/dashboard', 'Set-Cookie': cookie },
@@ -1963,7 +2154,7 @@ export default {
     if (path === '/admin/logout' && method === 'POST') {
       return new Response(null, {
         status: 302,
-        headers: { Location: '/', 'Set-Cookie': clearSession() },
+        headers: { Location: '/', 'Set-Cookie': sessionCookieFor(request, clearSession()) },
       });
     }
 
@@ -2036,7 +2227,7 @@ export default {
         )
         .bind(hash, row.id)
         .run();
-      const cookie = await issueSessionCookie(env.SESSION_SECRET);
+      const cookie = sessionCookieFor(request, await issueSessionCookie(env.SESSION_SECRET));
       return new Response(JSON.stringify({ ok: true, redirect: '/admin/dashboard' }), {
         status: 200,
         headers: { 'Content-Type': 'application/json; charset=utf-8', 'Set-Cookie': cookie },
@@ -2145,6 +2336,10 @@ export default {
       // derniere modification d article). Public : metadonnees de publication.
       if (path === '/api/site-info' && method === 'GET') {
         return getSiteInfo(env);
+      }
+      // Trace routier d'un trajet de la carte du voyage (public, mis en cache).
+      if (path === '/api/route' && method === 'GET') {
+        return getRoute(request, env, ctx);
       }
 
       // Settings

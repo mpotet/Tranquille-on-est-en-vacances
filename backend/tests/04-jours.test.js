@@ -11,7 +11,7 @@
  *   - la notification dit quel jour est nouveau ou modifie, et ne se
  *     declenche pas sur une simple difference d'attributs d'editeur.
  */
-import { isDaysContent, parseDays, dayNumber, dayAnchor, dayLabel, fmtDayShort, diffDays, daysToHeadings } from '../worker/helpers/days.js';
+import { isDaysContent, isMapEnabled, mapStops, parseDays, dayNumber, dayAnchor, dayLabel, fmtDayShort, diffDays, daysToHeadings } from '../worker/helpers/days.js';
 import { phase, test, endPhase, ok, eq, match, noMatch } from './runner.js';
 
 const sec = (date, title, html) => `<section class="trip-day" data-day="${date}" data-title="${title}">${html}</section>`;
@@ -107,6 +107,37 @@ export default async function run() {
   await test('une photo ajoutee a un jour compte comme une modification', () => {
     const d = diffDays(v1, v1.replace('<p>Petra.</p>', '<p>Petra.</p><figure class="img-full"><img src="/r2/n.webp"></figure>'));
     eq(d.modified.length, 1);
+  });
+
+  endPhase();
+  phase('Jour par jour › Carte');
+
+  const geo = (date, city, lat, lon, extra = '') =>
+    `<section class="trip-day" data-day="${date}" data-title=""${city ? ` data-city="${city}"` : ''}${lat != null ? ` data-lat="${lat}" data-lon="${lon}"` : ''}${extra}><p>${date}</p></section>`;
+
+  await test('la carte n est active que sur demande', () => {
+    ok(!isMapEnabled(geo('2026-09-01', 'Rabat', 34.02, -6.83)), 'ville sans data-map : pas de carte');
+    ok(isMapEnabled(geo('2026-09-01', 'Rabat', 34.02, -6.83, ' data-map="1"')), 'data-map="1"');
+    ok(!isMapEnabled('<p>Recit <section class="trip-day" data-map="1"></section></p>'), 'recit unique : jamais de carte');
+  });
+
+  await test('ville et coordonnees relues, valeurs invalides ignorees', () => {
+    const [a, b, c] = parseDays(geo('2026-09-01', 'Rabat', 34.02, -6.83) + geo('2026-09-02', 'Ailleurs', 'abc', 999) + geo('2026-09-03', '', null));
+    eq(a.city, 'Rabat'); eq(a.lat, 34.02); eq(a.lon, -6.83);
+    eq(b.city, 'Ailleurs', 'ville gardee meme sans coordonnees valides');
+    eq(b.lat, null); eq(b.lon, null);
+    eq(c.city, ''); eq(c.lat, null);
+  });
+
+  await test('etapes : jours consecutifs dans la meme ville regroupes, jours non places ignores', () => {
+    const content = geo('2026-09-01', 'Rabat', 34.02, -6.83) + geo('2026-09-02', 'Rabat', 34.02, -6.83)
+      + geo('2026-09-03', 'Inconnue', null) + geo('2026-09-04', 'Fes', 34.03, -5.0) + geo('2026-09-05', 'Rabat', 34.02, -6.83);
+    const stops = mapStops(parseDays(content), '2026-09-01');
+    eq(stops.length, 3, 'Rabat (J1-J3 ignore) / Fes / Rabat');
+    eq(stops[0].days.map(d => d.num).join(','), '1,2');
+    eq(stops[0].days[0].anchor, 'jour-2026-09-01');
+    eq(stops[1].city, 'Fes'); eq(stops[1].days[0].num, 4);
+    eq(stops[2].days[0].num, 5, 'retour a Rabat = nouvelle etape');
   });
 
   endPhase();

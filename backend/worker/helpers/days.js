@@ -13,6 +13,12 @@
  * fonctionner tel quel, aucune migration n'est necessaire, et un article
  * "recit unique" - tous les articles existants - n'a simplement pas ces blocs.
  * Le mode se deduit du contenu, il ne peut donc pas se desynchroniser.
+ *
+ * Carte du voyage (facultative), sur le meme principe : chaque jour peut
+ * porter sa ville et ses coordonnees (data-city, data-lat, data-lon), et le
+ * premier bloc porte data-map="1" quand l'auteur a active la carte. Une ville
+ * sans coordonnees (saisie hors ligne, introuvable) s'affiche dans l'en-tete
+ * du jour mais pas sur la carte.
  */
 
 const DAY_BLOCK_RE = /<section\b([^>]*\bclass="trip-day"[^>]*)>([\s\S]*?)<\/section>/gi;
@@ -33,6 +39,12 @@ export function escAttr(s) {
     .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function coord(v, max) {
+  if (v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) && Math.abs(n) <= max ? n : null;
+}
+
 /** true si le contenu est celui d'un article jour par jour. */
 export function isDaysContent(content) {
   return /^\s*<section\b[^>]*\bclass="trip-day"/i.test(String(content || ''));
@@ -50,7 +62,10 @@ export function parseDays(content) {
   let m;
   DAY_BLOCK_RE.lastIndex = 0;
   while ((m = DAY_BLOCK_RE.exec(src))) {
-    days.push({ date: attr(m[1], 'data-day'), title: attr(m[1], 'data-title'), html: m[2] });
+    days.push({
+      date: attr(m[1], 'data-day'), title: attr(m[1], 'data-title'), html: m[2],
+      city: attr(m[1], 'data-city'), lat: coord(attr(m[1], 'data-lat'), 90), lon: coord(attr(m[1], 'data-lon'), 180),
+    });
   }
   return days
     .map((d, i) => ({ d, i }))
@@ -131,4 +146,30 @@ export function daysToHeadings(content, startDate) {
   const days = parseDays(content);
   if (!days.length) return content;
   return days.map((d, i) => `<h2>${escAttr(dayLabel(d, startDate, i))}</h2>\n${d.html}`).join('\n');
+}
+
+/** true si l'auteur a active la carte du voyage (article jour par jour). */
+export function isMapEnabled(content) {
+  const src = String(content || '');
+  if (!isDaysContent(src)) return false;
+  return /<section\b[^>]*\bclass="trip-day"[^>]*\bdata-map="1"/i.test(src);
+}
+
+/**
+ * Etapes de la carte, dans l'ordre du voyage. Des jours consecutifs dans la
+ * meme ville ne font qu'une etape ("J2-J4") : un sejour de trois nuits au
+ * meme endroit n'est pas trois allers-retours. Les jours sans coordonnees
+ * sont ignores. Chaque etape garde la liste de ses jours (numero, date
+ * courte, ancre) pour que la carte puisse y emmener le lecteur.
+ */
+export function mapStops(days, startDate) {
+  const stops = [];
+  days.forEach((d, i) => {
+    if (d.lat == null || d.lon == null) return;
+    const day = { num: dayNumber(d.date, startDate, i), short: fmtDayShort(d.date), anchor: dayAnchor(d.date, i), title: d.title || '' };
+    const prev = stops[stops.length - 1];
+    if (prev && prev.lat === d.lat && prev.lon === d.lon) prev.days.push(day);
+    else stops.push({ city: d.city || '', lat: d.lat, lon: d.lon, days: [day] });
+  });
+  return stops;
 }

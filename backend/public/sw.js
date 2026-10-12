@@ -134,6 +134,10 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(req.url);
 
+  // Suggestions de villes de l'editeur (carte du voyage) : une reponse
+  // d'autocompletion n'a rien a faire dans le cache hors ligne.
+  if (url.hostname === 'photon.komoot.io') return;
+
   // Auth actions (login, password reset/setup, email confirmation) must always
   // hit the network - never cached, never served stale. Each of these embeds
   // a one-time token or reflects the current session state in the page itself
