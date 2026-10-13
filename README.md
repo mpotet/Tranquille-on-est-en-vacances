@@ -138,6 +138,7 @@ Accédez à `/admin` et connectez-vous avec le mot de passe défini à l'étape 
   - Upload multiple de photos avec glisser-déposer
   - Sélection du dossier
   - URL de couverture avec prévisualisation
+- 🎙️ Enregistrements (`/admin/enregistrements`) : dictaphone pensé pour le téléphone, qui marche hors ligne (gardé sur l'appareil, envoyé tout seul au retour du réseau) ; un enregistrement s'insère dans un article comme une image, et se copie-colle d'un article ou d'un jour à l'autre
 
 ---
 

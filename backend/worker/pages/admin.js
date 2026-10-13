@@ -6,6 +6,7 @@
 import { HEAD, TOAST, NAV } from './shell.js';
 import { html } from '../utils.js';
 import { safeText, safeAttr } from '../helpers/html.js';
+import { REC_CORE_JS, REC_CSS, REC_ICONS } from './recordings.js';
 
 // ── Admin nav ─────────────────────────────────────────────────
 // Reuse the SAME public nav bar (in its authenticated form, with the grouped
@@ -899,6 +900,8 @@ async function init() {
     // Cache le shell de l'éditeur : il sert aussi de repli hors ligne pour
     // n'importe quel /admin/editor/:id jamais visité (voir sw.js).
     fetch('/admin/editor').catch(() => {});
+    // Dictaphone : doit s'ouvrir hors ligne, meme jamais visite.
+    fetch('/admin/enregistrements').catch(() => {});
     // "Récent" = voyage de moins d'un an OU article touché depuis moins d'un
     // an : un récit d'un voyage ancien qu'on est en train d'écrire était
     // exclu, et donc introuvable hors ligne.
@@ -1774,6 +1777,18 @@ export function editorPage(articleId = null) {
   return html(`<!DOCTYPE html>
 <html lang="fr">
 <head>${HEAD(isEdit ? 'Admin - Modifier article' : 'Admin - Nouvel article')}<style>
+${REC_CSS}
+#e-content .audio-note{display:block;margin:1rem 0;user-select:none;-webkit-user-select:none}
+.an-ed{display:flex;align-items:center;gap:.65rem;padding:.6rem .7rem;border-radius:1.1rem;background:var(--blue-light);border:1px solid rgba(var(--blue-rgb),.2);font-size:.9rem;line-height:1.25}
+.an-ed-play{flex:none;width:40px;height:40px;border-radius:999px;border:none;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer}
+.an-ed-play.is-playing{background:var(--ink)}
+.an-ed-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.an-ed-txt b{color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.92rem}
+.an-ed-txt small{font-size:.74rem;color:var(--ink-muted);font-weight:600}
+.an-ed-btn{flex:none;width:34px;height:34px;border-radius:999px;border:none;background:transparent;color:var(--ink-muted);display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer}
+.an-ed-btn:hover{background:rgba(var(--blue-rgb),.12);color:var(--ink)}
+.toolbar-btn .rec-ico{font-size:1.15em}
+#ap-recorder.recorder{box-shadow:none;margin-bottom:.5rem}
 #e-content .img-pair{outline:2px dashed rgba(var(--blue-rgb),.35);outline-offset:3px;border-radius:.75rem}
 #e-content .img-pair figure{max-width:49%;min-width:0}
 #e-content figure{position:relative}
@@ -2080,6 +2095,7 @@ ${ADMIN_NAV()}
             <button type="button" class="toolbar-btn" onclick="fmtBlock('BLOCKQUOTE')" title="Citation"><i class="ph-bold ph-quotes"></i></button>
             <span class="toolbar-sep"></span>
             <button type="button" class="toolbar-btn" style="color:var(--blue)" onclick="openInsertImg()" title="Insérer une image"><i class="ph-bold ph-image"></i></button>
+            <button type="button" class="toolbar-btn" style="color:var(--blue)" onmousedown="event.preventDefault()" onclick="openAudioPicker()" title="Insérer un enregistrement" aria-label="Insérer un enregistrement"><span class="rec-ico">${REC_ICONS.mic}</span></button>
           </div>
           <div style="position:relative">
             <div id="e-content" contenteditable="true" spellcheck="true" lang="fr" autocorrect="on" autocapitalize="sentences"
@@ -2316,6 +2332,22 @@ ${ADMIN_NAV()}
   <button type="button" class="toolbar-btn" onclick="fmtBlock('BLOCKQUOTE')" title="Citation"><i class="ph-bold ph-quotes"></i></button>
   <span class="toolbar-sep"></span>
   <button type="button" class="toolbar-btn" style="color:var(--blue)" onclick="openInsertImg()" title="Insérer une image"><i class="ph-bold ph-image"></i></button>
+            <button type="button" class="toolbar-btn" style="color:var(--blue)" onmousedown="event.preventDefault()" onclick="openAudioPicker()" title="Insérer un enregistrement" aria-label="Insérer un enregistrement"><span class="rec-ico">${REC_ICONS.mic}</span></button>
+</div>
+
+<!-- Inserer un enregistrement : bibliotheque + enregistreur -->
+<div id="audio-picker" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onclick="if(event.target===this)closeAudioPicker()">
+  <div class="section-panel majorelle-frame rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-lg max-h-[88vh] flex flex-col">
+    <div class="flex items-center justify-between p-5" style="border-bottom:1px solid var(--line)">
+      <h3 class="font-display text-lg font-bold flex items-center gap-2" style="color:var(--ink)"><span class="rec-ico" style="color:var(--blue)">${REC_ICONS.mic}</span> Insérer un enregistrement</h3>
+      <button type="button" onclick="closeAudioPicker()" class="p-1.5 rounded-lg transition-colors hover:opacity-70" style="color:var(--ink-light)" aria-label="Fermer"><span class="rec-ico" style="font-size:1.2rem">${REC_ICONS.x}</span></button>
+    </div>
+    <div class="px-5 pt-4">
+      <button type="button" id="ap-new" class="rec-act is-primary" style="width:100%;justify-content:center;padding:.7rem" onclick="apStartRecording()"><span class="rec-ico">${REC_ICONS.mic}</span> Enregistrer maintenant</button>
+      <div id="ap-recorder" class="hidden"></div>
+    </div>
+    <div id="ap-list" class="flex-1 overflow-y-auto px-5 pb-5 pt-2"></div>
+  </div>
 </div>
 
 <!-- Insert image modal -->
@@ -2358,6 +2390,7 @@ ${ADMIN_NAV()}
 </div>
 
 ${TOAST}
+<script>${REC_CORE_JS}</script>
 <script>
 let ARTICLE_ID = ${JSON.stringify(articleId)};
 // Offline, the service worker may answer /admin/editor/:id with the generic
@@ -3857,7 +3890,7 @@ function _doRedo() {
   // and plain-text clipboard flavors.
   function _cleanClipboardHtml(range) {
     const frag = range.cloneContents();
-    frag.querySelectorAll('.img-delete, .img-split, .img-expand, .img-alt, .img-pair-add, .img-alt-preview').forEach(el => el.remove());
+    frag.querySelectorAll('.img-delete, .img-split, .img-expand, .img-alt, .img-pair-add, .img-alt-preview, [data-editor-only]').forEach(el => el.remove());
     const div = document.createElement('div');
     div.appendChild(frag);
     return div;
@@ -3871,7 +3904,7 @@ function _doRedo() {
     // Only worth overriding the clipboard when a figure/button was
     // actually part of the selection - plain text selections were never
     // affected, no need to touch their clipboard behavior at all.
-    if (!cleaned.querySelector('figure, .img-pair') && cleaned.textContent === range.toString()) return false;
+    if (!cleaned.querySelector('figure, .img-pair, .audio-note') && cleaned.textContent === range.toString()) return false;
     e.preventDefault();
     e.clipboardData.setData('text/html', cleaned.innerHTML);
     e.clipboardData.setData('text/plain', cleaned.textContent);
@@ -4193,6 +4226,9 @@ function insertPhotoAtRange(url, caption, range) {
 // article) - that <p> gets replaced by the figure directly, same
 // placement, same "full width" sizing as a freshly inserted photo.
 function _wrapBareImages(editor) {
+  // Appele a chaque chargement de contenu (article, jour, brouillon) : les
+  // enregistrements y retrouvent leur interface d'edition.
+  _decorateAudioNotes(editor);
   // Figures stored before the alt button existed (i.e. every article already
   // written) keep their saved markup verbatim, so they'd never get one -
   // add it on load for any that are still missing a description.
@@ -4894,6 +4930,264 @@ async function delArticle() {
   else toast('Erreur','err');
 }
 
+
+// ── Enregistrements audio dans le texte ────────────────────────
+// Un enregistrement s'insere comme une image : un bloc
+// <div class="audio-note" data-audio-id data-src data-title data-duration>
+// vide dans le contenu enregistre. Dans l'editeur, il recoit une petite
+// interface (ecouter, copier, retirer) marquee data-editor-only, retiree a
+// chaque sauvegarde (stripEditorOnly). Voir pages/recordings.js (window.Rec).
+function _noteEntry(n) {
+  return { id: n.getAttribute('data-audio-id') || '', url: n.getAttribute('data-src') || '',
+    title: n.getAttribute('data-title') || '', duration_ms: (parseInt(n.getAttribute('data-duration'), 10) || 0) * 1000 };
+}
+function _decorateAudioNotes(root) {
+  if (!root || !window.Rec) return;
+  root.querySelectorAll('.audio-note').forEach(n => {
+    n.querySelectorAll('[data-editor-only]').forEach(x => x.remove());
+    n.setAttribute('contenteditable', 'false');
+    const e = _noteEntry(n), cur = Rec.player.current(), playing = cur && cur.id === e.id && !Rec.player.audio.paused;
+    n.insertAdjacentHTML('afterbegin',
+      '<div data-editor-only="1" class="an-ed">' +
+        '<button type="button" class="an-ed-play' + (playing ? ' is-playing' : '') + '" data-an="play" aria-label="' + (playing ? 'Pause' : 'Écouter') + '">' + (playing ? Rec.ICON.pause : Rec.ICON.play) + '</button>' +
+        '<span class="an-ed-txt"><b>' + esc(e.title || 'Enregistrement') + '</b><small>Enregistrement · ' + Rec.fmt(e.duration_ms) + '</small></span>' +
+        '<button type="button" class="an-ed-btn" data-an="copy" title="Copier (pour le coller ailleurs)" aria-label="Copier">' + Rec.ICON.copy + '</button>' +
+        '<button type="button" class="an-ed-btn" data-an="del" title="Retirer de l’article" aria-label="Retirer de l’article">' + Rec.ICON.x + '</button>' +
+      '</div>');
+  });
+}
+function _makeAudioNote(entry) {
+  const t = document.createElement('div');
+  t.innerHTML = Rec.noteHtml(entry);
+  const n = t.firstChild;
+  _decorateAudioNotes(t);
+  return n;
+}
+// Insere des blocs (enregistrements, paragraphes) APRES le paragraphe ou se
+// trouve le curseur : un bloc <div> ne peut pas vivre dans un <p>, le
+// navigateur casserait le paragraphe a la relecture. Un paragraphe vide est
+// remplace. Le curseur repart dans un paragraphe juste apres.
+function _insertBlocks(frag) {
+  const editor = document.getElementById('e-content');
+  if (!editor || !frag.firstChild) return;
+  const sel = window.getSelection();
+  let range = null;
+  if (sel && sel.rangeCount && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) range = sel.getRangeAt(0);
+  else if (_savedRange && editor.contains(_savedRange.commonAncestorContainer)) range = _savedRange;
+  let top = null;
+  if (range) {
+    if (range.startContainer === editor) top = editor.childNodes[range.startOffset - 1] || null;
+    else { top = range.startContainer; while (top && top.parentNode !== editor) top = top.parentNode; }
+  }
+  const last = frag.lastChild;
+  if (top) {
+    const empty = top.nodeType === 1 && top.tagName === 'P' && !top.textContent.trim() && !top.querySelector('img');
+    if (empty) top.replaceWith(frag); else top.after(frag);
+  } else if (range && range.startContainer === editor && range.startOffset === 0) editor.prepend(frag);
+  else editor.appendChild(frag);
+  let next = last.nextSibling;
+  while (next && next.nodeType === 3 && !next.textContent.trim()) next = next.nextSibling;
+  if (!next || next.nodeType !== 1 || next.tagName !== 'P') { next = document.createElement('p'); next.innerHTML = '<br>'; last.after(next); }
+  const r = document.createRange(); r.setStart(next, 0); r.collapse(true);
+  if (sel) { sel.removeAllRanges(); sel.addRange(r); }
+  _savedRange = r.cloneRange();
+}
+function insertAudioNote(entry) {
+  _pushUndoSnapshotForAction();
+  const f = document.createDocumentFragment();
+  f.appendChild(_makeAudioNote(entry));
+  _insertBlocks(f);
+  _scheduleAutoSave();
+}
+// Collage d'un enregistrement (copie depuis la bibliotheque, ou un bloc copie
+// dans un autre article / un autre jour). Lu de facon SYNCHRONE dans le
+// handler paste (voir plus bas) : le presse-papiers n'est lisible que la.
+// Les blocs sont reconstruits depuis leurs data-*, jamais repris tels quels.
+const _AUDIO_ID_RE = /^[a-z0-9-]{8,64}$/, _AUDIO_SRC_RE = /^[/]r2[/]audio[/][a-z0-9-]+[.](m4a|webm|ogg|mp3)$/;
+function _pasteAudioNotes(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  if (!doc.querySelector('.audio-note[data-audio-id]')) return false;
+  const ID = _AUDIO_ID_RE, SRC = _AUDIO_SRC_RE;
+  const BLOCK = /^(P|DIV|H[1-6]|LI|BLOCKQUOTE|SECTION|UL|OL|FIGURE)$/;
+  const frag = document.createDocumentFragment();
+  let text = '';
+  const flush = () => { const t = text.replace(/[ ]+/g, ' ').trim(); if (t) { const p = document.createElement('p'); p.textContent = t; frag.appendChild(p); } text = ''; };
+  const walk = (node) => {
+    if (node.nodeType === 3) { text += node.nodeValue; return; }
+    if (node.nodeType !== 1) return;
+    if (node.classList.contains('audio-note')) {
+      flush();
+      const e = _noteEntry(node);
+      if (ID.test(e.id) && SRC.test(e.url)) frag.appendChild(_makeAudioNote(e));
+      return;
+    }
+    if (node.hasAttribute('data-editor-only') || /^(BUTTON|SCRIPT|STYLE|SVG)$/i.test(node.tagName)) return;
+    if (node.tagName === 'IMG') {
+      flush();
+      const src = node.getAttribute('src') || '';
+      if (src && src.indexOf('data:') !== 0 && src.indexOf('blob:') !== 0) frag.appendChild(_makeImgFigure(src, node.getAttribute('alt') || '', 'full'));
+      return;
+    }
+    const block = BLOCK.test(node.tagName);
+    if (block) flush();
+    node.childNodes.forEach(walk);
+    if (block) flush();
+  };
+  doc.body.childNodes.forEach(walk);
+  flush();
+  if (!frag.firstChild) return false;
+  _pushUndoSnapshotForAction();
+  _insertBlocks(frag);
+  _scheduleAutoSave();
+  return true;
+}
+document.getElementById('e-content')?.addEventListener('click', e => {
+  const b = e.target.closest('[data-an]');
+  const note = b && b.closest('.audio-note');
+  if (!note) return;
+  e.preventDefault(); e.stopPropagation();
+  const entry = _noteEntry(note), act = b.getAttribute('data-an');
+  if (act === 'play') {
+    Rec.player.toggle(entry).then(ok => { if (!ok) toast(navigator.onLine ? 'Lecture impossible' : 'Pas disponible hors ligne sur ce téléphone', 'err'); });
+  } else if (act === 'copy') {
+    Rec.copy(entry).then(ok => toast(ok ? 'Copié : collez-le où vous voulez dans un article' : 'Copie impossible sur ce navigateur', ok ? 'ok' : 'err'));
+  } else if (act === 'del') {
+    const cur = Rec.player.current();
+    if (cur && cur.id === entry.id) Rec.player.stop();
+    _pushUndoSnapshotForAction();
+    note.remove();
+    _ensureTrailingParagraph();
+    _scheduleAutoSave();
+  }
+});
+window.addEventListener('rec:player', ev => {
+  const t = ev.detail.type;
+  if (t !== 'play' && t !== 'pause' && t !== 'ended') return;
+  const ed = document.getElementById('e-content');
+  if (ed) ed.querySelectorAll('.audio-note').forEach(n => {
+    const b = n.querySelector('.an-ed-play'); if (!b) return;
+    const cur = Rec.player.current(), on = cur && cur.id === n.getAttribute('data-audio-id') && !Rec.player.audio.paused;
+    b.classList.toggle('is-playing', !!on); b.innerHTML = on ? Rec.ICON.pause : Rec.ICON.play;
+    b.setAttribute('aria-label', on ? 'Pause' : 'Écouter');
+  });
+  if (!document.getElementById('audio-picker')?.classList.contains('hidden')) _renderAudioPicker();
+});
+
+// ── Fenetre "Inserer un enregistrement" ──
+let _apRecorder = null;
+function openAudioPicker() {
+  const s = window.getSelection(), ed = document.getElementById('e-content');
+  if (s && s.rangeCount && ed && ed.contains(s.getRangeAt(0).commonAncestorContainer)) saveSelection();
+  const m = document.getElementById('audio-picker');
+  m.classList.remove('hidden');
+  _renderAudioPicker();
+  Rec.refresh();
+}
+function closeAudioPicker() {
+  if (_apRecorder && _apRecorder.busy()) { if (!confirm('Un enregistrement est en cours. Le jeter ?')) return; document.querySelector('#ap-recorder [data-r="cancel"]')?.click(); }
+  Rec.player.stop();
+  document.getElementById('audio-picker').classList.add('hidden');
+}
+function apStartRecording() {
+  const box = document.getElementById('ap-recorder');
+  document.getElementById('ap-new').classList.add('hidden');
+  box.classList.remove('hidden');
+  if (!_apRecorder) {
+    _apRecorder = Rec.createRecorder(box, {
+      onSaved: entry => {
+        closeAudioPicker();
+        restoreSelection();
+        insertAudioNote(entry);
+        toast(navigator.onLine ? 'Enregistrement ajouté au texte' : 'Enregistrement ajouté (envoi au retour du réseau)', 'ok');
+        box.classList.add('hidden'); document.getElementById('ap-new').classList.remove('hidden');
+      },
+      onIdle: () => { box.classList.add('hidden'); document.getElementById('ap-new').classList.remove('hidden'); },
+    });
+  }
+  _apRecorder.start();
+}
+function _renderAudioPicker() {
+  const el = document.getElementById('ap-list');
+  if (!el) return;
+  Rec.list().then(list => {
+    if (!list.length) { el.innerHTML = '<div class="rec-empty"><b>Aucun enregistrement</b>Enregistrez-en un ci-dessus, ou depuis la page Enregistrements.</div>'; return; }
+    const cur = Rec.player.current();
+    el.innerHTML = list.map(e => {
+      const playing = cur && cur.id === e.id && !Rec.player.audio.paused;
+      const d = new Date(e.recorded_at);
+      const hm = String(d.getHours()).padStart(2, '0') + 'h' + String(d.getMinutes()).padStart(2, '0');
+      // Titre par defaut = date + heure : inutile de les repeter dessous.
+      const when = (e.title || '').indexOf(hm) !== -1 ? '' : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' · ' + hm;
+      const state = e.status === 'pending' ? '<span class="rec-state is-pending"><span class="rec-ico">' + Rec.ICON.cloud + '</span>en attente</span>' : '';
+      return '<div class="rec-item" data-id="' + e.id + '"><div class="rec-row" style="cursor:default">' +
+        '<button type="button" class="rec-btn rec-play' + (playing ? ' is-playing' : '') + '" data-ap="play" aria-label="' + (playing ? 'Pause' : 'Écouter') + '">' + (playing ? Rec.ICON.pause : Rec.ICON.play) + '</button>' +
+        '<div class="rec-info"><div class="rec-title">' + esc(e.title || 'Enregistrement') + '</div><div class="rec-meta">' + (when ? '<span>' + when + '</span><span>·</span>' : '') + '<span>' + Rec.fmt(e.duration_ms) + '</span>' + state + '</div></div>' +
+        '<button type="button" class="rec-act is-primary" data-ap="insert">Insérer</button>' +
+      '</div></div>';
+    }).join('');
+    el._list = list;
+  });
+}
+document.getElementById('ap-list')?.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-ap]'), it = ev.target.closest('.rec-item');
+  if (!b || !it) return;
+  const list = document.getElementById('ap-list')._list || [];
+  const entry = list.filter(x => x.id === it.getAttribute('data-id'))[0];
+  if (!entry) return;
+  if (b.getAttribute('data-ap') === 'play') {
+    Rec.player.toggle(entry).then(ok => { if (!ok) toast(navigator.onLine ? 'Lecture impossible' : 'Pas disponible hors ligne sur ce téléphone', 'err'); });
+  } else {
+    Rec.player.stop();
+    document.getElementById('audio-picker').classList.add('hidden');
+    restoreSelection();
+    insertAudioNote(entry);
+  }
+});
+window.addEventListener('rec:change', () => { if (!document.getElementById('audio-picker')?.classList.contains('hidden')) _renderAudioPicker(); });
+
+// Filet de securite : tout bloc audio arrive dans le texte SANS son interface
+// est repare, quel que soit le chemin. Sur telephone, coller depuis le
+// presse-papiers du clavier (Gboard...) n'emet pas toujours d'evenement
+// "paste" : le navigateur inserait alors le bloc brut, vide donc invisible
+// dans l'editeur (mais bien enregistre, et visible sur le site). Il est ici
+// verifie, reconstruit a partir de ses data-*, et sorti du paragraphe ou le
+// navigateur l'avait glisse (un bloc ne peut pas vivre dans un <p>).
+function _repairAudioNotes(ed) {
+  let changed = false;
+  ed.querySelectorAll('.audio-note').forEach(n => {
+    if (n.querySelector('.an-ed') && n.parentNode === ed) return;
+    const e = _noteEntry(n);
+    let top = n;
+    while (top.parentNode && top.parentNode !== ed) top = top.parentNode;
+    if (!_AUDIO_ID_RE.test(e.id) || !_AUDIO_SRC_RE.test(e.url)) { n.remove(); changed = true; return; }
+    const clean = _makeAudioNote(e);
+    // Bien place mais sans interface (chargement d'un article) : on l'habille,
+    // sans toucher au brouillon. Mal place (colle dans un paragraphe) : on le
+    // sort, et c'est une vraie modification.
+    if (top === n) { n.replaceWith(clean); return; }
+    changed = true;
+    n.remove();
+    const vide = !top.textContent.trim() && !(top.querySelector && top.querySelector('img, .audio-note'));
+    if (vide) top.replaceWith(clean); else top.after(clean);
+    const next = clean.nextSibling;
+    if (!next || next.nodeType !== 1 || next.tagName !== 'P') { const p = document.createElement('p'); p.innerHTML = '<br>'; clean.after(p); }
+  });
+  if (changed) _scheduleAutoSave();
+}
+(function () {
+  const ed = document.getElementById('e-content');
+  if (!ed || !window.MutationObserver) return;
+  let planned = false;
+  const touchesAudio = (n) => n.nodeType === 1 && ((n.classList && n.classList.contains('audio-note')) || (n.querySelector && n.querySelector('.audio-note')));
+  new MutationObserver(muts => {
+    if (planned) return;
+    if (!muts.some(m => Array.prototype.some.call(m.addedNodes, touchesAudio))) return;
+    planned = true;
+    requestAnimationFrame(() => { planned = false; _repairAudioNotes(ed); });
+  }).observe(ed, { childList: true, subtree: true });
+})();
+Rec.sync();
+
 // Save cursor position when editor loses focus (for insert-at-cursor)
 document.getElementById('e-content')?.addEventListener('blur', saveSelection);
 
@@ -5136,6 +5430,8 @@ document.getElementById('e-content')?.addEventListener('paste', async e => {
   // only the text. Extract every data:image src from the HTML flavor (if
   // any) and treat each one as an image to upload, same as a direct paste.
   const html = e.clipboardData.getData('text/html');
+  // Enregistrement colle (bibliotheque, autre article, autre jour).
+  if (html && html.indexOf('audio-note') !== -1 && _pasteAudioNotes(html)) return;
   const allImgSrcs = html ? [...html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)].map(m => m[1]) : [];
   // Word Desktop's HTML flavor keeps images and paragraphs in real
   // document order (confirmed: <p>text</p><p><img></p><p>more text</p> for

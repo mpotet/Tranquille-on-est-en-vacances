@@ -478,6 +478,35 @@ a, button, .action-btn, .action-btn-sm, .btn-primary, .btn-ghost, .subtle-btn, .
 .prose-vacation .trip-day-ccount { display: inline-flex; align-items: center; gap: .25rem; font-size: .78rem; font-weight: 700;
   color: var(--blue); background: var(--blue-light); padding: .1rem .5rem; border-radius: 999px; }
 .prose-vacation .trip-day-ccount[hidden] { display: none; }
+/* Message vocal (bloc insere dans le recit). .is-player : le rendu public,
+   l'editeur garde son propre affichage du meme bloc. */
+.audio-note.is-player { display: flex; align-items: center; gap: .9rem; margin: 1.4rem 0; padding: .85rem 1rem;
+  border-radius: 1.25rem; background: var(--cream); border: 1px solid var(--line); box-shadow: var(--card-shadow);
+  font-size: 1rem; line-height: 1.3; }
+.audio-note.is-player audio { display: none; }
+.an-play { position: relative; flex: none; width: 52px; height: 52px; border-radius: 999px; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; color: #fff; background: var(--blue);
+  box-shadow: 0 6px 16px rgba(var(--blue-rgb), .32); transition: transform .12s ease, background .2s; }
+.an-play:active { transform: scale(.94); }
+.an-play:focus-visible { outline: 3px solid var(--apricot); outline-offset: 2px; }
+.an-play svg { width: 22px; height: 22px; display: block; }
+.an-play .an-i-pause, .audio-note.is-playing .an-play .an-i-play { display: none; }
+.audio-note.is-playing .an-play .an-i-pause { display: block; }
+.audio-note.is-playing .an-play { background: var(--ink); }
+.audio-note.is-loading .an-play::after { content: ""; position: absolute; inset: -4px; border-radius: 999px;
+  border: 3px solid transparent; border-top-color: var(--apricot); animation: an-spin .8s linear infinite; }
+@keyframes an-spin { to { transform: rotate(360deg); } }
+.an-main { flex: 1; min-width: 0; }
+.an-head { display: flex; align-items: baseline; gap: .5rem; min-width: 0; }
+.an-kicker { flex: none; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--blue); }
+.an-title { min-width: 0; font-weight: 700; font-size: .95rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.an-track { position: relative; height: 6px; margin: .55rem 0 .35rem; border-radius: 999px; background: var(--sand); cursor: pointer; }
+.an-track:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.an-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: var(--blue); }
+.audio-note.is-playing .an-fill { background: linear-gradient(90deg, var(--blue), var(--sky)); }
+.an-time { display: flex; justify-content: space-between; font-size: .74rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink-muted); }
+.audio-note.is-error .an-cur { color: var(--pending); }
+@media (prefers-reduced-motion: reduce) { .audio-note.is-loading .an-play::after { animation: none; } }
 .prose-vacation .trip-day-city { display: inline-flex; align-items: center; gap: .2rem; font-size: .85rem; font-weight: 700; color: var(--palm); }
 /* Carte du voyage (jour par jour, si activee). Isolee dans son propre
    contexte d'empilement : les z-index de la carte (popups, controles) passaient
@@ -842,6 +871,7 @@ ${UPDATE_BANNER}
             <div class="px-4 py-2 text-[.68rem] font-bold uppercase tracking-[.14em]" style="color:var(--ink-light);border-bottom:1px solid var(--line)">Espace admin</div>
             <a href="/admin" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph-bold ph-gauge" style="color:var(--blue)"></i> Tableau de bord</a>
             <a href="/admin/editor" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph-bold ph-plus-circle" style="color:var(--blue)"></i> Nouvel article</a>
+            <a href="/admin/enregistrements" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-blue-50" style="color:var(--ink)"><i class="ph-bold ph-microphone" style="color:var(--blue)"></i> Enregistrements</a>
             <form method="POST" action="/admin/logout" onsubmit="return doLogout(event)" style="border-top:1px solid var(--line);margin-top:.25rem;padding-top:.25rem">
               <button type="submit" class="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold w-full text-left transition-colors hover:bg-red-50" style="color:var(--danger);background:none;border:none;cursor:pointer"><i class="ph-bold ph-sign-out"></i> Déconnexion</button>
             </form>
@@ -873,6 +903,7 @@ ${UPDATE_BANNER}
           <div class="flex items-center gap-1.5 px-3 pb-1 text-[.68rem] font-bold uppercase tracking-[.14em]" style="color:var(--blue)"><i class="ph-fill ph-shield-check"></i> Espace admin</div>
           <a href="/admin" class="mobile-nav-link"><i class="ph-bold ph-gauge"></i> Tableau de bord</a>
           <a href="/admin/editor" class="mobile-nav-link"><i class="ph-bold ph-plus-circle"></i> Nouvel article</a>
+          <a href="/admin/enregistrements" class="mobile-nav-link"><i class="ph-bold ph-microphone"></i> Enregistrements</a>
           <form method="POST" action="/admin/logout" onsubmit="return doLogout(event)"><button type="submit" class="mobile-nav-link w-full text-left" style="color:var(--danger);background:none;border:none;cursor:pointer"><i class="ph-bold ph-sign-out"></i> Déconnexion</button></form>
         </div>
         ` : `
@@ -1341,7 +1372,7 @@ async function installApp(){
 // gets queued (publish_when_online) and synced automatically once back online.
 if (navigator.onLine && window.location.pathname.startsWith('/admin')) {
   getServiceWorkerReady().then(() => {
-    ['/admin/dashboard', '/admin/editor'].forEach(function(p){
+    ['/admin/dashboard', '/admin/editor', '/admin/enregistrements'].forEach(function(p){
       if (p !== window.location.pathname) fetch(p).catch(() => {});
     });
   }).catch(() => {});

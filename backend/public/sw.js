@@ -138,6 +138,13 @@ self.addEventListener('fetch', event => {
   // d'autocompletion n'a rien a faire dans le cache hors ligne.
   if (url.hostname === 'photon.komoot.io') return;
 
+  // Enregistrements audio : le lecteur demande des plages d'octets (Range).
+  // Une reponse partielle (206) ne se met pas en cache, et une reponse
+  // complete renvoyee a une demande de plage empeche Safari de lire le son.
+  // On laisse donc le navigateur parler directement au reseau ; l'ecoute
+  // hors ligne passe par la copie gardee sur l'appareil (IndexedDB).
+  if (url.pathname.startsWith('/r2/audio/')) return;
+
   // Auth actions (login, password reset/setup, email confirmation) must always
   // hit the network - never cached, never served stale. Each of these embeds
   // a one-time token or reflects the current session state in the page itself
@@ -256,12 +263,27 @@ async function staleWhileRevalidate(event, req, cacheName) {
 // still preserves offline editing (the whole reason these pages are cached
 // at all): only the ordering flips, network is tried first and the cache is
 // the fallback, not the other way around.
+// Reseau "present mais inutilisable" (wifi d'hotel, une barre de 3G) : le
+// fetch ne repond ni ne echoue, et la page restait blanche a attendre. Passe
+// ce delai, la copie en cache s'affiche ; la reponse reseau, si elle finit
+// par arriver, met quand meme le cache a jour pour la prochaine fois.
+const NETWORK_FIRST_TIMEOUT_MS = 3500;
 async function networkFirst(req, cacheName) {
   const cache = await caches.open(cacheName);
-  try {
-    const resp = await fetch(req);
+  const network = fetch(req).then(resp => {
     if (resp && resp.ok) cache.put(req, resp.clone());
     return resp;
+  });
+  try {
+    const cachedNow = await cache.match(req);
+    if (!cachedNow) return await network;
+    let timer;
+    const late = new Promise(resolve => { timer = setTimeout(() => resolve(null), NETWORK_FIRST_TIMEOUT_MS); });
+    const first = await Promise.race([network.catch(() => null), late]);
+    clearTimeout(timer);
+    if (first) return first;
+    network.catch(() => {});
+    return cachedNow;
   } catch {
     const cached = await cache.match(req);
     if (cached) return cached;
@@ -359,11 +381,21 @@ async function cacheFirst(req, cacheName) {
 
   try {
     const resp = await fetch(req);
-    if (resp && resp.ok) cache.put(req, resp.clone());
+    if (resp && (resp.ok || isCdnOpaque(req, resp))) cache.put(req, resp.clone());
     return resp;
   } catch (_) {
     return new Response('', { status: 503 });
   }
+}
+
+// Les feuilles de style et scripts des CDN (icones Phosphor, marked) sont
+// charges sans CORS : la reponse est "opaque" (statut illisible, ok = false)
+// et n'etait donc jamais gardee. Hors ligne, toutes les icones de
+// l'administration disparaissaient. Ces URL sont versionnees, on peut les
+// garder ; les polices qu'elles chargent passent en CORS et sont deja gardees.
+const CDN_HOSTS = new Set(['unpkg.com', 'cdn.jsdelivr.net', 'cdnjs.cloudflare.com']);
+function isCdnOpaque(req, resp) {
+  return resp.type === 'opaque' && CDN_HOSTS.has(new URL(req.url).hostname);
 }
 
 function offlineFallbackHtml() {

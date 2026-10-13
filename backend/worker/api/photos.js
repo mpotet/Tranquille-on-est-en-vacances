@@ -343,7 +343,14 @@ export async function deleteHeroImage(env) {
 // ──────────────────────────────────────────────────────────────
 // Serve an R2 object (proxied through the Worker)
 // ──────────────────────────────────────────────────────────────
-export async function serveR2Object(env, r2Key) {
+export async function serveR2Object(env, r2Key, request) {
+  // Audio : lecture par plages (Range). Safari refuse de lire un media servi
+  // sans, et c'est ce qui permet d'avancer dans un enregistrement sans tout
+  // retelecharger. Reserve aux enregistrements : les photos restent servies
+  // d'un bloc, comme avant.
+  if (request && r2Key.startsWith('audio/') && request.headers.has('range')) {
+    return serveR2Range(env, r2Key, request);
+  }
   const object = await env.PHOTOS.get(r2Key);
   if (!object) return new Response('Not found', { status: 404 });
 
@@ -355,6 +362,31 @@ export async function serveR2Object(env, r2Key) {
   // allowlist at write time, but never let a browser "sniff" a served object
   // into executing as HTML/script regardless of what Content-Type is stored.
   headers.set('X-Content-Type-Options', 'nosniff');
+  if (r2Key.startsWith('audio/')) headers.set('Accept-Ranges', 'bytes');
 
   return new Response(object.body, { headers });
+}
+
+async function serveR2Range(env, r2Key, request) {
+  const head = await env.PHOTOS.head(r2Key);
+  if (!head) return new Response('Not found', { status: 404 });
+  const size = head.size;
+  const m = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get('range') || '');
+  let start, end;
+  if (m && m[1] !== '') { start = Number(m[1]); end = m[2] !== '' ? Math.min(Number(m[2]), size - 1) : size - 1; }
+  else if (m && m[2] !== '') { start = Math.max(0, size - Number(m[2])); end = size - 1; }
+  if (!m || start > end || start >= size) {
+    return new Response(null, { status: 416, headers: { 'Content-Range': 'bytes */' + size } });
+  }
+  const object = await env.PHOTOS.get(r2Key, { range: { offset: start, length: end - start + 1 } });
+  if (!object) return new Response('Not found', { status: 404 });
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+  headers.set('ETag', object.httpEtag);
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('Accept-Ranges', 'bytes');
+  headers.set('Content-Range', 'bytes ' + start + '-' + end + '/' + size);
+  headers.set('Content-Length', String(end - start + 1));
+  return new Response(object.body, { status: 206, headers });
 }

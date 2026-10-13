@@ -116,8 +116,10 @@ function daySignature(day) {
     .replace(/<button\b[\s\S]*?<\/button>/gi, '')
     .replace(/<div\b[^>]*(?:data-editor-only="1"|class="[^"]*\bimg-alt-preview\b)[^>]*>[\s\S]*?<\/div>/gi, '');
   const imgs = [...html.matchAll(/<img\b[^>]*\bsrc="([^"]*)"/gi)].map(m => m[1]).join('|');
+  // Un message vocal ajoute a un jour compte comme une photo ajoutee.
+  const audio = [...html.matchAll(/\bdata-audio-id="([^"]*)"/gi)].map(m => m[1]).join('|');
   const text = html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
-  return (day.title || '').trim() + '\u0000' + text + '\u0000' + imgs;
+  return (day.title || '').trim() + '\u0000' + text + '\u0000' + imgs + '\u0000' + audio;
 }
 
 /**

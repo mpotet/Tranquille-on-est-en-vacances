@@ -211,6 +211,21 @@ CREATE TABLE IF NOT EXISTS subscriber_email_log (
 
 CREATE INDEX IF NOT EXISTS idx_subscriber_email_log_created ON subscriber_email_log(created_at DESC);
 
+-- Enregistrements audio de l'admin (voir migrations/013-recordings.sql).
+-- id genere par l'appareil (uuid) : un envoi rejoue apres une coupure ne
+-- cree pas de doublon. Fichier dans R2 sous r2_key (audio/<id>.<ext>).
+CREATE TABLE IF NOT EXISTS recordings (
+  id          TEXT PRIMARY KEY,
+  title       TEXT NOT NULL DEFAULT '',
+  r2_key      TEXT NOT NULL,
+  mime        TEXT NOT NULL,
+  duration_ms INTEGER NOT NULL DEFAULT 0,
+  size        INTEGER NOT NULL DEFAULT 0,
+  recorded_at TEXT NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_recordings_recorded_at ON recordings(recorded_at);
+
 -- Seed the single admin row in first-run state (no password, no token).
 -- The setup email/token is generated at runtime by
 -- `npm run admin:send-setup-email`, NOT here (that would send a real email).

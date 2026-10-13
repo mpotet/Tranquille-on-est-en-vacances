@@ -34,6 +34,8 @@ import { uploadPhotos, deletePhoto, patchPhoto, uploadCover, uploadHeroImage, de
 import { getSettings, updateSettings } from './api/settings.js';
 import { getSiteInfo } from './api/site-info.js';
 import { getRoute } from './api/route.js';
+import { listRecordings, putRecording, patchRecording, deleteRecording } from './api/recordings.js';
+import { recordingsPage } from './pages/recordings.js';
 import { listComments, createComment, deleteComment, listRecentCommentsAdmin, replyToComment, countUnreadComments, markCommentsRead, turnstileEnabled, commentColumns } from './api/comments.js';
 import { getAnalytics } from './api/analytics.js';
 import {
@@ -886,6 +888,52 @@ const MAP_SCRIPT = `<script>
 })();
 </script>`;
 
+// Lecteur des messages vocaux : un seul son a la fois, barre de progression
+// cliquable (et fleches gauche/droite), et un message clair si le son est
+// injoignable (hors ligne : l'audio n'est pas garde dans le cache du site).
+const AUDIO_SCRIPT = `<script>
+(function(){
+  var notes = Array.prototype.slice.call(document.querySelectorAll('.audio-note.is-player'));
+  if (!notes.length) return;
+  function fmt(s){ s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ':' + (s % 60 < 10 ? '0' : '') + (s % 60); }
+  notes.forEach(function(n){
+    var a = n.querySelector('audio'), btn = n.querySelector('.an-play'), track = n.querySelector('.an-track'),
+        fill = n.querySelector('.an-fill'), cur = n.querySelector('.an-cur'), durEl = n.querySelector('.an-dur');
+    function dur(){ return a.duration && isFinite(a.duration) ? a.duration : 0; }
+    function paint(){
+      var d = dur(); fill.style.width = (d ? Math.min(100, a.currentTime / d * 100) : 0) + '%';
+      cur.textContent = fmt(a.currentTime); track.setAttribute('aria-valuenow', String(Math.round(a.currentTime)));
+    }
+    btn.addEventListener('click', function(){
+      if (a.paused) {
+        notes.forEach(function(o){ var oa = o.querySelector('audio'); if (oa !== a && !oa.paused) oa.pause(); });
+        n.classList.add('is-loading');
+        a.play().catch(function(){ n.classList.remove('is-loading'); });
+      } else a.pause();
+    });
+    a.addEventListener('playing', function(){ n.classList.remove('is-loading'); n.classList.add('is-playing'); });
+    a.addEventListener('pause', function(){ n.classList.remove('is-playing'); });
+    a.addEventListener('ended', function(){ n.classList.remove('is-playing'); a.currentTime = 0; paint(); });
+    a.addEventListener('timeupdate', paint);
+    a.addEventListener('loadedmetadata', function(){ if (dur()) { durEl.textContent = fmt(dur()); track.setAttribute('aria-valuemax', String(Math.round(dur()))); } });
+    a.addEventListener('error', function(){
+      n.classList.remove('is-loading', 'is-playing'); n.classList.add('is-error');
+      cur.textContent = navigator.onLine ? 'Écoute indisponible' : 'Écoute indisponible hors connexion';
+    });
+    function seekTo(ratio){
+      var go = function(){ if (dur()) { a.currentTime = Math.max(0, Math.min(1, ratio)) * dur(); paint(); } };
+      if (dur()) go(); else { a.addEventListener('loadedmetadata', go, { once: true }); a.preload = 'metadata'; a.load(); }
+    }
+    track.addEventListener('click', function(e){ var r = track.getBoundingClientRect(); seekTo((e.clientX - r.left) / r.width); });
+    track.addEventListener('keydown', function(e){
+      if (!dur()) return;
+      if (e.key === 'ArrowRight') { e.preventDefault(); a.currentTime = Math.min(dur(), a.currentTime + 5); paint(); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); a.currentTime = Math.max(0, a.currentTime - 5); paint(); }
+    });
+  });
+})();
+</script>`;
+
 // Vue lecteur d'un article jour par jour : la frise (liens vers chaque jour,
 // le jour visible surligne) et les blocs <details>, ouverts par defaut pour
 // qu'un lecteur qui fait simplement defiler lise tout, comme un recit unique.
@@ -1045,7 +1093,17 @@ ${TOAST}
   const allPhotos = ssrDedupePhotos([...photos, ...inlineImgs.filter(img => !photoUrlSet.has(normalizeUrl(img.url)))]);
 
   const isDays = isDaysContent(article.content);
-  const renderedFull = ssrVoyageContent(article.content || '', allPhotos);
+  // Enregistrements audio cites : seuls ceux qui existent cote serveur
+  // (envoyes depuis le telephone, pas supprimes) recoivent un lecteur.
+  const audioIds = [...new Set([...String(article.content || '').matchAll(/data-audio-id="([a-z0-9-]{8,64})"/g)].map(m => m[1]))];
+  let audioUrls = null;
+  if (audioIds.length) {
+    try {
+      const { results } = await env.DB.prepare(`SELECT id, r2_key FROM recordings WHERE id IN (${audioIds.map(() => '?').join(',')})`).bind(...audioIds).all();
+      audioUrls = new Map(results.map(r => [r.id, '/r2/' + r.r2_key]));
+    } catch { audioUrls = null; /* table absente (migration 013 pas encore passee) : l'URL du bloc fait foi */ }
+  }
+  const renderedFull = ssrVoyageContent(article.content || '', allPhotos, audioUrls);
   // Article jour par jour : frise en haut + un bloc repliable par journee.
   // Rendu APRES ssrVoyageContent, sur le HTML final : les images de chaque
   // jour ont ainsi exactement le meme traitement (lightbox, variantes) que
@@ -1247,6 +1305,7 @@ ${TOAST}
 ${LIGHTBOX}
 ${daysView ? DAYS_SCRIPT : ''}
 ${daysView && daysView.map ? MAP_SCRIPT : ''}
+${renderedFull.indexOf('audio-note is-player') !== -1 ? AUDIO_SCRIPT : ''}
 <script>
 const ARTICLE_ID = ${JSON.stringify(article.id)};
 const IS_ADMIN = ${JSON.stringify(authed)};
@@ -2111,7 +2170,7 @@ export default {
     // ── R2 photo proxy  (/r2/<key>) ───────────────────────────
     if (path.startsWith('/r2/')) {
       const key = path.slice(4); // strip leading '/r2/'
-      return serveR2Object(env, key);
+      return serveR2Object(env, key, request);
     }
 
     // ── SEO: robots.txt, sitemap.xml, RSS feed ─────────────────
@@ -2284,6 +2343,7 @@ export default {
       };
       if (path === '/admin/dashboard') return noStore(dashboardPage());
       if (path === '/admin/editor')    return noStore(editorPage(null));
+      if (path === '/admin/enregistrements') return noStore(recordingsPage());
       const editorMatch = matchPath('/admin/editor/:id', path);
       if (editorMatch) return noStore(editorPage(parseInt(editorMatch.id)));
       const printMatch = matchPath('/admin/articles/:id/print', path);
@@ -2355,6 +2415,18 @@ export default {
       }
 
       // ── Admin account (all admin-only) ──────────────────────
+      // Enregistrements audio (bibliotheque du dictaphone).
+      if (path === '/api/admin/recordings' && method === 'GET') {
+        return authed ? listRecordings(env) : unauthorized();
+      }
+      const recMatch = matchPath('/api/admin/recordings/:id', path);
+      if (recMatch) {
+        if (!authed) return unauthorized();
+        if (method === 'PUT') return putRecording(request, env, recMatch.id);
+        if (method === 'PATCH') return patchRecording(request, env, recMatch.id);
+        if (method === 'DELETE') return deleteRecording(env, recMatch.id);
+      }
+
       if (path === '/api/admin/account' && method === 'GET') {
         if (!authed) return unauthorized();
         const acc = await getAdminAccount(env.DB);

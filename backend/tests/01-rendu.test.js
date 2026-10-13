@@ -15,7 +15,7 @@
  */
 import {
   renderGallery, renderVoyageContent, dedupePhotos, extractInlineImages,
-  toHtml, stripMdText, renderWritingDays, thumbUrl, wideUrl,
+  toHtml, stripMdText, renderWritingDays, thumbUrl, wideUrl, renderAudioNotes,
 } from '../worker/helpers/render.js';
 import { phase, test, endPhase, ok, eq, match, noMatch, count } from './runner.js';
 
@@ -409,6 +409,35 @@ export default async function run() {
     noMatch(html, /sans date/);
     eq(renderWritingDays([]), '');
     eq(renderWritingDays(null), '');
+  });
+
+  endPhase();
+  phase('Rendu › Messages vocaux');
+
+  const note = (id, src, title = 'Le souk', dur = 72) =>
+    `<div class="audio-note" contenteditable="false" data-audio-id="${id}" data-src="${src}" data-title="${title}" data-duration="${dur}"></div>`;
+  const ID = '0f8e2c1a-1b2c-4d5e-8f90-123456789abc';
+
+  await test('un bloc audio devient un lecteur, rien de l editeur ne reste', () => {
+    const out = renderVoyageContent('<p>Avant</p>' + note(ID, '/r2/audio/' + ID + '.m4a') + '<p>Apres</p>', []);
+    match(out, /class="audio-note is-player"/, 'lecteur');
+    match(out, /<audio preload="none" src="\/r2\/audio\/0f8e2c1a[^"]*\.m4a">/, 'source audio');
+    match(out, /1:12/, 'duree affichee');
+    noMatch(out, /contenteditable/, 'attribut d edition retire');
+    match(out, /<p>Avant<\/p>[\s\S]*is-player[\s\S]*<p>Apres<\/p>/, 'place dans le texte conservee');
+  });
+
+  await test('enregistrement inconnu du serveur (supprime, pas encore envoye) : pas de lecteur muet', () => {
+    eq(renderAudioNotes('<p>a</p>' + note(ID, '/r2/audio/' + ID + '.m4a'), new Map()), '<p>a</p>');
+    const known = renderAudioNotes(note(ID, '/r2/audio/autre.m4a'), new Map([[ID, '/r2/audio/' + ID + '.webm']]));
+    match(known, /src="\/r2\/audio\/0f8e2c1a[^"]*\.webm"/, 'URL reelle du serveur prioritaire');
+  });
+
+  await test('source ou titre douteux neutralises', () => {
+    eq(renderAudioNotes(note(ID, 'https://ailleurs.example/x.mp3')), '', 'source externe refusee');
+    eq(renderAudioNotes(note('../../etc', '/r2/audio/x.m4a')), '', 'id invalide refuse');
+    const t = renderAudioNotes(note(ID, '/r2/audio/' + ID + '.m4a', '&lt;img src=x onerror=alert(1)&gt;'));
+    noMatch(t, /<img/, 'titre echappe');
   });
 
   endPhase();

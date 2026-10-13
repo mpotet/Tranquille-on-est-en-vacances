@@ -109,6 +109,11 @@ export default async function run() {
     eq(d.modified.length, 1);
   });
 
+  await test('un message vocal ajoute a un jour compte comme une modification', () => {
+    const avec = v1.replace('<p>Petra.</p>', '<p>Petra.</p><div class="audio-note" data-audio-id="0f8e2c1a-aaaa" data-src="/r2/audio/0f8e2c1a-aaaa.m4a"></div>');
+    eq(diffDays(v1, avec).modified.length, 1);
+  });
+
   endPhase();
   phase('Jour par jour › Carte');
 
